@@ -205,9 +205,9 @@ local function PreviewSpellIcon(spellId)
         return cached
     end
     local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
-    local glyph = (details and details.iconID) or 134400
-    previewIconCache[spellId] = glyph
-    return glyph
+    local icon = (details and details.iconID) or 134400
+    previewIconCache[spellId] = icon
+    return icon
 end
 
 -- Weapon-enchant preview cells, leading the bar exactly like the live ones
@@ -236,9 +236,9 @@ local PREVIEW_ENCHANT_SLOTS = { INVSLOT_MAINHAND or 16, INVSLOT_OFFHAND or 17 }
 local function PreviewEnchantSlots()
     local result = {}
     for i = #PREVIEW_ENCHANT_SLOTS, 1, -1 do
-        local slotIndex = PREVIEW_ENCHANT_SLOTS[i]
-        if GetInventoryItemTexture("player", slotIndex) then
-            result[#result + 1] = slotIndex
+        local slot = PREVIEW_ENCHANT_SLOTS[i]
+        if GetInventoryItemTexture("player", slot) then
+            result[#result + 1] = slot
         end
     end
     if #result == 0 then
@@ -255,12 +255,12 @@ end
 -- same namespaced call).
 local PREVIEW_ENCHANT_SLOT_NAMES =
     { [INVSLOT_MAINHAND or 16] = "MainHandSlot", [INVSLOT_OFFHAND or 17] = "SecondaryHandSlot" }
-local function PreviewEnchantIcon(slotIndex)
-    local tex = GetInventoryItemTexture("player", slotIndex)
+local function PreviewEnchantIcon(slot)
+    local tex = GetInventoryItemTexture("player", slot)
     if tex then
         return tex
     end
-    local name = PREVIEW_ENCHANT_SLOT_NAMES[slotIndex]
+    local name = PREVIEW_ENCHANT_SLOT_NAMES[slot]
     if name and C_PaperDollInfo and C_PaperDollInfo.GetInventorySlotInfo then
         local _, slotTex = C_PaperDollInfo.GetInventorySlotInfo(name)
         if slotTex then
@@ -389,12 +389,12 @@ end
 -- Layer order matches the live bar exactly (AK's own ApplyStyleToRegions): icon
 -- texture (btn, ARTWORK) below border (child frame, level+1) below duration/stack
 -- text (textHost, child frame, level+2, ABOVE the border).
-local function CreatePreviewIcon(boxFrame)
+local function CreatePreviewIcon(box)
     -- Options preview only: the options frame pool (CludesUI_FramePool.lua)
     -- hands the box's next render these frames back reset to new.
     local Pool = CludesUI._Pool
     local CreateFrame = Pool.CreateFrame
-    local button = CreateFrame("Frame", nil, boxFrame)
+    local button = CreateFrame("Frame", nil, box)
     button.icon = button:CreateTexture(nil, "ARTWORK")
     button.icon:SetAllPoints()
     -- "Nothing configured" placeholder: a red X over the icon's flat grey fill,
@@ -445,15 +445,15 @@ end
 
 -- Resolves a bar's live cfg + polarity from its (kind,id) identity, via the same
 -- lookups every other engine-side path uses.
-local function ResolvePreviewCfg(kindOf, ident)
+local function ResolvePreviewCfg(kind, ident)
     local s = PAB()
     if not s then
         return nil
     end
     if ident == "default" then
-        local isBuff = kindOf == "buff"
+        local isBuff = kind == "buff"
         return (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)), isBuff
-    elseif kindOf == "buff" then
+    elseif kind == "buff" then
         return mod.PAB_GetCustomBuffBar(ident), true
     else
         return mod.PAB_GetCustomDebuffBar(ident), false
@@ -623,9 +623,9 @@ end
 local function DedupeByIcon(ids)
     local seenIcons, result = {}, {}
     for i = 1, #ids do
-        local glyph = PreviewSpellIcon(ids[i])
-        if not seenIcons[glyph] then
-            seenIcons[glyph] = true
+        local icon = PreviewSpellIcon(ids[i])
+        if not seenIcons[icon] then
+            seenIcons[icon] = true
             result[#result + 1] = ids[i]
         end
     end
@@ -853,18 +853,18 @@ local function ApplyPreviewFx(button, e)
     local Pix = CludesUI.PP
     local bSize = (e and e.borderSize) or 0
     if bSize > 0 and Pix then
-        local hostRegion = button.fxBorder
-        if not hostRegion then
-            hostRegion = CreateFrame("Frame", nil, button)
-            hostRegion:SetAllPoints(button)
-            hostRegion:SetFrameLevel(button.border:GetFrameLevel() + 1)
-            hostRegion:EnableMouse(false)
-            Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1)
-            button.fxBorder = hostRegion
+        local host = button.fxBorder
+        if not host then
+            host = CreateFrame("Frame", nil, button)
+            host:SetAllPoints(button)
+            host:SetFrameLevel(button.border:GetFrameLevel() + 1)
+            host:EnableMouse(false)
+            Pix.CreateBorder(host, 0, 0, 0, 1, 1)
+            button.fxBorder = host
         end
         local bc = e.borderColor or { r = 0, g = 0, b = 0 }
-        Pix.UpdateBorder(hostRegion, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
-        hostRegion:Show()
+        Pix.UpdateBorder(host, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
+        host:Show()
     elseif button.fxBorder then
         button.fxBorder:Hide()
     end
@@ -876,9 +876,9 @@ end
 
 -- `pool` is the box's own stable, pre-shuffled fake-icon pool (shuffled once per box
 -- build for BOTH polarities, see BuildBuffPreviewPool/BuildDebuffPreviewPool).
-local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
+local function RenderPreviewIcons(box, icons, isBuff, conf, fontFile, pool)
     conf = ScaledPreviewCfg(conf, isBuff)
-    local look = BuildStyle(isBuff, conf)
+    local style = BuildStyle(isBuff, conf)
     local dcMap = (not isBuff) and BuildDispelColorMap(conf) or nil
     local grid = ComputeGrid(isBuff, conf)
 
@@ -1015,13 +1015,13 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
         if i <= sum then
             local button = icons[i]
             if not button then
-                button = CreatePreviewIcon(boxFrame)
+                button = CreatePreviewIcon(box)
                 icons[i] = button
             end
 
-            local rowFrame = math.floor((i - 1) / cols)
+            local row = math.floor((i - 1) / cols)
             local withinLineStep = colOffset[i]
-            local acrossLinesStep = rowYOffset[rowFrame]
+            local acrossLinesStep = rowYOffset[row]
             -- btn's own anchor point is `corner` (matching growDirection/
             -- iconWrapDirection), placed at an offset from the box's CENTER -- see the
             -- block-centering comment above `local rows = ...`. Vertical growth
@@ -1042,13 +1042,13 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                     or (-halfPrimary + withinLineStep)
             end
             button:ClearAllPoints()
-            button:SetPoint(centeredVertical and "CENTER" or corner, boxFrame, "CENTER", btnX, btnY)
+            button:SetPoint(centeredVertical and "CENTER" or corner, box, "CENTER", btnX, btnY)
             button:SetSize(slotSize[i], slotHeight and slotHeight[i] or slotSize[i])
 
-            local slotIndex = slots[i]
+            local slot = slots[i]
             local dispel
 
-            if slotIndex.kind == "placeholder" then
+            if slot.kind == "placeholder" then
                 -- Flat grey box + centered red X (see CreatePreviewIcon) instead of a
                 -- fake spell icon -- nothing would actually render on the real bar
                 -- here. Border still draws -- only icon texture and duration/stack
@@ -1065,41 +1065,41 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                 button.placeholder:Hide()
                 button.textHost:Show()
 
-                if slotIndex.kind == "enchant" then
+                if slot.kind == "enchant" then
                     -- Weapon enchant: an ITEM texture, not a spell icon -- the
                     -- live buttons paint the equipped weapon the same way.
-                    button.icon:SetTexture(PreviewEnchantIcon(slotIndex.slot))
+                    button.icon:SetTexture(PreviewEnchantIcon(slot.slot))
                 else
                     local spellId
-                    if slotIndex.kind == "extra" then
+                    if slot.kind == "extra" then
                         -- Real Extra Spell: always its own actual icon, never folded into
                         -- the fake cycling pool.
-                        spellId = slotIndex.spellID
+                        spellId = slot.spellID
                     else -- "fake"
-                        local record = slotIndex.entry
+                        local record = slot.entry
                         spellId = isBuff and record or record.id
                         dispel = (not isBuff) and record.dispel or nil
                     end
                     button.icon:SetTexture(PreviewSpellIcon(spellId))
                 end
                 -- The live icons' texcoords, the shaped fill included (AuraKit).
-                button.icon:SetTexCoord(CludesUI.AuraKit.IconTexCoord(look))
+                button.icon:SetTexCoord(CludesUI.AuraKit.IconTexCoord(style))
             end
 
             -- Mirrors CludesUI_AuraKit.lua's ApplyStyleToRegions, unguarded (plain regions).
-            local shapeActive = look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath
+            local shapeActive = style.iconShape and style.iconShape ~= "none" and style.shapeMaskPath
             if shapeActive then
                 button.shapeMask:SetTexture(
-                    look.shapeMaskPath,
+                    style.shapeMaskPath,
                     "CLAMPTOBLACKADDITIVE",
                     "CLAMPTOBLACKADDITIVE"
                 )
                 button.shapeMask:SetAllPoints(button)
                 button.shapeMask:Show()
-                if button._shapeApplied ~= look.iconShape then
+                if button._shapeApplied ~= style.iconShape then
                     pcall(button.icon.RemoveMaskTexture, button.icon, button.shapeMask)
                     button.icon:AddMaskTexture(button.shapeMask)
-                    button._shapeApplied = look.iconShape
+                    button._shapeApplied = style.iconShape
                 end
             else
                 if button._shapeApplied then
@@ -1111,21 +1111,22 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
 
             button.border:SetAllPoints(shapeActive and button or button.icon)
             button.border:SetFrameLevel(
-                look.border and look.border.behind and math.max(0, button:GetFrameLevel() - 1)
+                style.border and style.border.behind and math.max(0, button:GetFrameLevel() - 1)
                     or (button:GetFrameLevel() + 1)
             )
             -- Type-icon host above the border's strip container (+1) and the fx
             -- border/glow hosts (+1/+2), like the live dispel holder clears them.
             button.typeHost:SetFrameLevel(button.border:GetFrameLevel() + 3)
             local Pix = CludesUI and CludesUI.PanelPP
-            if Pix and look.border then
-                local br, backdrop, bb, ba = look.border[1], look.border[2], look.border[3], look.border[4]
+            if Pix and style.border then
+                local br, backdrop, bb, ba =
+                    style.border[1], style.border[2], style.border[3], style.border[4]
                 if dispel and dcMap and dcMap[dispel] then
                     local c = dcMap[dispel]
                     br, backdrop, bb, ba = c.r, c.g, c.b, 1
                 end
-                local dim = look.border.size or 1
-                if shapeActive and look.shapeBorderPath and Pix.ApplyMaskedShapeBorder then
+                local size = style.border.size or 1
+                if shapeActive and style.shapeBorderPath and Pix.ApplyMaskedShapeBorder then
                     CludesUI.HideBorderStyle(button.border)
                     if button.borderState and button.borderState._secretBorderEdges then
                         for _, tex in pairs(button.borderState._secretBorderEdges) do
@@ -1135,8 +1136,8 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                     Pix:ApplyMaskedShapeBorder(
                         button.border,
                         button.shapeMask,
-                        look.shapeBorderPath,
-                        look.shapeBorderSize or dim,
+                        style.shapeBorderPath,
+                        style.shapeBorderSize or size,
                         br,
                         backdrop,
                         bb,
@@ -1149,10 +1150,10 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                     elseif button.border._shapeBorderTex then
                         button.border._shapeBorderTex:Hide()
                     end
-                    local b = look.border
+                    local b = style.border
                     local appliedSize = (b.texture and b.texture ~= "" and b.texture ~= "solid")
-                            and (b.textureSize or dim)
-                        or dim
+                            and (b.textureSize or size)
+                        or size
                     CludesUI.ApplySecretSafeBorderStyle(
                         button.border,
                         button.borderState,
@@ -1167,7 +1168,7 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                         b.shiftX,
                         b.shiftY,
                         b.addonKey or "unitframes",
-                        b.sizeKey or dim,
+                        b.sizeKey or size,
                         b.edgeScale,
                         b.edgePx
                     )
@@ -1200,7 +1201,7 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
             -- Dispel-type indicator icon (style.dispelTypeIcon): the live bar's
             -- engine channel picks the art per aura; here the fake entry's own
             -- dispel token does. Drawn on its own host above the swipe and border.
-            local ti = look.dispelTypeIcon
+            local ti = style.dispelTypeIcon
             if ti and dispel and PV_DISPEL_ICON_ATLAS[dispel] then
                 if not button.typeIcon then
                     button.typeIcon = button.typeHost:CreateTexture(nil, "OVERLAY", nil, 3)
@@ -1224,12 +1225,12 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                 button.typeIcon:Hide()
             end
 
-            local cdMaskKey = shapeActive and look.iconShape or nil
+            local cdMaskKey = shapeActive and style.iconShape or nil
             if button._cdShapeApplied ~= cdMaskKey then
                 if cdMaskKey then
                     pcall(button.cooldown.AddMaskTexture, button.cooldown, button.shapeMask)
                     if button.cooldown.SetSwipeTexture then
-                        pcall(button.cooldown.SetSwipeTexture, button.cooldown, look.shapeMaskPath)
+                        pcall(button.cooldown.SetSwipeTexture, button.cooldown, style.shapeMaskPath)
                     end
                 else
                     pcall(button.cooldown.RemoveMaskTexture, button.cooldown, button.shapeMask)
@@ -1240,38 +1241,38 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
                 button._cdShapeApplied = cdMaskKey
             end
 
-            if slotIndex.kind ~= "placeholder" then
+            if slot.kind ~= "placeholder" then
                 button.textHost:SetAllPoints(button)
                 button.textHost:SetFrameLevel(button:GetFrameLevel() + 2)
 
                 button.duration:ClearAllPoints()
-                button.duration:SetFont(fontFile, look.durationFontSize or 11, "OUTLINE")
+                button.duration:SetFont(fontFile, style.durationFontSize or 11, "OUTLINE")
                 button.duration:SetPoint(
-                    look.durationPoint or "CENTER",
+                    style.durationPoint or "CENTER",
                     button,
-                    look.durationRelPoint or "CENTER",
-                    look.durationX or 0,
-                    look.durationY or 0
+                    style.durationRelPoint or "CENTER",
+                    style.durationX or 0,
+                    style.durationY or 0
                 )
-                local dc = look.durationColor
+                local dc = style.durationColor
                 button.duration:SetTextColor(dc and dc.r or 1, dc and dc.g or 1, dc and dc.b or 1)
-                button.duration:SetShown(not look.hideDurationText)
-                local pv = slotIndex.pv or i
+                button.duration:SetShown(not style.hideDurationText)
+                local pv = slot.pv or i
                 button.duration:SetText(PREVIEW_DURATIONS[((pv - 1) % #PREVIEW_DURATIONS) + 1])
 
                 button.stack:ClearAllPoints()
-                button.stack:SetFont(fontFile, look.stackFontSize or 11, "OUTLINE")
+                button.stack:SetFont(fontFile, style.stackFontSize or 11, "OUTLINE")
                 button.stack:SetPoint(
-                    look.stackPoint or "BOTTOMRIGHT",
+                    style.stackPoint or "BOTTOMRIGHT",
                     button,
-                    look.stackPoint or "BOTTOMRIGHT",
-                    look.stackX or 0,
-                    look.stackY or 0
+                    style.stackPoint or "BOTTOMRIGHT",
+                    style.stackX or 0,
+                    style.stackY or 0
                 )
-                local sc = look.stackColor
+                local sc = style.stackColor
                 button.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
                 local stackVal = PREVIEW_STACKS[((pv - 1) % #PREVIEW_STACKS) + 1]
-                button.stack:SetShown(look.showStacks ~= false and stackVal ~= nil)
+                button.stack:SetShown(style.showStacks ~= false and stackVal ~= nil)
                 if stackVal then
                     button.stack:SetText(stackVal)
                 end
@@ -1283,9 +1284,9 @@ local function RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
             -- Reverse Swipe cog; placeholder slots carry no swipe.
             local cd = button.cooldown
             if cd then
-                if slotIndex.kind ~= "placeholder" and look.hideSwipe ~= true then
+                if slot.kind ~= "placeholder" and style.hideSwipe ~= true then
                     local dur = 3600
-                    cd:SetReverse(look.cooldownReverse ~= false)
+                    cd:SetReverse(style.cooldownReverse ~= false)
                     cd:SetCooldown(GetTime() - dur * (1 - GetPvCDSeed(i)), dur)
                     cd:Show()
                 else
@@ -1331,11 +1332,11 @@ end
 --   id. cfg: the same cfg table the caller already resolved for its own field builders.
 -- Returns the outerFrame-local Y where the preview area ends -- passed straight to
 -- WrapCompensatedBody(outerFrame, returnedY) as the scroll area's top offset.
-function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kindOf, ident, conf)
+function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kind, ident, conf)
     -- Options page only: under the kept manager root the options frame pool
     -- (CludesUI_FramePool.lua) hands the next render these frames back.
     local CreateFrame = CludesUI._Pool.CreateFrame
-    local isBuff = kindOf == "buff"
+    local isBuff = kind == "buff"
     local sy = startY
 
     do
@@ -1387,9 +1388,9 @@ function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kindOf, ident, co
     -- grid -- ComputeGrid's width/height are the icon grid's bounding box only (same
     -- as the real bar), text can render outside it depending on Duration/Stacks Position.
     local boxHeight = grid.height + 30 * PreviewScaleFactor()
-    local boxFrame = CreateFrame("Frame", nil, outerFrame)
-    boxFrame:SetPoint("TOP", outerFrame, "TOP", 0, sy)
-    boxFrame:SetSize(math.max(grid.width, 1), boxHeight)
+    local box = CreateFrame("Frame", nil, outerFrame)
+    box:SetPoint("TOP", outerFrame, "TOP", 0, sy)
+    box:SetSize(math.max(grid.width, 1), boxHeight)
 
     local headerBg = outerFrame._pabPreviewHeaderBg
     if not headerBg then
@@ -1428,9 +1429,9 @@ function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kindOf, ident, co
         pool = BuildDebuffPreviewPool()
     end
     activePreview = {
-        kind = kindOf,
+        kind = kind,
         id = ident,
-        box = boxFrame,
+        box = box,
         icons = icons,
         fontPath = fontFile,
         pool = pool,
@@ -1441,9 +1442,9 @@ function mod.PAB_BuildPreviewBox(outerFrame, fontFile, startY, kindOf, ident, co
         divider = divider,
         -- the box's dress (nil off the pool): PAB_MaybeRefreshPreview stands down
         -- once a later render parked the box or dressed it again
-        gen = CludesUI._Pool.Gen(boxFrame),
+        gen = CludesUI._Pool.Gen(box),
     }
-    RenderPreviewIcons(boxFrame, icons, isBuff, conf, fontFile, pool)
+    RenderPreviewIcons(box, icons, isBuff, conf, fontFile, pool)
 
     return bottomY
 end
@@ -1463,8 +1464,8 @@ end
 -- PAB_ReloadCustomBuffBar, PAB_ReloadCustomDebuffBar) so a currently-open preview box
 -- stays in sync with slider drags/dropdown changes without CUI_PlayerAuraBars_
 -- ManagerPages.lua needing to know the preview exists or wrap its ApplyBar() closures.
-PAB_MaybeRefreshPreview = function(kindOf, ident)
-    if not (activePreview and activePreview.kind == kindOf and activePreview.id == ident) then
+PAB_MaybeRefreshPreview = function(kind, ident)
+    if not (activePreview and activePreview.kind == kind and activePreview.id == ident) then
         return
     end
     -- The page was left: its root waits parked and hidden until its next
@@ -1483,7 +1484,7 @@ PAB_MaybeRefreshPreview = function(kindOf, ident)
         activePreview = nil
         return
     end
-    local conf, isBuff = ResolvePreviewCfg(kindOf, ident)
+    local conf, isBuff = ResolvePreviewCfg(kind, ident)
     if not conf then
         return
     end

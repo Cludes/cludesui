@@ -78,9 +78,9 @@ function CludesUI.ShowTrackedAurasPopup(options)
     dimmer:SetScale(ppScale)
     dimmer:EnableMouseWheel(true)
     dimmer:SetScript("OnMouseWheel", function() end)
-    local dim = dimmer:CreateTexture(nil, "BACKGROUND")
-    dim:SetAllPoints()
-    dim:SetColorTexture(0, 0, 0, 0.35)
+    local size = dimmer:CreateTexture(nil, "BACKGROUND")
+    size:SetAllPoints()
+    size:SetColorTexture(0, 0, 0, 0.35)
     dimmer:SetScript("OnClick", function()
         dimmer:Hide()
         _trackedAurasDimmer = nil
@@ -140,13 +140,13 @@ function CludesUI.ShowTrackedAurasPopup(options)
     -- header (band + lists) shifts down by hdrY and the panel grows to match.
     local hdrY = 0
     if options.subtitle then
-        local subFrame = panelFrame:CreateFontString(nil, "OVERLAY")
-        subFrame:SetFont(fontFile, 12, "")
-        subFrame:SetPoint("TOP", title, "BOTTOM", 0, -4)
-        subFrame:SetWidth(470)
-        subFrame:SetJustifyH("CENTER")
-        subFrame:SetTextColor(1, 1, 1, 0.6)
-        subFrame:SetText(CludesUI.L(options.subtitle))
+        local sub = panelFrame:CreateFontString(nil, "OVERLAY")
+        sub:SetFont(fontFile, 12, "")
+        sub:SetPoint("TOP", title, "BOTTOM", 0, -4)
+        sub:SetWidth(470)
+        sub:SetJustifyH("CENTER")
+        sub:SetTextColor(1, 1, 1, 0.6)
+        sub:SetText(CludesUI.L(options.subtitle))
         hdrY = 18
         panelFrame:SetHeight(470 + hdrY)
     end
@@ -192,20 +192,20 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local tog = CreateFrame("Button", nil, panelFrame)
         tog:SetSize(170, 20)
         tog:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 24, -68 - hdrY)
-        local boxFrame = CreateFrame("Frame", nil, tog)
-        boxFrame:SetSize(16, 16)
-        boxFrame:SetPoint("LEFT", tog, "LEFT", 0, 0)
-        local bbg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("Frame", nil, tog)
+        box:SetSize(16, 16)
+        box:SetPoint("LEFT", tog, "LEFT", 0, 0)
+        local bbg = box:CreateTexture(nil, "BACKGROUND")
         bbg:SetAllPoints()
         bbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local bbrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, bbg)
-        local chk = boxFrame:CreateTexture(nil, "ARTWORK")
-        Pix.SetInside(chk, boxFrame, 2, 2)
+        local bbrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, bbg)
+        local chk = box:CreateTexture(nil, "ARTWORK")
+        Pix.SetInside(chk, box, 2, 2)
         chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-        CludesUI.RoundBody(boxFrame, chk, 2)
+        CludesUI.RoundBody(box, chk, 2)
         local tl = tog:CreateFontString(nil, "OVERLAY")
         tl:SetFont(fontFile, 13, "")
-        tl:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
+        tl:SetPoint("LEFT", box, "RIGHT", 8, 0)
         tl:SetTextColor(0.85, 0.85, 0.85)
         tl:SetText(CludesUI.L(sa.label or "Show All"))
         local function UpdAll()
@@ -460,61 +460,61 @@ function CludesUI.ShowTrackedAurasPopup(options)
                 return a.name < b.name
             end)
             for idx = 1, #sorted do
-                local rowFrame = rowList[idx]
-                if not rowFrame then
-                    rowFrame = CreateFrame("Button", nil, childFrame)
-                    rowFrame:SetSize(COL_W, 28)
-                    rowFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 0, -(idx - 1) * 29)
-                    rowFrame.hl = rowFrame:CreateTexture(nil, "BACKGROUND")
-                    rowFrame.hl:SetAllPoints()
-                    rowFrame.hl:SetColorTexture(1, 1, 1, 0)
+                local row = rowList[idx]
+                if not row then
+                    row = CreateFrame("Button", nil, childFrame)
+                    row:SetSize(COL_W, 28)
+                    row:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 0, -(idx - 1) * 29)
+                    row.hl = row:CreateTexture(nil, "BACKGROUND")
+                    row.hl:SetAllPoints()
+                    row.hl:SetColorTexture(1, 1, 1, 0)
                     -- Checkbox (checkbox-dropdown visuals)
-                    rowFrame.box = CreateFrame("Frame", nil, rowFrame)
-                    rowFrame.box:SetSize(16, 16)
-                    rowFrame.box:SetPoint("LEFT", rowFrame, "LEFT", 2, 0)
-                    local bxbg = rowFrame.box:CreateTexture(nil, "BACKGROUND")
+                    row.box = CreateFrame("Frame", nil, row)
+                    row.box:SetSize(16, 16)
+                    row.box:SetPoint("LEFT", row, "LEFT", 2, 0)
+                    local bxbg = row.box:CreateTexture(nil, "BACKGROUND")
                     bxbg:SetAllPoints()
                     bxbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                    rowFrame.boxBrd = CludesUI.MakeRoundedBorder(rowFrame.box, 0.4, 0.4, 0.4, 0.6, bxbg)
-                    rowFrame.chk = rowFrame.box:CreateTexture(nil, "ARTWORK")
-                    Pix.SetInside(rowFrame.chk, rowFrame.box, 2, 2)
-                    rowFrame.chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                    CludesUI.RoundBody(rowFrame.box, rowFrame.chk, 2)
-                    rowFrame.icon = rowFrame:CreateTexture(nil, "ARTWORK")
-                    rowFrame.icon:SetSize(20, 20)
-                    rowFrame.icon:SetPoint("LEFT", rowFrame.box, "RIGHT", 6, 0)
-                    rowFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                    rowFrame.name = rowFrame:CreateFontString(nil, "OVERLAY")
-                    rowFrame.name:SetFont(fontFile, 13, "")
-                    rowFrame.name:SetPoint("LEFT", rowFrame.icon, "RIGHT", 6, 0)
-                    rowFrame.name:SetPoint("RIGHT", rowFrame, "RIGHT", withMine and -52 or -24, 0)
-                    rowFrame.name:SetJustifyH("LEFT")
-                    rowFrame.name:SetWordWrap(false)
-                    rowFrame.x = CreateFrame("Button", nil, rowFrame)
-                    rowFrame.x:SetSize(14, 14)
-                    rowFrame.x:SetPoint("RIGHT", rowFrame, "RIGHT", -4, 0)
-                    rowFrame.x:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+                    row.boxBrd = CludesUI.MakeRoundedBorder(row.box, 0.4, 0.4, 0.4, 0.6, bxbg)
+                    row.chk = row.box:CreateTexture(nil, "ARTWORK")
+                    Pix.SetInside(row.chk, row.box, 2, 2)
+                    row.chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
+                    CludesUI.RoundBody(row.box, row.chk, 2)
+                    row.icon = row:CreateTexture(nil, "ARTWORK")
+                    row.icon:SetSize(20, 20)
+                    row.icon:SetPoint("LEFT", row.box, "RIGHT", 6, 0)
+                    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    row.name = row:CreateFontString(nil, "OVERLAY")
+                    row.name:SetFont(fontFile, 13, "")
+                    row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
+                    row.name:SetPoint("RIGHT", row, "RIGHT", withMine and -52 or -24, 0)
+                    row.name:SetJustifyH("LEFT")
+                    row.name:SetWordWrap(false)
+                    row.x = CreateFrame("Button", nil, row)
+                    row.x:SetSize(14, 14)
+                    row.x:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+                    row.x:SetFrameLevel(row:GetFrameLevel() + 2)
                     if withMine then
                         -- Only My Casts tag: accent when restricted to your
                         -- casts, gray when the entry shows from any caster.
-                        rowFrame.mine = CreateFrame("Button", nil, rowFrame)
-                        rowFrame.mine:SetSize(30, 16)
-                        rowFrame.mine:SetPoint("RIGHT", rowFrame.x, "LEFT", -2, 0)
-                        rowFrame.mine:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
-                        rowFrame.mine.txt = rowFrame.mine:CreateFontString(nil, "OVERLAY")
-                        rowFrame.mine.txt:SetFont(fontFile, 11, "")
-                        rowFrame.mine.txt:SetPoint("CENTER")
-                        rowFrame.mine.txt:SetText(CludesUI.L("MINE"))
-                        rowFrame.mine:SetScript("OnClick", function()
-                            ToggleMine(rowFrame._id)
+                        row.mine = CreateFrame("Button", nil, row)
+                        row.mine:SetSize(30, 16)
+                        row.mine:SetPoint("RIGHT", row.x, "LEFT", -2, 0)
+                        row.mine:SetFrameLevel(row:GetFrameLevel() + 2)
+                        row.mine.txt = row.mine:CreateFontString(nil, "OVERLAY")
+                        row.mine.txt:SetFont(fontFile, 11, "")
+                        row.mine.txt:SetPoint("CENTER")
+                        row.mine.txt:SetText(CludesUI.L("MINE"))
+                        row.mine:SetScript("OnClick", function()
+                            ToggleMine(row._id)
                             if options.onChanged then
                                 options.onChanged()
                             end
                             RefreshList()
                         end)
-                        rowFrame.mine:SetScript("OnEnter", function(self)
+                        row.mine:SetScript("OnEnter", function(self)
                             local tipText
-                            if MineOn(rowFrame._id) then
+                            if MineOn(row._id) then
                                 tipText = CludesUI.L(
                                     "Showing this aura from your casts only; click for any caster."
                                 )
@@ -525,75 +525,75 @@ function CludesUI.ShowTrackedAurasPopup(options)
                             end
                             CludesUI.ShowWidgetTooltip(self, tipText)
                         end)
-                        rowFrame.mine:SetScript("OnLeave", function()
+                        row.mine:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
                     end
-                    rowFrame.x.tex = rowFrame.x:CreateTexture(nil, "OVERLAY")
-                    rowFrame.x.tex:SetAllPoints()
-                    rowFrame.x.tex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-                    rowFrame.x:SetAlpha(0.5)
-                    rowFrame.x:SetScript("OnEnter", function(self)
+                    row.x.tex = row.x:CreateTexture(nil, "OVERLAY")
+                    row.x.tex:SetAllPoints()
+                    row.x.tex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+                    row.x:SetAlpha(0.5)
+                    row.x:SetScript("OnEnter", function(self)
                         self:SetAlpha(0.9)
                         CludesUI.ShowWidgetTooltip(self, CludesUI.L("Remove"))
                     end)
-                    rowFrame.x:SetScript("OnLeave", function(self)
+                    row.x:SetScript("OnLeave", function(self)
                         self:SetAlpha(0.5)
                         CludesUI.HideWidgetTooltip()
                     end)
-                    rowFrame:SetScript("OnEnter", function(self)
+                    row:SetScript("OnEnter", function(self)
                         self.hl:SetColorTexture(1, 1, 1, 0.04)
                     end)
-                    rowFrame:SetScript("OnLeave", function(self)
+                    row:SetScript("OnLeave", function(self)
                         self.hl:SetColorTexture(1, 1, 1, 0)
                     end)
-                    rowList[idx] = rowFrame
+                    rowList[idx] = row
                 end
                 local record = sorted[idx]
-                rowFrame._id = record.id
+                row._id = record.id
                 local texture = C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(record.id)
-                rowFrame.icon:SetTexture(texture or 134400)
-                rowFrame.name:SetText(record.name .. " |cff808080(" .. record.id .. ")|r")
+                row.icon:SetTexture(texture or 134400)
+                row.name:SetText(record.name .. " |cff808080(" .. record.id .. ")|r")
                 -- Checked = entry active; unchecked entries dim.
-                rowFrame.chk:SetShown(record.on)
-                if rowFrame.boxBrd and rowFrame.boxBrd.SetColor then
+                row.chk:SetShown(record.on)
+                if row.boxBrd and row.boxBrd.SetColor then
                     if record.on then
-                        rowFrame.boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
+                        row.boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                     else
-                        rowFrame.boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
+                        row.boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
                     end
                 end
-                rowFrame.icon:SetDesaturated(not record.on)
-                rowFrame.icon:SetAlpha(record.on and 1 or 0.45)
-                rowFrame.name:SetAlpha(record.on and 0.9 or 0.45)
-                if rowFrame.mine then
-                    if MineOn(rowFrame._id) then
+                row.icon:SetDesaturated(not record.on)
+                row.icon:SetAlpha(record.on and 1 or 0.45)
+                row.name:SetAlpha(record.on and 0.9 or 0.45)
+                if row.mine then
+                    if MineOn(row._id) then
                         -- Restricted to your own casts: accent tag.
-                        rowFrame.mine.txt:SetTextColor(ACC.r, ACC.g, ACC.b, record.on and 1 or 0.45)
+                        row.mine.txt:SetTextColor(ACC.r, ACC.g, ACC.b, record.on and 1 or 0.45)
                     else
                         -- Any caster: dim gray tag.
-                        rowFrame.mine.txt:SetTextColor(0.6, 0.6, 0.6, record.on and 0.4 or 0.25)
+                        row.mine.txt:SetTextColor(0.6, 0.6, 0.6, record.on and 0.4 or 0.25)
                     end
                 end
-                rowFrame:SetScript("OnClick", function()
+                row:SetScript("OnClick", function()
                     local l2 = listFn()
                     if l2 then
-                        l2[rowFrame._id] = not (l2[rowFrame._id] == true)
+                        l2[row._id] = not (l2[row._id] == true)
                         if options.onChanged then
                             options.onChanged()
                         end
                         RefreshList()
                     end
                 end)
-                rowFrame.x:SetScript("OnClick", function()
+                row.x:SetScript("OnClick", function()
                     local l2 = listFn()
                     if l2 then
-                        l2[rowFrame._id] = nil
+                        l2[row._id] = nil
                     end
                     if withMine then
                         local map = ScopeMap()
                         if map then
-                            map[rowFrame._id] = nil
+                            map[row._id] = nil
                         end
                     end
                     if options.onChanged then
@@ -601,7 +601,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                     end
                     RefreshList()
                 end)
-                rowFrame:Show()
+                row:Show()
             end
             childFrame:SetHeight(math.max(1, #sorted * 29))
         end
@@ -863,48 +863,48 @@ function CludesUI.ShowSpellBlacklistPopup(options)
         local posY = 0
         for idx = 1, #ids do
             local ident = ids[idx]
-            local rowFrame = rowList[idx]
-            if not rowFrame then
-                rowFrame = CreateFrame("Frame", nil, childFrame)
-                rowFrame:SetSize(PW - 24, 26)
-                rowFrame.icon = rowFrame:CreateTexture(nil, "ARTWORK")
-                rowFrame.icon:SetSize(18, 18)
-                rowFrame.icon:SetPoint("LEFT", rowFrame, "LEFT", 2, 0)
-                rowFrame.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-                rowFrame.rm = CreateFrame("Button", nil, rowFrame)
-                rowFrame.rm:SetSize(18, 18)
-                rowFrame.rm:SetPoint("RIGHT", rowFrame, "RIGHT", -2, 0)
-                rowFrame.rmX = rowFrame.rm:CreateFontString(nil, "OVERLAY")
-                rowFrame.rmX:SetFont(fontFile, 12, "")
-                rowFrame.rmX:SetPoint("CENTER")
-                rowFrame.rmX:SetText("X")
-                rowFrame.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
-                rowFrame.rm:SetScript("OnEnter", function()
-                    rowFrame.rmX:SetTextColor(1, 0.3, 0.3, 1)
+            local row = rowList[idx]
+            if not row then
+                row = CreateFrame("Frame", nil, childFrame)
+                row:SetSize(PW - 24, 26)
+                row.icon = row:CreateTexture(nil, "ARTWORK")
+                row.icon:SetSize(18, 18)
+                row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
+                row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+                row.rm = CreateFrame("Button", nil, row)
+                row.rm:SetSize(18, 18)
+                row.rm:SetPoint("RIGHT", row, "RIGHT", -2, 0)
+                row.rmX = row.rm:CreateFontString(nil, "OVERLAY")
+                row.rmX:SetFont(fontFile, 12, "")
+                row.rmX:SetPoint("CENTER")
+                row.rmX:SetText("X")
+                row.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
+                row.rm:SetScript("OnEnter", function()
+                    row.rmX:SetTextColor(1, 0.3, 0.3, 1)
                 end)
-                rowFrame.rm:SetScript("OnLeave", function()
-                    rowFrame.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
+                row.rm:SetScript("OnLeave", function()
+                    row.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
                 end)
-                rowFrame.idText = rowFrame:CreateFontString(nil, "OVERLAY")
-                rowFrame.idText:SetFont(fontFile, 10, "")
-                rowFrame.idText:SetTextColor(1, 1, 1, 0.35)
-                rowFrame.idText:SetPoint("RIGHT", rowFrame.rm, "LEFT", -6, 0)
-                rowFrame.name = rowFrame:CreateFontString(nil, "OVERLAY")
-                rowFrame.name:SetFont(fontFile, 12, "")
-                rowFrame.name:SetTextColor(1, 1, 1, 0.85)
-                rowFrame.name:SetPoint("LEFT", rowFrame.icon, "RIGHT", 6, 0)
-                rowFrame.name:SetPoint("RIGHT", rowFrame.idText, "LEFT", -6, 0)
-                rowFrame.name:SetJustifyH("LEFT")
-                rowFrame.name:SetWordWrap(false)
-                rowList[idx] = rowFrame
+                row.idText = row:CreateFontString(nil, "OVERLAY")
+                row.idText:SetFont(fontFile, 10, "")
+                row.idText:SetTextColor(1, 1, 1, 0.35)
+                row.idText:SetPoint("RIGHT", row.rm, "LEFT", -6, 0)
+                row.name = row:CreateFontString(nil, "OVERLAY")
+                row.name:SetFont(fontFile, 12, "")
+                row.name:SetTextColor(1, 1, 1, 0.85)
+                row.name:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
+                row.name:SetPoint("RIGHT", row.idText, "LEFT", -6, 0)
+                row.name:SetJustifyH("LEFT")
+                row.name:SetWordWrap(false)
+                rowList[idx] = row
             end
-            rowFrame:ClearAllPoints()
-            rowFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 0, posY)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 0, posY)
             local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(ident)
-            rowFrame.icon:SetTexture((details and details.iconID) or 134400)
-            rowFrame.name:SetText((details and details.name) or ("Spell " .. tostring(ident)))
-            rowFrame.idText:SetText(tostring(ident))
-            rowFrame.rm:SetScript("OnClick", function()
+            row.icon:SetTexture((details and details.iconID) or 134400)
+            row.name:SetText((details and details.name) or ("Spell " .. tostring(ident)))
+            row.idText:SetText(tostring(ident))
+            row.rm:SetScript("OnClick", function()
                 if options.remove then
                     options.remove(ident)
                 end
@@ -913,7 +913,7 @@ function CludesUI.ShowSpellBlacklistPopup(options)
                 end
                 RebuildList()
             end)
-            rowFrame:Show()
+            row:Show()
             posY = posY - 26
         end
         childFrame:SetHeight(math.max(1, -posY))

@@ -212,13 +212,13 @@ local BY_KEY = {}
 local function Register(key, folder, display, profileFn, flag, classicFlag, activeFnName, onEnable)
     -- The Forever sibling flag, on the Forever client only.
     local foreverFlag = IS_FOREVER and (flag:gsub("Blizzard", "Forever", 1)) or nil
-    local get, group = FlagAccessors(profileFn, flag, classicFlag, foreverFlag)
+    local get, set = FlagAccessors(profileFn, flag, classicFlag, foreverFlag)
     local m = {
         key = key,
         folder = folder,
         display = display,
         get = get,
-        set = group,
+        set = set,
         active = activeFnName and ActiveFn(folder, activeFnName) or function()
             return BaseKey(get())
         end,
@@ -951,21 +951,21 @@ local function SwapSlots(m, p, specInfo, from, to)
             -- default, read before the stamps clear below), so the return
             -- to CludesUI can load it instead of keeping this style's
             -- seeds.
-            local baseValue = slots.cui
-            if type(baseValue) ~= "table" then
-                baseValue = {}
+            local base = slots.cui
+            if type(base) ~= "table" then
+                base = {}
                 local by = specInfo.seededBy
                 for idx = 1, #keyList do
                     local k = keyList[idx]
                     local st = by and by(k)
                     if not (st == true or (st and PathGet(p, st))) then
-                        baseValue[k] = PathGet(p, k)
+                        base[k] = PathGet(p, k)
                     end
                 end
-                slots.cui = baseValue
+                slots.cui = base
             end
             for idx = 1, #keyList do
-                PathSet(p, keyList[idx], baseValue[keyList[idx]])
+                PathSet(p, keyList[idx], base[keyList[idx]])
             end
         end
         if stamps then
@@ -1236,9 +1236,9 @@ end
 -- BORDER_DEFAULT when unset). get() returns the stored percentage (nil =
 -- default); set(v) stores it (nil for the default) and repaints. opts, when
 -- given, carries disabled / disabledTooltip. Returns the slider cfg.
-function BlizzStyle.ClassicBorderSizeCfg(get, group, options)
+function BlizzStyle.ClassicBorderSizeCfg(get, set, options)
     local CF = CludesUI.ClassicFrame
-    local spec_def = (CF and CF.BORDER_DEFAULT) or 60
+    local def = (CF and CF.BORDER_DEFAULT) or 60
     return {
         type = "slider",
         text = "Border Size",
@@ -1249,10 +1249,10 @@ function BlizzStyle.ClassicBorderSizeCfg(get, group, options)
         disabled = options and options.disabled,
         disabledTooltip = options and options.disabledTooltip,
         getValue = function()
-            return get() or spec_def
+            return get() or def
         end,
         setValue = function(val)
-            group((val ~= spec_def) and val or nil)
+            set((val ~= def) and val or nil)
         end,
     }
 end
@@ -1310,15 +1310,15 @@ function BlizzStyle.BlockInline(key, widget, dimAlpha)
         return false
     end
     widget:SetAlpha(dimAlpha or 0.3)
-    local blockData = CreateFrame("Frame", nil, widget)
-    blockData:SetAllPoints()
-    blockData:SetFrameLevel(widget:GetFrameLevel() + 10)
-    blockData:EnableMouse(true)
+    local block = CreateFrame("Frame", nil, widget)
+    block:SetAllPoints()
+    block:SetFrameLevel(widget:GetFrameLevel() + 10)
+    block:EnableMouse(true)
     local labelText = BlizzStyle.Label(key)
-    blockData:SetScript("OnEnter", function()
+    block:SetScript("OnEnter", function()
         CludesUI.ShowWidgetTooltip(widget, CludesUI.DisabledTooltip(labelText, "disabled"))
     end)
-    blockData:SetScript("OnLeave", function()
+    block:SetScript("OnLeave", function()
         CludesUI.HideWidgetTooltip()
     end)
     return true
@@ -1340,16 +1340,16 @@ function BlizzStyle.Note(hostFrame, posY, key)
         return posY - ROW_H
     end
     local Pix = CludesUI.PanelPP
-    local rowFrame = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(rowFrame, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
-    rowFrame._skipRowDivider = true
-    CludesUI.RowBg(rowFrame, hostFrame)
+    local row = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    row._skipRowDivider = true
+    CludesUI.RowBg(row, hostFrame)
 
-    local labelFS = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1)
+    local labelFS = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
     labelFS:SetAlpha(0.6)
-    labelFS:SetPoint("LEFT", rowFrame, "LEFT", 20, 0)
-    labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", -160, 0)
+    labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
+    labelFS:SetPoint("RIGHT", row, "RIGHT", -160, 0)
     labelFS:SetJustifyH("LEFT")
     labelFS:SetWordWrap(false)
     labelFS:SetText(
@@ -1359,10 +1359,10 @@ function BlizzStyle.Note(hostFrame, posY, key)
         )
     )
 
-    local button = CreateFrame("Button", nil, rowFrame)
+    local button = CreateFrame("Button", nil, row)
     Pix.Size(button, 122, 26)
-    button:SetPoint("RIGHT", rowFrame, "RIGHT", -20, 0)
-    button:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+    button:SetPoint("RIGHT", row, "RIGHT", -20, 0)
+    button:SetFrameLevel(row:GetFrameLevel() + 2)
     CludesUI.MakeStyledButton(button, "Open Style", 11, CludesUI.WB_COLOURS, function()
         CludesUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE)
     end)
@@ -1449,36 +1449,36 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
     if hasHero and not CludesUI._prebuilding then
         local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local ACC = CludesUI.CLUDES_GREEN
-        local hostRegion = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(hostRegion, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
-        hostRegion:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
+        local host = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(host, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
+        host:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
 
-        local eyebrow = hostRegion:CreateFontString(nil, "OVERLAY")
+        local eyebrow = host:CreateFontString(nil, "OVERLAY")
         eyebrow:SetFont(FONT, 13, "")
         eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
-        Pix.Point(eyebrow, "TOP", hostRegion, "TOP", 0, -4)
+        Pix.Point(eyebrow, "TOP", host, "TOP", 0, -4)
         eyebrow:SetText(CludesUI.L("CHOOSE YOUR LOOK"))
 
-        local titleText = hostRegion:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT, 25, "")
-        titleText:SetTextColor(1, 1, 1, 1)
-        Pix.Point(titleText, "TOP", eyebrow, "BOTTOM", 0, -6)
-        titleText:SetText(CludesUI.L("Your UI, Restyled in Seconds"))
+        local title = host:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT, 25, "")
+        title:SetTextColor(1, 1, 1, 1)
+        Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
+        title:SetText(CludesUI.L("Your UI, Restyled in Seconds"))
 
-        local desc = hostRegion:CreateFontString(nil, "OVERLAY")
+        local desc = host:CreateFontString(nil, "OVERLAY")
         desc:SetFont(FONT, 14, "")
         desc:SetTextColor(1, 1, 1, 0.5)
         desc:SetWidth(620)
         desc:SetJustifyH("CENTER")
         desc:SetWordWrap(true)
-        Pix.Point(desc, "TOP", titleText, "BOTTOM", 0, -10)
+        Pix.Point(desc, "TOP", title, "BOTTOM", 0, -10)
         desc:SetText(
             CludesUI.L(
                 "Your setup and every CludesUI feature carry over; only the look changes. Apply a style to every module in one click, or set each module below. Changing a style reloads the UI."
             )
         )
 
-        local cards = CludesUI.BuildStyleCards(hostRegion, -CARDS_TOP, {
+        local cards = CludesUI.BuildStyleCards(host, -CARDS_TOP, {
             buttonText = "Apply to All",
             -- The card in use fades to half; its larger badge stays whole.
             inUseAlpha = 0.5,
@@ -1576,9 +1576,9 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                     end
                 end
                 local dropdown, ddRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    hostRegion,
+                    host,
                     handle.card:GetWidth(),
-                    hostRegion:GetFrameLevel() + 3,
+                    host:GetFrameLevel() + 3,
                     itemList,
                     function(key)
                         return PickOf(BY_KEY[key]) == styleKey
@@ -1599,10 +1599,10 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                 refreshers[#refreshers + 1] = ddRefresh
             end
 
-            applyBtn = CreateFrame("Button", nil, hostRegion)
-            applyBtn:SetFrameLevel(hostRegion:GetFrameLevel() + 3)
+            applyBtn = CreateFrame("Button", nil, host)
+            applyBtn:SetFrameLevel(host:GetFrameLevel() + 3)
             Pix.Size(applyBtn, BTN_W, BTN_H)
-            Pix.Point(applyBtn, "TOP", hostRegion, "TOP", 0, -BTN_TOP)
+            Pix.Point(applyBtn, "TOP", host, "TOP", 0, -BTN_TOP)
             CludesUI.MakeStyledButton(applyBtn, "Apply Styles", 16, CludesUI.WB_COLOURS, function()
                 local changes = {}
                 for idx = 1, #MODULES do
@@ -1616,7 +1616,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             end)
             RefreshPicks()
             CludesUI.RegisterWidgetRefresh(RefreshPicks)
-            hostRegion:HookScript("OnHide", function()
+            host:HookScript("OnHide", function()
                 if next(pending) then
                     wipe(pending)
                     RefreshPicks()

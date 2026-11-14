@@ -188,15 +188,15 @@ local function LayoutCastbarIcon(
     castBar._classicPct = framePct
     -- Callers pass the configured height: a holder on the Blizzard Style
     -- aura block reads back a secret rect, size included.
-    local sideName = iconH or bg:GetHeight()
-    if issecretvalue(sideName) then
+    local side = iconH or bg:GetHeight()
+    if issecretvalue(side) then
         return
     end
     local iconFrame = castBar._iconFrame
     offX, offY = offX or 0, offY or 0
     -- The style's own icon pass (ns.UF_BlizzCastIcon) re-lays the icon from
     -- these after the stock chrome is on.
-    castBar._icoInWidth, castBar._icoOnRight, castBar._icoSide = inWidth, onRight, sideName
+    castBar._icoInWidth, castBar._icoOnRight, castBar._icoSide = inWidth, onRight, side
     castBar._icoOffX, castBar._icoOffY, castBar._icoShown = offX, offY, iconShown
     if iconFrame and not portraitBd then
         iconFrame:ClearAllPoints()
@@ -219,7 +219,7 @@ local function LayoutCastbarIcon(
                 Pix.Point(iconFrame, "BOTTOMRIGHT", bg, "BOTTOMLEFT", offX, offY)
             end
         end
-        iconFrame:SetWidth(sideName)
+        iconFrame:SetWidth(side)
     end
     castBar:ClearAllPoints()
     if portraitBd then
@@ -229,9 +229,9 @@ local function LayoutCastbarIcon(
     elseif inWidth and onRight then
         -- Bar occupies the left of the footprint; icon takes the right edge.
         Pix.Point(castBar, "TOPLEFT", bg, "TOPLEFT", 0, 0)
-        Pix.Point(castBar, "BOTTOMRIGHT", bg, "BOTTOMRIGHT", -sideName, 0)
+        Pix.Point(castBar, "BOTTOMRIGHT", bg, "BOTTOMRIGHT", -side, 0)
     else
-        Pix.Point(castBar, "TOPLEFT", bg, "TOPLEFT", inWidth and sideName or 0, 0)
+        Pix.Point(castBar, "TOPLEFT", bg, "TOPLEFT", inWidth and side or 0, 0)
         Pix.Point(castBar, "BOTTOMRIGHT", bg, "BOTTOMRIGHT", 0, 0)
     end
 end
@@ -250,51 +250,51 @@ end
 -- own edgePx registration. Stands down under a stock style: stock = nil reads
 -- the session's latched style; the options preview (which shares this)
 -- passes its own and preview = true. On ns: the local cap.
-function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, glyph, preview)
+function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, icon, preview)
     if not castBar then
         return
     end
     if stock == nil then
         stock = mod.UF_Blizz()
     end
-    local hostRegion = castBar._cbBorder
+    local host = castBar._cbBorder
     if stock or not (s and s.castBorderCustom == true) then
         if castBar._cbHost then
             castBar._cbHost = nil
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
             -- The bar's own border back (the stock chrome keeps it hidden).
             if not stock then
                 Pix.ShowBorder(castBar)
             end
         end
-        mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview)
+        mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, icon, preview)
         return
     end
-    if not hostRegion then
+    if not host then
         -- Through the options frame pool: a real frame for a live bar, handed
         -- back by the pool on the options preview's next build.
-        hostRegion = POOL.CreateFrame("Frame", nil, castBar)
-        castBar._cbBorder = hostRegion
+        host = POOL.CreateFrame("Frame", nil, castBar)
+        castBar._cbBorder = host
     end
-    hostRegion:ClearAllPoints()
+    host:ClearAllPoints()
     if mod.UF_CastBorderWrapsIcon(unitToken, s) then
         -- The fill gives up the icon's width (the configured cast bar height,
         -- as LayoutCastbarIcon insets it): reach past the fill by that much on
         -- the icon's side. Anchored to the fill so the options preview uses
         -- the same rule.
-        local sideName = (unitToken == "player") and (s.playerCastbarHeight or 14) or (s.castbarHeight or 14)
+        local side = (unitToken == "player") and (s.playerCastbarHeight or 14) or (s.castbarHeight or 14)
         local onRight = CastIconOnRight(unitToken, s)
-        Pix.Point(hostRegion, "TOPLEFT", castBar, "TOPLEFT", onRight and 0 or -sideName, 0)
-        Pix.Point(hostRegion, "BOTTOMRIGHT", castBar, "BOTTOMRIGHT", onRight and sideName or 0, 0)
+        Pix.Point(host, "TOPLEFT", castBar, "TOPLEFT", onRight and 0 or -side, 0)
+        Pix.Point(host, "BOTTOMRIGHT", castBar, "BOTTOMRIGHT", onRight and side or 0, 0)
     else
-        hostRegion:SetAllPoints(castBar)
+        host:SetAllPoints(castBar)
     end
-    castBar._cbHost = hostRegion
+    castBar._cbHost = host
     Pix.HideBorder(castBar)
     -- Levelled before the apply: a textured style's backdrop takes the host's.
     if s.castBorderBehind then
-        hostRegion:SetFrameLevel(math.max(0, (castBar:GetParent() or castBar):GetFrameLevel() - 1))
+        host:SetFrameLevel(math.max(0, (castBar:GetParent() or castBar):GetFrameLevel() - 1))
     else
         -- Over the fill, shield and kick marker (bar +2), under the text overlay.
         local lvl = castBar:GetFrameLevel() + 3
@@ -302,15 +302,15 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, glyph, preview)
         if ovr and ovr ~= castBar then
             lvl = math.min(lvl, ovr:GetFrameLevel() - 1)
         end
-        hostRegion:SetFrameLevel(lvl)
+        host:SetFrameLevel(lvl)
     end
     local texture = s.castBorderStyle or "solid"
-    local dim = s.castBorderSize or 1
+    local size = s.castBorderSize or 1
     local c = s.castBorderColor
-    local px = CludesUI.BorderPx(s.castBorderSizePx, dim, texture)
+    local px = CludesUI.BorderPx(s.castBorderSizePx, size, texture)
     CludesUI.ApplyBorderStyle(
-        hostRegion,
-        dim,
+        host,
+        size,
         c and c.r or 0,
         c and c.g or 0,
         c and c.b or 0,
@@ -321,22 +321,22 @@ function mod.UF_ApplyCastBorder(castBar, s, stock, unitToken, glyph, preview)
         s.castBorderShiftX,
         s.castBorderShiftY,
         "unitframes",
-        dim,
+        size,
         nil,
         px
     )
-    castBar._cbSolid = (texture == "solid" or texture == "") and dim > 0
-    castBar._cbSize = px or dim
-    mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview)
+    castBar._cbSolid = (texture == "solid" or texture == "") and size > 0
+    castBar._cbSize = px or size
+    mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, icon, preview)
 end
 
 -- Cast icon decoration, shared by live frames and the options preview. New
 -- resources are built only on opt-in, during the existing settings pass.
 -- preview = the options preview's bar: its divider is never registered for
 -- the UI-scale re-layout (the preview re-lays it on every update).
-function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview)
-    glyph = glyph or castBar._iconFrame
-    if not glyph then
+function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, icon, preview)
+    icon = icon or castBar._iconFrame
+    if not icon then
         return
     end
     local isShown = CastIconShown(unitToken, s)
@@ -346,27 +346,27 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview
     local offX, offY = CastIconOffsets(unitToken, s)
     local custom = s and s.castBorderCustom == true
     local styled = not stock and isShown and not portrait and s and s.castIconBorder == true
-    local hostRegion = glyph._castBorder
+    local host = icon._castBorder
     local texture = custom and (s.castBorderStyle or "solid") or "solid"
-    local dim = custom and (s.castBorderSize or 1) or 1
+    local size = custom and (s.castBorderSize or 1) or 1
     local c = custom and s.castBorderColor
     local alpha = custom and (s.castBorderAlpha or 1) or 1
-    local px = custom and CludesUI.BorderPx(s.castBorderSizePx, dim, texture) or nil
+    local px = custom and CludesUI.BorderPx(s.castBorderSizePx, size, texture) or nil
     if styled then
-        if not hostRegion then
+        if not host then
             -- Options frame pool: a real frame for a live bar (as above).
-            hostRegion = POOL.CreateFrame("Frame", nil, glyph)
-            hostRegion:SetAllPoints(glyph)
-            glyph._castBorder = hostRegion
+            host = POOL.CreateFrame("Frame", nil, icon)
+            host:SetAllPoints(icon)
+            icon._castBorder = host
         end
-        hostRegion:SetFrameLevel(
-            custom and s.castBorderBehind and math.max(0, glyph:GetFrameLevel() - 1)
-                or glyph:GetFrameLevel() + 1
+        host:SetFrameLevel(
+            custom and s.castBorderBehind and math.max(0, icon:GetFrameLevel() - 1)
+                or icon:GetFrameLevel() + 1
         )
-        Pix.HideBorder(glyph)
+        Pix.HideBorder(icon)
         CludesUI.ApplyBorderStyle(
-            hostRegion,
-            dim,
+            host,
+            size,
             c and c.r or 0,
             c and c.g or 0,
             c and c.b or 0,
@@ -377,15 +377,15 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview
             custom and s.castBorderShiftX or nil,
             custom and s.castBorderShiftY or nil,
             "unitframes",
-            dim,
+            size,
             nil,
             px
         )
-    elseif hostRegion then
-        CludesUI.HideBorderStyle(hostRegion)
-        hostRegion:Hide()
+    elseif host then
+        CludesUI.HideBorderStyle(host)
+        host:Hide()
         if not stock and not portrait then
-            Pix.ShowBorder(glyph)
+            Pix.ShowBorder(icon)
         end
     end
 
@@ -397,24 +397,24 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview
     -- outside edge of both: it keeps every side and the icon drops its facing
     -- one.
     if not stock then
-        local iconEdges = Pix.GetBorders(glyph)
-        local barFrame = castBar._cbHost or castBar
-        local barEdges = Pix.GetBorders(barFrame)
-        local barDrawn = barEdges and (barFrame == castBar or castBar._cbSolid)
+        local iconEdges = Pix.GetBorders(icon)
+        local bar = castBar._cbHost or castBar
+        local barEdges = Pix.GetBorders(bar)
+        local barDrawn = barEdges and (bar == castBar or castBar._cbSolid)
         local share = isShown and not portrait and offX == 0 and offY == 0 and not styled
         local outer = castBar._cbHost and mod.UF_CastBorderWrapsIcon(unitToken, s)
         if iconEdges then
             local hide = share and (barDrawn or outer)
             iconEdges._hideLeft = hide and onRight or nil
             iconEdges._hideRight = hide and not onRight or nil
-            Pix.SetBorderSize(glyph, 1)
+            Pix.SetBorderSize(icon, 1)
         end
         if barEdges then
             local hide = share and barDrawn and not outer
             barEdges._hideLeft = hide and not onRight or nil
             barEdges._hideRight = hide and onRight or nil
             if barDrawn then
-                Pix.SetBorderSize(barFrame, barFrame == castBar and 1 or castBar._cbSize)
+                Pix.SetBorderSize(bar, bar == castBar and 1 or castBar._cbSize)
             end
         end
     end
@@ -447,7 +447,7 @@ function mod.UF_ApplyCastIconBorder(castBar, s, stock, unitToken, glyph, preview
     -- Above the cast border, including Solid's child at border level +1.
     local borderFrame = castBar._cbHost or castBar
     seam:SetFrameLevel(math.max(castBar:GetFrameLevel(), borderFrame:GetFrameLevel()) + 2)
-    seam._key, seam._size, seam._px, seam._right = texture, dim, px, onRight
+    seam._key, seam._size, seam._px, seam._right = texture, size, px, onRight
     seam._path = CludesUI.GetBorderCompanion(texture, "sepV")
     seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, alpha)
     mod.UF_LayoutCastIconSeam(seam)
@@ -495,17 +495,17 @@ function mod.UF_CastBorderPad(unitToken, s)
         return nil
     end
     local texture = s.castBorderStyle or "solid"
-    local dim = s.castBorderSize or 1
+    local size = s.castBorderSize or 1
     local l, r, t, b = CludesUI.BorderReach(
-        dim,
+        size,
         texture,
         s.castBorderOffsetX,
         s.castBorderOffsetY,
         s.castBorderShiftX,
         s.castBorderShiftY,
         "unitframes",
-        dim,
-        CludesUI.BorderPx(s.castBorderSizePx, dim, texture),
+        size,
+        CludesUI.BorderPx(s.castBorderSizePx, size, texture),
         nil,
         s.castBorderAlpha or 1
     )
@@ -650,20 +650,20 @@ function mod.UF_CastIconPortraitLayout(ico, texture, edge, s)
         local band = s.detachedPortraitBorderSize or 7
         local inset = (band >= 1) and 1 or 0
         if band >= 1 and mod.PORTRAIT_BORDERS[shape] then
-            local Widgets = edge:GetWidth()
-            if Widgets < 1 then
-                Widgets = 46
+            local W = edge:GetWidth()
+            if W < 1 then
+                W = 46
             end
             local exp = 7 - band
             local unmasked = mod.UF_UNMASKED_RING[shape]
             local inner
             if unmasked then
                 local ri = unmasked - exp
-                inner = ri + 9 / 128 * (Widgets - 2 * ri)
+                inner = ri + 9 / 128 * (W - 2 * ri)
             else
-                inner = -exp + (mod.MASK_INSETS[shape] or 17) / 128 * (Widgets + 2 * exp)
+                inner = -exp + (mod.MASK_INSETS[shape] or 17) / 128 * (W + 2 * exp)
             end
-            local need = (inner - 12 / 128 * Widgets) * 128 / 104
+            local need = (inner - 12 / 128 * W) * 128 / 104
             if need > inset then
                 inset = need
             end
@@ -1273,14 +1273,14 @@ local function CreateCastBar(widget, unitToken, prefs)
     time:SetTextColor(1, 1, 1)
     castBar.Time = time
 
-    local targetUnit = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetFSFont(targetUnit, prefs.castSpellTargetSize or 11)
-    targetUnit:SetJustifyH("RIGHT")
-    targetUnit:SetWordWrap(false)
-    targetUnit:SetMaxLines(1)
-    targetUnit:SetTextColor(1, 1, 1)
-    targetUnit:Hide()
-    castBar.Target = targetUnit
+    local target = textOverlay:CreateFontString(nil, "OVERLAY")
+    SetFSFont(target, prefs.castSpellTargetSize or 11)
+    target:SetJustifyH("RIGHT")
+    target:SetWordWrap(false)
+    target:SetMaxLines(1)
+    target:SetTextColor(1, 1, 1)
+    target:Hide()
+    castBar.Target = target
 
     -- Side-aware three-zone layout (mirrors the nameplate cast text system). Each
     -- element has a side; duration reserves its slot and pushes whichever non-center
@@ -1892,22 +1892,22 @@ local function SetupShowOnCastBar(widget, unitToken)
         local elementSize = isHoriz and element:GetWidth() or element:GetHeight()
         local lastOffset = 0
         for stage, stageSection in next, stages do
-            local offset = lastOffset + (elementSize * stageSection)
-            lastOffset = offset
-            local pipTex = element.Pips[stage]
-            if not pipTex then
-                pipTex = (element.CreatePip or function(e)
+            local off = lastOffset + (elementSize * stageSection)
+            lastOffset = off
+            local pip = element.Pips[stage]
+            if not pip then
+                pip = (element.CreatePip or function(e)
                     return CreateFrame("Frame", nil, e, "CastingBarFrameStagePipTemplate")
                 end)(element, stage)
-                element.Pips[stage] = pipTex
+                element.Pips[stage] = pip
             end
-            pipTex:ClearAllPoints()
+            pip:ClearAllPoints()
             if isHoriz then
-                pipTex:SetPoint("CENTER", element, "LEFT", offset, 0)
+                pip:SetPoint("CENTER", element, "LEFT", off, 0)
             else
-                pipTex:SetPoint("CENTER", element, "BOTTOM", 0, offset)
+                pip:SetPoint("CENTER", element, "BOTTOM", 0, off)
             end
-            pipTex:Show()
+            pip:Show()
         end
         for idx = #stages + 1, #element.Pips do
             element.Pips[idx]:Hide()

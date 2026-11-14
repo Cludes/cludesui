@@ -59,39 +59,39 @@ local function TargetFor(bossName)
     end
 end
 
-local barFrame, marker, labelText, curve
+local bar, marker, labelText, curve
 local fight -- { start, target, name }
 
 local function Build()
-    if barFrame then
+    if bar then
         return
     end
-    barFrame = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
-    barFrame:SetSize(260, 22)
-    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    barFrame:SetMinMaxValues(0, 100)
-    CludesUI.Kit.Panel(barFrame, 0.85)
-    marker = barFrame:CreateTexture(nil, "OVERLAY")
+    bar = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
+    bar:SetSize(260, 22)
+    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    bar:SetMinMaxValues(0, 100)
+    CludesUI.Kit.Panel(bar, 0.85)
+    marker = bar:CreateTexture(nil, "OVERLAY")
     marker:SetColorTexture(1, 1, 1, 0.95)
     marker:SetSize(2, 26)
-    labelText = barFrame:CreateFontString(nil, "OVERLAY")
+    labelText = bar:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(labelText, 13, nil)
-    labelText:SetPoint("BOTTOM", barFrame, "TOP", 0, 3)
+    labelText:SetPoint("BOTTOM", bar, "TOP", 0, 3)
     curve = C_CurveUtil.CreateColorCurve()
-    barFrame:Hide()
+    bar:Hide()
     mod.ApplyPacePosition()
 end
 
 function mod.ApplyPacePosition()
-    if not barFrame or InCombatLockdown() then
+    if not bar or InCombatLockdown() then
         return
     end
     local p = mod.PaceSettings().pos
-    barFrame:ClearAllPoints()
+    bar:ClearAllPoints()
     if p then
-        barFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        bar:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        barFrame:SetPoint("TOP", UIParent, "TOP", 0, -90)
+        bar:SetPoint("TOP", UIParent, "TOP", 0, -90)
     end
 end
 
@@ -111,16 +111,14 @@ local function Update()
     curve:AddPoint(1, GREEN)
     local unitToken = UnitExists("boss1") and "boss1" or nil
     if unitToken then
-        barFrame:SetValue(
-            UnitHealthPercent(unitToken, true, CurveConstants and CurveConstants.ScaleTo100) or 0
-        )
+        bar:SetValue(UnitHealthPercent(unitToken, true, CurveConstants and CurveConstants.ScaleTo100) or 0)
         local colour = UnitHealthPercent(unitToken, true, curve)
         if colour and colour.GetRGB then
-            barFrame:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
+            bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
         end
     end
     marker:ClearAllPoints()
-    marker:SetPoint("CENTER", barFrame, "LEFT", barFrame:GetWidth() * expected / 100, 0)
+    marker:SetPoint("CENTER", bar, "LEFT", bar:GetWidth() * expected / 100, 0)
     labelText:SetText(
         ("%s  |cff9aa6b2pace %d%%  %s / %s|r"):format(
             fight.name,
@@ -139,19 +137,19 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if barFrame then
-        barFrame:Hide()
+    if bar then
+        bar:Hide()
     end
 end
 
 --- Starts the bar for a boss with a target kill time, as at a pull.
 function mod.StartPace(name, seconds)
     Build()
-    if not (barFrame and seconds and seconds > 0) then
+    if not (bar and seconds and seconds > 0) then
         return
     end
     fight = { start = GetTime(), target = seconds, name = name }
-    barFrame:Show()
+    bar:Show()
     if ticker then
         ticker:Cancel()
     end
@@ -186,7 +184,7 @@ ev:SetScript("OnEvent", function(_, evt, _, encounterName)
                     return not mod.PaceSettings().enabled
                 end,
                 getFrame = function()
-                    return barFrame
+                    return bar
                 end,
                 getSize = function()
                     return 260, 22
@@ -211,8 +209,8 @@ ev:SetScript("OnEvent", function(_, evt, _, encounterName)
     if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
         return
     end
-    local targetUnit = TargetFor(encounterName)
-    if targetUnit then
-        mod.StartPace(encounterName, targetUnit)
+    local target = TargetFor(encounterName)
+    if target then
+        mod.StartPace(encounterName, target)
     end
 end)

@@ -187,8 +187,8 @@ local function CollectAndReanchor()
     for k, entries in pairs(barLists) do
         ReleaseEntries(entries)
     end
-    for k, subFrame in pairs(seenSpell) do
-        wipe(subFrame)
+    for k, sub in pairs(seenSpell) do
+        wipe(sub)
     end
 
     -- CD/utility bars: simple frame lists keyed by barKey
@@ -538,16 +538,12 @@ local function CollectAndReanchor()
                                             -- dedup stay keyed on realSID/phIdent.
                                             local dispSID = ResolvePlaceholderIconSID(realSID, dedupKey)
                                             local _GetTex = C_Spell and C_Spell.GetSpellTexture
-                                            local glyph = _GetTex and _GetTex(dispSID)
-                                            if not glyph and _GetTex and dispSID ~= realSID then
-                                                glyph = _GetTex(realSID)
+                                            local icon = _GetTex and _GetTex(dispSID)
+                                            if not icon and _GetTex and dispSID ~= realSID then
+                                                icon = _GetTex(realSID)
                                             end
-                                            local ph = GetOrCreatePlaceholderFrame(
-                                                targetBar,
-                                                dispSID,
-                                                glyph,
-                                                phIdent
-                                            )
+                                            local ph =
+                                                GetOrCreatePlaceholderFrame(targetBar, dispSID, icon, phIdent)
                                             -- Per-spell missing-visibility mark (our own
                                             -- frame): "hidden" renders alpha-0 via the
                                             -- opacity passes while the slot stays
@@ -822,10 +818,10 @@ local function CollectAndReanchor()
                                 -- alpha-0 it (Keep in Same Place) automatically. Keyed
                                 -- "s"..sid by the sort -- the same key the active preset
                                 -- frame uses -- so it holds its slot across proc/expire.
-                                local glyph = C_Spell
+                                local icon = C_Spell
                                     and C_Spell.GetSpellTexture
                                     and C_Spell.GetSpellTexture(spellRef)
-                                local ph = GetOrCreatePlaceholderFrame(injKey, spellRef, glyph)
+                                local ph = GetOrCreatePlaceholderFrame(injKey, spellRef, icon)
                                 -- A preset is never a viewer-tracked spell, so it must
                                 -- key by "s"..sid. Clear any cooldownID a shared pooled
                                 -- frame might carry from the Blizzard Always-Show path so
@@ -1041,14 +1037,14 @@ local function CollectAndReanchor()
                                             end
                                         end
                                         if C_Spell and C_Spell.GetBaseSpell then
-                                            local baseValue = C_Spell.GetBaseSpell(spellRef)
+                                            local base = C_Spell.GetBaseSpell(spellRef)
                                             if
-                                                baseValue
-                                                and baseValue > 0
-                                                and baseValue ~= spellRef
-                                                and not buffOrder[baseValue]
+                                                base
+                                                and base > 0
+                                                and base ~= spellRef
+                                                and not buffOrder[base]
                                             then
-                                                buffOrder[baseValue] = oidx
+                                                buffOrder[base] = oidx
                                             end
                                         end
                                     end
@@ -1189,14 +1185,14 @@ local function CollectAndReanchor()
                 -- force-restores buff frames, so it stayed blank until the next
                 -- buff event. Mirrors the Phase 3 excess-clear guard.
                 for i = count + 1, #icons do
-                    local glyph = icons[i]
-                    if glyph and not usedFrames[glyph] then
-                        local efd = hookFrameData[glyph]
+                    local icon = icons[i]
+                    if icon and not usedFrames[icon] then
+                        local efd = hookFrameData[icon]
                         if efd then
                             efd._cdmAnchor = nil
                         end
-                        if glyph.Cooldown and glyph.Cooldown.SetDrawSwipe then
-                            glyph.Cooldown:SetDrawSwipe(false)
+                        if icon.Cooldown and icon.Cooldown.SetDrawSwipe then
+                            icon.Cooldown:SetDrawSwipe(false)
                         end
                     end
                     icons[i] = nil
@@ -1481,14 +1477,14 @@ local function CollectAndReanchor()
                                                 end
                                             end
                                             if C_Spell and C_Spell.GetBaseSpell then
-                                                local baseValue = C_Spell.GetBaseSpell(spellRef)
+                                                local base = C_Spell.GetBaseSpell(spellRef)
                                                 if
-                                                    baseValue
-                                                    and baseValue > 0
-                                                    and baseValue ~= spellRef
-                                                    and not spellOrder[baseValue]
+                                                    base
+                                                    and base > 0
+                                                    and base ~= spellRef
+                                                    and not spellOrder[base]
                                                 then
-                                                    spellOrder[baseValue] = position
+                                                    spellOrder[base] = position
                                                 end
                                             end
                                         end
@@ -1511,9 +1507,9 @@ local function CollectAndReanchor()
                     -- item is unequipped from that slot.
                     local slotEquippedItems
                     for _, spellRef in ipairs(spellList) do
-                        local slotIndex = spellRef and mod.SlotIDFromKey(spellRef)
-                        if slotIndex then
-                            local eqItemID = GetInventoryItemID("player", slotIndex)
+                        local slot = spellRef and mod.SlotIDFromKey(spellRef)
+                        if slot then
+                            local eqItemID = GetInventoryItemID("player", slot)
                             if eqItemID then
                                 slotEquippedItems = slotEquippedItems or {}
                                 slotEquippedItems[eqItemID] = true
@@ -1551,14 +1547,12 @@ local function CollectAndReanchor()
                                 and mod.CDM_AuraIconForBuff
                             then
                                 local ovr = _FindOverride and _FindOverride(hSid)
-                                local baseValue = C_Spell
-                                    and C_Spell.GetBaseSpell
-                                    and C_Spell.GetBaseSpell(hSid)
+                                local base = C_Spell and C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(hSid)
                                 local claimed = false
                                 for fi = 1, #frameList do
                                     local hfc = _ecmeFC[frameList[fi]]
                                     local hs = hfc and hfc.isHostedBuff and hfc.spellID
-                                    if hs and (hs == hSid or hs == ovr or hs == baseValue) then
+                                    if hs and (hs == hSid or hs == ovr or hs == base) then
                                         claimed = true
                                         break
                                     end
@@ -1586,32 +1580,32 @@ local function CollectAndReanchor()
                             end
                         elseif spellRef and mod.SlotIDFromKey(spellRef) then
                             -- Equipment slot (trinkets -13/-14, user-added slots)
-                            local slotIndex = mod.SlotIDFromKey(spellRef)
-                            local tf = _trinketFrames[slotIndex]
+                            local slot = mod.SlotIDFromKey(spellRef)
+                            local tf = _trinketFrames[slot]
                             if not tf then
-                                tf = GetOrCreateTrinketFrame(slotIndex)
+                                tf = GetOrCreateTrinketFrame(slot)
                             end
                             -- Re-decorate (icon, use spell, tooltip scan) only when the
                             -- equipped item changed or an earlier scan was inconclusive;
                             -- a plain re-anchor keeps the decoration and only drops the
                             -- cooldown push memo so the next event re-derives desaturation.
-                            local itemId = GetInventoryItemID("player", slotIndex)
+                            local itemId = GetInventoryItemID("player", slot)
                             if
-                                itemId ~= _trinketItemCache[slotIndex]
+                                itemId ~= _trinketItemCache[slot]
                                 or (itemId and tf._trinketIsOnUse == nil)
                                 or tf._slotScanPending
                             then
-                                UpdateTrinketFrame(slotIndex)
+                                UpdateTrinketFrame(slot)
                             else
                                 tf._cdMemoStart, tf._cdMemoDur = nil, nil
                             end
                             -- Show Passive Trinkets covers the trinket slots only;
                             -- user-added slots auto-hide without a use effect.
-                            local showPassive = (slotIndex == 13 or slotIndex == 14)
+                            local showPassive = (slot == 13 or slot == 14)
                                 and barInfo
                                 and barInfo.showPassiveTrinkets
-                            if _trinketItemCache[slotIndex] and (tf._trinketIsOnUse or showPassive) then
-                                UpdateTrinketCooldown(slotIndex)
+                            if _trinketItemCache[slot] and (tf._trinketIsOnUse or showPassive) then
+                                UpdateTrinketCooldown(slot)
                                 frameList[#frameList + 1] = tf
                                 local fc = FC(tf)
                                 fc.barKey = barId
@@ -1716,8 +1710,8 @@ local function CollectAndReanchor()
                                 end
                             end
                             if not hasClaim and C_Spell and C_Spell.GetBaseSpell then
-                                local baseValue = C_Spell.GetBaseSpell(spellRef)
-                                if baseValue and baseValue > 0 and _globalClaimSet[baseValue] then
+                                local base = C_Spell.GetBaseSpell(spellRef)
+                                if base and base > 0 and _globalClaimSet[base] then
                                     hasClaim = true
                                 end
                             end
@@ -1911,9 +1905,9 @@ local function CollectAndReanchor()
                         end
                     end
                     if not key and spellRef and spellRef > 0 and C_Spell and C_Spell.GetBaseSpell then
-                        local baseValue = C_Spell.GetBaseSpell(spellRef)
-                        if baseValue and baseValue > 0 and baseValue ~= spellRef then
-                            key = map[baseValue]
+                        local base = C_Spell.GetBaseSpell(spellRef)
+                        if base and base > 0 and base ~= spellRef then
+                            key = map[base]
                         end
                     end
                     if not key and fc and fc.resolvedSid then

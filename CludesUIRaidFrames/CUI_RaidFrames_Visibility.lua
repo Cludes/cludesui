@@ -442,9 +442,9 @@ mod._RFSyncVisDrivers = function()
     end
     local s = saved.profile
     local M = mod._RF_VIS_MACROS
-    local modeName = (mod._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
-    local r = M.raid[modeName][s.showWhenSolo and true or false]
-    local p = M.party[modeName][s.partyShowWhenSolo and true or false]
+    local mode = (mod._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
+    local r = M.raid[mode][s.showWhenSolo and true or false]
+    local p = M.party[mode][s.partyShowWhenSolo and true or false]
     if mod._rfRaidVisMacro ~= r then
         RegisterStateDriver(containerFrame, "visibility", r)
         mod._rfRaidVisMacro = r

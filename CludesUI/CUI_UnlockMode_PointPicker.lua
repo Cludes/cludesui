@@ -71,11 +71,11 @@ mod.unlockParts.PointPicker = function(LM)
         return false
     end
 
-    local function CanLink(source, targetUnit)
-        if not Eligible(source, true) or not Eligible(targetUnit, false) then
+    local function CanLink(source, target)
+        if not Eligible(source, true) or not Eligible(target, false) then
             return false
         end
-        local childKey, targetKey = source._barKey, targetUnit._barKey
+        local childKey, targetKey = source._barKey, target._barKey
         local childFrame = LM.GetBarFrame(childKey)
         if childKey == targetKey or FrameDependsOn(LM.GetBarFrame(targetKey), childFrame, {}, 0) then
             return false
@@ -107,28 +107,28 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function UpdateDot(btnFrame, animate)
-        local dim = (btnFrame.hovered or btnFrame.selected) and btnFrame.hoverSize or btnFrame.idleSize
+        local size = (btnFrame.hovered or btnFrame.selected) and btnFrame.hoverSize or btnFrame.idleSize
         local current = btnFrame.art:GetWidth()
         if animate and btnFrame.animation:IsPlaying() then
             local progress = btnFrame.scaleAnimation:GetSmoothProgress()
             current = btnFrame.fromSize + (btnFrame.toSize - btnFrame.fromSize) * progress
         end
         btnFrame.animation:Stop()
-        visuals.SizeDot(btnFrame.art, dim)
+        visuals.SizeDot(btnFrame.art, size)
         visuals.ColorDot(btnFrame.art, (btnFrame.hovered or btnFrame.selected) and 1 or 0.8)
-        if animate and math.abs(current - dim) > 0.01 then
-            btnFrame.fromSize, btnFrame.toSize = current, dim
-            btnFrame.scaleAnimation:SetScaleFrom(current / dim, current / dim)
+        if animate and math.abs(current - size) > 0.01 then
+            btnFrame.fromSize, btnFrame.toSize = current, size
+            btnFrame.scaleAnimation:SetScaleFrom(current / size, current / size)
             btnFrame.animation:Play()
         end
     end
 
-    local function Choose(group, anchorPoint)
+    local function Choose(set, anchorPoint)
         if not LM.isUnlocked or InCombatLockdown() or not Enabled() then
             return
         end
         local source = LM.pickModeMover
-        if group == sourceSet and LM.pickMode == "anchorTo" then
+        if set == sourceSet and LM.pickMode == "anchorTo" then
             if not Eligible(source, true) then
                 LM.CancelPickMode()
                 return
@@ -146,18 +146,15 @@ mod.unlockParts.PointPicker = function(LM)
             end
             return
         end
-        if group ~= targetSet or LM.pickMode ~= "pointAnchor" or not sourcePoint then
+        if set ~= targetSet or LM.pickMode ~= "pointAnchor" or not sourcePoint then
             return
         end
-        local targetUnit = group.mover
-        if not CanLink(source, targetUnit) then
-            Reject(
-                targetUnit,
-                CludesUI.L("This point anchor is unavailable or would create a circular anchor")
-            )
+        local target = set.mover
+        if not CanLink(source, target) then
+            Reject(target, CludesUI.L("This point anchor is unavailable or would create a circular anchor"))
             return
         end
-        local childKey, targetKey = source._barKey, targetUnit._barKey
+        local childKey, targetKey = source._barKey, target._barKey
         local details = {
             mode = "POINT",
             target = targetKey,
@@ -167,7 +164,7 @@ mod.unlockParts.PointPicker = function(LM)
             offsetY = 0,
         }
         if not PA.Center(childKey, LM.GetBarFrame(childKey), details, LM.GetBarFrame(targetKey)) then
-            Reject(targetUnit, CludesUI.L("This element's position is not available yet"))
+            Reject(target, CludesUI.L("This element's position is not available yet"))
             return
         end
         LM.CancelPickMode()
@@ -189,12 +186,12 @@ mod.unlockParts.PointPicker = function(LM)
         end)
     end
 
-    local function Layout(group)
-        local wid, hgt = group:GetSize()
-        local px = LM.PP.perfect / group:GetEffectiveScale()
+    local function Layout(set)
+        local wid, hgt = set:GetSize()
+        local px = LM.PP.perfect / set:GetEffectiveScale()
         local hit = math.max(px, math.min(12 * px, wid / 3, hgt / 3))
         local idle, hover = math.min(visuals.idleSize * px, hit), visuals.hoverSize * px
-        for _, btnFrame in ipairs(group.buttons) do
+        for _, btnFrame in ipairs(set.buttons) do
             btnFrame:SetSize(hit, hit)
             if btnFrame.idleSize ~= idle or btnFrame.hoverSize ~= hover then
                 btnFrame.idleSize, btnFrame.hoverSize = idle, hover
@@ -204,9 +201,9 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function CreateSet()
-        local group = CreateFrame("Frame", nil, LM.unlockFrame)
-        group:EnableMouse(false)
-        group.buttons = {}
+        local set = CreateFrame("Frame", nil, LM.unlockFrame)
+        set:EnableMouse(false)
+        set.buttons = {}
         local labels = {
             TOPLEFT = CludesUI.L("Top Left"),
             TOP = CludesUI.L("Top"),
@@ -219,7 +216,7 @@ mod.unlockParts.PointPicker = function(LM)
             BOTTOMRIGHT = CludesUI.L("Bottom Right"),
         }
         for _, anchorPoint in ipairs(PA.order) do
-            local btnFrame = CreateFrame("Button", nil, group)
+            local btnFrame = CreateFrame("Button", nil, set)
             btnFrame.point = anchorPoint
             btnFrame.idleSize, btnFrame.hoverSize = visuals.idleSize, visuals.hoverSize
             btnFrame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -237,30 +234,30 @@ mod.unlockParts.PointPicker = function(LM)
             btnFrame.scaleAnimation:SetScaleTo(1, 1)
             btnFrame:SetScript("OnEnter", function()
                 btnFrame.hovered = true
-                group.mover._pointHandleHovered = btnFrame
+                set.mover._pointHandleHovered = btnFrame
                 UpdateDot(btnFrame, true)
                 CludesUI.ShowWidgetTooltip(btnFrame, labels[anchorPoint])
             end)
             btnFrame:SetScript("OnLeave", function()
                 btnFrame.hovered = nil
-                if group.mover._pointHandleHovered == btnFrame then
-                    group.mover._pointHandleHovered = nil
+                if set.mover._pointHandleHovered == btnFrame then
+                    set.mover._pointHandleHovered = nil
                 end
                 UpdateDot(btnFrame, true)
                 CludesUI.HideWidgetTooltip()
-                local leave = group.mover:GetScript("OnLeave")
+                local leave = set.mover:GetScript("OnLeave")
                 if leave then
-                    leave(group.mover)
+                    leave(set.mover)
                 else
-                    picker.Leave(group.mover)
+                    picker.Leave(set.mover)
                 end
             end)
             btnFrame:SetScript("OnHide", function()
                 if btnFrame.hovered then
                     CludesUI.HideWidgetTooltip()
                 end
-                if group.mover and group.mover._pointHandleHovered == btnFrame then
-                    group.mover._pointHandleHovered = nil
+                if set.mover and set.mover._pointHandleHovered == btnFrame then
+                    set.mover._pointHandleHovered = nil
                 end
                 btnFrame.hovered, btnFrame.selected = nil, nil
                 UpdateDot(btnFrame, false)
@@ -270,38 +267,38 @@ mod.unlockParts.PointPicker = function(LM)
                 if mouse == "RightButton" then
                     LM.CancelPickMode()
                 else
-                    Choose(group, anchorPoint)
+                    Choose(set, anchorPoint)
                 end
             end)
-            group.buttons[#group.buttons + 1] = btnFrame
+            set.buttons[#set.buttons + 1] = btnFrame
         end
-        group:SetScript("OnSizeChanged", Layout)
-        return group
+        set:SetScript("OnSizeChanged", Layout)
+        return set
     end
 
-    local function Show(group, mover)
-        if group.mover ~= mover then
-            group:Hide()
+    local function Show(set, mover)
+        if set.mover ~= mover then
+            set:Hide()
         end
-        group.mover = mover
-        group:SetParent(mover)
-        visuals.RaiseAboveMover(group, mover)
-        group:ClearAllPoints()
-        group:SetAllPoints(mover)
-        Layout(group)
-        for _, btnFrame in ipairs(group.buttons) do
+        set.mover = mover
+        set:SetParent(mover)
+        visuals.RaiseAboveMover(set, mover)
+        set:ClearAllPoints()
+        set:SetAllPoints(mover)
+        Layout(set)
+        for _, btnFrame in ipairs(set.buttons) do
             -- Bind after the pooled set has bounds, avoiding unresolved corner handles.
             btnFrame:ClearAllPoints()
-            btnFrame:SetPoint("CENTER", group, btnFrame.point, 0, 0)
-            local selected = group == sourceSet and btnFrame.point == sourcePoint
+            btnFrame:SetPoint("CENTER", set, btnFrame.point, 0, 0)
+            local selected = set == sourceSet and btnFrame.point == sourcePoint
             if btnFrame.selected ~= selected then
                 btnFrame.selected = selected
                 UpdateDot(btnFrame, false)
             end
-            btnFrame:SetShown(group ~= sourceSet or not sourcePoint or btnFrame.point == sourcePoint)
-            btnFrame:EnableMouse(group ~= sourceSet or not sourcePoint)
+            btnFrame:SetShown(set ~= sourceSet or not sourcePoint or btnFrame.point == sourcePoint)
+            btnFrame:EnableMouse(set ~= sourceSet or not sourcePoint)
         end
-        group:Show()
+        set:Show()
     end
 
     function picker.Point(mover, anchorPoint)

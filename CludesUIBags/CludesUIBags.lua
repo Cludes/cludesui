@@ -61,12 +61,12 @@ local IsEquippableItem = C_Item.IsEquippableItem
 -- GetItemByID shows the unscaled base item's level (reads red). Prefer bag slot > link > ID; cache by link, wipe on level-up.
 local _canUseCache = {}
 local ITEM_CLASS_RECIPE = Enum.ItemClass.Recipe
-local function BagsItemUnusable(bagID, slotIndex, itemLink, itemId)
-    local itemInfo = itemLink or itemId
-    if not itemInfo then
+local function BagsItemUnusable(bagID, slot, itemLink, itemId)
+    local item = itemLink or itemId
+    if not item then
         return false
     end
-    local cached = _canUseCache[itemInfo]
+    local cached = _canUseCache[item]
     if cached ~= nil then
         return cached
     end
@@ -76,43 +76,43 @@ local function BagsItemUnusable(bagID, slotIndex, itemLink, itemId)
     -- below. Skip that: the scan can see red from the crafted item's own preview
     -- stats, not just from the recipe's learn requirements. Use the usable check
     -- instead, which reflects skill/known state directly.
-    local _, _, _, _, _, classID = GetItemInfoInstant(itemInfo)
+    local _, _, _, _, _, classID = GetItemInfoInstant(item)
     if classID == ITEM_CLASS_RECIPE then
-        local usable = C_Item.IsUsableItem(itemInfo)
+        local usable = C_Item.IsUsableItem(item)
         unusable = not usable
-        _canUseCache[itemInfo] = unusable
+        _canUseCache[item] = unusable
         return unusable
     end
 
-    if IsEquippableItem(itemInfo) or C_Item.GetItemSpell(itemInfo) then
+    if IsEquippableItem(item) or C_Item.GetItemSpell(item) then
         -- Only use a tooltip from the real bag slot or real item link; both carry
         -- bonus IDs, which set the item's true required level. A bare itemID lacks
         -- those and can read the wrong level requirement either way.
         local tipText, reliable
-        if bagID and slotIndex then
-            tipText = C_TooltipInfo.GetBagItem(bagID, slotIndex)
+        if bagID and slot then
+            tipText = C_TooltipInfo.GetBagItem(bagID, slot)
             reliable = true
         elseif itemLink then
             tipText = C_TooltipInfo.GetHyperlink(itemLink)
             reliable = true
         end
         if tipText and tipText.lines then
-            for _, rowFrame in ipairs(tipText.lines) do
-                local lc = rowFrame.leftColor
+            for _, row in ipairs(tipText.lines) do
+                local lc = row.leftColor
                 -- Tolerance, not exact equality: rounding can put red just under r=1.
                 if
                     lc
                     and lc.r > 0.9
                     and lc.g < 0.2
                     and lc.b < 0.2
-                    and rowFrame.leftText ~= ITEM_SCRAPABLE_NOT
-                    and rowFrame.leftText ~= CANNOT_UNEQUIP_COMBAT
-                    and rowFrame.leftText ~= ITEM_DISENCHANT_NOT_DISENCHANTABLE
+                    and row.leftText ~= ITEM_SCRAPABLE_NOT
+                    and row.leftText ~= CANNOT_UNEQUIP_COMBAT
+                    and row.leftText ~= ITEM_DISENCHANT_NOT_DISENCHANTABLE
                 then
                     unusable = true
                     break
                 end
-                local rc = rowFrame.rightColor
+                local rc = row.rightColor
                 if rc and rc.r > 0.9 and rc.g < 0.2 and rc.b < 0.2 then
                     unusable = true
                     break
@@ -125,7 +125,7 @@ local function BagsItemUnusable(bagID, slotIndex, itemLink, itemId)
             return unusable
         end
     end
-    _canUseCache[itemInfo] = unusable
+    _canUseCache[item] = unusable
     return unusable
 end
 CludesUI._BagsItemUnusable = BagsItemUnusable -- local CUI alias is declared further down
@@ -399,9 +399,9 @@ function CUI_Bags.IsListMode()
         if not CUI.Lite.IsDBReady() then
             return nil
         end
-        local modeName = BP().bagDisplayMode
-        _listMode = modeName == "list"
-        CUI_Bags._compactMode = modeName == "compact"
+        local mode = BP().bagDisplayMode
+        _listMode = mode == "list"
+        CUI_Bags._compactMode = mode == "compact"
     end
     return _listMode
 end
@@ -509,9 +509,9 @@ end
 local function GetFont()
     return CUI.GetFontPath("bags")
 end
-local function SetBagFont(fontStr, dim)
+local function SetBagFont(fontStr, size)
     CludesUI.PrimeFontShadow(fontStr, true)
-    fontStr:SetFont(GetFont(), dim, CUI.GetFontOutlineFlag("bags"))
+    fontStr:SetFont(GetFont(), size, CUI.GetFontOutlineFlag("bags"))
 end
 local function GetAccentRGB()
     if CUI.GetAccentColor then
@@ -633,15 +633,15 @@ end
 function mod.ApplySlotMetrics()
     local p = BP()
     -- the sliders' ranges: a hand-edited or imported 0 would divide by zero
-    local dim = math.min(math.max(tonumber(p.bagSlotSize) or 34, 24), 56)
+    local size = math.min(math.max(tonumber(p.bagSlotSize) or 34, 24), 56)
     local gap = math.min(math.max(tonumber(p.bagSlotSpacing) or 4, 0), 12)
-    if (dim == SLOT_SIZE and gap == SPACING) or InCombatLockdown() then
+    if (size == SLOT_SIZE and gap == SPACING) or InCombatLockdown() then
         return
     end
-    SLOT_SIZE, SPACING = dim, gap
-    mod.SLOT_SIZE, mod.SPACING = dim, gap
+    SLOT_SIZE, SPACING = size, gap
+    mod.SLOT_SIZE, mod.SPACING = size, gap
     for f in pairs(slotFrames) do
-        f:SetSize(dim, dim)
+        f:SetSize(size, size)
     end
-    mod._bagsInternals.SetSlotMetrics({ dim, gap })
+    mod._bagsInternals.SetSlotMetrics({ size, gap })
 end

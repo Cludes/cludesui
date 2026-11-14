@@ -41,7 +41,7 @@ end
 local MANA = (Enum and Enum.PowerType and Enum.PowerType.Mana) or 0
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local EMPTY = {}
-local format, upper = string.format, math.max
+local format, max = string.format, math.max
 local UnitPower, UnitPowerMax = UnitPower, UnitPowerMax
 
 -- Event host at FILE SCOPE (attribution rule, see _erbEventFrame in the main
@@ -56,7 +56,7 @@ local evf = CreateFrame("Frame")
 -- textOn / fmt / suffix (text settings as last applied), extSide / extSig
 -- (the Power Bar side this bar extends and its layout, nil for Inside),
 -- extLast (the extent last cascaded).
-local Stl = { enabled = false, shown = false, live = false, pbVis = true, parked = false }
+local S = { enabled = false, shown = false, live = false, pbVis = true, parked = false }
 
 -- Let the unit frame aura reserve see this bar when it floats below the stack
 -- (CludesUI.ERB_PlayerStackBars consumes it; see CUI_UnitFrames_AuraContainers.lua).
@@ -64,8 +64,8 @@ local Stl = { enabled = false, shown = false, live = false, pbVis = true, parked
 -- footprint tracks the form (not transient paint state) and is nil on every other
 -- client/class and in the carve/inside modes that add no height below the frame.
 mod._FDMStackBottomFrame = function()
-    if Stl.shown and not Stl.parked and Stl.host then
-        return Stl.host
+    if S.shown and not S.parked and S.host then
+        return S.host
     end
 end
 
@@ -85,7 +85,7 @@ end
 local function FormWantsBar()
     local pt = _G._CURB_GetPrimaryPowerType()
     if not Plain(pt) then
-        return Stl.shown
+        return S.shown
     end
     return type(pt) == "number" and pt ~= MANA
 end
@@ -122,16 +122,16 @@ local function ReachOf(pp, es)
 end
 
 -- One side ("l" / "r" / "t" / "b") of a reach, 0 when drawn inside.
-local function Side(sideName, l, r, t, b)
+local function Side(side, l, r, t, b)
     if not l then
         return 0
     end
     local val
-    if sideName == "l" then
+    if side == "l" then
         val = l
-    elseif sideName == "r" then
+    elseif side == "r" then
         val = r
-    elseif sideName == "t" then
+    elseif side == "t" then
         val = t
     else
         val = b
@@ -141,8 +141,8 @@ end
 
 -- How far the Power Bar's frame reaches past the side this bar faces.
 local function PowerBarReach(pp, place, pbSide, vertical, es)
-    local look = mod.ERB_BarsStyle()
-    if look == "blizzard" then
+    local style = mod.ERB_BarsStyle()
+    if style == "blizzard" then
         -- The panel's opaque rim (ns.ERB_BlizzMatchPad): 2 above, 1 below,
         -- turned with a vertical bar to 2 left, 1 right. The panel's shadow
         -- draws under this bar.
@@ -150,7 +150,7 @@ local function PowerBarReach(pp, place, pbSide, vertical, es)
             return 0
         end
         return (place == "above") and 2 or 1
-    elseif look == "classic" then
+    elseif style == "classic" then
         -- The vanilla frame's whole reach, so its art never covers this bar;
         -- turned with a vertical bar like the art (top rim on the left).
         local CF = CludesUI.ClassicFrame
@@ -182,7 +182,7 @@ end
 -- look or the visibility just changed: repaint and snap (no ease). A
 -- restricted read skips the clamp and the stamps and always rewrites.
 local function Paint(force)
-    local scrollBar = Stl.sb
+    local scrollBar = S.sb
     local current = UnitPower("player", MANA)
     local mx = UnitPowerMax("player", MANA)
     local curPlain, mxPlain = Plain(current), Plain(mx)
@@ -198,29 +198,29 @@ local function Paint(force)
         end
     end
     if curPlain and mxPlain then
-        if not force and current == Stl.cur and mx == Stl.mx then
+        if not force and current == S.cur and mx == S.mx then
             return
         end
-        if force or mx ~= Stl.mx then
+        if force or mx ~= S.mx then
             scrollBar:SetMinMaxValues(0, mx)
         end
-        Stl.cur, Stl.mx = current, mx
+        S.cur, S.mx = current, mx
     else
-        Stl.cur, Stl.mx = nil, nil
+        S.cur, S.mx = nil, nil
         scrollBar:SetMinMaxValues(0, mx)
     end
     -- Eases only while the Power Bar's Smooth Bars item is on (its _smoothing)
-    local interp = curPlain and not force and Stl.pb and Stl.pb._smoothing
+    local interp = curPlain and not force and S.pb and S.pb._smoothing
     if interp then
         scrollBar:SetValue(current, interp)
     else
         scrollBar:SetValue(current)
     end
 
-    if not Stl.textOn then
+    if not S.textOn then
         return
     end
-    local fmt = Stl.fmt
+    local fmt = S.fmt
     -- A "smart" here reads as the value: WoW Forever has no Smart Text.
     local wantPct = fmt == "perpp" or fmt == "both"
     local txt
@@ -229,24 +229,24 @@ local function Paint(force)
         local pctRaw = UnitPowerPercent
                 and UnitPowerPercent("player", MANA, true, CurveConstants and CurveConstants.ScaleTo100)
             or 0
-        local percentText = format("%d", pctRaw) .. Stl.suffix
+        local percentText = format("%d", pctRaw) .. S.suffix
         txt = (fmt == "both") and (mod.AbbreviateNumbers(current) .. " | " .. percentText) or percentText
     elseif fmt == "curmaxpp" then
         txt = mod.AbbreviateNumbers(current) .. " / " .. mod.AbbreviateNumbers(UnitPowerMax("player", MANA))
     else
         txt = mod.AbbreviateNumbers(current)
     end
-    Stl.text:SetText(txt)
+    S.text:SetText(txt)
 end
 
 -- Mana events only while this bar is shown and the Power Bar can show; the
 -- edge into live repaints at once (mana moved while unregistered).
 local function UpdateLive()
-    local live = (Stl.shown and Stl.pbVis) and true or false
-    if live == Stl.live then
+    local live = (S.shown and S.pbVis) and true or false
+    if live == S.live then
         return
     end
-    Stl.live = live
+    S.live = live
     if live then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
         evf:RegisterUnitEvent("UNIT_MAXPOWER", "player")
@@ -269,11 +269,11 @@ local function CascadeSettled()
     end
 end
 local function NotifyExtent()
-    local sig = (Stl.shown and not Stl.parked and Stl.extSide) and Stl.extSig or nil
-    if sig == Stl.extLast then
+    local sig = (S.shown and not S.parked and S.extSide) and S.extSig or nil
+    if sig == S.extLast then
         return
     end
-    Stl.extLast = sig
+    S.extLast = sig
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("ERB_Power")
         -- A form change cascades mid-rebuild, on the bars' old edges: once more settled.
@@ -286,10 +286,10 @@ end
 
 -- Form edge: show or hide for the form's power, then the event set.
 local function Refresh()
-    local isShown = Stl.enabled and FormWantsBar() or false
-    if isShown ~= Stl.shown then
-        Stl.shown = isShown
-        Stl.host:SetShown(isShown)
+    local isShown = S.enabled and FormWantsBar() or false
+    if isShown ~= S.shown then
+        S.shown = isShown
+        S.host:SetShown(isShown)
     end
     UpdateLive()
     NotifyExtent()
@@ -298,7 +298,7 @@ end
 evf:SetScript("OnEvent", function(_, evt, _, powerType)
     if evt == "UNIT_DISPLAYPOWER" then
         Refresh()
-    elseif Stl.live then
+    elseif S.live then
         -- Energy and rage ticks share these events: mana only.
         if Plain(powerType) and powerType and powerType ~= "MANA" then
             return
@@ -315,35 +315,35 @@ end)
 -- inner StatusBar inset a quarter pixel so the fill never bleeds past the
 -- border, bg inside it. host._sb / host._bg are what ns.ApplyFillOpacity reads.
 local function EnsureBuilt(pb)
-    local hostRegion = Stl.host
-    if hostRegion then
-        if hostRegion:GetParent() ~= pb then
-            hostRegion:SetParent(pb)
+    local host = S.host
+    if host then
+        if host:GetParent() ~= pb then
+            host:SetParent(pb)
         end
         return
     end
-    hostRegion = CreateFrame("Frame", nil, pb)
-    hostRegion:Hide()
-    local scrollBar = CreateFrame("StatusBar", nil, hostRegion)
+    host = CreateFrame("Frame", nil, pb)
+    host:Hide()
+    local scrollBar = CreateFrame("StatusBar", nil, host)
     local q = CludesUI.PP.mult * 0.25
-    scrollBar:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", q, -q)
-    scrollBar:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -q, q)
+    scrollBar:SetPoint("TOPLEFT", host, "TOPLEFT", q, -q)
+    scrollBar:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -q, q)
     scrollBar:SetStatusBarTexture(WHITE)
     scrollBar:SetMinMaxValues(0, 1)
     scrollBar:SetValue(0)
     local backdrop = scrollBar:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local border = CreateFrame("Frame", nil, hostRegion)
-    border:SetAllPoints(hostRegion)
-    local textFrame = CreateFrame("Frame", nil, hostRegion)
-    textFrame:SetAllPoints(hostRegion)
+    local border = CreateFrame("Frame", nil, host)
+    border:SetAllPoints(host)
+    local textFrame = CreateFrame("Frame", nil, host)
+    textFrame:SetAllPoints(host)
     -- Font before any SetText ("Font not set" on the Forever client).
     local textValue = textFrame:CreateFontString(nil, "OVERLAY")
     mod.SetRBFont(textValue, mod.GetRBFont(), 8)
     textValue:SetWordWrap(false)
-    hostRegion._sb, hostRegion._bg = scrollBar, backdrop
-    Stl.host, Stl.sb, Stl.bg, Stl.border, Stl.textFrame, Stl.text =
-        hostRegion, scrollBar, backdrop, border, textFrame, textValue
+    host._sb, host._bg = scrollBar, backdrop
+    S.host, S.sb, S.bg, S.border, S.textFrame, S.text =
+        host, scrollBar, backdrop, border, textFrame, textValue
 end
 
 -- Levels, then position and size (sized before the border is styled: a
@@ -353,12 +353,12 @@ end
 -- frame the Power Bar draws (reach below). Returns orientation, inside.
 local function Layout(pb, pp, g, c)
     local Pix = CludesUI.PP
-    local hostRegion, bdr = Stl.host, Stl.border
-    local baseValue = pb._sb:GetFrameLevel() + 1
-    hostRegion:SetFrameLevel(baseValue)
-    Stl.sb:SetFrameLevel(baseValue + 1)
-    bdr:SetFrameLevel(pp.borderBehind and upper(0, baseValue - 1) or (baseValue + 1))
-    Stl.textFrame:SetFrameLevel(24)
+    local host, bdr = S.host, S.border
+    local base = pb._sb:GetFrameLevel() + 1
+    host:SetFrameLevel(base)
+    S.sb:SetFrameLevel(base + 1)
+    bdr:SetFrameLevel(pp.borderBehind and max(0, base - 1) or (base + 1))
+    S.textFrame:SetFrameLevel(24)
 
     local es = pb:GetEffectiveScale()
     local ori = pp.orientation or g.orientation or "HORIZONTAL"
@@ -367,11 +367,11 @@ local function Layout(pb, pp, g, c)
     if place ~= "above" and place ~= "inside" then
         place = "below"
     end
-    local thick = Pix.SnapForES(upper(c.height or 6, 1), es)
+    local thick = Pix.SnapForES(max(c.height or 6, 1), es)
     local ox = Pix.SnapForES(c.offsetX or 0, es)
     local oy = Pix.SnapForES(c.offsetY or 0, es)
 
-    hostRegion:ClearAllPoints()
+    host:ClearAllPoints()
     if place == "inside" then
         local idx = Pix.SnapForES(InsideInset(pp), es)
         -- Never thicker than the Power Bar's fill.
@@ -380,15 +380,15 @@ local function Layout(pb, pp, g, c)
             thick = room
         end
         if vertical then
-            hostRegion:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - idx, oy - idx)
-            hostRegion:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
-            hostRegion:SetWidth(thick)
+            host:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - idx, oy - idx)
+            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
+            host:SetWidth(thick)
         else
-            hostRegion:SetPoint("BOTTOMLEFT", pb, "BOTTOMLEFT", ox + idx, oy + idx)
-            hostRegion:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
-            hostRegion:SetHeight(thick)
+            host:SetPoint("BOTTOMLEFT", pb, "BOTTOMLEFT", ox + idx, oy + idx)
+            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
+            host:SetHeight(thick)
         end
-        Stl.extSide, Stl.extSig = nil, nil
+        S.extSide, S.extSig = nil, nil
         return ori, true
     end
 
@@ -403,35 +403,35 @@ local function Layout(pb, pp, g, c)
         pbSide, ownSide = above and "t" or "b", above and "b" or "t"
     end
     local d = Pix.SnapForES(
-        upper(c.gap or 2, 0) + PowerBarReach(pp, place, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
+        max(c.gap or 2, 0) + PowerBarReach(pp, place, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
         es
     )
     if vertical then
         if above then
-            hostRegion:SetPoint("TOPRIGHT", pb, "TOPLEFT", ox - d, oy)
-            hostRegion:SetPoint("BOTTOMRIGHT", pb, "BOTTOMLEFT", ox - d, oy)
+            host:SetPoint("TOPRIGHT", pb, "TOPLEFT", ox - d, oy)
+            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMLEFT", ox - d, oy)
         else
-            hostRegion:SetPoint("TOPLEFT", pb, "TOPRIGHT", ox + d, oy)
-            hostRegion:SetPoint("BOTTOMLEFT", pb, "BOTTOMRIGHT", ox + d, oy)
+            host:SetPoint("TOPLEFT", pb, "TOPRIGHT", ox + d, oy)
+            host:SetPoint("BOTTOMLEFT", pb, "BOTTOMRIGHT", ox + d, oy)
         end
-        hostRegion:SetWidth(thick)
+        host:SetWidth(thick)
     else
         if above then
-            hostRegion:SetPoint("BOTTOMLEFT", pb, "TOPLEFT", ox, oy + d)
-            hostRegion:SetPoint("BOTTOMRIGHT", pb, "TOPRIGHT", ox, oy + d)
+            host:SetPoint("BOTTOMLEFT", pb, "TOPLEFT", ox, oy + d)
+            host:SetPoint("BOTTOMRIGHT", pb, "TOPRIGHT", ox, oy + d)
         else
-            hostRegion:SetPoint("TOPLEFT", pb, "BOTTOMLEFT", ox, oy - d)
-            hostRegion:SetPoint("TOPRIGHT", pb, "BOTTOMRIGHT", ox, oy - d)
+            host:SetPoint("TOPLEFT", pb, "BOTTOMLEFT", ox, oy - d)
+            host:SetPoint("TOPRIGHT", pb, "BOTTOMRIGHT", ox, oy - d)
         end
-        hostRegion:SetHeight(thick)
+        host:SetHeight(thick)
     end
     -- The anchor side this bar extends past (NotifyExtent compares extSig).
     if vertical then
-        Stl.extSide = above and "LEFT" or "RIGHT"
+        S.extSide = above and "LEFT" or "RIGHT"
     else
-        Stl.extSide = above and "TOP" or "BOTTOM"
+        S.extSide = above and "TOP" or "BOTTOM"
     end
-    Stl.extSig = format("%s:%s:%s:%s:%s", Stl.extSide, thick, d, ox, oy)
+    S.extSig = format("%s:%s:%s:%s:%s", S.extSide, thick, d, ox, oy)
     return ori, false
 end
 
@@ -439,10 +439,10 @@ end
 -- has no plain form, so this bar keeps the CludesUI border). Inside sits
 -- within the Power Bar's own border and wears none.
 local function ApplyBorder(pp, inside)
-    local bdr = Stl.border
+    local bdr = S.border
     -- Lost-rect recovery, see the cast bar border in the main file.
     if not bdr:GetLeft() then
-        bdr:SetAllPoints(Stl.host)
+        bdr:SetAllPoints(S.host)
     end
     if inside then
         CludesUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
@@ -478,7 +478,7 @@ end
 -- every style), the mana fill, the Power Bar's background and fill opacity.
 -- Returns the mana colour for the text.
 local function ApplyLook(pp, g, p, ori)
-    local scrollBar = Stl.sb
+    local scrollBar = S.sb
     if ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN" then
         scrollBar:SetOrientation("VERTICAL")
         scrollBar:SetRotatesTexture(true)
@@ -493,8 +493,8 @@ local function ApplyLook(pp, g, p, ori)
         (p.splitTex == true and pp.barTexture) or g.barTexture or "none",
         WHITE
     )
-    if filePath ~= Stl.texPath then
-        Stl.texPath = filePath
+    if filePath ~= S.texPath then
+        S.texPath = filePath
         scrollBar:SetStatusBarTexture(filePath)
         -- A new file resets the vertex colour: drop the fill memo so the
         -- paint below lands.
@@ -505,11 +505,11 @@ local function ApplyLook(pp, g, p, ori)
     end
     local r, gr, b = ManaColor()
     mod.ApplyBarFlat(scrollBar:GetStatusBarTexture(), r, gr, b, 1)
-    Stl.bg:SetColorTexture(pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
+    S.bg:SetColorTexture(pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
     -- Textured Background, as the Power Bar's: flat while Fill Color is below 100.
-    if g.barTextureBg or Stl.bg._erbBgTex then
+    if g.barTextureBg or S.bg._erbBgTex then
         mod.ERB_BgTexture(
-            Stl.bg,
+            S.bg,
             g.barTextureBg and (pp.fillOpacity or 100) >= 100 and filePath,
             pp.bgR or 0,
             pp.bgG or 0,
@@ -517,39 +517,39 @@ local function ApplyLook(pp, g, p, ori)
             pp.bgA or 0.75
         )
     end
-    mod.ApplyFillOpacity(Stl.host, ori, pp.fillOpacity)
+    mod.ApplyFillOpacity(S.host, ori, pp.fillOpacity)
     return r, gr, b
 end
 
 -- Text style, same keys and colour rule as the Power Bar's text (custom, or
 -- the power colour: here mana's).
 local function ApplyText(c, r, g, b)
-    local fontStr = Stl.text
+    local fontStr = S.text
     mod.SetRBFont(fontStr, mod.GetRBFont(), c.textSize or 8)
     fontStr:ClearAllPoints()
     local a = c.textAnchor or "CENTER"
-    fontStr:SetPoint(a, Stl.host, a, c.textXOffset or 0, c.textYOffset or 0)
+    fontStr:SetPoint(a, S.host, a, c.textXOffset or 0, c.textYOffset or 0)
     if c.textCustomColored == false then
         fontStr:SetTextColor(r, g, b, 1)
     else
         fontStr:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
     end
     local fmt = c.textFormat or "none"
-    Stl.fmt = fmt
-    Stl.suffix = (c.showPercent == false) and "" or "%"
-    Stl.textOn = fmt ~= "none"
-    fontStr:SetShown(Stl.textOn)
+    S.fmt = fmt
+    S.suffix = (c.showPercent == false) and "" or "%"
+    S.textOn = fmt ~= "none"
+    fontStr:SetShown(S.textOn)
 end
 
 -- Off: every event dropped, the bar hidden and its anchor extent handed back.
 local function Teardown()
-    if not Stl.enabled then
+    if not S.enabled then
         return
     end
-    Stl.enabled, Stl.shown, Stl.live = false, false, false
-    Stl.cur, Stl.mx = nil, nil
+    S.enabled, S.shown, S.live = false, false, false
+    S.cur, S.mx = nil, nil
     evf:UnregisterAllEvents()
-    Stl.host:Hide()
+    S.host:Hide()
     NotifyExtent()
 end
 
@@ -566,7 +566,7 @@ function mod.FDM_Apply(pb, pp, g)
     if not p then
         return
     end
-    pb = pb or Stl.pb or _G.ERB_PrimaryBar
+    pb = pb or S.pb or _G.ERB_PrimaryBar
     pp = pp or _G._CURB_ResolvePowerCfg(p)
     local c = pp and pp.foreverDruidMana
     -- Power Type "Mana" keeps the Power Bar itself on mana: nothing to add.
@@ -575,10 +575,10 @@ function mod.FDM_Apply(pb, pp, g)
         Teardown()
         return
     end
-    Stl.pb = pb
+    S.pb = pb
     EnsureBuilt(pb)
-    if not Stl.enabled then
-        Stl.enabled = true
+    if not S.enabled then
+        S.enabled = true
         evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
     end
     g = g or p.general or EMPTY
@@ -586,11 +586,11 @@ function mod.FDM_Apply(pb, pp, g)
     ApplyBorder(pp, inside)
     local r, gr, b = ApplyLook(pp, g, p, ori)
     ApplyText(c, r, gr, b)
-    local wasLive = Stl.live
+    local wasLive = S.live
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into
     -- live painted in UpdateLive).
-    if wasLive and Stl.live then
+    if wasLive and S.live then
         Paint(true)
     end
 end
@@ -600,18 +600,18 @@ end
 -- fades need nothing here: this bar is the Power Bar's child.
 function mod.FDM_Visibility(vis)
     local on = (vis == true or vis == "mouseover")
-    if on == Stl.pbVis then
+    if on == S.pbVis then
         return
     end
-    Stl.pbVis = on
-    if Stl.enabled then
+    S.pbVis = on
+    if S.enabled then
         UpdateLive()
     end
 end
 
 -- The bar frame while it is shown for the current form (Show When Missing).
 function mod.FDM_Host()
-    return Stl.shown and Stl.host or nil
+    return S.shown and S.host or nil
 end
 
 -- Show When Energy Missing parks this bar out of sight while the Power Bar is
@@ -619,10 +619,10 @@ end
 -- below for that time.
 function mod.FDM_Parked(parked)
     parked = parked and true or false
-    if parked == Stl.parked then
+    if parked == S.parked then
         return
     end
-    Stl.parked = parked
+    S.parked = parked
     NotifyExtent()
 end
 
@@ -635,34 +635,34 @@ end
 -- Power Bar's mover wraps this bar, ns.FDM_BottomExtra). Chained in front of
 -- any provider installed before this file loaded.
 local prevExtent = CludesUI._GetAnchorTargetExtent
-CludesUI._GetAnchorTargetExtent = function(targetKey, sideName)
-    if targetKey == "ERB_Power" and Stl.shown and not Stl.parked and sideName == Stl.extSide then
-        local hostRegion, pb = Stl.host, Stl.pb
+CludesUI._GetAnchorTargetExtent = function(targetKey, side)
+    if targetKey == "ERB_Power" and S.shown and not S.parked and side == S.extSide then
+        local host, pb = S.host, S.pb
         local val, pv
-        if sideName == "BOTTOM" then
-            val, pv = hostRegion:GetBottom(), pb:GetBottom()
-        elseif sideName == "TOP" then
-            val, pv = hostRegion:GetTop(), pb:GetTop()
-        elseif sideName == "LEFT" then
-            val, pv = hostRegion:GetLeft(), pb:GetLeft()
+        if side == "BOTTOM" then
+            val, pv = host:GetBottom(), pb:GetBottom()
+        elseif side == "TOP" then
+            val, pv = host:GetTop(), pb:GetTop()
+        elseif side == "LEFT" then
+            val, pv = host:GetLeft(), pb:GetLeft()
         else
-            val, pv = hostRegion:GetRight(), pb:GetRight()
+            val, pv = host:GetRight(), pb:GetRight()
         end
         if val and pv then
             -- Only ever outward: an offset that tucks it back toward the
             -- Power Bar leaves the Power Bar's edge in charge.
-            if sideName == "BOTTOM" or sideName == "LEFT" then
+            if side == "BOTTOM" or side == "LEFT" then
                 if pv < val then
                     val = pv
                 end
             elseif pv > val then
                 val = pv
             end
-            return val * hostRegion:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            return val * host:GetEffectiveScale() / UIParent:GetEffectiveScale()
         end
     end
     if prevExtent then
-        return prevExtent(targetKey, sideName)
+        return prevExtent(targetKey, side)
     end
     return nil
 end
@@ -672,10 +672,10 @@ end
 -- the same edge linked elements measure from; 0 otherwise. Power Bar units
 -- (this bar is its child: one scale).
 function mod.FDM_BottomExtra()
-    if not (Stl.shown and not Stl.parked and Stl.extSide == "BOTTOM") then
+    if not (S.shown and not S.parked and S.extSide == "BOTTOM") then
         return 0
     end
-    local hb, pb = Stl.host:GetBottom(), Stl.pb:GetBottom()
+    local hb, pb = S.host:GetBottom(), S.pb:GetBottom()
     if not (hb and pb) or hb >= pb then
         return 0
     end

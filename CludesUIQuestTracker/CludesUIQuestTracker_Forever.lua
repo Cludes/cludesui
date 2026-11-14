@@ -206,16 +206,16 @@ local function Snapshot()
     passZone = GetRealZoneText()
     passInInstance = IsInInstance()
     passInstance = passInInstance and GetInstanceInfo() or nil
-    local titleText, headerIdx = nil, 0
+    local title, headerIdx = nil, 0
     for idx = 1, C_QuestLog.GetNumQuestLogEntries() do
         local details = C_QuestLog.GetInfo(idx)
         if details then
             logList[#logList + 1] = details
             if details.isHeader then
-                titleText, headerIdx = details.title, idx
+                title, headerIdx = details.title, idx
             elseif details.questID then
                 local questID = details.questID
-                logInfo[questID], logHeader[questID] = details, titleText
+                logInfo[questID], logHeader[questID] = details, title
                 logZone[questID], logIndex[questID] = headerIdx, idx
             end
         end
@@ -228,8 +228,8 @@ end
 -- the open world a quest whose objectives are on the current map counts too;
 -- inside an instance that flag also counts the parent zone's quests, so only
 -- the header decides there.
-local function InArea(details, headerFrame)
-    if headerFrame and (headerFrame == passZone or (passInInstance and headerFrame == passInstance)) then
+local function InArea(details, header)
+    if header and (header == passZone or (passInInstance and header == passInstance)) then
         return true
     end
     return not passInInstance and details.isOnMap == true
@@ -332,14 +332,14 @@ local function ApplyAutoTrack()
         end
     end
     local free = Constants.QuestWatchConsts.MAX_QUEST_WATCHES - C_QuestLog.GetNumQuestWatches()
-    local headerFrame
+    local header
     for idx = 1, #logList do
         local details = logList[idx]
         if details.isHeader then
-            headerFrame = details.title
+            header = details.title
         elseif not details.isHidden and not details.isTask and not details.isBounty then
             local questID = details.questID
-            if enabled and InArea(details, headerFrame) then
+            if enabled and InArea(details, header) then
                 if
                     free > 0
                     and not watched[questID]
@@ -398,10 +398,10 @@ local TYPE_RANK = {
     [QC.Recurring] = 7,
 }
 
-local function SortKeyFor(modeName, questID, rank)
-    if modeName == "zone" then
+local function SortKeyFor(mode, questID, rank)
+    if mode == "zone" then
         return logZone[questID] or 0
-    elseif modeName == "progress" then
+    elseif mode == "progress" then
         -- Most complete first: negated share of all objective counts.
         if C_QuestLog.IsComplete(questID) then
             return -1
@@ -417,7 +417,7 @@ local function SortKeyFor(modeName, questID, rank)
             end
         end
         return need > 0 and -(have / need) or 0
-    elseif modeName == "type" then
+    elseif mode == "type" then
         local details = logInfo[questID]
         if not details then
             return 6
@@ -427,15 +427,15 @@ local function SortKeyFor(modeName, questID, rank)
             r = 7
         end
         return r
-    elseif modeName == "log" then
+    elseif mode == "log" then
         return logIndex[questID] or 0
-    elseif modeName == "level" then
+    elseif mode == "level" then
         local details = logInfo[questID]
         return details and (details.difficultyLevel or details.level) or 0
-    elseif modeName == "name" then
+    elseif mode == "name" then
         local details = logInfo[questID]
         return details and details.title and details.title:lower() or ""
-    elseif modeName == "none" then
+    elseif mode == "none" then
         return 0
     end
     return rank
@@ -443,20 +443,20 @@ end
 
 -- Sorts a quest ID list in place; list order is the rank. Reads the pass's
 -- log snapshot.
-local function SortList(ids, modeName, completed, thenBy)
+local function SortList(ids, mode, completed, thenBy)
     wipe(sortGroup)
     wipe(sortKey)
     wipe(sortKey2)
     wipe(sortRank)
     for idx, questID in ipairs(ids) do
         sortRank[questID] = idx
-        local group = 1
+        local set = 1
         if completed ~= "mixed" then
             local done = C_QuestLog.IsComplete(questID) == true
-            group = ((completed == "top") == done) and 1 or 2
+            set = ((completed == "top") == done) and 1 or 2
         end
-        sortGroup[questID] = group
-        sortKey[questID] = SortKeyFor(modeName, questID, idx)
+        sortGroup[questID] = set
+        sortKey[questID] = SortKeyFor(mode, questID, idx)
         sortKey2[questID] = SortKeyFor(thenBy, questID, idx)
     end
     table.sort(ids, CompareQuests)
@@ -464,7 +464,7 @@ end
 
 -- mode / completed / thenBy: the settings' choices, or the restore pass's
 -- plain quest log order.
-local function ApplySort(modeName, completed, thenBy)
+local function ApplySort(mode, completed, thenBy)
     local total = 0
     for idx = 1, C_QuestLog.GetNumQuestWatches() do
         local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(idx)
@@ -476,7 +476,7 @@ local function ApplySort(modeName, completed, thenBy)
     for idx = #sortIDs, total + 1, -1 do
         sortIDs[idx] = nil
     end
-    SortList(sortIDs, modeName, completed, thenBy)
+    SortList(sortIDs, mode, completed, thenBy)
 
     -- AddQuestWatch inserts at the top, so re-add the out-of-place head in
     -- reverse; the already-correct tail is left alone.
@@ -662,8 +662,8 @@ local function OnWatchEvent(_, evt, arg1)
             QueueWatches()
         end
     elseif evt == "PLAYER_ENTERING_WORLD" then
-        local inInstance, kindOf = IsInInstance()
-        instancePass = inInstance and kindOf == "party"
+        local inInstance, kind = IsInInstance()
+        instancePass = inInstance and kind == "party"
         QueueWatches()
     else
         QueueWatches()
@@ -681,13 +681,13 @@ local function ApplyBlizzardSort()
     if not otf then
         return
     end
-    local offset = SortOn()
-    if offset == blizzSortOff then
+    local off = SortOn()
+    if off == blizzSortOff then
         return
     end
-    blizzSortOff = offset
+    blizzSortOff = off
     for _, evt in ipairs(BLIZZ_SORT_EVENTS) do
-        if offset then
+        if off then
             otf:UnregisterEvent(evt)
         else
             otf:RegisterEvent(evt)
@@ -710,12 +710,12 @@ local function ApplyFilterToggle()
             return
         end
         local qt = _G.QuestObjectiveTracker
-        local headerFrame = qt and qt.Header
-        local minBtn = headerFrame and headerFrame.MinimizeButton
+        local header = qt and qt.Header
+        local minBtn = header and header.MinimizeButton
         if not minBtn then
             return
         end
-        button = CreateFrame("Button", nil, headerFrame)
+        button = CreateFrame("Button", nil, header)
         button:SetSize(minBtn:GetSize())
         button:SetPoint("RIGHT", minBtn, "LEFT", -2, 0)
         -- Above the minimize button's header-wide hit rect (SkinHeader).
@@ -736,7 +736,7 @@ local function ApplyFilterToggle()
             CludesUI.ShowWidgetTooltip(self, FilterToggleTip())
         end)
         EQT.FilterToggle = button
-        EQT.SkinHeader(headerFrame)
+        EQT.SkinHeader(header)
         if EQT._trackerMouseOff then
             EQT.MouseOff(button)
         end
@@ -1067,9 +1067,9 @@ EQT.ProgressRGB = ProgressRGB
 
 -- Back to Blizzard's color.
 local function Restore(fontStr)
-    local look = fontStr.colorStyle
-    if look then
-        fontStr:SetTextColor(look.r, look.g, look.b, 1)
+    local style = fontStr.colorStyle
+    if style then
+        fontStr:SetTextColor(style.r, style.g, style.b, 1)
     end
     colored[fontStr], stampText[fontStr], stampStyle[fontStr], stampGen[fontStr] = nil, nil, nil, nil
 end
@@ -1080,19 +1080,19 @@ function EQT.ObjColorsWanted()
     return Cfg("objProgressColor") or Cfg("objDimCompleted") or next(colored) ~= nil
 end
 
-function EQT.ColorObjectiveLines(blockData)
-    local lines = blockData and blockData.usedLines
+function EQT.ColorObjectiveLines(block)
+    local lines = block and block.usedLines
     if not lines then
         return
     end
-    local progress, dim = Cfg("objProgressColor"), Cfg("objDimCompleted")
-    local questID = type(blockData.id) == "number" and blockData.id
-    if not ((progress or dim) and questID) then
+    local progress, size = Cfg("objProgressColor"), Cfg("objDimCompleted")
+    local questID = type(block.id) == "number" and block.id
+    if not ((progress or size) and questID) then
         if next(colored) == nil then
             return
         end
-        for _, lineTex in pairs(lines) do
-            local fontStr = lineTex.Text
+        for _, line in pairs(lines) do
+            local fontStr = line.Text
             if fontStr and colored[fontStr] then
                 Restore(fontStr)
             end
@@ -1101,8 +1101,8 @@ function EQT.ColorObjectiveLines(blockData)
     end
     local gen = ColorGen()
     local stale = false
-    for key, lineTex in pairs(lines) do
-        local fontStr = lineTex.Text
+    for key, line in pairs(lines) do
+        local fontStr = line.Text
         if fontStr then
             if type(key) == "number" then
                 if
@@ -1124,15 +1124,19 @@ function EQT.ColorObjectiveLines(blockData)
     end
     local objectives = C_QuestLog.GetQuestObjectives(questID)
     local alpha = (Cfg("objDimAlpha") or 45) / 100
-    for key, lineTex in pairs(lines) do
-        local fontStr = lineTex.Text
+    for key, line in pairs(lines) do
+        local fontStr = line.Text
         local object = objectives and type(key) == "number" and objectives[key]
         if fontStr and object then
-            local textValue, look = fontStr:GetText(), fontStr.colorStyle
-            if stampGen[fontStr] ~= gen or stampText[fontStr] ~= textValue or stampStyle[fontStr] ~= look then
+            local textValue, style = fontStr:GetText(), fontStr.colorStyle
+            if
+                stampGen[fontStr] ~= gen
+                or stampText[fontStr] ~= textValue
+                or stampStyle[fontStr] ~= style
+            then
                 local r, g, b = 1, 1, 1
-                if look then
-                    r, g, b = look.r, look.g, look.b
+                if style then
+                    r, g, b = style.r, style.g, style.b
                 end
                 local req = object.numRequired
                 if progress then
@@ -1143,9 +1147,9 @@ function EQT.ColorObjectiveLines(blockData)
                         r, g, b = ProgressRGB((object.numFulfilled or 0) / req)
                     end
                 end
-                fontStr:SetTextColor(r, g, b, (dim and object.finished) and alpha or 1)
+                fontStr:SetTextColor(r, g, b, (size and object.finished) and alpha or 1)
                 colored[fontStr] = true
-                stampText[fontStr], stampStyle[fontStr], stampGen[fontStr] = textValue, look, gen
+                stampText[fontStr], stampStyle[fontStr], stampGen[fontStr] = textValue, style, gen
             end
         elseif fontStr then
             -- A non-objective line on a recycled frame.

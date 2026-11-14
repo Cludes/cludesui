@@ -275,7 +275,7 @@ end
 -- latched this session (the latch above, read off `c`), so the switch asks
 -- for a reload.
 function mod.ChatFvBorderChanged(c)
-    local kindOf
+    local kind
     if
         type(c) == "table"
         and not c.useClassicStyle
@@ -284,9 +284,9 @@ function mod.ChatFvBorderChanged(c)
         and c.useForeverStyle == true
         and CludesUI.ForeverBorderOK()
     then
-        kindOf = CludesUI.ForeverBorderKind(c.foreverBorder)
+        kind = CludesUI.ForeverBorderKind(c.foreverBorder)
     end
-    return kindOf ~= mod.ChatFvKind()
+    return kind ~= mod.ChatFvKind()
 end
 -- Both stock styles: Blizzard's own chat frame art and input box are revealed
 -- in place (only the suppression is skipped); our panel paint, borders and
@@ -331,15 +331,15 @@ end
 
 local function GetOutlineFlag()
     local conf = CHAT.DB()
-    local modeName = conf.outlineMode or "__global"
-    if modeName == "__global" then
+    local mode = conf.outlineMode or "__global"
+    if mode == "__global" then
         return (CUI.GetFontOutlineFlag("chat")) or ""
     end
     -- Chat-specific outline override; still slug-gated by "Never Show Slug".
-    if modeName == "outline" then
+    if mode == "outline" then
         return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
-    if modeName == "thick" then
+    if mode == "thick" then
         return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
     return ""
@@ -535,8 +535,8 @@ end
 -- the fade-out has completed.
 local _sidebarMouseoverLayoutVisible = false
 local function SidebarParticipatesInLayout(conf)
-    local modeName = conf.sidebarVisibility or "always"
-    return modeName == "always" or (modeName == "mouseover" and _sidebarMouseoverLayoutVisible)
+    local mode = conf.sidebarVisibility or "always"
+    return mode == "always" or (mode == "mouseover" and _sidebarMouseoverLayoutVisible)
 end
 
 -- Extend the chat background up behind the tab strip (and the sidebar by the same
@@ -656,8 +656,8 @@ function CHAT.ApplyExtendedBackground()
         local includeSidebar = scrollBar
             and not conf.hideSidebarBg
             and SidebarParticipatesInLayout(conf)
-            -- A separate sidebar is its own island: excluded here, wrapped
-            -- by its own border below.
+            -- A separate sidebar is its own island: excluded here, wrapped
+            -- by its own border below.
             and conf.sidebarSeparate ~= true
         local topExtension = extend and GetTabAreaHeight() or 0
         if includeSidebar and not conf.sidebarRight then
@@ -686,20 +686,20 @@ function CHAT.ApplyExtendedBackground()
         if CludesUI.ApplyBorderStyle then
             local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
             local thicknessKey = conf.panelBorderThickness or "none"
-            local modeName = conf.panelBorderColorMode or "custom"
+            local mode = conf.panelBorderColorMode or "custom"
             local color
-            if modeName == "accent" then
+            if mode == "accent" then
                 local r, g, b = CludesUI.GetAccentColor()
                 color = { r = r, g = g, b = b }
-            elseif modeName == "class" then
-                local _, classFile = UnitClass("player")
-                color = classFile and RAID_CLASS_COLORS[classFile] or { r = 1, g = 1, b = 1 }
+            elseif mode == "class" then
+                local _, class = UnitClass("player")
+                color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
             else
                 color = conf.panelBorderColor or { r = 1, g = 1, b = 1 }
             end
             local alpha = conf.panelBorderOpacity
             if alpha == nil then
-                alpha = modeName == "custom" and 0.18 or 0.5
+                alpha = mode == "custom" and 0.18 or 0.5
             end
             local bSize = sizes[thicknessKey] or 1
             local bTex = conf.panelBorderTexture or "solid"
@@ -802,27 +802,27 @@ function CHAT.ApplyFonts()
     for idx = 1, 20 do
         local castFrame = _G["ChatFrame" .. idx]
         if castFrame and castFrame.SetFont then
-            local dim = GetFrameFontSize(idx)
+            local size = GetFrameFontSize(idx)
             -- Same per-window font FAMILY as our display view (CJK members):
             -- the invisible Blizzard frame owns hyperlink hit-zones, so its
             -- glyph metrics must match ours on lines carrying CJK text.
-            local fam = CHAT.EngineFontFamily and CHAT.EngineFontFamily(idx, font, dim, outline)
+            local fam = CHAT.EngineFontFamily and CHAT.EngineFontFamily(idx, font, size, outline)
             if fam then
                 castFrame:SetFontObject(fam)
             else
-                castFrame:SetFont(font, dim, outline)
+                castFrame:SetFont(font, size, outline)
             end
         end
         local eb = _G["ChatFrame" .. idx .. "EditBox"]
         if eb then
-            local dim = GetEditBoxFontSize(idx)
-            eb:SetFont(editFont, dim, outline)
+            local size = GetEditBoxFontSize(idx)
+            eb:SetFont(editFont, size, outline)
             if idx <= 10 then
                 if eb.header then
-                    eb.header:SetFont(editFont, dim, outline)
+                    eb.header:SetFont(editFont, size, outline)
                 end
                 if eb.headerSuffix then
-                    eb.headerSuffix:SetFont(editFont, dim, outline)
+                    eb.headerSuffix:SetFont(editFont, size, outline)
                 end
             end
         end
@@ -842,13 +842,13 @@ end
 -- control rippled through Blizzard's tab-resize/dock machinery measuring
 -- secret label widths under our taint (the v7.15-era removal). Under the
 -- engine, size only touches storage, SetFont, and OUR frames.
-function CHAT.ApplyChatFontSize(dim)
-    if type(dim) ~= "number" or dim <= 0 then
+function CHAT.ApplyChatFontSize(size)
+    if type(size) ~= "number" or size <= 0 then
         return
     end
     for idx = 1, 10 do
         if _G["ChatFrame" .. idx] then
-            CludesUI.SetChatWindowSize(idx, dim)
+            CludesUI.SetChatWindowSize(idx, size)
         end
     end
     -- Temp whisper frames carry no numbered storage; their live font is the
@@ -860,7 +860,7 @@ function CHAT.ApplyChatFontSize(dim)
             if castFrame and castFrame.isTemporary and castFrame.inUse and castFrame.SetFont then
                 local font, _, flags = castFrame:GetFont()
                 if font then
-                    castFrame:SetFont(font, dim, flags or "")
+                    castFrame:SetFont(font, size, flags or "")
                 end
             end
         end
@@ -913,20 +913,20 @@ local _sidebarFadeFrame
 
 function CHAT.ApplySidebarVisibility()
     local conf = CHAT.DB()
-    local modeName = conf.sidebarVisibility or "always"
+    local mode = conf.sidebarVisibility or "always"
     local cf1 = _G.ChatFrame1
     local sidebar = cf1 and CFD(cf1).sidebar
     if not sidebar then
         return
     end
 
-    if modeName == "never" then
+    if mode == "never" then
         SetSidebarLayoutVisible(false)
         SetSidebarFadeTarget(0)
         SetSidebarFadeAlpha(0)
         sidebar:SetAlpha(0)
         sidebar:EnableMouse(false)
-    elseif modeName == "mouseover" then
+    elseif mode == "mouseover" then
         SetSidebarLayoutVisible(false)
         SetSidebarFadeTarget(0)
         SetSidebarFadeAlpha(0)
@@ -1149,14 +1149,14 @@ function CHAT._PositionChatPanelNow(castFrame)
                 local ui2 = UIParent:GetEffectiveScale()
                 if ui2 and ui2 > 0 then
                     mx, my = mx / ui2, my / ui2
-                    local baseValue = d._dragCursorBase
-                    if not baseValue then
-                        baseValue = { x = mx, y = my, l = d._bgL, t = d._bgT, r = d._bgR, b = d._bgB }
-                        d._dragCursorBase = baseValue
+                    local base = d._dragCursorBase
+                    if not base then
+                        base = { x = mx, y = my, l = d._bgL, t = d._bgT, r = d._bgR, b = d._bgB }
+                        d._dragCursorBase = base
                     end
-                    local dx, dy = mx - baseValue.x, my - baseValue.y
-                    d._bgL, d._bgT = baseValue.l + dx, baseValue.t + dy
-                    d._bgR, d._bgB = baseValue.r + dx, baseValue.b + dy
+                    local dx, dy = mx - base.x, my - base.y
+                    d._bgL, d._bgT = base.l + dx, base.t + dy
+                    d._bgR, d._bgB = base.r + dx, base.b + dy
                     backdrop:ClearAllPoints()
                     backdrop:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", d._bgL, d._bgT)
                     backdrop:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", d._bgR, d._bgB)
@@ -1238,44 +1238,44 @@ local function PanelHost()
     return FCF_GetCurrentFullScreenFrame and FCF_GetCurrentFullScreenFrame() or UIParent
 end
 
-local function ReseatPanel(f, hostRegion)
+local function ReseatPanel(f, host)
     if not f then
         return
     end
     local p = f:GetParent()
-    if p ~= hostRegion and (p == UIParent or p == _panelHost) then
-        FrameUtil.SetParentMaintainRenderLayering(f, hostRegion)
+    if p ~= host and (p == UIParent or p == _panelHost) then
+        FrameUtil.SetParentMaintainRenderLayering(f, host)
     end
 end
 
 function CHAT.ApplyPanelHost()
-    local hostRegion = PanelHost()
+    local host = PanelHost()
     for idx = 1, 20 do
         local castFrame = _G["ChatFrame" .. idx]
         if castFrame then
             local d = CFD(castFrame)
-            ReseatPanel(d.bg, hostRegion)
-            ReseatPanel(d.sidebar, hostRegion)
+            ReseatPanel(d.bg, host)
+            ReseatPanel(d.sidebar, host)
             -- Moves only while it is seated on the chat panel; on the sidebar
             -- seat it is a child of a frame this pass already moved.
-            ReseatPanel(d.scrollBtn, hostRegion)
+            ReseatPanel(d.scrollBtn, host)
         end
     end
-    ReseatPanel(mod._chatTabStrip, hostRegion)
-    ReseatPanel(mod._chatBgExt, hostRegion)
-    ReseatPanel(mod._chatPanelBorder, hostRegion)
-    ReseatPanel(mod._sidebarSeparateBorder, hostRegion)
-    ReseatPanel(mod._chatHoverOverlay, hostRegion)
-    _panelHost = hostRegion
+    ReseatPanel(mod._chatTabStrip, host)
+    ReseatPanel(mod._chatBgExt, host)
+    ReseatPanel(mod._chatPanelBorder, host)
+    ReseatPanel(mod._sidebarSeparateBorder, host)
+    ReseatPanel(mod._chatHoverOverlay, host)
+    _panelHost = host
 end
 
 -- The on-demand popups are built the first time they are used and can be built
 -- on either side of an editor session, so they seat themselves on show instead
 -- of riding the pass above.
 function CHAT.HostPopup(f)
-    local hostRegion = PanelHost()
-    if f:GetParent() ~= hostRegion then
-        FrameUtil.SetParentMaintainRenderLayering(f, hostRegion)
+    local host = PanelHost()
+    if f:GetParent() ~= host then
+        FrameUtil.SetParentMaintainRenderLayering(f, host)
     end
 end
 
@@ -1586,9 +1586,9 @@ do
     for idx = 1, 20 do
         local castFrame = _G["ChatFrame" .. idx]
         if castFrame and castFrame.GetFont then
-            local dim = GetFrameFontSize(idx)
-            if dim and dim > 0 then
-                lastFontSize[idx] = dim
+            local size = GetFrameFontSize(idx)
+            if size and size > 0 then
+                lastFontSize[idx] = size
             end
         end
     end
@@ -1652,18 +1652,18 @@ do
         for idx = 1, 20 do
             local castFrame = _G["ChatFrame" .. idx]
             if castFrame and castFrame.GetFont then
-                local dim = GetFrameFontSize(idx)
-                if dim and dim ~= lastFontSize[idx] then
+                local size = GetFrameFontSize(idx)
+                if size and size ~= lastFontSize[idx] then
                     if lastFontSize[idx] then
                         local conf = CHAT.DB()
-                        if conf and conf.chatFontSize ~= dim then
-                            conf.chatFontSize = dim
+                        if conf and conf.chatFontSize ~= size then
+                            conf.chatFontSize = size
                         end
                     end
                     if lastFontSize[idx] and CHAT.EngineApplyFontTo then
                         CHAT.EngineApplyFontTo(castFrame)
                     end
-                    lastFontSize[idx] = dim
+                    lastFontSize[idx] = size
                 end
             end
         end

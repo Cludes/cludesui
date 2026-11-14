@@ -166,8 +166,8 @@ function REMIND.BuildForeverFamilies()
     end
     -- Group members get the same rank expansion, from the same spellbook pass.
     if groups then
-        for _, group in ipairs(groups) do
-            local groupSpellIDs = type(group) == "table" and group.ids
+        for _, set in ipairs(groups) do
+            local groupSpellIDs = type(set) == "table" and set.ids
             if type(groupSpellIDs) == "table" then
                 for _, spellID in ipairs(groupSpellIDs) do
                     buildFamilyFor(spellID)
@@ -180,12 +180,12 @@ function REMIND.BuildForeverFamilies()
     end
     local bank = Enum.SpellBookSpellBank.Player
     local SPELL = Enum.SpellBookItemType.Spell
-    for lineTex = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-        local details = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
+    for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+        local details = C_SpellBook.GetSpellBookSkillLineInfo(line)
         local offset = details and details.itemIndexOffset or 0
-        for slotIndex = offset + 1, offset + (details and details.numSpellBookItems or 0) do
-            local kindOf, _, spellRef = C_SpellBook.GetSpellBookItemType(slotIndex, bank)
-            local into = kindOf == SPELL and spellRef and byName[C_Spell.GetSpellName(spellRef)]
+        for slot = offset + 1, offset + (details and details.numSpellBookItems or 0) do
+            local kind, _, spellRef = C_SpellBook.GetSpellBookItemType(slot, bank)
+            local into = kind == SPELL and spellRef and byName[C_Spell.GetSpellName(spellRef)]
             if into then
                 local cast = spellRef
                 if pickerEnabled then
@@ -212,10 +212,10 @@ function REMIND.BuildForeverFamilies()
     end
 end
 
-function REMIND.ForeverGroupCastSpell(group, spellID, family)
+function REMIND.ForeverGroupCastSpell(set, spellID, family)
     local ranks
-    if group.ranksBySpell then
-        ranks = group.ranksBySpell[spellID]
+    if set.ranksBySpell then
+        ranks = set.ranksBySpell[spellID]
     else
         family = family
             or (type(spellID) == "number" and SpellName(spellID) and REMIND.ForeverFamily(spellID))
@@ -224,7 +224,7 @@ function REMIND.ForeverGroupCastSpell(group, spellID, family)
     if type(ranks) ~= "table" then
         return
     end
-    local prefs = group.settings or group
+    local prefs = set.settings or set
     local pinned = prefs.castRanks and prefs.castRanks[spellID]
     if pinned then
         for idx, ident in ipairs(ranks) do
@@ -243,7 +243,7 @@ function REMIND.ForeverGroupCastSpell(group, spellID, family)
     return ranks[#ranks], ranks, #ranks
 end
 
-local function SetForeverPickerSpell(record, group, ident, ranks)
+local function SetForeverPickerSpell(record, set, ident, ranks)
     local macro, rank = REMIND.ForeverPickerSpellData(ident, #ranks > 1)
     if not macro then
         return
@@ -251,7 +251,7 @@ local function SetForeverPickerSpell(record, group, ident, ranks)
     record.mode = "macro"
     record.macro = macro
     record.spellID = ident
-    record.foreverGroup = group
+    record.foreverGroup = set
     record.spellRank = rank
 end
 
@@ -321,8 +321,8 @@ function REMIND.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
     end
     local aurasRestricted = CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()
     local pickerEnabled = PickerEnabled()
-    for _, group in ipairs(groups) do
-        local spellIDs = type(group) == "table" and group.ids
+    for _, set in ipairs(groups) do
+        local spellIDs = type(set) == "table" and set.ids
         if
             type(spellIDs) == "table"
             and not (coveredIDs and GroupCovered(spellIDs, coveredIDs, coveredNames))
@@ -336,13 +336,13 @@ function REMIND.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
                     and REMIND.ForeverFamily(spellID)
                 if rankSpellIDs then
                     if pickerEnabled then
-                        local knownSpellID, ranks = REMIND.ForeverGroupCastSpell(group, spellID, rankSpellIDs)
+                        local knownSpellID, ranks = REMIND.ForeverGroupCastSpell(set, spellID, rankSpellIDs)
                         if knownSpellID then
                             firstRanks = firstRanks or ranks
                             if ranks ~= firstRanks then
                                 hasChoices = true
                             end
-                            if not castSpellID or spellID == group.castSpellID then
+                            if not castSpellID or spellID == set.castSpellID then
                                 iconSpellID, castSpellID, castRanks = knownSpellID, knownSpellID, ranks
                             end
                         end
@@ -359,21 +359,21 @@ function REMIND.CollectForeverGroups(missing, groups, coveredIDs, coveredNames)
                 end
             end
             if iconSpellID and allAurasReadable and not hasActiveAura then
-                local dismissKey = dismissKeys[group]
+                local dismissKey = dismissKeys[set]
                 if not dismissKey then
                     REMIND._fvGroupN = REMIND._fvGroupN + 1
                     dismissKey = "forever:g" .. REMIND._fvGroupN
-                    dismissKeys[group] = dismissKey
+                    dismissKeys[set] = dismissKey
                 end
                 local record = AcquireEntry()
                 local castName = SpellName(iconSpellID)
                 record.texture = Tex(iconSpellID)
                 if castSpellID then
-                    SetForeverPickerSpell(record, hasChoices and group or nil, castSpellID, castRanks)
+                    SetForeverPickerSpell(record, hasChoices and set or nil, castSpellID, castRanks)
                 else
                     CastByName(record, castName, iconSpellID)
                 end
-                record.label = type(group.name) == "string" and group.name or ShortLabel(castName)
+                record.label = type(set.name) == "string" and set.name or ShortLabel(castName)
                 record.cat = "forever"
                 record.dismissKey = dismissKey
                 missing[#missing + 1] = record
@@ -392,18 +392,18 @@ end
 function REMIND.FvTrackingState()
     if REMIND._fvTrackDirty ~= false then
         REMIND._fvTrackDirty = false
-        local treasure, classFile = false, false
+        local treasure, class = false, false
         for idx = 1, C_Minimap.GetNumTrackingTypes() do
             local details = C_Minimap.GetTrackingInfo(idx)
             if details and details.active and details.type == "spell" then
                 if details.spellID == REMIND.FIND_TREASURE then
                     treasure = true
                 else
-                    classFile = true
+                    class = true
                 end
             end
         end
-        REMIND._fvTreasureUp, REMIND._fvClassUp = treasure, classFile
+        REMIND._fvTreasureUp, REMIND._fvClassUp = treasure, class
     end
     return REMIND._fvTreasureUp, REMIND._fvClassUp
 end
@@ -623,23 +623,23 @@ local function CoverLines(lines)
         end
     end
 end
-function REMIND.FvClassTracked(fo, classFile)
-    local entries = REMIND.FvClassBuffs()[classFile]
+function REMIND.FvClassTracked(fo, class)
+    local entries = REMIND.FvClassBuffs()[class]
     if not entries then
         return nil
     end
     local picks = fo.classBuffPicks
-    local maskTex, bit = 0, 1
+    local mask, bit = 0, 1
     for idx = 1, #entries do
         if ClassBuffOn(entries[idx], picks) then
-            maskTex = maskTex + bit
+            mask = mask + bit
         end
         bit = bit * 2
     end
-    if maskTex == 0 then
+    if mask == 0 then
         return nil
     end
-    if maskTex ~= coveredMask or classFile ~= coveredClass then
+    if mask ~= coveredMask or class ~= coveredClass then
         wipe(coveredIDs)
         wipe(coveredNames)
         for idx = 1, #entries do
@@ -649,39 +649,39 @@ function REMIND.FvClassTracked(fo, classFile)
                 CoverLines(buff.also)
             end
         end
-        coveredMask, coveredClass = maskTex, classFile
+        coveredMask, coveredClass = mask, class
     end
     return coveredIDs, coveredNames
 end
 
 local function BuildClassBuffPicker(buff, actions, prefs)
-    local group = { ids = {}, ranksBySpell = {}, actions = actions, key = buff.key, settings = prefs }
-    for _, lineTex in ipairs(buff.lines) do
+    local set = { ids = {}, ranksBySpell = {}, actions = actions, key = buff.key, settings = prefs }
+    for _, line in ipairs(buff.lines) do
         local ranks = {}
-        for _, ident in ipairs(lineTex) do
+        for _, ident in ipairs(line) do
             if C_SpellBook.IsSpellKnown(ident) and SpellName(ident) then
                 ranks[#ranks + 1] = ident
             end
         end
         if ranks[1] then
-            group.ids[#group.ids + 1] = lineTex[1]
-            group.ranksBySpell[lineTex[1]] = ranks
+            set.ids[#set.ids + 1] = line[1]
+            set.ranksBySpell[line[1]] = ranks
         end
     end
-    return group
+    return set
 end
 
-local function ClassPickerSpell(group, defaultID)
-    local prefs = group.settings
+local function ClassPickerSpell(set, defaultID)
+    local prefs = set.settings
     if prefs then
-        local ident, ranks = REMIND.ForeverGroupCastSpell(group, prefs.castSpellID)
+        local ident, ranks = REMIND.ForeverGroupCastSpell(set, prefs.castSpellID)
         if ident then
             return ident, ranks
         end
     end
-    for _, spellID in ipairs(group.ids) do
-        if tContains(group.ranksBySpell[spellID], defaultID) then
-            return REMIND.ForeverGroupCastSpell(group, spellID)
+    for _, spellID in ipairs(set.ids) do
+        if tContains(set.ranksBySpell[spellID], defaultID) then
+            return REMIND.ForeverGroupCastSpell(set, spellID)
         end
     end
 end
@@ -694,30 +694,30 @@ local function ApplyClassBuffPicker(record, fo, buff)
         cache = {}
         REMIND._fvClassPickerGroups = cache
     end
-    local group = cache[buff.key]
+    local set = cache[buff.key]
     local ident, ranks
-    if group and group.actions == actions and group.settings == prefs then
-        ident, ranks = ClassPickerSpell(group, record.spellID)
+    if set and set.actions == actions and set.settings == prefs then
+        ident, ranks = ClassPickerSpell(set, record.spellID)
     end
     -- Talent changes can invalidate the cached choice without a spell-learned event.
     if not ident or not C_SpellBook.IsSpellKnown(ident) then
-        group = BuildClassBuffPicker(buff, actions, prefs)
-        cache[buff.key] = group
-        ident, ranks = ClassPickerSpell(group, record.spellID)
+        set = BuildClassBuffPicker(buff, actions, prefs)
+        cache[buff.key] = set
+        ident, ranks = ClassPickerSpell(set, record.spellID)
     end
     if ident then
-        SetForeverPickerSpell(record, group.ids[2] and group or nil, ident, ranks)
+        SetForeverPickerSpell(record, set.ids[2] and set or nil, ident, ranks)
     end
 end
 
-function REMIND.CollectClassBuffs(missing, fo, auraLock, ids, classFile)
-    local entries = REMIND.FvClassBuffs()[classFile]
+function REMIND.CollectClassBuffs(missing, fo, auraLock, ids, class)
+    local entries = REMIND.FvClassBuffs()[class]
     if not entries then
         return
     end
     local picks = fo.classBuffPicks
     local storage, key = CharStore("classBuffByChar")
-    local recd = storage and key and storage[key]
+    local rec = storage and key and storage[key]
     for idx = 1, #entries do
         local buff = entries[idx]
         if ClassBuffOn(buff, picks) then
@@ -726,7 +726,7 @@ function REMIND.CollectClassBuffs(missing, fo, auraLock, ids, classFile)
                 dk = "forever:class_" .. buff.key
                 buff.dismissKey = dk
             end
-            local last = recd and recd[buff.key]
+            local last = rec and rec[buff.key]
             local up, record = CollectLines(
                 missing,
                 auraLock,
@@ -747,12 +747,12 @@ function REMIND.CollectClassBuffs(missing, fo, auraLock, ids, classFile)
                     storage = {}
                     CludesUIDB.classBuffByChar = storage
                 end
-                recd = storage[key]
-                if not recd then
-                    recd = {}
-                    storage[key] = recd
+                rec = storage[key]
+                if not rec then
+                    rec = {}
+                    storage[key] = rec
                 end
-                recd[buff.key] = up
+                rec[buff.key] = up
             end
         end
     end
@@ -782,13 +782,13 @@ local FV_HANDS = {
 }
 local FISHING_POLE = 20
 
-local function FvWeaponCategory(slotIndex)
-    local category = GetWeaponCategory(slotIndex)
+local function FvWeaponCategory(slot)
+    local category = GetWeaponCategory(slot)
     if not category or category == "RANGED" then
         return nil
     end
-    local _, _, _, _, _, _, subFrame = C_Item.GetItemInfoInstant(GetInventoryItemID("player", slotIndex))
-    if subFrame == FISHING_POLE then
+    local _, _, _, _, _, _, sub = C_Item.GetItemInfoInstant(GetInventoryItemID("player", slot))
+    if sub == FISHING_POLE then
         return nil
     end
     return category
@@ -804,14 +804,14 @@ local function FvWeaponEnchants(ws)
         local IMBUE, TEMPORARY = Enum.ItemEnchantType.Imbue, Enum.ItemEnchantType.Temporary
         for idx = 1, #entries do
             local e = entries[idx]
-            local has, kindOf, leftX = e.hasEnchant, e.enchantType, e.timeLeft
-            if isSecret(has) or isSecret(kindOf) or isSecret(leftX) then
+            local has, kind, leftX = e.hasEnchant, e.enchantType, e.timeLeft
+            if isSecret(has) or isSecret(kind) or isSecret(leftX) then
                 return false
             end
             if has and leftX and leftX > 0 then
-                if kindOf == IMBUE then
+                if kind == IMBUE then
                     imbueLeft = leftX / 1000
-                elseif kindOf == TEMPORARY then
+                elseif kind == TEMPORARY then
                     tempLeft = leftX / 1000
                 end
             end
@@ -836,7 +836,7 @@ local function FvAvailable(buff, low)
     end
 end
 
-local function FvPick(choice, isImbue, classFile, wcat, low)
+local function FvPick(choice, isImbue, class, wcat, low)
     if choice == "off" then
         return nil
     end
@@ -847,7 +847,7 @@ local function FvPick(choice, isImbue, classFile, wcat, low)
         if
             (auto or choice == buff.key)
             and (buff.imbue == true) == isImbue
-            and (not buff.class or buff.class == classFile)
+            and (not buff.class or buff.class == class)
             and (not buff.weapon or buff.weapon == wcat)
         then
             local spellID, itemId = FvAvailable(buff, low)
@@ -912,11 +912,11 @@ local function FvWeaponEntry(missing, hand, labelText, dismissKey, buff, spellID
     missing[#missing + 1] = e
 end
 
-function REMIND.CollectForeverWeapons(missing, fo, classFile)
+function REMIND.CollectForeverWeapons(missing, fo, class)
     if not (C_Item.GetWeaponEnchantInfo and Enum.WeaponSlot and Enum.ItemEnchantType) then
         return
     end
-    local hands = fo.weaponHands and fo.weaponHands[classFile]
+    local hands = fo.weaponHands and fo.weaponHands[class]
     local low, hideNoItem = fo.weaponLowRank == true, fo.weaponHideNoItem ~= false
     local showBelow = fo.weaponShowBelow or 1
     local warnSec = showBelow > 0 and showBelow * 60 or nil
@@ -934,7 +934,7 @@ function REMIND.CollectForeverWeapons(missing, fo, classFile)
         end
         if success then
             local labelText = idx == 1 and mhLabel or ohLabel
-            local buff, spellID, itemId = FvPick(hands and hands[hand.imbue], true, classFile, wcat, low)
+            local buff, spellID, itemId = FvPick(hands and hands[hand.imbue], true, class, wcat, low)
             if buff and FvNeeds(imbueLeft, warnSec) then
                 FvWeaponEntry(
                     missing,
@@ -948,7 +948,7 @@ function REMIND.CollectForeverWeapons(missing, fo, classFile)
                     imbueLeft
                 )
             end
-            buff, spellID, itemId = FvPick(hands and hands[hand.temp], false, classFile, wcat, low)
+            buff, spellID, itemId = FvPick(hands and hands[hand.temp], false, class, wcat, low)
             if buff and FvNeeds(tempLeft, warnSec) then
                 FvWeaponEntry(
                     missing,
@@ -1071,11 +1071,11 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
         local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, REMIND.SLEEPING_BAG_BUFF)
         local stacks = success and not isSecret(aura) and (aura and aura.applications or 0)
         if stacks and not isSecret(stacks) and stacks < REMIND.SLEEPING_BAG_STACKS then
-            local itemInfo = REMIND.SLEEPING_BAG_ITEM
+            local item = REMIND.SLEEPING_BAG_ITEM
             local e = AcquireEntry()
             e.mode = "item"
-            e.itemID = itemInfo
-            e.texture = C_Item.GetItemIconByID(itemInfo) or Tex(REMIND.SLEEPING_BAG_BUFF)
+            e.itemID = item
+            e.texture = C_Item.GetItemIconByID(item) or Tex(REMIND.SLEEPING_BAG_BUFF)
             e.label = CludesUI.L("Sleeping")
             e.cat = "forever"
             e.dismissKey = "forever:sleepingbag"
@@ -1166,11 +1166,11 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
     end
     -- A custom spell reminds only the classes ticked on its options slot
     -- (forever.customClasses[id][CLASS] = false unticks one; unset: every class).
-    local classOff, classFile = fo.customClasses, GetPlayerClass()
+    local classOff, class = fo.customClasses, GetPlayerClass()
     for idx = 1, #custom do
         local ident = custom[idx]
         local off = classOff and classOff[ident]
-        if not (off and off[classFile] == false) then
+        if not (off and off[class] == false) then
             local name = SpellName(ident)
             if not (coveredIDs and (coveredIDs[ident] or (name and coveredNames[name]))) then
                 local fam = REMIND.ForeverFamily(ident)
@@ -1239,7 +1239,7 @@ end
 -- Whether a unit carries any rank of a family: true / false, or nil when the
 -- answer cannot be read. rec (optional) collects the found aura's instance ID
 -- for the group aura probe.
-function REMIND.FvUnitHas(u, fam, recd)
+function REMIND.FvUnitHas(u, fam, rec)
     local nameList = REMIND.FvNames(fam)
     if not nameList[1] then
         return nil
@@ -1250,9 +1250,9 @@ function REMIND.FvUnitHas(u, fam, recd)
             return nil
         end
         if aura then
-            local iid = recd and aura.auraInstanceID
+            local iid = rec and aura.auraInstanceID
             if iid and not isSecret(iid) then
-                recd[iid] = true
+                rec[iid] = true
             end
             return true
         end
@@ -1346,16 +1346,16 @@ function REMIND.FvCoverage(fam, benefit, keep)
         if not u then
             break
         end
-        local recd = instance[u]
-        if recd and not keep then
-            wipe(recd)
+        local rec = instance[u]
+        if rec and not keep then
+            wipe(rec)
         end
         if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) and REMIND.UnitBenefits(u, benefit) then
-            if not recd then
-                recd = {}
-                instance[u] = recd
+            if not rec then
+                rec = {}
+                instance[u] = rec
             end
-            local has = REMIND.FvUnitHas(u, fam, recd)
+            local has = REMIND.FvUnitHas(u, fam, rec)
             if has ~= nil then
                 sum = sum + 1
                 if has then
@@ -1987,12 +1987,12 @@ end
 function REMIND.FvSyncGroupWatch(fams, roster)
     local num = fams and #fams or 0
     local any = num > 0 or roster
-    local Widgets = REMIND._fvWatch
-    if not Widgets then
+    local W = REMIND._fvWatch
+    if not W then
         if not any then
             return
         end
-        Widgets = { ids = {}, frames = {}, fams = {} }
+        W = { ids = {}, frames = {}, fams = {} }
         -- With a refresh already queued there is nothing to probe.
         local function OnUnitEvent(_, evt, unitToken, details)
             if refreshQueued then
@@ -2003,54 +2003,54 @@ function REMIND.FvSyncGroupWatch(fams, roster)
             end
         end
         local tokens = REMIND.FvTokens()
-        for kindOf, from in pairs({ party = 2, raid = 1 }) do
-            local entries = tokens[kindOf]
+        for kind, from in pairs({ party = 2, raid = 1 }) do
+            local entries = tokens[kind]
             for idx = from, #entries, 2 do
                 local f = CreateFrame("Frame")
-                f.kind, f.u1, f.u2 = kindOf, entries[idx], entries[idx + 1]
+                f.kind, f.u1, f.u2 = kind, entries[idx], entries[idx + 1]
                 f:SetScript("OnEvent", OnUnitEvent)
-                Widgets.frames[#Widgets.frames + 1] = f
+                W.frames[#W.frames + 1] = f
             end
         end
-        Widgets.world = CreateFrame("Frame")
-        Widgets.world:SetScript("OnEvent", function()
+        W.world = CreateFrame("Frame")
+        W.world:SetScript("OnEvent", function()
             RequestRefresh()
         end)
-        REMIND._fvWatch = Widgets
+        REMIND._fvWatch = W
     end
     -- The watched buffs, copied (the collector reuses its list).
-    local same = #Widgets.fams == num
+    local same = #W.fams == num
     for idx = 1, num do
-        if Widgets.fams[idx] ~= fams[idx] then
+        if W.fams[idx] ~= fams[idx] then
             same = false
         end
     end
     if not same then
-        wipe(Widgets.fams)
-        wipe(Widgets.ids)
+        wipe(W.fams)
+        wipe(W.ids)
         for idx = 1, num do
             local fam = fams[idx]
-            Widgets.fams[idx] = fam
+            W.fams[idx] = fam
             for _, ident in ipairs(fam.ids) do
-                Widgets.ids[ident] = true
+                W.ids[ident] = true
             end
         end
     end
-    if Widgets.any ~= any then
-        Widgets.any = any
+    if W.any ~= any then
+        W.any = any
         if any then
-            Widgets.world:RegisterEvent("GROUP_ROSTER_UPDATE")
+            W.world:RegisterEvent("GROUP_ROSTER_UPDATE")
         else
-            Widgets.world:UnregisterEvent("GROUP_ROSTER_UPDATE")
+            W.world:UnregisterEvent("GROUP_ROSTER_UPDATE")
         end
     end
-    local modeName = any and IsInGroup() and (IsInRaid() and "raid" or "party") or nil
-    local auraOn = modeName ~= nil and num > 0
-    if Widgets.mode ~= modeName or Widgets.auraOn ~= auraOn then
-        Widgets.mode, Widgets.auraOn = modeName, auraOn
-        for _, f in ipairs(Widgets.frames) do
+    local mode = any and IsInGroup() and (IsInRaid() and "raid" or "party") or nil
+    local auraOn = mode ~= nil and num > 0
+    if W.mode ~= mode or W.auraOn ~= auraOn then
+        W.mode, W.auraOn = mode, auraOn
+        for _, f in ipairs(W.frames) do
             f:UnregisterAllEvents()
-            if f.kind == modeName then
+            if f.kind == mode then
                 f:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", f.u1, f.u2)
                 f:RegisterUnitEvent("UNIT_CONNECTION", f.u1, f.u2)
                 if auraOn then
@@ -2059,16 +2059,16 @@ function REMIND.FvSyncGroupWatch(fams, roster)
             end
         end
         if not auraOn and REMIND._fvInst then
-            for _, recd in pairs(REMIND._fvInst) do
-                wipe(recd)
+            for _, rec in pairs(REMIND._fvInst) do
+                wipe(rec)
             end
         end
     end
 end
 
 -- Whether any watched buff stays readable under the restriction.
-local function FvWatchReadable(Widgets)
-    local fams = Widgets.fams
+local function FvWatchReadable(W)
+    local fams = W.fams
     for idx = 1, #fams do
         if REMIND.FvReadable(fams[idx], true) then
             return true
@@ -2082,19 +2082,19 @@ end
 -- a full update always does; a payload the restriction made unreadable does
 -- while a watched buff itself stays readable.
 function REMIND.FvAuraRelevant(unitToken, details)
-    local Widgets = REMIND._fvWatch
-    if not (Widgets and Widgets.fams[1]) then
+    local W = REMIND._fvWatch
+    if not (W and W.fams[1]) then
         return false
     end
     if not details then
         return true
     end
     if isSecret(details) then
-        return FvWatchReadable(Widgets)
+        return FvWatchReadable(W)
     end
     local full = details.isFullUpdate
     if isSecret(full) then
-        return FvWatchReadable(Widgets)
+        return FvWatchReadable(W)
     end
     if full then
         return true
@@ -2102,18 +2102,18 @@ function REMIND.FvAuraRelevant(unitToken, details)
     local added = details.addedAuras
     if added then
         if isSecret(added) then
-            return FvWatchReadable(Widgets)
+            return FvWatchReadable(W)
         end
         for idx = 1, #added do
             local aura = added[idx]
             if isSecret(aura) then
-                return FvWatchReadable(Widgets)
+                return FvWatchReadable(W)
             end
             local spellRef = aura.spellId
             if isSecret(spellRef) then
-                return FvWatchReadable(Widgets)
+                return FvWatchReadable(W)
             end
-            if spellRef and Widgets.ids[spellRef] then
+            if spellRef and W.ids[spellRef] then
                 return true
             end
         end
@@ -2121,12 +2121,12 @@ function REMIND.FvAuraRelevant(unitToken, details)
     local removed, found = details.removedAuraInstanceIDs, REMIND._fvInst and REMIND._fvInst[unitToken]
     if removed and found and next(found) then
         if isSecret(removed) then
-            return FvWatchReadable(Widgets)
+            return FvWatchReadable(W)
         end
         for idx = 1, #removed do
             local iid = removed[idx]
             if isSecret(iid) then
-                return FvWatchReadable(Widgets)
+                return FvWatchReadable(W)
             end
             if found[iid] then
                 return true

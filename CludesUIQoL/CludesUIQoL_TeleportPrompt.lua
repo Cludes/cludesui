@@ -86,11 +86,11 @@ end
 local function ResolveOutline()
     return (CUI.GetFontOutlineFlag("extras")) or ""
 end
-local function MakeLabel(hostFrame, dim, r, g, b, a)
+local function MakeLabel(hostFrame, size, r, g, b, a)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     CUI.PrimeFontShadow(fontStr, flags == "")
-    fontStr:SetFont(ResolveFont(), dim, flags)
+    fontStr:SetFont(ResolveFont(), size, flags)
     if r then
         fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
     end
@@ -177,12 +177,12 @@ BuildPopup = function()
     hdrBg:SetPoint("TOPRIGHT", -1, 0)
     hdrBg:SetHeight(TITLE_H)
 
-    local titleText = MakeLabel(dialog, 11, 1, 1, 1, 1)
-    titleText:SetPoint("TOPLEFT", PAD, -8)
-    titleText:SetPoint("TOPRIGHT", -(PAD + 16), -8)
-    titleText:SetJustifyH("LEFT")
-    titleText:SetWordWrap(false)
-    titleText:SetText("LFG Reminder")
+    local title = MakeLabel(dialog, 11, 1, 1, 1, 1)
+    title:SetPoint("TOPLEFT", PAD, -8)
+    title:SetPoint("TOPRIGHT", -(PAD + 16), -8)
+    title:SetJustifyH("LEFT")
+    title:SetWordWrap(false)
+    title:SetText("LFG Reminder")
 
     -- Joined dungeon's full name, centered above the teleport button. Set in
     -- ShowPrompt; the name may be a secret string and SetText accepts secrets.
@@ -229,14 +229,14 @@ BuildPopup = function()
         Pix.CreateBorder(secureBtn, 0, 0, 0, 1, 1, "OVERLAY", 7)
     end
 
-    local glyph = secureBtn:CreateTexture(nil, "ARTWORK")
-    glyph:SetSize(40, 40)
-    glyph:SetPoint("LEFT", 8, 0)
-    glyph:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
-    secureBtn._icon = glyph
+    local icon = secureBtn:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(40, 40)
+    icon:SetPoint("LEFT", 8, 0)
+    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
+    secureBtn._icon = icon
 
     local btnLabel = MakeLabel(secureBtn, 12, 1, 1, 1, 1)
-    btnLabel:SetPoint("LEFT", glyph, "RIGHT", 8, 0)
+    btnLabel:SetPoint("LEFT", icon, "RIGHT", 8, 0)
     btnLabel:SetPoint("RIGHT", -6, 0)
     btnLabel:SetJustifyH("LEFT")
     btnLabel:SetWordWrap(false)

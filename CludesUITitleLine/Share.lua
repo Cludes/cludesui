@@ -28,7 +28,7 @@ end
 
 -- One message: score, class, scored runs this season, then each dungeon's
 -- best as "map,level,score,timed,day" (day of the season it was set).
-function Share.Encode(score, classFile, total, bests)
+function Share.Encode(score, class, total, bests)
     local parts = {}
     for _, b in ipairs(bests) do
         parts[#parts + 1] = ("%d,%d,%d,%d,%s"):format(
@@ -41,7 +41,7 @@ function Share.Encode(score, classFile, total, bests)
     end
     return ("K1|%d|%s|%d|%s"):format(
         math.floor(score + 0.5),
-        classFile or "",
+        class or "",
         total or 0,
         table.concat(parts, ";")
     )
@@ -50,7 +50,7 @@ end
 -- A reply from another player is untrusted: anything out of shape or out of
 -- range is dropped rather than shown.
 function Share.Decode(textValue)
-    local score, classFile, total, entries = textValue:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
+    local score, class, total, entries = textValue:match("^K1|(%d+)|(%u*)|(%d+)|([%d,;]*)$")
     score, total = tonumber(score), tonumber(total)
     if not score or score > 9999 or not total then
         return nil
@@ -66,7 +66,7 @@ function Share.Decode(textValue)
             break
         end
     end
-    return { score = score, class = classFile ~= "" and classFile or nil, count = total, runs = runs }
+    return { score = score, class = class ~= "" and class or nil, count = total, runs = runs }
 end
 
 -- Your current character's keys, for a guildmate who asked.
@@ -95,8 +95,8 @@ local function MyKeys()
             }
         end
     end
-    local _, classFile = UnitClass("player")
-    return Share.Encode(context.history.actual, classFile, context.history.runs, bests)
+    local _, class = UnitClass("player")
+    return Share.Encode(context.history.actual, class, context.history.runs, bests)
 end
 
 -- Ask a player's TitleLine for their keys. Not during a chat lockdown, when

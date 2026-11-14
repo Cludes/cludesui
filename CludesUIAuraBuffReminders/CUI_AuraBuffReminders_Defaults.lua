@@ -42,8 +42,8 @@ local StopAllGlows = CludesUI.Glows.StopAllGlows
 do
     local function AllBorderSizes(ox, oy, sx, sy)
         local t = {}
-        for dim = 0, 4 do
-            t[dim] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+        for size = 0, 4 do
+            t[size] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
         end
         return t
     end
@@ -265,28 +265,28 @@ local _dismissedUntilLoad = {} -- [dismissKey] = true
 -- Class-special keys (poisons/rites/imbues/shields) -> their section's sound
 -- field, or nil; built once. Rogue reminders carry per-category keys.
 function REMIND.SpecialSoundField(key)
-    local group = REMIND._specialKeySet
-    if not group then
-        local Stl = REMIND.SPECIALS
-        group = { rogue_lethal = Stl.ROGUE.sound, rogue_nonlethal = Stl.ROGUE.sound }
+    local set = REMIND._specialKeySet
+    if not set then
+        local S = REMIND.SPECIALS
+        set = { rogue_lethal = S.ROGUE.sound, rogue_nonlethal = S.ROGUE.sound }
         local groups = {
-            { Inner.ROGUE_POISONS, Stl.ROGUE.sound },
-            { Inner.PALADIN_RITES, Stl.PALADIN.sound },
-            { Inner.SHAMAN_IMBUES, Stl.SHAMAN.sound },
-            { Inner.SHAMAN_SHIELDS, Stl.SHAMAN.sound },
+            { Inner.ROGUE_POISONS, S.ROGUE.sound },
+            { Inner.PALADIN_RITES, S.PALADIN.sound },
+            { Inner.SHAMAN_IMBUES, S.SHAMAN.sound },
+            { Inner.SHAMAN_SHIELDS, S.SHAMAN.sound },
         }
         for _, g in ipairs(groups) do
             if type(g[1]) == "table" then
                 for _, it in ipairs(g[1]) do
                     if it.key then
-                        group[it.key] = g[2]
+                        set[it.key] = g[2]
                     end
                 end
             end
         end
-        REMIND._specialKeySet = group
+        REMIND._specialKeySet = set
     end
-    return group[key]
+    return set[key]
 end
 
 -- Resolves the configured sound key for a reminder from its dismissKey.

@@ -124,43 +124,43 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 Pix.Point(div, "BOTTOM", rowFrame, "BOTTOMLEFT", xPos, 0)
             end
 
-            for column = 0, GRID_COLS - 1 do
-                local position = row * GRID_COLS + column + 1
-                local itemInfo = itemList[position]
-                if not itemInfo then
+            for col = 0, GRID_COLS - 1 do
+                local position = row * GRID_COLS + col + 1
+                local item = itemList[position]
+                if not item then
                     break
                 end
 
-                local cellFrame = CreateFrame("Frame", nil, rowFrame)
-                cellFrame:SetSize(colW, GRID_ROW_H)
-                cellFrame:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", column * colW, 0)
+                local cell = CreateFrame("Frame", nil, rowFrame)
+                cell:SetSize(colW, GRID_ROW_H)
+                cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", col * colW, 0)
 
                 -- Class-colored label (or white for power colors)
                 local cr, cg, cb = 1, 1, 1
-                if itemInfo.classToken then
-                    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[itemInfo.classToken]
+                if item.classToken then
+                    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
                     if cc then
                         cr, cg, cb = cc.r, cc.g, cc.b
                     end
                 end
-                local labelText = MakeFont(cellFrame, 13, nil, cr, cg, cb)
-                labelText:SetPoint("LEFT", cellFrame, "LEFT", GRID_SIDE_PAD, 0)
-                labelText:SetText(itemInfo.label)
+                local labelText = MakeFont(cell, 13, nil, cr, cg, cb)
+                labelText:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
+                labelText:SetText(item.label)
 
                 -- Color swatch (right side)
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    cellFrame,
-                    cellFrame:GetFrameLevel() + 2,
+                    cell,
+                    cell:GetFrameLevel() + 2,
                     function()
-                        local c = itemInfo.getColor()
+                        local c = item.getColor()
                         return c.r, c.g, c.b, 1
                     end,
                     function(r, g, b)
-                        local c = itemInfo.getColor()
+                        local c = item.getColor()
                         c.r = r
                         c.g = g
                         c.b = b
-                        itemInfo.setColor(c)
+                        item.setColor(c)
                         local rl = CludesUI._widgetRefreshList
                         if rl then
                             for i2 = 1, #rl do
@@ -171,15 +171,15 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     false,
                     SWATCH_SZ
                 )
-                colorSwatch:SetPoint("RIGHT", cellFrame, "RIGHT", -GRID_SIDE_PAD, 0)
+                colorSwatch:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
                 -- Repaint on page refresh/show (SelectPage re-runs the refresh list on show) so swatches survive a profile/global-source change.
                 CludesUI.RegisterWidgetRefresh(updateSwatch)
 
                 -- Undo (reset) button
-                local undoBtn = CreateFrame("Button", nil, cellFrame)
+                local undoBtn = CreateFrame("Button", nil, cell)
                 undoBtn:SetSize(18, 18)
                 undoBtn:SetPoint("RIGHT", colorSwatch, "LEFT", -10, 0)
-                undoBtn:SetFrameLevel(cellFrame:GetFrameLevel() + 3)
+                undoBtn:SetFrameLevel(cell:GetFrameLevel() + 3)
                 undoBtn:SetAlpha(0.3)
                 local undoTex = undoBtn:CreateTexture(nil, "ARTWORK")
                 undoTex:SetAllPoints()
@@ -193,7 +193,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     CludesUI.HideWidgetTooltip()
                 end)
                 undoBtn:SetScript("OnClick", function()
-                    itemInfo.resetFn()
+                    item.resetFn()
                     CludesUI.ApplyColorsToOUF()
                     updateSwatch()
                     local rl = CludesUI._widgetRefreshList
@@ -487,7 +487,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         -- Class names are Blizzard-localized in every client language; use the client's own names, falling back to our English labels.
         local labelFS = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[token])
             or CLASS_LABELS[token]
-        local spec_def = CLASS_COLOR_MAP[token] or { r = 1, g = 1, b = 1 }
+        local def = CLASS_COLOR_MAP[token] or { r = 1, g = 1, b = 1 }
         classItems[#classItems + 1] = {
             label = CludesUI.L(labelFS),
             classToken = token,
@@ -496,7 +496,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 if saved.class and saved.class[token] then
                     return saved.class[token]
                 end
-                return { r = spec_def.r, g = spec_def.g, b = spec_def.b }
+                return { r = def.r, g = def.g, b = def.b }
             end,
             setColor = function(c)
                 SaveColorEntry("class", token, c)
@@ -540,7 +540,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     for _, pk in ipairs(POWER_ORDER) do
         -- Power names are Blizzard global strings (already localized); fall back to our English labels for non-standard entries (e.g. Ebon Might).
         local labelFS = _G[pk] or POWER_LABELS[pk] or pk
-        local spec_def = DEFAULT_POWER_COLORS[pk] or { r = 1, g = 1, b = 1 }
+        local def = DEFAULT_POWER_COLORS[pk] or { r = 1, g = 1, b = 1 }
         powerItems[#powerItems + 1] = {
             label = CludesUI.L(labelFS),
             classToken = nil,
@@ -549,7 +549,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 if saved.power and saved.power[pk] then
                     return saved.power[pk]
                 end
-                return { r = spec_def.r, g = spec_def.g, b = spec_def.b }
+                return { r = def.r, g = def.g, b = def.b }
             end,
             setColor = function(c)
                 SaveColorEntry("power", pk, c)

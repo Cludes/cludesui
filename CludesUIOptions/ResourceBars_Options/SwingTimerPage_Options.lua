@@ -47,7 +47,7 @@ end
 -- the GCD Bar page, plus the row/text/range rows the swing timer adds.
 function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix = environ.DB, environ.PP
+    local DB, Pix = environ.DB, environ.PP
     local W = CludesUI.Widgets
     local posY = yOffset
     local _, hgt
@@ -81,7 +81,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     local ST_TIP = "Swing Timer"
     local stOff = function()
-        local p = SavedDB()
+        local p = DB()
         return p and not p.swingTimer.enabled
     end
 
@@ -112,11 +112,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         text = "Enable Swing Timer",
         tooltip = "One bar per weapon that can swing, each filling over the time to the next auto attack.",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.enabled
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -133,11 +133,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         values = sStrataValues,
         order = sStrataOrder,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.frameStrata or "MEDIUM"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -151,7 +151,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         local region = enableRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and not p.swingTimer.enabled
             end,
             disabledTooltip = ST_TIP,
@@ -164,7 +164,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return 0
                         end
@@ -175,7 +175,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return g.anchorX or 0
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -195,7 +195,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return 0
                         end
@@ -206,7 +206,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return g.anchorY or -130
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -238,11 +238,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = shTip,
         rawTooltip = shRaw,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.height or 12
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -259,11 +259,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = swTip,
         rawTooltip = swRaw,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.width or 220
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -286,11 +286,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.rowSpacing or 2
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -306,11 +306,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.textSize or 11
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -328,11 +328,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 max = 100,
                 step = 1,
                 get = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.swingTimer[key] or 0
                 end,
                 set = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -358,7 +358,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local stShowRow
     stShowRow, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
         getStore = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer
         end,
         legacyKey = "visibility",
@@ -378,11 +378,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.hideWhenIdle
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -398,7 +398,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     -- forms gets the talent picker straight from the cog.
     if not CludesUI._prebuilding then
         local function STCfg()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer
         end
         local condShow
@@ -468,11 +468,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Show Fill Color When Idle",
                     tooltip = "Show an idle row full of its fill color instead of the background color.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return (p and p.swingTimer.idleShowFill) == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -525,11 +525,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 values = btValues,
                 order = btOrder,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.swingTimer.borderTexture or "solid"
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -558,10 +558,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             }),
             stClassic
                     and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.stockBorderScale
                     end, function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -575,25 +575,25 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     disabled = stOff,
                     disabledTooltip = ST_TIP,
                     getStep = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and (p.swingTimer.borderSize or 0) or 0
                     end,
                     setStep = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.swingTimer.borderSize = val
                         end
                     end,
                     getTex = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and (p.swingTimer.borderTexture or "solid") or "solid"
                     end,
                     getPx = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.borderSizePx
                     end,
                     setPx = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.swingTimer.borderSizePx = val
                         end
@@ -607,11 +607,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         posY = posY - hgt
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
-            local p = SavedDB()
+            local p = DB()
             local tex = p and p.swingTimer.borderTexture or "solid"
             if tex ~= "solid" and tex ~= "" then
                 local function step()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and (p.swingTimer.borderSize or 0) or 0
                 end
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -619,31 +619,31 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     disabled = stOff,
                     disabledTooltip = ST_TIP,
                     getTex = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and (p.swingTimer.borderTexture or "solid") or "solid"
                     end,
                     getStep = step,
                     getSizeKey = step,
                     getPx = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.borderSizePx
                     end,
                     getX = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.borderTextureOffset
                     end,
                     setX = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.swingTimer.borderTextureOffset = val
                         end
                     end,
                     getY = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.borderTextureOffsetY
                     end,
                     setY = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.swingTimer.borderTextureOffsetY = val
                         end
@@ -671,7 +671,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     if stOff() or stStock then
                         return true
                     end
-                    local p = SavedDB()
+                    local p = DB()
                     return not CludesUI.RoundedStyleOK(p and p.swingTimer.borderTexture)
                 end,
                 disabledTooltip = function()
@@ -694,11 +694,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         max = CludesUI.ROUNDED_MAX_RADIUS,
                         step = 1,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.swingTimer.cornerRadius or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -707,10 +707,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end,
                     },
                 }, function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.swingTimer.cornerMask
                 end, function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -723,7 +723,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     tooltip = "Border Color",
                     hasAlpha = true,
                     disabled = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return not (p and p.swingTimer.enabled and (p.swingTimer.borderSize or 0) > 0)
                     end,
                     disabledTooltip = function()
@@ -733,14 +733,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return "This option requires a Border Size above 0."
                     end,
                     getValue = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return (p and p.swingTimer.borderR or 0),
                             (p and p.swingTimer.borderG or 0),
                             (p and p.swingTimer.borderB or 0),
                             (p and p.swingTimer.borderA or 1)
                     end,
                     setValue = function(r, g, b, a)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -764,7 +764,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return 0
                             end
@@ -780,7 +780,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             return dsx
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -796,7 +796,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return 0
                             end
@@ -812,7 +812,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             return dsy
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -825,11 +825,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Show Behind",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.swingTimer.borderBehind or false
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -841,7 +841,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 },
             })
             local function UpdateCogVis()
-                local p = SavedDB()
+                local p = DB()
                 local tex = p and p.swingTimer.borderTexture or "solid"
                 if tex == "solid" or stClassic then
                     cogBtn:Hide()
@@ -860,7 +860,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             tooltip = tipText,
             hasAlpha = true,
             getValue = function()
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return 1, 1, 1, 1
                 end
@@ -868,7 +868,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 return g[prefixText .. "R"], g[prefixText .. "G"], g[prefixText .. "B"], g[prefixText .. "A"]
             end,
             setValue = function(r, gg, b, a)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -882,7 +882,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 CludesUI:RefreshPage()
             end,
             onClick = function(self)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -897,7 +897,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end
             end,
             refreshAlpha = function()
-                local p = SavedDB()
+                local p = DB()
                 return (p and not p.swingTimer.classColored) and 1 or 0.3
             end,
         }
@@ -913,7 +913,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 tooltip = "Gradient End Color",
                 hasAlpha = true,
                 disabled = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return not (p and p.swingTimer.gradientEnabled)
                 end,
                 disabledTooltip = function()
@@ -923,7 +923,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     return "Gradient"
                 end,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return 0.20, 0.20, 0.80, 1
                     end
@@ -933,7 +933,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         p.swingTimer.gradientA
                 end,
                 setValue = function(r, g, b, a)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -957,7 +957,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -966,7 +966,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return (not p or p.swingTimer.classColored == true) and 1 or 0.3
                 end,
             },
@@ -980,11 +980,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return math.floor(((p and p.swingTimer.bgA or 0.7) * 100) + 0.5)
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -997,7 +997,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         local region = colorRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and not p.swingTimer.enabled
             end,
             disabledTooltip = ST_TIP,
@@ -1007,11 +1007,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Enable Gradient",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.gradientEnabled
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1026,11 +1026,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.gradientDir or "HORIZONTAL"
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1046,13 +1046,13 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             {
                 tooltip = "Background Color",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return (p and p.swingTimer.bgR or 0),
                         (p and p.swingTimer.bgG or 0),
                         (p and p.swingTimer.bgB or 0)
                 end,
                 setValue = function(r, g, b)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -1072,11 +1072,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         values = texValues,
         order = texOrder,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.texture or "none"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1090,11 +1090,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.depleteFill
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1113,11 +1113,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.showSpark
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1159,7 +1159,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     return 1, 1, 1, 1
                 end,
                 setValue = function(r, gg, b, a)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -1189,11 +1189,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     max = 32,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.sparkWidth or 8
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1210,11 +1210,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     step = 1,
                     tooltip = "How far the spark reaches past the top and bottom of the bar.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.sparkOverhang or 0
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1252,11 +1252,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             region:GetFrameLevel() + 2,
             WEAPON_ITEMS,
             function(k)
-                local p = SavedDB()
+                local p = DB()
                 return not p or p.swingTimer[k] ~= false
             end,
             function(k, val)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -1270,9 +1270,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         region._control = cbDD
         region._lastInline = nil
         local function UpdateWeaponsDD()
-            local offset = stOff()
-            cbDD:SetAlpha(offset and 0.3 or 1)
-            cbDD:EnableMouse(not offset)
+            local off = stOff()
+            cbDD:SetAlpha(off and 0.3 or 1)
+            cbDD:EnableMouse(not off)
             cbDDRefresh()
         end
         UpdateWeaponsDD()
@@ -1288,11 +1288,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Always Show Rows",
                     tooltip = "Show every row ticked in the list even when no weapon is equipped in that slot, so the bar keeps the same layout on every class.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.alwaysShowRows == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1305,16 +1305,16 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Hide Label Without Weapon",
                     tooltip = "A row shown only because of Always Show Rows drops its MH / OH / R label while no weapon is equipped in that slot. A shield keeps its Shield label.",
                     disabled = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return not (p and p.swingTimer.alwaysShowRows)
                     end,
                     disabledTooltip = "Always Show Rows",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.hideLabelNoWeapon == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1327,11 +1327,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Show Shield As Off Hand",
                     tooltip = "Show the Off Hand row, labelled Shield, while a shield is equipped. Always Show Rows also labels it.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.shieldRow == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1344,19 +1344,19 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Combine Hands",
                     tooltip = "Show the off hand as a spark on the Main Hand bar instead of its own row.",
                     disabled = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and (p.swingTimer.showMH == false or p.swingTimer.showOH == false)
                     end,
                     disabledTooltip = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return (p and p.swingTimer.showMH == false) and "Main Hand" or "Off Hand"
                     end,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.combineHands == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1376,11 +1376,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.showTime ~= false
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1394,11 +1394,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.showLabel ~= false
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1411,31 +1411,31 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     -- A cog's colour row: store keys prefix .. R/G/B/A, `def` the fallback
     -- {r, g, b, a}; `off` (optional) greys it out with `offTip`.
     -- `shared` (optional): a prefix whose colour shows while this one is unset.
-    local function ColorRow(labelText, prefixText, spec_def, tipText, offset, offTip, shared)
+    local function ColorRow(labelText, prefixText, def, tipText, off, offTip, shared)
         return {
             type = "colorpicker",
             label = labelText,
             tooltip = tipText,
             hasAlpha = true,
-            disabled = offset,
+            disabled = off,
             disabledTooltip = offTip,
             get = function()
-                local p = SavedDB()
+                local p = DB()
                 local g = p and p.swingTimer
                 if not g then
-                    return spec_def[1], spec_def[2], spec_def[3], spec_def[4]
+                    return def[1], def[2], def[3], def[4]
                 end
                 local k = prefixText
                 if shared and g[prefixText .. "R"] == nil then
                     k = shared
                 end
-                return g[k .. "R"] or spec_def[1],
-                    g[k .. "G"] or spec_def[2],
-                    g[k .. "B"] or spec_def[3],
-                    g[k .. "A"] or spec_def[4]
+                return g[k .. "R"] or def[1],
+                    g[k .. "G"] or def[2],
+                    g[k .. "B"] or def[3],
+                    g[k .. "A"] or def[4]
             end,
             set = function(r, gg, b, a)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -1447,15 +1447,15 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         }
     end
     local stateNotFull = function()
-        local p = SavedDB()
+        local p = DB()
         return not p or p.swingTimer.attackState ~= "full"
     end
     local stateOff = function()
-        local p = SavedDB()
+        local p = DB()
         return not p or p.swingTimer.attackState == "off"
     end
     local guideOff = function()
-        local p = SavedDB()
+        local p = DB()
         return not p or (p.swingTimer.moveGuide or "off") == "off"
     end
 
@@ -1468,11 +1468,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = stOff,
         disabledTooltip = ST_TIP,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.rangeCheck ~= false
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1488,11 +1488,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         values = { off = "Off", queued = "Queued Only", full = "Full" },
         order = { "off", "queued", "full" },
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.attackState or "queued"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1566,11 +1566,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     disabled = stateOff,
                     disabledTooltip = "This option requires an Attack State other than Off.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.queueMainHandOnly == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1593,11 +1593,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     step = 1,
                     tooltip = "Opacity of a row whose target is out of range.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return math.floor(((p and p.swingTimer.outOfRangeAlpha or 0.4) * 100) + 0.5)
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1620,11 +1620,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         values = { off = "Off", segments = "Segments", windup = "Wind-Up Bar" },
         order = { "off", "segments", "windup" },
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.swingTimer.moveGuide or "off"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1664,11 +1664,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Text Cue",
                     tooltip = "The Ranged row's time reads Move (seconds left to move), then Still, then Go. Needs Show Time.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.swingTimer.moveCue == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end

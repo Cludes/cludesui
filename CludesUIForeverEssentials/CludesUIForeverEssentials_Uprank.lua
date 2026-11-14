@@ -38,8 +38,8 @@ local pending = { player = {}, pet = {} } -- spell names to uprank once out of c
 -- Read tables, reused by every read
 local playerTop, petTop, petSlots, counts = {}, {}, {}, {}
 
-local function Plain(val, kindOf)
-    if not issecretvalue(val) and type(val) == (kindOf or "number") then
+local function Plain(val, kind)
+    if not issecretvalue(val) and type(val) == (kind or "number") then
         return val
     end
 end
@@ -49,16 +49,16 @@ end
 -------------------------------------------------------------------------------
 local function ReadPlayerTop()
     wipe(playerTop)
-    for lineTex = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
-        local li = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
+    for line = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
+        local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
         if li and not li.offSpecID then
-            for slotIndex = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
+            for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
                 if
-                    C_SpellBook.GetSpellBookItemType(slotIndex, PLAYER) == Enum.SpellBookItemType.Spell
-                    and not C_SpellBook.IsSpellBookItemPassive(slotIndex, PLAYER)
-                    and not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PLAYER)
+                    C_SpellBook.GetSpellBookItemType(slot, PLAYER) == Enum.SpellBookItemType.Spell
+                    and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
+                    and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
                 then
-                    local details = C_SpellBook.GetSpellBookItemInfo(slotIndex, PLAYER)
+                    local details = C_SpellBook.GetSpellBookItemInfo(slot, PLAYER)
                     if details and details.spellID and details.name then
                         playerTop[details.name] = details.spellID
                     end
@@ -78,12 +78,12 @@ local function ReadPetTop()
     if not num or num == 0 then
         return false
     end
-    for slotIndex = 1, num do
+    for slot = 1, num do
         -- Pet spells are PetAction items; the stances and commands among them carry no spell ID.
-        local details = C_SpellBook.GetSpellBookItemInfo(slotIndex, PET)
+        local details = C_SpellBook.GetSpellBookItemInfo(slot, PET)
         if details and details.spellID and details.name and not details.isPassive then
-            petSlots[details.spellID] = slotIndex
-            if not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PET) then
+            petSlots[details.spellID] = slot
+            if not C_SpellBook.IsSpellBookItemLowRank(slot, PET) then
                 petTop[details.name] = details.spellID
             end
         end
@@ -133,14 +133,14 @@ end
 local function ProbeLearned(known)
     for ident in pairs(learned) do
         local name = C_Spell.GetSpellName(ident)
-        local slotIndex, bank = C_SpellBook.FindSpellBookSlotForSpell(ident)
-        if not (name and slotIndex) then
+        local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(ident)
+        if not (name and slot) then
             return false
         end
         if
             bank == PLAYER
-            and not C_SpellBook.IsSpellBookItemPassive(slotIndex, PLAYER)
-            and not C_SpellBook.IsSpellBookItemLowRank(slotIndex, PLAYER)
+            and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
+            and not C_SpellBook.IsSpellBookItemLowRank(slot, PLAYER)
             and known.player[name] ~= ident
         then
             known.player[name] = ident
@@ -177,8 +177,8 @@ local function UprankPending()
     wipe(counts)
 
     for action = 1, MAX_ACTION_SLOT do
-        local kindOf, ident = GetActionInfo(action)
-        ident = kindOf == "spell" and Plain(ident)
+        local kind, ident = GetActionInfo(action)
+        ident = kind == "spell" and Plain(ident)
         local name = ident and C_Spell.GetSpellName(ident)
         if name then
             local petNew = hasPet and pending.pet[name] and petTop[name]

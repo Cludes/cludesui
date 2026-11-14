@@ -57,9 +57,9 @@ local function GetBGTopAnchor()
         return nil, "TOP"
     end
     if EQT.ShouldHideMasterHeader and EQT.ShouldHideMasterHeader() then
-        local headerFrame = otf.HeaderMenu or otf.Header
-        if headerFrame then
-            return headerFrame, "BOTTOM"
+        local header = otf.HeaderMenu or otf.Header
+        if header then
+            return header, "BOTTOM"
         end
     end
     return otf, "TOP"
@@ -336,12 +336,12 @@ local function EnsureBG()
     -- Bottom edge extends past the last block (re-anchored dynamically below).
     local topOfs = TopGapOffset()
     local leftOfs = GetBGLeftOffset()
-    local anchorFrame, anchorPoint = GetBGTopAnchor()
-    anchorFrame = anchorFrame or otf
-    _bgFrame:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
+    local anchor, anchorPoint = GetBGTopAnchor()
+    anchor = anchor or otf
+    _bgFrame:SetPoint("TOPLEFT", anchor, anchorPoint .. "LEFT", leftOfs, topOfs)
     -- Bottom is re-anchored dynamically in ResizeBGToContent(); this is
     -- only the fallback extent when no content has loaded yet (30px tall).
-    _bgFrame:SetPoint("BOTTOMRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs - 30)
+    _bgFrame:SetPoint("BOTTOMRIGHT", anchor, anchorPoint .. "RIGHT", 11, topOfs - 30)
     local texture = _bgFrame:CreateTexture(nil, "BACKGROUND")
     texture:SetAllPoints()
     _bgFrame._tex = texture
@@ -351,8 +351,8 @@ local function EnsureBG()
     -- directly to it so the line matches tracker width regardless of BG
     -- padding. Same snap pattern as PP.CreateBorder.
     local divider = _bgFrame:CreateTexture(nil, "OVERLAY")
-    divider:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
-    divider:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
+    divider:SetPoint("TOPLEFT", anchor, anchorPoint .. "LEFT", leftOfs, topOfs)
+    divider:SetPoint("TOPRIGHT", anchor, anchorPoint .. "RIGHT", 11, topOfs)
     _bgFrame._divider = divider
     return _bgFrame
 end
@@ -519,12 +519,12 @@ local function ResizeBGToContent()
     end
     local topOfs = TopGapOffset()
     local leftOfs = GetBGLeftOffset()
-    local anchorFrame, anchorPoint = GetBGTopAnchor()
-    anchorFrame = anchorFrame or otf
+    local anchor, anchorPoint = GetBGTopAnchor()
+    anchor = anchor or otf
     if backdrop._divider then
         backdrop._divider:ClearAllPoints()
-        backdrop._divider:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
-        backdrop._divider:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
+        backdrop._divider:SetPoint("TOPLEFT", anchor, anchorPoint .. "LEFT", leftOfs, topOfs)
+        backdrop._divider:SetPoint("TOPRIGHT", anchor, anchorPoint .. "RIGHT", 11, topOfs)
     end
     -- UpdateHeight sizes a module to contentsHeight + bottomSpacing, so its
     -- bottom sits bottomSpacing below its last block. Adding that back keeps the
@@ -537,8 +537,8 @@ local function ResizeBGToContent()
         bottomSpacing = 0
     end
     backdrop:ClearAllPoints()
-    backdrop:SetPoint("TOPLEFT", anchorFrame, anchorPoint .. "LEFT", leftOfs, topOfs)
-    backdrop:SetPoint("TOPRIGHT", anchorFrame, anchorPoint .. "RIGHT", 11, topOfs)
+    backdrop:SetPoint("TOPLEFT", anchor, anchorPoint .. "LEFT", leftOfs, topOfs)
+    backdrop:SetPoint("TOPRIGHT", anchor, anchorPoint .. "RIGHT", 11, topOfs)
     backdrop:SetPoint("BOTTOM", lowest, "BOTTOM", 0, bottomSpacing - 15)
     backdrop._lastLowest = lowest
 end

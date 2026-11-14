@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -19,19 +19,19 @@ local tinsert = table.insert
 local tconcat = table.concat
 local tsort = table.sort
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 local abs = math.abs
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  GOLD (engine-level session ledger + cross-character store)
@@ -157,8 +157,8 @@ local function GetFreeBagSlots()
     return free
 end
 
-mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local _goldFitBuf = { "", "" }
@@ -195,11 +195,11 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     function instance:Refresh()
         local dg = D()
-        Keys.SetBlockIcon(goldIcon, blockCfg)
+        K.SetBlockIcon(goldIcon, blockCfg)
         local barCfg = BC()
         local barH = barCtx.GetThickness()
         -- 0.4333 ratio = 13px at the 30 base (matches the stat blocks).
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local iconSz = 0
         -- +4: the bag icon runs bigger than the text size (user-tuned).
         if dg.showIcons ~= false then
@@ -218,7 +218,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
         local fe = dg.forceEnglishUnits == true
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(30, slotW - 8)
+            local innerW = max(30, slotW - 8)
             -- One token per coin, one coin per line. Coin Colored tints the suffix letters
             -- (nothing to tint once Coin Icons is on, so the two compose); hovering drops it so the accent wash reads.
             local lines = mod.MoneyTokens(
@@ -229,7 +229,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
                 ab,
                 fe
             )
-            local startSize = min(fontSize, upper(10, floor(CONTENT_BASE * 0.52 + 0.5)))
+            local startSize = min(fontSize, max(10, floor(CONTENT_BASE * 0.52 + 0.5)))
             local goldFontSize = startSize
             mod.SetFont(goldText, goldFontSize, barCfg)
             goldText:SetText(tconcat(lines, "\n"))
@@ -290,7 +290,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(30, slotW - 8)
+            local innerW = max(30, slotW - 8)
             local totalH = 8
 
             if iconSz > 0 then
@@ -315,7 +315,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
                 totalH = totalH + 2 + mod.SnapToPixelGrid(bagText:GetStringHeight())
             end
 
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             goldButton:SetSize(slotW, totalH)
             contentFrame:SetSize(slotW, totalH)
             goldButton:ClearAllPoints()
@@ -340,7 +340,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
             if bagTextValue ~= "" then
                 bagPad = 26
             end
-            local textBudget = upper(24, slotW - iconSz - bagPad)
+            local textBudget = max(24, slotW - iconSz - bagPad)
             _goldFitBuf[1] = plainText
             _goldFitBuf[2] = fancyText
             _goldFitBuf[3] = bagTextValue
@@ -382,7 +382,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
                     other = plainText
                 end
                 measureFS:SetText(other)
-                moneyW = upper(moneyW, measureFS:GetStringWidth() or 0)
+                moneyW = max(moneyW, measureFS:GetStringWidth() or 0)
             end
             local textW = min(slotW, iconSz + gap + moneyW + bagW + 4)
             goldButton:SetSize(textW, barH)
@@ -645,7 +645,7 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
             local barH = barCtx.GetThickness()
-            local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+            local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
             -- Mirror Refresh: no icon budget when Show Icons is off, else the segment measures taller than its rendered content.
             local iconTerm = 0
             local dg = blockCfg.settings
@@ -657,9 +657,9 @@ mod.BlockFactories.gold = function(blockCfg, slotIndex, contentFrame, barCtx)
             if bagText:IsShown() then
                 bagH = (bagText:GetStringHeight() or 0) + 2
             end
-            return upper(8 + iconTerm + textH + bagH + 4, barH, 50)
+            return max(8 + iconTerm + textH + bagH + 4, barH, 50)
         end
-        return upper(contentFrame:GetWidth() or 100, 40)
+        return max(contentFrame:GetWidth() or 100, 40)
     end
 
     function instance:Destroy()

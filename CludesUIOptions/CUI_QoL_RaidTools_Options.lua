@@ -41,19 +41,19 @@ initFrame:SetScript("OnEvent", function(self)
     -- a read-tracking proxy. Writing back what was just read stores a proxy in
     -- the real table and each later call wraps it again, until reading a leaf
     -- overflows the C stack. DB_DEFAULTS guarantees the slice exists.
-    local function SavedDB()
+    local function DB()
         local get = _G._CUI_RaidTools_DB
         local root = get and get()
         return root and root.profile and root.profile.raidTools
     end
 
     local function Cfg(key)
-        local p = SavedDB()
+        local p = DB()
         return p and p[key]
     end
 
     local function Set(key, val)
-        local p = SavedDB()
+        local p = DB()
         if p then
             p[key] = val
         end
@@ -88,8 +88,8 @@ initFrame:SetScript("OnEvent", function(self)
         return Disabled() or ShowAsVal() == "markers"
     end
     local function FullPanelButtonDisabled()
-        local modeName = ShowAsVal()
-        return Disabled() or modeName == "compact" or modeName == "markers"
+        local mode = ShowAsVal()
+        return Disabled() or mode == "compact" or mode == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
     local function BuffCheckOff()

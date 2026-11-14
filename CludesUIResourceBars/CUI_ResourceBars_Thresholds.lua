@@ -85,24 +85,24 @@ local function BuildBarTypeSpecMap()
         return
     end
     for classID = 1, GetNumClasses() do
-        local _, classFile = GetClassInfo(classID)
-        if classFile then
+        local _, class = GetClassInfo(classID)
+        if class then
             local numSpecs = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
             for specIndex = 1, numSpecs do
                 local specID = GetSpecializationInfoForClassID(classID, specIndex)
                 if specID then
                     local isBar = false
-                    if classFile == "DRUID" and specIndex == 1 then
+                    if class == "DRUID" and specIndex == 1 then
                         isBar = true
-                    elseif classFile == "SHAMAN" and specIndex == 1 then
+                    elseif class == "SHAMAN" and specIndex == 1 then
                         isBar = true
-                    elseif classFile == "PRIEST" and specIndex == 3 then
+                    elseif class == "PRIEST" and specIndex == 3 then
                         isBar = true
-                    elseif classFile == "MONK" and specIndex == 1 then
+                    elseif class == "MONK" and specIndex == 1 then
                         isBar = true
-                    elseif classFile == "HUNTER" and (specIndex == 1 or specIndex == 2) then
+                    elseif class == "HUNTER" and (specIndex == 1 or specIndex == 2) then
                         isBar = true
-                    elseif classFile == "DEMONHUNTER" and specID == 1480 then
+                    elseif class == "DEMONHUNTER" and specID == 1480 then
                         isBar = true
                     end
                     BAR_TYPE_SPECS[specID] = isBar
@@ -408,14 +408,14 @@ end
 -- Returns: enabled(bool), bands(array), mode("percent"|"value"), reverse(bool)
 -- reverse false => "up to" (<=), true => "from" (>=)
 local function ResolveBandConfig(sp, record)
-    local enabled, bands, modeName, reverse
+    local enabled, bands, mode, reverse
     if record then
         enabled = record.multiBandEnabled
         if enabled == nil then
             enabled = sp.multiBandEnabled
         end
         bands = (record.bands and #record.bands > 0) and record.bands or sp.bands
-        modeName = record.bandMode or sp.bandMode or "percent"
+        mode = record.bandMode or sp.bandMode or "percent"
         reverse = record.bandReverse
         if reverse == nil then
             reverse = sp.bandReverse
@@ -423,13 +423,13 @@ local function ResolveBandConfig(sp, record)
     else
         enabled = sp.multiBandEnabled
         bands = sp.bands
-        modeName = sp.bandMode or "percent"
+        mode = sp.bandMode or "percent"
         reverse = sp.bandReverse
     end
     if not enabled or not bands or #bands == 0 then
         return false
     end
-    return true, bands, modeName, reverse and true or false
+    return true, bands, mode, reverse and true or false
 end
 
 -- Find the band whose count range contains `count` (pip resources)
@@ -465,7 +465,7 @@ local _bandCurveCache = {}
 -- Build the ordered `stops` (frac space) for a bar-type resource from `bands`.
 -- `mode` "percent" -> frac = to/100; "value" -> frac = to/max (max clean for player).
 -- Returns a stops array, or nil if no usable bands.
-local function BuildBandStops(bands, modeName, maxVal)
+local function BuildBandStops(bands, mode, maxVal)
     if not bands or #bands == 0 then
         return nil
     end
@@ -473,7 +473,7 @@ local function BuildBandStops(bands, modeName, maxVal)
     for i = 1, #bands do
         local b = bands[i]
         local frac
-        if modeName == "value" then
+        if mode == "value" then
             if not maxVal or maxVal <= 0 then
                 return nil
             end
@@ -488,7 +488,7 @@ end
 
 -- cacheKey is a stable per-bar id ("health"/"primary"/"secondary"/"healthpoll").
 -- baseR/G/B is the bar's normal fill color. reverse=false (up to) / true (from).
-local function GetBarBandCurve(cacheKey, bands, modeName, maxVal, baseR, baseG, baseB, reverse)
+local function GetBarBandCurve(cacheKey, bands, mode, maxVal, baseR, baseG, baseB, reverse)
     if not C_CurveUtil or not C_CurveUtil.CreateColorCurve then
         return nil
     end
@@ -504,7 +504,7 @@ local function GetBarBandCurve(cacheKey, bands, modeName, maxVal, baseR, baseG, 
     end
     parts[#parts + 1] = format(
         "|%s|%.3f|%.3f,%.3f,%.3f|%s",
-        modeName or "",
+        mode or "",
         maxVal or -1,
         baseR or -1,
         baseG or -1,
@@ -513,18 +513,18 @@ local function GetBarBandCurve(cacheKey, bands, modeName, maxVal, baseR, baseG, 
     )
     local hash = table.concat(parts, "|")
 
-    local slotIndex = _bandCurveCache[cacheKey]
-    if slotIndex and slotIndex.hash == hash then
-        return slotIndex.curve
+    local slot = _bandCurveCache[cacheKey]
+    if slot and slot.hash == hash then
+        return slot.curve
     end
-    if not slotIndex then
-        slotIndex = {}
-        _bandCurveCache[cacheKey] = slotIndex
+    if not slot then
+        slot = {}
+        _bandCurveCache[cacheKey] = slot
     end
 
-    local stops = BuildBandStops(bands, modeName, maxVal)
+    local stops = BuildBandStops(bands, mode, maxVal)
     if not stops then
-        slotIndex.hash, slotIndex.curve = hash, nil
+        slot.hash, slot.curve = hash, nil
         return nil
     end
 
@@ -577,7 +577,7 @@ local function GetBarBandCurve(cacheKey, bands, modeName, maxVal, baseR, baseG, 
         end
     end
 
-    slotIndex.hash, slotIndex.curve = hash, curve
+    slot.hash, slot.curve = hash, curve
     return curve
 end
 

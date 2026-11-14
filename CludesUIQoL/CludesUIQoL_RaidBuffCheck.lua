@@ -135,8 +135,8 @@ local function Msg(textValue)
 end
 
 -- On-screen text in the QoL font; Raid Tools' ApplyFonts keeps it current.
-local function Text(hostFrame, dim, r, g, b)
-    return RT.Text(widget, hostFrame, dim, r, g, b)
+local function Text(hostFrame, size, r, g, b)
+    return RT.Text(widget, hostFrame, size, r, g, b)
 end
 
 -------------------------------------------------------------------------------
@@ -242,43 +242,43 @@ end
 -------------------------------------------------------------------------------
 --  Window
 -------------------------------------------------------------------------------
-local function SetCell(cellFrame, status, nowTime)
+local function SetCell(cell, status, nowTime)
     if status == nil then
-        cellFrame.tex:Hide()
-        cellFrame.q:SetText("?")
-        cellFrame.q:SetTextColor(0.6, 0.6, 0.6)
-        cellFrame.q:Show()
+        cell.tex:Hide()
+        cell.q:SetText("?")
+        cell.q:SetTextColor(0.6, 0.6, 0.6)
+        cell.q:Show()
         return
     end
     local leftX = SoonLeft(status, nowTime)
     if leftX then
-        cellFrame.tex:Hide()
-        cellFrame.q:SetText(MinutesText(leftX))
-        cellFrame.q:SetTextColor(1, 0.8, 0.2)
-        cellFrame.q:Show()
+        cell.tex:Hide()
+        cell.q:SetText(MinutesText(leftX))
+        cell.q:SetTextColor(1, 0.8, 0.2)
+        cell.q:Show()
         return
     end
-    cellFrame.q:Hide()
+    cell.q:Hide()
     if status == "eating" then
-        cellFrame.tex:SetTexture(EATING_ICON)
-        cellFrame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        cell.tex:SetTexture(EATING_ICON)
+        cell.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
-        cellFrame.tex:SetTexture(status and TEX_YES or TEX_NO)
-        cellFrame.tex:SetTexCoord(0, 1, 0, 1)
+        cell.tex:SetTexture(status and TEX_YES or TEX_NO)
+        cell.tex:SetTexCoord(0, 1, 0, 1)
     end
-    cellFrame.tex:Show()
+    cell.tex:Show()
 end
 
 local function MakeCell(hostFrame)
-    local cellFrame = CreateFrame("Frame", nil, hostFrame)
-    cellFrame:SetSize(CELL_W, ROW_H)
-    cellFrame.tex = cellFrame:CreateTexture(nil, "ARTWORK")
-    cellFrame.tex:SetSize(ICON, ICON)
-    cellFrame.tex:SetPoint("CENTER")
-    cellFrame.q = Text(cellFrame, 11, 0.6, 0.6, 0.6)
-    cellFrame.q:SetPoint("CENTER")
-    cellFrame.q:SetText("?")
-    return cellFrame
+    local cell = CreateFrame("Frame", nil, hostFrame)
+    cell:SetSize(CELL_W, ROW_H)
+    cell.tex = cell:CreateTexture(nil, "ARTWORK")
+    cell.tex:SetSize(ICON, ICON)
+    cell.tex:SetPoint("CENTER")
+    cell.q = Text(cell, 11, 0.6, 0.6, 0.6)
+    cell.q:SetPoint("CENTER")
+    cell.q:SetText("?")
+    return cell
 end
 
 local function MakeRow(idx)
@@ -324,10 +324,10 @@ local function PlaceRow(r)
     r._colsKey = colsKey
     r:SetWidth(blockW)
     for key = 1, CELLS do
-        local cellFrame = r.cells[key]
-        cellFrame:ClearAllPoints()
-        cellFrame:SetPoint("LEFT", r, "LEFT", colX[key], 0)
-        cellFrame:SetShown(colShown[key])
+        local cell = r.cells[key]
+        cell:ClearAllPoints()
+        cell:SetPoint("LEFT", r, "LEFT", colX[key], 0)
+        cell:SetShown(colShown[key])
     end
     for jdx = 1, BUFF_SLOTS do
         r.buffs[jdx]:ClearAllPoints()
@@ -462,9 +462,9 @@ local function Build()
     RT.SkinPanelBg(widget)
     RT.SkinPanelBorder(widget)
 
-    local titleText = Text(widget, 12, 1, 1, 1)
-    titleText:SetPoint("LEFT", widget, "TOPLEFT", PAD, -TITLE_H / 2)
-    titleText:SetText(CludesUI.L("Raid Buff Check"))
+    local title = Text(widget, 12, 1, 1, 1)
+    title:SetPoint("LEFT", widget, "TOPLEFT", PAD, -TITLE_H / 2)
+    title:SetText(CludesUI.L("Raid Buff Check"))
 
     local close = CreateFrame("Button", nil, widget)
     close:SetSize(14, 14)
@@ -490,9 +490,9 @@ local function Build()
     local function MakeCheckbox(textValue, onClick)
         local cb = CreateFrame("Button", nil, widget)
         cb:SetSize(14, 14)
-        local boxFrame = cb:CreateTexture(nil, "BACKGROUND")
-        boxFrame:SetColorTexture(0.08, 0.08, 0.08, 0.92)
-        boxFrame:SetAllPoints(cb)
+        local box = cb:CreateTexture(nil, "BACKGROUND")
+        box:SetColorTexture(0.08, 0.08, 0.08, 0.92)
+        box:SetAllPoints(cb)
         CludesUI.MakeBorder(cb, 0.35, 0.35, 0.35, 1)
         cb.check = cb:CreateTexture(nil, "ARTWORK")
         cb.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
@@ -791,9 +791,9 @@ local function Layout(num, nTotals)
         local r = rowList[idx] or MakeRow(idx)
         PlaceRow(r)
         local b = math.floor((idx - 1) / perBlock)
-        local slotIndex = (idx - 1) % perBlock
+        local slot = (idx - 1) % perBlock
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slotIndex * ROW_H)
+        r:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
         r:Show()
     end
     for idx = num + 1, #rowList do
@@ -809,13 +809,13 @@ end
 -- totals[row][column]; columns are flask, food, rune, vantus, raid buffs.
 local totals = { {}, {}, {} }
 
-local function Tally(t, column, val, nowTime)
+local function Tally(t, col, val, nowTime)
     if val == false then
-        t[1][column] = t[1][column] + 1
+        t[1][col] = t[1][col] + 1
     elseif val == nil then
-        t[3][column] = t[3][column] + 1
+        t[3][col] = t[3][col] + 1
     elseif SoonLeft(val, nowTime) then
-        t[2][column] = t[2][column] + 1
+        t[2][col] = t[2][col] + 1
     end
 end
 

@@ -69,13 +69,13 @@ local function Known(spellId)
 end
 
 -- Whether the bag item's tooltip has a line reading exactly text.
-local function TooltipHas(bag, slotIndex, textValue)
-    local tipText = C_TooltipInfo.GetBagItem(bag, slotIndex)
+local function TooltipHas(bag, slot, textValue)
+    local tipText = C_TooltipInfo.GetBagItem(bag, slot)
     if not (tipText and tipText.lines) then
         return false
     end
-    for _, lineTex in ipairs(tipText.lines) do
-        if lineTex.leftText == textValue then
+    for _, line in ipairs(tipText.lines) do
+        if line.leftText == textValue then
             return true
         end
     end
@@ -84,13 +84,13 @@ end
 
 -- TooltipHas for a line that never changes for a given item, cached while the
 -- mode paints every slot.
-local function ItemTooltipHas(bag, slotIndex, itemLink, textValue)
+local function ItemTooltipHas(bag, slot, itemLink, textValue)
     if not (itemLink and isActive) then
-        return TooltipHas(bag, slotIndex, textValue)
+        return TooltipHas(bag, slot, textValue)
     end
     local val = tipCache[itemLink]
     if val == nil then
-        val = TooltipHas(bag, slotIndex, textValue)
+        val = TooltipHas(bag, slot, textValue)
         tipCache[itemLink] = val
     end
     return val
@@ -98,7 +98,7 @@ end
 
 -- The spell the player can cast on this bag item, or nil. Equipment set gear
 -- is never offered to Disenchant.
-local function SpellFor(bag, slotIndex, details)
+local function SpellFor(bag, slot, details)
     local itemId = details.itemID
     if CUI.IS_FOREVER and SCROLLS[itemId] then
         return Known(COMPREHEND) and COMPREHEND or nil
@@ -111,16 +111,12 @@ local function SpellFor(bag, slotIndex, details)
             and q <= 4
             and not (classID == IC_ARMOR and subID == ARMOR_COSMETIC)
             and Known(DISENCHANT)
-            and not C_Container.GetContainerItemEquipmentSetInfo(bag, slotIndex)
-            and not ItemTooltipHas(bag, slotIndex, details.hyperlink, ITEM_DISENCHANT_NOT_DISENCHANTABLE)
+            and not C_Container.GetContainerItemEquipmentSetInfo(bag, slot)
+            and not ItemTooltipHas(bag, slot, details.hyperlink, ITEM_DISENCHANT_NOT_DISENCHANTABLE)
         then
             return DISENCHANT
         end
-    elseif
-        (classID == IC_MISC or details.hasLoot)
-        and Known(PICK_LOCK)
-        and TooltipHas(bag, slotIndex, LOCKED)
-    then -- read each time: unlocking changes it
+    elseif (classID == IC_MISC or details.hasLoot) and Known(PICK_LOCK) and TooltipHas(bag, slot, LOCKED) then -- read each time: unlocking changes it
         return PICK_LOCK
     end
 end
@@ -216,7 +212,7 @@ local function BuildCast()
     castBtn:Hide()
 end
 
-local function ShowCast(button, spell, bag, slotIndex)
+local function ShowCast(button, spell, bag, slot)
     if not castBtn then
         BuildCast()
     end
@@ -224,8 +220,8 @@ local function ShowCast(button, spell, bag, slotIndex)
     castBtn:SetAllPoints(button)
     castBtn:SetAttribute("spell", spell)
     castBtn:SetAttribute("target-bag", bag)
-    castBtn:SetAttribute("target-slot", slotIndex)
-    castBtn.owner, castBtn.spell, castBtn.bag, castBtn.slot = button, spell, bag, slotIndex
+    castBtn:SetAttribute("target-slot", slot)
+    castBtn.owner, castBtn.spell, castBtn.bag, castBtn.slot = button, spell, bag, slot
     castBtn:Show()
 end
 
@@ -278,16 +274,16 @@ local function Marks(button)
     if m then
         return m
     end
-    local hostRegion = button._textOverlay
+    local host = button._textOverlay
     m = {}
-    m.shade = hostRegion:CreateTexture(nil, "OVERLAY", nil, 6)
-    m.shade:SetAllPoints(hostRegion)
+    m.shade = host:CreateTexture(nil, "OVERLAY", nil, 6)
+    m.shade:SetAllPoints(host)
     m.shade:SetColorTexture(0, 0, 0, SHADE_ALPHA)
-    m.spell = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
+    m.spell = host:CreateTexture(nil, "OVERLAY", nil, 7)
     -- The item's top-right quarter: 16 px on a grid slot, smaller on a List
     -- row's icon, which it would otherwise cover.
-    m.spell:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -1, -1)
-    m.spell:SetPoint("BOTTOMLEFT", hostRegion, "CENTER")
+    m.spell:SetPoint("TOPRIGHT", host, "TOPRIGHT", -1, -1)
+    m.spell:SetPoint("BOTTOMLEFT", host, "CENTER")
     m.spell:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     marks[button] = m
     return m

@@ -105,7 +105,7 @@ end
 -- frames) reports that look's size, not its own setting, so its size is taken
 -- from carry, else base, else its own setting (getSettingSize): every entry
 -- keeps a size, since the layer apply treats an entry as owning the key.
-local function HarvestLayer(carry, baseValue)
+local function HarvestLayer(carry, base)
     local layer = {
         anchors = DeepCopy(CludesUIDB and CludesUIDB.unlockAnchors or {}),
         widthMatch = DeepCopy(CludesUIDB and CludesUIDB.unlockWidthMatch or {}),
@@ -153,9 +153,9 @@ local function HarvestLayer(carry, baseValue)
     if cdm then
         layer.cdmPos = DeepCopy(cdm.cdmBarPositions or {})
         if cdm.cdmBars and cdm.cdmBars.bars then
-            for _, barFrame in ipairs(cdm.cdmBars.bars) do
-                if barFrame.key and barFrame.growDirection then
-                    layer.cdmGrow[barFrame.key] = barFrame.growDirection
+            for _, bar in ipairs(cdm.cdmBars.bars) do
+                if bar.key and bar.growDirection then
+                    layer.cdmGrow[bar.key] = bar.growDirection
                 end
             end
         end
@@ -202,7 +202,7 @@ local function HarvestLayer(carry, baseValue)
                 if elem.sizeFixedByLook then
                     local wid, hgt
                     for idx = 1, 2 do
-                        local source = baseValue
+                        local source = base
                         if idx == 1 then
                             source = carry
                         end
@@ -493,16 +493,16 @@ local function ApplyLayer(layer, baseline)
             local lg = (layer.cdmPos ~= nil) and layer.cdmGrow or nil
             local backdrop = (baseline and baseline.cdmPos ~= nil) and baseline.cdmGrow or nil
             if lg or backdrop then
-                for _, barFrame in ipairs(cdm.cdmBars.bars) do
-                    if barFrame.key then
+                for _, bar in ipairs(cdm.cdmBars.bars) do
+                    if bar.key then
                         local gd
                         if lg then
-                            gd = lg[barFrame.key]
+                            gd = lg[bar.key]
                         end
                         if gd == nil and backdrop then
-                            gd = backdrop[barFrame.key]
+                            gd = backdrop[bar.key]
                         end
-                        barFrame.growDirection = gd
+                        bar.growDirection = gd
                     end
                 end
             end
@@ -598,9 +598,9 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
     -- TIER 1: the spec's own group layer. When it exists, conditional layouts
     -- are ignored ENTIRELY for this spec.
     local wanted = OwnerGid(specID)
-    local targetUnit
+    local target
     if wanted then
-        targetUnit = s.layouts[wanted]
+        target = s.layouts[wanted]
     else
         -- TIER 2: the applied conditional group's layout (namespaced pointer
         -- "cond:<gid>" -- one pointer, one harvest target, one heal path).
@@ -609,7 +609,7 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
             local cs = CludesUI._CondOv.GetUnlockStore()
             if cs and cs.layouts[cond] then
                 wanted = "cond:" .. cond
-                targetUnit = cs.layouts[cond]
+                target = cs.layouts[cond]
             end
         end
     end
@@ -621,7 +621,7 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         -- the gap never heals without a layer transition. ADD-ONLY heal: fill missing
         -- bar keys from the live layer then the baseline; existing entries (live
         -- drift) are never touched, and the settle only runs if something was missing.
-        local baseValue = s.baselineLayout
+        local base = s.baselineLayout
         local function GapFill(prof, storeKey, layerPos, basePos)
             if not prof then
                 return false
@@ -652,9 +652,8 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         end
         local cdm = LiteProfile("CludesUICooldownManager")
         local ab = LiteProfile("CludesUIActionBars")
-        local added =
-            GapFill(cdm, "cdmBarPositions", targetUnit and targetUnit.cdmPos, baseValue and baseValue.cdmPos)
-        if GapFill(ab, "barPositions", targetUnit and targetUnit.abPos, baseValue and baseValue.abPos) then
+        local added = GapFill(cdm, "cdmBarPositions", target and target.cdmPos, base and base.cdmPos)
+        if GapFill(ab, "barPositions", target and target.abPos, base and base.abPos) then
             added = true
         end
         if added then
@@ -666,14 +665,14 @@ function CludesUI.SpecOverrides_ApplyUnlock(specID, force)
         return
     end
     -- TIER 3: baseline.
-    if not targetUnit then
-        targetUnit = s.baselineLayout
+    if not target then
+        target = s.baselineLayout
     end
     s.active = wanted
-    if targetUnit then
+    if target then
         -- Forks fall back to the baseline for every sub-store they are
         -- missing (nil when the target IS the baseline).
-        ApplyLayer(targetUnit, targetUnit ~= s.baselineLayout and s.baselineLayout or nil)
+        ApplyLayer(target, target ~= s.baselineLayout and s.baselineLayout or nil)
         _unlockSettleWanted = true
         ScheduleUnlockFlush()
     end
@@ -1445,16 +1444,16 @@ function CludesUI.SpecOverrides_ApplyBm(specID, force, noPageRefresh)
         return
     end
     local wanted = BmOwnerGid(specID)
-    local targetUnit
+    local target
     if wanted then
-        targetUnit = s.layouts[wanted]
+        target = s.layouts[wanted]
     else
         local cond = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid() or nil
         if cond then
             local cs = GetCondBmStore()
             if cs and cs.layouts[cond] then
                 wanted = "cond:" .. cond
-                targetUnit = cs.layouts[cond]
+                target = cs.layouts[cond]
             end
         end
     end
@@ -1473,16 +1472,16 @@ function CludesUI.SpecOverrides_ApplyBm(specID, force, noPageRefresh)
         end
         return
     end
-    if not targetUnit then
-        targetUnit = s.baselineLayout
+    if not target then
+        target = s.baselineLayout
     end
-    if targetUnit then
+    if target then
         -- The pointer advances ONLY when the paint lands. A silent no-op apply (RF
         -- store not ready, malformed layer) must never strand live content under the
         -- wrong pointer, or the next harvest banks it into the wrong layer (baseline
         -- overwritten by fork content). Failed applies retry naturally: want ~= active
         -- still holds at the next boundary.
-        if BmApplyLayer(targetUnit, noPageRefresh) then
+        if BmApplyLayer(target, noPageRefresh) then
             s.active = wanted
         end
     elseif s.active == nil then
@@ -1887,16 +1886,16 @@ function CludesUI.SpecOverrides_ApplyDm(specID, force, noPageRefresh)
         return
     end
     local wanted = DmOwnerGid(specID)
-    local targetUnit
+    local target
     if wanted then
-        targetUnit = s.layouts[wanted]
+        target = s.layouts[wanted]
     else
         local cond = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid() or nil
         if cond then
             local cs = GetCondDmStore()
             if cs and cs.layouts[cond] then
                 wanted = "cond:" .. cond
-                targetUnit = cs.layouts[cond]
+                target = cs.layouts[cond]
             end
         end
     end
@@ -1914,14 +1913,14 @@ function CludesUI.SpecOverrides_ApplyDm(specID, force, noPageRefresh)
         end
         return
     end
-    if not targetUnit then
-        targetUnit = s.baselineLayout
+    if not target then
+        target = s.baselineLayout
     end
-    if targetUnit then
+    if target then
         -- Pointer advances ONLY when the paint lands (see the BM twin: a
         -- silent no-op apply must never strand live content under the wrong
         -- pointer, or the next harvest banks it into the wrong layer).
-        if DmApplyLayer(targetUnit, noPageRefresh) then
+        if DmApplyLayer(target, noPageRefresh) then
             s.active = wanted
         end
     elseif s.active == nil then

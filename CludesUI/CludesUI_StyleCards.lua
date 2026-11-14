@@ -65,13 +65,13 @@ local function DrawCUIMock(stage, Pix, MakeBorder, teal)
     fbg:SetAllPoints()
     fbg:SetColorTexture(0.088, 0.098, 0.111, 1)
     MakeBorder(widget, 0, 0, 0, 1, Pix)
-    local healthBar = widget:CreateTexture(nil, "ARTWORK")
-    healthBar:SetColorTexture(teal.r, teal.g, teal.b, 0.9)
-    Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", 1, -1)
-    Pix.Size(healthBar, 130, 27)
+    local health = widget:CreateTexture(nil, "ARTWORK")
+    health:SetColorTexture(teal.r, teal.g, teal.b, 0.9)
+    Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", 1, -1)
+    Pix.Size(health, 130, 27)
     local hrest = widget:CreateTexture(nil, "ARTWORK")
     hrest:SetColorTexture(teal.r, teal.g, teal.b, 0.2)
-    Pix.Point(hrest, "TOPLEFT", healthBar, "TOPRIGHT", 0, 0)
+    Pix.Point(hrest, "TOPLEFT", health, "TOPRIGHT", 0, 0)
     Pix.Point(hrest, "BOTTOMRIGHT", widget, "TOPRIGHT", -1, -28)
     local power = widget:CreateTexture(nil, "ARTWORK")
     power:SetColorTexture(0.25, 0.5, 0.9, 0.9)
@@ -161,10 +161,10 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
         fbg:SetAllPoints()
         fbg:SetColorTexture(0.12, 0.10, 0.06, 1)
         MakeBorder(widget, GOLD_R, GOLD_G, GOLD_B, 0.8, Pix)
-        local healthBar = widget:CreateTexture(nil, "ARTWORK")
-        healthBar:SetColorTexture(0.1, 0.75, 0.1, 0.9)
-        Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", 3, -3)
-        Pix.Size(healthBar, 122, 20)
+        local health = widget:CreateTexture(nil, "ARTWORK")
+        health:SetColorTexture(0.1, 0.75, 0.1, 0.9)
+        Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", 3, -3)
+        Pix.Size(health, 122, 20)
         local power = widget:CreateTexture(nil, "ARTWORK")
         power:SetColorTexture(0.1, 0.35, 0.9, 0.9)
         Pix.Point(power, "TOPLEFT", widget, "TOPLEFT", 3, -25)
@@ -198,14 +198,13 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
     -- at the live caps' 104.5x98), bottoms a little below the slots.
     if not forever then
         local CAP_H, OVERLAP = 28, 3
-        for sideName = 1, 2 do
-            local name = (sideName == 1) and "ui-hud-actionbar-gryphon-left"
-                or "ui-hud-actionbar-gryphon-right"
+        for side = 1, 2 do
+            local name = (side == 1) and "ui-hud-actionbar-gryphon-left" or "ui-hud-actionbar-gryphon-right"
             if AtlasOK(name) then
                 local cap = CreateFrame("Frame", nil, stage)
                 cap:SetFrameLevel(stage:GetFrameLevel() + 2)
                 Pix.Size(cap, CAP_H * 104.5 / 98, CAP_H)
-                if sideName == 1 then
+                if side == 1 then
                     Pix.Point(cap, "BOTTOMRIGHT", stage, "TOP", -rowW / 2 + OVERLAP, -104)
                 else
                     Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -104)
@@ -248,14 +247,14 @@ local function DrawForeverMock(stage, Pix, MakeBorder, ACC, font)
     -- Gryphon end caps at their own aspect, bottoms level with the slots,
     -- each overlapping the bar's end by a few pixels.
     local CAP_H, OVERLAP = 26, 8
-    for sideName = 1, 2 do
-        local name = (sideName == 1) and "ui-hud-actionbar-gryphon-left" or "ui-hud-actionbar-gryphon-right"
+    for side = 1, 2 do
+        local name = (side == 1) and "ui-hud-actionbar-gryphon-left" or "ui-hud-actionbar-gryphon-right"
         local details = C_Texture.GetAtlasInfo(name)
         if details and details.width and details.height and details.height > 0 then
             local cap = CreateFrame("Frame", nil, stage)
             cap:SetFrameLevel(stage:GetFrameLevel() + 2)
             Pix.Size(cap, CAP_H * details.width / details.height, CAP_H)
-            if sideName == 1 then
+            if side == 1 then
                 Pix.Point(cap, "BOTTOMRIGHT", stage, "TOP", -rowW / 2 + OVERLAP, -102)
             else
                 Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -102)
@@ -283,14 +282,14 @@ local function DrawClassicMock(stage, Pix, _mb, _eg, font)
     Pix.Point(widget, "TOP", stage, "TOP", 0, -6)
     -- Bars under the art: the art's tracks are transparent windows. Box
     -- coordinates (232x100) minus the art's centring offset (19.5, 11.5).
-    local healthBar = widget:CreateTexture(nil, "ARTWORK", nil, 1)
-    healthBar:SetTexture(CLASSIC_FILL)
-    healthBar:SetVertexColor(0.0, 0.8, 0.0)
-    Pix.Size(healthBar, 119 * s * 0.82, 12 * s)
-    Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", (90 - 19.5) * s, -(45 - 11.5) * s)
+    local health = widget:CreateTexture(nil, "ARTWORK", nil, 1)
+    health:SetTexture(CLASSIC_FILL)
+    health:SetVertexColor(0.0, 0.8, 0.0)
+    Pix.Size(health, 119 * s * 0.82, 12 * s)
+    Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", (90 - 19.5) * s, -(45 - 11.5) * s)
     local hrest = widget:CreateTexture(nil, "ARTWORK", nil, 1)
     hrest:SetColorTexture(0, 0, 0, 0.5)
-    Pix.Point(hrest, "TOPLEFT", healthBar, "TOPRIGHT", 0, 0)
+    Pix.Point(hrest, "TOPLEFT", health, "TOPRIGHT", 0, 0)
     Pix.Size(hrest, 119 * s * 0.18, 12 * s)
     local mana = widget:CreateTexture(nil, "ARTWORK", nil, 1)
     mana:SetTexture(CLASSIC_FILL)
@@ -321,19 +320,19 @@ local function DrawClassicMock(stage, Pix, _mb, _eg, font)
         Pix.Size(ic, ICON, ICON)
         Pix.Point(ic, "TOPLEFT", stage, "TOP", -rowW / 2 + (idx - 1) * (ICON + GAP), -76)
         -- The vanilla empty slot: 66/36 of the button, a pixel low.
-        local slotIndex = ic:CreateTexture(nil, "ARTWORK")
-        slotIndex:SetTexture(CLASSIC_EMPTY)
-        Pix.Size(slotIndex, ICON * 66 / 36, ICON * 66 / 36)
-        Pix.Point(slotIndex, "CENTER", ic, "CENTER", 0, -ICON / 36)
+        local slot = ic:CreateTexture(nil, "ARTWORK")
+        slot:SetTexture(CLASSIC_EMPTY)
+        Pix.Size(slot, ICON * 66 / 36, ICON * 66 / 36)
+        Pix.Point(slot, "CENTER", ic, "CENTER", 0, -ICON / 36)
     end
     -- Vanilla's gryphon end caps (one file, the right one mirrored), bottoms a
     -- little below the slots, each overlapping the bar's end.
     local CAP, OVERLAP = 36, 8
-    for sideName = 1, 2 do
+    for side = 1, 2 do
         local cap = CreateFrame("Frame", nil, stage)
         cap:SetFrameLevel(stage:GetFrameLevel() + 2)
         Pix.Size(cap, CAP, CAP)
-        if sideName == 1 then
+        if side == 1 then
             Pix.Point(cap, "BOTTOMRIGHT", stage, "TOP", -rowW / 2 + OVERLAP, -102)
         else
             Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -102)
@@ -341,7 +340,7 @@ local function DrawClassicMock(stage, Pix, _mb, _eg, font)
         local t = cap:CreateTexture(nil, "ARTWORK")
         t:SetAllPoints()
         t:SetTexture(CLASSIC_CAP)
-        if sideName == 2 then
+        if side == 2 then
             t:SetTexCoord(1, 0, 0, 1)
         end
     end
@@ -449,12 +448,12 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
     end
     local mid = (#DEFS + 1) / 2
     local handles = {}
-    for slotPos, spec_def in ipairs(DEFS) do
-        local accentR, accentG, accentB = spec_def.r, spec_def.g, spec_def.b
+    for index, def in ipairs(DEFS) do
+        local accentR, accentG, accentB = def.r, def.g, def.b
         local cardFrame = CreateFrame(display and "Frame" or "Button", nil, hostFrame)
         cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
         Pix.Size(cardFrame, CARD_W, display and DISPLAY_CARD_H or CARD_H)
-        Pix.Point(cardFrame, "TOP", hostFrame, "TOP", (slotPos - mid) * (CARD_W + CARD_GAP), topY)
+        Pix.Point(cardFrame, "TOP", hostFrame, "TOP", (index - mid) * (CARD_W + CARD_GAP), topY)
         -- Accent band along the top edge: the colour is the first indicator.
         local brd = CludesUI.MakeRoundedCard(cardFrame, 0.14, 1, 3, 0.088, 0.098, 0.111)
         brd.accent:SetColorTexture(accentR, accentG, accentB, 0.9)
@@ -463,14 +462,14 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
         ct:SetFont(FONT, 17, "")
         ct:SetTextColor(accentR, accentG, accentB, 1)
         Pix.Point(ct, "TOP", cardFrame, "TOP", 0, -16)
-        ct:SetText(L(spec_def.title))
+        ct:SetText(L(def.title))
 
         -- Small tag under the title (DEFAULT / BLIZZARD ART).
         local tagFS = cardFrame:CreateFontString(nil, "OVERLAY")
         tagFS:SetFont(FONT, 11, "")
         tagFS:SetTextColor(accentR, accentG, accentB, 0.7)
         Pix.Point(tagFS, "TOP", ct, "BOTTOM", 0, -3)
-        tagFS:SetText(L(spec_def.tag))
+        tagFS:SetText(L(def.tag))
 
         -- IN USE badge just above the card (clear of the centred title),
         -- shown by SetState. Drawn on the parent, so the card's IN USE
@@ -491,7 +490,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
         sbg:SetAllPoints()
         sbg:SetColorTexture(0.051, 0.040, 0.030, 1)
         MakeBorder(stage, 1, 1, 1, 0.08, Pix)
-        spec_def.draw(stage, Pix, MakeBorder, CUI_TEAL, FONT)
+        def.draw(stage, Pix, MakeBorder, CUI_TEAL, FONT)
 
         local cap = cardFrame:CreateFontString(nil, "OVERLAY")
         cap:SetFont(FONT, 12, "")
@@ -505,11 +504,11 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             cap:SetMaxLines(3)
         end
         Pix.Point(cap, "TOP", stage, "BOTTOM", 0, -10)
-        cap:SetText(L(spec_def.caption))
+        cap:SetText(L(def.caption))
 
         if display then
             -- Announcement card: nothing to press, only an IN USE state.
-            handles[spec_def.key] = {
+            handles[def.key] = {
                 card = cardFrame,
                 SetState = function(_, isInUse)
                     local enabled = isInUse and true or false
@@ -534,7 +533,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             labelFS:SetFont(FONT, 14, "")
             Pix.Point(labelFS, "CENTER", button, "CENTER", 0, 0)
             local bt = options.buttonText
-            local btnText = (type(bt) == "table" and bt[spec_def.key]) or (type(bt) == "string" and bt) or ""
+            local btnText = (type(bt) == "table" and bt[def.key]) or (type(bt) == "string" and bt) or ""
             labelFS:SetText(L(btnText))
 
             local inUse, pickable, hovered = false, true, false
@@ -569,7 +568,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             end
             local function Pick()
                 if pickable and options.onPick then
-                    options.onPick(spec_def.key)
+                    options.onPick(def.key)
                 end
             end
             cardFrame:SetScript("OnEnter", Enter)
@@ -580,7 +579,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             button:SetScript("OnClick", Pick)
             Paint()
 
-            handles[spec_def.key] = {
+            handles[def.key] = {
                 card = cardFrame,
                 SetState = function(_, isInUse, canPick, labelText)
                     inUse, pickable = isInUse and true or false, canPick ~= false

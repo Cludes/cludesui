@@ -214,21 +214,21 @@ local function ApplyFocusKickAnchor()
     end
     -- Prefer the scaled health bar from our custom NameplateFrame so the icon tracks Target/Cast
     -- scale changes. Fall back to the raw plate when the nameplates addon isn't loaded or the plate hasn't been decorated yet.
-    local anchorFrame = GetScaledPlateHealth(backing) or backing
-    local sideName = edge.nameplateAnchorSide or "LEFT"
+    local anchor = GetScaledPlateHealth(backing) or backing
+    local side = edge.nameplateAnchorSide or "LEFT"
     local ox = edge.nameplateOffsetX or 0
     local oy = edge.nameplateOffsetY or 0
     widget:ClearAllPoints()
-    if sideName == "LEFT" then
-        widget:SetPoint("RIGHT", anchorFrame, "LEFT", ox, oy)
-    elseif sideName == "RIGHT" then
-        widget:SetPoint("LEFT", anchorFrame, "RIGHT", ox, oy)
-    elseif sideName == "TOP" then
-        widget:SetPoint("BOTTOM", anchorFrame, "TOP", ox, oy)
-    elseif sideName == "BOTTOM" then
-        widget:SetPoint("TOP", anchorFrame, "BOTTOM", ox, oy)
+    if side == "LEFT" then
+        widget:SetPoint("RIGHT", anchor, "LEFT", ox, oy)
+    elseif side == "RIGHT" then
+        widget:SetPoint("LEFT", anchor, "RIGHT", ox, oy)
+    elseif side == "TOP" then
+        widget:SetPoint("BOTTOM", anchor, "TOP", ox, oy)
+    elseif side == "BOTTOM" then
+        widget:SetPoint("TOP", anchor, "BOTTOM", ox, oy)
     else
-        widget:SetPoint("CENTER", anchorFrame, "CENTER", ox, oy)
+        widget:SetPoint("CENTER", anchor, "CENTER", ox, oy)
     end
     SetFocusKickAlpha(1)
 end
@@ -418,9 +418,9 @@ function mod.ResolveCastableInterrupt(spellRef)
     end
     -- Talented back out, stored id is the replacement form.
     if C_Spell and C_Spell.GetBaseSpell then
-        local baseValue = C_Spell.GetBaseSpell(spellRef)
-        if baseValue and baseValue > 0 and baseValue ~= spellRef and knownInBook(baseValue) then
-            return baseValue
+        local base = C_Spell.GetBaseSpell(spellRef)
+        if base and base > 0 and base ~= spellRef and knownInBook(base) then
+            return base
         end
     end
     -- Pet bank last: it has no override/base indirection to walk.
@@ -582,16 +582,16 @@ do
         if not k then
             local tbbOn = mod._tbbAnyBuffSound
             local bv = tbbOn and f and _G.BuffBarCooldownViewer
-            local barFrame = bv and f.viewerFrame == bv
+            local bar = bv and f.viewerFrame == bv
             local owned
-            if barFrame then
+            if bar then
                 k = mod.FindTBBSoundKey(f, spellRef, field)
                 owned = k == false
             end
             if not k and not owned then
                 k = mod.FindBuffSoundKey(spellRef, field)
             end
-            if not k and tbbOn and not barFrame then
+            if not k and tbbOn and not bar then
                 k = mod.FindTBBSoundKey(f, spellRef, field)
             end
         end
@@ -782,31 +782,31 @@ local function FROutlineFlag()
     end
     return "NONE"
 end
-local function FRSetFontSafe(fontStr, filePath, dim, flags)
+local function FRSetFontSafe(fontStr, filePath, size, flags)
     if not fontStr then
         return
     end
     local safe = FRSafeFont(filePath)
-    dim = dim or 11
+    size = size or 11
     if flags == "NONE" then
         flags = ""
     end
     flags = flags or ""
     local curPath, curSize, curFlags = fontStr:GetFont()
-    if curPath == safe and curSize == dim and (curFlags or "") == flags then
+    if curPath == safe and curSize == size and (curFlags or "") == flags then
         return
     end
-    fontStr:SetFont(safe, dim, flags)
+    fontStr:SetFont(safe, size, flags)
     if not fontStr:GetFont() then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", dim, flags)
+        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, flags)
     end
     if not fontStr:GetFont() then
-        fontStr:SetFont("Fonts\\FRIZQT__.TTF", dim, flags)
+        fontStr:SetFont("Fonts\\FRIZQT__.TTF", size, flags)
     end
     if not fontStr:GetFont() then
         local gf = GameFontNormal and GameFontNormal:GetFont()
         if gf then
-            fontStr:SetFont(gf, dim, flags)
+            fontStr:SetFont(gf, size, flags)
         end
     end
 end
@@ -935,13 +935,13 @@ local function ShowFocusReminder(token)
 
     -- Font: re-apply only if size, font path, or outline changed. Goes through FRSetFontSafe so
     -- the user's global font + outline (CludesUI -> Fonts) drives the look, with fallbacks for missing/unsupported paths.
-    local dim = edge.focusReminderSize or 26
+    local size = edge.focusReminderSize or 26
     local fontFile = FRGlobalFont()
     local outline = FROutlineFlag()
-    if fontStr._lastSize ~= dim or fontStr._lastFontPath ~= fontFile or fontStr._lastOutline ~= outline then
-        FRSetFontSafe(fontStr, fontFile, dim, outline)
+    if fontStr._lastSize ~= size or fontStr._lastFontPath ~= fontFile or fontStr._lastOutline ~= outline then
+        FRSetFontSafe(fontStr, fontFile, size, outline)
         FRApplyFontShadow(fontStr)
-        fontStr._lastSize = dim
+        fontStr._lastSize = size
         fontStr._lastFontPath = fontFile
         fontStr._lastOutline = outline
     end

@@ -178,18 +178,18 @@ do
             CludesUI._RefreshSpecID()
             specID = CludesUI._specID
         end
-        local spec_def = specID and EXEC[specID]
-        if not spec_def then
+        local def = specID and EXEC[specID]
+        if not def then
             return nil
         end
         -- Gate first: an unmet requirement means no execute exists at all.
-        if spec_def.requires and not AnyKnown(spec_def.requires) then
+        if def.requires and not AnyKnown(def.requires) then
             return nil
         end
-        local pct = spec_def.base
-        if spec_def.talents and AnyKnown(spec_def.talents) then
-            if not pct or spec_def.talentPct > pct then
-                pct = spec_def.talentPct
+        local pct = def.base
+        if def.talents and AnyKnown(def.talents) then
+            if not pct or def.talentPct > pct then
+                pct = def.talentPct
             end
         end
         return pct
@@ -568,15 +568,15 @@ end
 -- stretch the full pattern). Width comes from settings, never from measuring the plate subtree
 -- (restricted regions forbid reads there).
 local STRIPE_NATIVE_W = 200
-local function ApplyOverlayGeometry(fillT, bgT, healthBar, isStripe)
+local function ApplyOverlayGeometry(fillT, bgT, health, isStripe)
     fillT:ClearAllPoints()
     bgT:ClearAllPoints()
-    fillT:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    fillT:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
-    fillT:SetPoint("RIGHT", healthBar, "RIGHT", 0, 0)
-    bgT:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    bgT:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
-    bgT:SetPoint("RIGHT", healthBar, "RIGHT", 0, 0)
+    fillT:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+    fillT:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+    fillT:SetPoint("RIGHT", health, "RIGHT", 0, 0)
+    bgT:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+    bgT:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+    bgT:SetPoint("RIGHT", health, "RIGHT", 0, 0)
     local u = 1
     if isStripe then
         u = GetHealthBarWidth() / STRIPE_NATIVE_W
@@ -656,8 +656,8 @@ mod.FOCUS_LETTER_ANCHORS = {
 }
 
 function mod.GetFocusLetterAnchor(saved)
-    local anchorFrame = (saved and saved.focusLetterAnchor) or defaultSet.focusLetterAnchor
-    return mod.FOCUS_LETTER_ANCHORS[anchorFrame] and anchorFrame or defaultSet.focusLetterAnchor
+    local anchor = (saved and saved.focusLetterAnchor) or defaultSet.focusLetterAnchor
+    return mod.FOCUS_LETTER_ANCHORS[anchor] and anchor or defaultSet.focusLetterAnchor
 end
 
 function mod.EnsureFocusLetter(backing)
@@ -673,32 +673,32 @@ end
 function mod.ApplyFocusLetter(backing, unitToken, saved)
     if saved.focusLetterEnabled == true and UnitIsUnit(unitToken, "focus") then
         mod.EnsureFocusLetter(backing)
-        local dim = saved.focusLetterSize or defaultSet.focusLetterSize
-        local anchorFrame = mod.GetFocusLetterAnchor(saved)
+        local size = saved.focusLetterSize or defaultSet.focusLetterSize
+        local anchor = mod.GetFocusLetterAnchor(saved)
         local posX = saved.focusLetterX or defaultSet.focusLetterX
         local posY = saved.focusLetterY or defaultSet.focusLetterY
         local font = GetFont()
         local outline = GetNPOutline()
         if
             not backing._focusLetterShown
-            or backing._focusLetterSize ~= dim
-            or backing._focusLetterAnchor ~= anchorFrame
+            or backing._focusLetterSize ~= size
+            or backing._focusLetterAnchor ~= anchor
             or backing._focusLetterX ~= posX
             or backing._focusLetterY ~= posY
             or backing._focusLetterFont ~= font
             or backing._focusLetterOutline ~= outline
         then
             backing._focusLetterShown = true
-            backing._focusLetterSize = dim
-            backing._focusLetterAnchor = anchorFrame
+            backing._focusLetterSize = size
+            backing._focusLetterAnchor = anchor
             backing._focusLetterX = posX
             backing._focusLetterY = posY
             backing._focusLetterFont = font
             backing._focusLetterOutline = outline
-            SetFSFont(backing.focusLetter, dim, outline)
+            SetFSFont(backing.focusLetter, size, outline)
             backing.focusLetter:SetText("F")
             backing.focusLetter:ClearAllPoints()
-            backing.focusLetter:SetPoint(anchorFrame, backing.health, anchorFrame, posX, posY)
+            backing.focusLetter:SetPoint(anchor, backing.health, anchor, posX, posY)
             backing.focusLetter:SetTextColor(1, 1, 1, 1)
         end
         backing.focusLetter:Show()
@@ -736,41 +736,34 @@ function mod.ApplyThreatPctPos(backing)
     mod.EnsureThreatPctText(backing)
     local saved = p or defaultSet
     local posKey = saved.threatPctPosition or defaultSet.threatPctPosition
-    local slotIndex = HP_BAR_SLOTS[(posKey == "RIGHT" and 1) or (posKey == "LEFT" and 2) or 3]
-    local dim = saved.threatPctSize or defaultSet.threatPctSize
+    local slot = HP_BAR_SLOTS[(posKey == "RIGHT" and 1) or (posKey == "LEFT" and 2) or 3]
+    local size = saved.threatPctSize or defaultSet.threatPctSize
     local xOff = saved.threatPctXOffset or defaultSet.threatPctXOffset
     local yOff = saved.threatPctYOffset or defaultSet.threatPctYOffset
     local font = GetFont()
     local outline = GetNPOutline()
     if
         backing._tptPos ~= posKey
-        or backing._tptSize ~= dim
+        or backing._tptSize ~= size
         or backing._tptX ~= xOff
         or backing._tptY ~= yOff
         or backing._tptFont ~= font
         or backing._tptOutline ~= outline
     then
         backing._tptPos = posKey
-        backing._tptSize = dim
+        backing._tptSize = size
         backing._tptX = xOff
         backing._tptY = yOff
         backing._tptFont = font
         backing._tptOutline = outline
-        SetFSFont(backing.threatPctText, dim, outline)
+        SetFSFont(backing.threatPctText, size, outline)
         backing.threatPctText:ClearAllPoints()
-        if slotIndex.anchor == "CENTER" then
+        if slot.anchor == "CENTER" then
             backing.threatPctText:SetPoint("CENTER", backing.health, "CENTER", xOff, yOff)
         else
-            Pix.Point(
-                backing.threatPctText,
-                slotIndex.anchor,
-                backing.health,
-                slotIndex.point,
-                slotIndex.xOff + xOff,
-                yOff
-            )
+            Pix.Point(backing.threatPctText, slot.anchor, backing.health, slot.point, slot.xOff + xOff, yOff)
         end
-        backing.threatPctText:SetJustifyH(slotIndex.anchor)
+        backing.threatPctText:SetJustifyH(slot.anchor)
     end
 end
 
@@ -1086,9 +1079,9 @@ local function EnsureCastTints(backing)
     if backing.castTintInt then
         return
     end
-    local healthBar = backing.health
-    backing.castTintUnint = healthBar:CreateTexture(nil, "ARTWORK", nil, 1)
-    backing.castTintInt = healthBar:CreateTexture(nil, "ARTWORK", nil, 2)
+    local health = backing.health
+    backing.castTintUnint = health:CreateTexture(nil, "ARTWORK", nil, 1)
+    backing.castTintInt = health:CreateTexture(nil, "ARTWORK", nil, 2)
     backing.castTintUnint:AddMaskTexture(backing._absorbMask)
     backing.castTintInt:AddMaskTexture(backing._absorbMask)
     backing.castTintUnint:Hide()

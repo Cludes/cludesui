@@ -48,8 +48,8 @@ local CludesUI = _G.CludesUI
 if not (CludesUI and CludesUI.IS_FOREVER) then
     return
 end
-local barFrame = _G.MultiCastActionBarFrame
-if not barFrame then
+local bar = _G.MultiCastActionBarFrame
+if not bar then
     return
 end
 local _, playerClass = UnitClass("player")
@@ -91,7 +91,7 @@ cdFont:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
 --  Settings access
 -------------------------------------------------------------------------------
 
-local function Prm()
+local function P()
     local ERB = mod.ERB
     local saved = ERB and ERB.db
     local p = saved and saved.profile
@@ -149,16 +149,16 @@ end
 
 local function SkinButton(button, c)
     ArtOf(button, Fade)
-    local glyph = button.icon
-    if glyph then
+    local icon = button.icon
+    if icon then
         -- A masked texture rejects SetTexCoord: the mask goes first.
-        local maskTex = button.IconMask
-        if maskTex and not unmasked[glyph] then
-            if pcall(glyph.RemoveMaskTexture, glyph, maskTex) then
-                unmasked[glyph] = maskTex
+        local mask = button.IconMask
+        if mask and not unmasked[icon] then
+            if pcall(icon.RemoveMaskTexture, icon, mask) then
+                unmasked[icon] = mask
             end
         end
-        pcall(glyph.SetTexCoord, glyph, ZOOM, 1 - ZOOM, ZOOM, 1 - ZOOM)
+        pcall(icon.SetTexCoord, icon, ZOOM, 1 - ZOOM, ZOOM, 1 - ZOOM)
     end
     local cd = button.cooldown
     if cd then
@@ -208,14 +208,14 @@ end
 -- Show Numbers for Cooldowns setting; the two spell buttons always show them).
 local function UnskinButton(button, hideNumbers)
     ArtOf(button, Unfade)
-    local glyph = button.icon
-    if glyph then
-        local maskTex = unmasked[glyph]
-        if maskTex then
-            pcall(glyph.AddMaskTexture, glyph, maskTex)
-            unmasked[glyph] = nil
+    local icon = button.icon
+    if icon then
+        local mask = unmasked[icon]
+        if mask then
+            pcall(icon.AddMaskTexture, icon, mask)
+            unmasked[icon] = nil
         end
-        pcall(glyph.SetTexCoord, glyph, 0, 1, 0, 1)
+        pcall(icon.SetTexCoord, icon, 0, 1, 0, 1)
     end
     local cd = button.cooldown
     if cd then
@@ -233,8 +233,8 @@ end
 
 local function SkinAll(c)
     local scale = (c.iconSize or 30) / BTN
-    local dim = math.max(6, math.floor((c.timerSize or 11) / scale + 0.5))
-    cdFont:SetFont(mod.GetRBFont(), dim, CludesUI.GetFontOutlineFlag("resourceBars"))
+    local size = math.max(6, math.floor((c.timerSize or 11) / scale + 0.5))
+    cdFont:SetFont(mod.GetRBFont(), size, CludesUI.GetFontOutlineFlag("resourceBars"))
     if SUMMON then
         SkinButton(SUMMON, c)
     end
@@ -282,8 +282,8 @@ end
 -- Pin the bar's top-left corner to the holder's, through the system's base
 -- methods (Blizzard's SetPoint / ClearAllPoints overrides flag Edit Mode).
 local function PinBar()
-    CludesUI.ClearFramePoints(barFrame)
-    CludesUI.SetFramePoint(barFrame, "TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
+    CludesUI.ClearFramePoints(bar)
+    CludesUI.SetFramePoint(bar, "TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
 end
 
 -- The shown buttons in a row (left to right) or a column (top to bottom), each
@@ -311,7 +311,7 @@ local function Layout(c)
     if SUMMON and SUMMON:IsShown() then
         sequence[#sequence + 1] = SUMMON
     end
-    local num = barFrame.numActiveSlots or 0
+    local num = bar.numActiveSlots or 0
     if issecretvalue(num) then
         num = 0
     end
@@ -326,9 +326,9 @@ local function Layout(c)
 
     for idx = 1, total do
         local b = sequence[idx]
-        local offset = (idx - 1) * (BTN + gap)
-        local posX = vertical and 0 or offset
-        local posY = -(vertical and offset or 0) - BTN
+        local off = (idx - 1) * (BTN + gap)
+        local posX = vertical and 0 or off
+        local posY = -(vertical and off or 0) - BTN
         b:ClearAllPoints()
         if b == RECALL then
             b:SetPoint("LEFT", holderFrame, "TOPLEFT", posX, posY + BTN / 2)
@@ -340,24 +340,24 @@ local function Layout(c)
     local first = (SUMMON and sequence[1] == SUMMON) and 1 or 0
     for idx = 1, #ACT do
         local b = ACT[idx]
-        local offset = (first + (idx - 1) % 4) * (BTN + gap)
+        local off = (first + (idx - 1) % 4) * (BTN + gap)
         b:ClearAllPoints()
         b:SetPoint(
             "CENTER",
             holderFrame,
             "TOPLEFT",
-            (vertical and 0 or offset) + BTN / 2,
-            -(vertical and offset or 0) - BTN / 2
+            (vertical and 0 or off) + BTN / 2,
+            -(vertical and off or 0) - BTN / 2
         )
     end
 
     if vertical then
-        barFrame:SetSize(BTN, len)
+        bar:SetSize(BTN, len)
     else
-        barFrame:SetSize(len, BTN)
+        bar:SetSize(len, BTN)
     end
-    CludesUI.SetFrameScale(barFrame, scale)
-    barFrame:SetFrameStrata(c.frameStrata or "MEDIUM")
+    CludesUI.SetFrameScale(bar, scale)
+    bar:SetFrameStrata(c.frameStrata or "MEDIUM")
     PinBar()
 end
 
@@ -366,11 +366,11 @@ end
 local function RestoreLayout()
     if SUMMON then
         SUMMON:ClearAllPoints()
-        SUMMON:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 3, 3)
+        SUMMON:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 3, 3)
     end
     local posX = (SUMMON and SUMMON:IsShown()) and (SUMMON:GetWidth() + 8 + 3) or 3
     SLOT[1]:ClearAllPoints()
-    SLOT[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, 3)
+    SLOT[1]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", posX, 3)
     for idx = 2, 4 do
         SLOT[idx]:ClearAllPoints()
         SLOT[idx]:SetPoint("LEFT", SLOT[idx - 1], "RIGHT", 8, 0)
@@ -385,7 +385,7 @@ local function RestoreLayout()
         end
     end
     if RECALL then
-        local num = barFrame.numActiveSlots or 0
+        local num = bar.numActiveSlots or 0
         if issecretvalue(num) then
             num = 0
         end
@@ -457,14 +457,14 @@ local function OnFlyoutArrow(arrow, _, hostFrame)
     if not (arrow and hostFrame) or arrow:GetParent() ~= hostFrame then
         return
     end
-    local c = owned and Prm()
-    local sideName = (c and c.orientation == "VERTICAL") or false
-    if not (sideName or arrowMoved) then
+    local c = owned and P()
+    local side = (c and c.orientation == "VERTICAL") or false
+    if not (side or arrowMoved) then
         return
     end
-    arrowMoved = sideName
+    arrowMoved = side
     arrow:ClearAllPoints()
-    if sideName then
+    if side then
         arrow:SetPoint("LEFT", hostFrame, "RIGHT", 0, 0)
     else
         arrow:SetPoint("BOTTOM", hostFrame, "TOP", 0, 0)
@@ -476,11 +476,11 @@ local function Hook()
         return
     end
     hooked = true
-    hooksecurefunc(barFrame, "ApplySystemAnchor", OnSystemAnchor)
+    hooksecurefunc(bar, "ApplySystemAnchor", OnSystemAnchor)
     -- A snap break (Edit Mode resetting, reverting or hiding the system the bar
     -- was snapped to) re-anchors the bar to UIParent: re-pin it the same way.
-    if barFrame.BreakFrameSnap then
-        hooksecurefunc(barFrame, "BreakFrameSnap", OnSystemAnchor)
+    if bar.BreakFrameSnap then
+        hooksecurefunc(bar, "BreakFrameSnap", OnSystemAnchor)
     end
     -- The bar is one of the bottom action bars Edit Mode stacks: its stack
     -- pass (after every layout apply, on this bar's own show and hide, on a
@@ -498,7 +498,7 @@ end
 -- Edit Mode never resets the selection's alpha or mouse, so one write holds.
 local selMouse
 local function SuppressSelection()
-    local sel = barFrame.Selection
+    local sel = bar.Selection
     if not sel then
         return
     end
@@ -510,7 +510,7 @@ local function SuppressSelection()
 end
 
 local function ReleaseSelection()
-    local sel = barFrame.Selection
+    local sel = bar.Selection
     if not sel then
         return
     end
@@ -526,18 +526,18 @@ end
 -- it. This one frame only, put back as each takeover found it.
 local barMouse
 local function SuppressBarMouse()
-    barMouse = barFrame:IsMouseEnabled()
-    barFrame:EnableMouse(false)
+    barMouse = bar:IsMouseEnabled()
+    bar:EnableMouse(false)
 end
 
 local function ReleaseBarMouse()
     if barMouse ~= nil then
-        barFrame:EnableMouse(barMouse)
+        bar:EnableMouse(barMouse)
     end
 end
 
 Refresh = function()
-    local c = Prm()
+    local c = P()
     if not (owned and c) then
         return
     end
@@ -558,27 +558,20 @@ local function Release()
     RestoreLayout()
     ReleaseSelection()
     ReleaseBarMouse()
-    CludesUI.SetFrameScale(barFrame, home.scale)
-    barFrame:SetSize(home.w, home.h)
-    barFrame:SetFrameStrata(home.strata)
+    CludesUI.SetFrameScale(bar, home.scale)
+    bar:SetSize(home.w, home.h)
+    bar:SetFrameStrata(home.strata)
     -- Back to the Edit Mode layout's spot (read from the system's own record).
-    local details = barFrame.systemInfo
+    local details = bar.systemInfo
     local ai = details and details.anchorInfo
-    CludesUI.ClearFramePoints(barFrame)
+    CludesUI.ClearFramePoints(bar)
     if ai then
-        local s = barFrame:GetScale()
-        CludesUI.SetFramePoint(
-            barFrame,
-            ai.point,
-            ai.relativeTo,
-            ai.relativePoint,
-            ai.offsetX / s,
-            ai.offsetY / s
-        )
+        local s = bar:GetScale()
+        CludesUI.SetFramePoint(bar, ai.point, ai.relativeTo, ai.relativePoint, ai.offsetX / s, ai.offsetY / s)
         local ai2 = details.anchorInfo2
         if ai2 then
             CludesUI.SetFramePoint(
-                barFrame,
+                bar,
                 ai2.point,
                 ai2.relativeTo,
                 ai2.relativePoint,
@@ -587,12 +580,12 @@ local function Release()
             )
         end
     else
-        CludesUI.SetFramePoint(barFrame, "RIGHT", UIParent, "BOTTOM", -28, 128)
+        CludesUI.SetFramePoint(bar, "RIGHT", UIParent, "BOTTOM", -28, 128)
     end
 end
 
 function mod.CT_Apply()
-    local c = Prm()
+    local c = P()
     if not (c and c.enabled) then
         Release()
         -- In combat Release waits for regen with the bar still pinned to the
@@ -620,8 +613,8 @@ function mod.CT_Apply()
     Hook()
     if not owned then
         if not home then
-            local wid, hgt = barFrame:GetSize()
-            home = { scale = barFrame:GetScale(), w = wid, h = hgt, strata = barFrame:GetFrameStrata() }
+            local wid, hgt = bar:GetSize()
+            home = { scale = bar:GetScale(), w = wid, h = hgt, strata = bar:GetFrameStrata() }
         end
         owned = true
         SuppressSelection()
@@ -642,7 +635,7 @@ function mod.CT_MakeUnlockElement(MK)
         if not anchorPoint then
             return
         end
-        local c = Prm()
+        local c = P()
         if not c then
             return
         end
@@ -653,7 +646,7 @@ function mod.CT_MakeUnlockElement(MK)
         end
     end
     local function load()
-        local c = Prm()
+        local c = P()
         local place = c and c.unlockPos
         if not place then
             return nil
@@ -661,14 +654,14 @@ function mod.CT_MakeUnlockElement(MK)
         return { point = place.point, relPoint = place.relPoint or place.point, x = place.x, y = place.y }
     end
     local function clear()
-        local c = Prm()
+        local c = P()
         if not c then
             return
         end
         c.unlockPos = nil
     end
     local function apply()
-        local c = Prm()
+        local c = P()
         local place = c and c.unlockPos
         if not (place and holderFrame) then
             return
@@ -685,14 +678,14 @@ function mod.CT_MakeUnlockElement(MK)
         noResize = true,
         noAnchorTarget = true,
         isHidden = function()
-            local c = Prm()
+            local c = P()
             return not (c and c.enabled)
         end,
         getFrame = function()
             return holderFrame
         end,
         getSize = function()
-            return HolderSize(Prm())
+            return HolderSize(P())
         end,
         savePos = save,
         loadPos = load,

@@ -102,10 +102,10 @@ function mod.RF_StylePreviewWindow(oc)
     if CludesUI.RegAccent then
         CludesUI.RegAccent({ type = "solid", obj = cap, a = 1 })
     end
-    local titleText = oc:CreateFontString(nil, "OVERLAY")
-    titleText:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
-    oc._title = titleText
-    return titleText
+    local title = oc:CreateFontString(nil, "OVERLAY")
+    title:SetPoint("TOPLEFT", oc, "TOPLEFT", 10, -8)
+    oc._title = title
+    return title
 end
 
 -- Where a preview window sits (not draggable, nothing saved): beside the
@@ -222,13 +222,13 @@ local function RefreshPreview()
 
     -- Overlay mode: anchor to overlay container with padding
     local isOverlay = (saved.profile.previewMode == "overlay") or mod._testMode
-    local anchorFrame = previewContainer or containerFrame
+    local anchor = previewContainer or containerFrame
     local anchorPad = 0
     local topExtra = 0 -- extra top space (overlay only): 25px gap above the
     -- group numbers, leaving room for the centered title
     if isOverlay then
         local oc = GetOrCreateOverlayContainer()
-        anchorFrame = oc
+        anchor = oc
         anchorPad = 20
         topExtra = 25
     end
@@ -243,9 +243,9 @@ local function RefreshPreview()
     local petSpec = mod.PF_PreviewSpec(false, s, bw, bh, cs, groupW, groupH)
     local petX, petY, padL, padT, padR, padB = 0, 0, 0, 0, 0, 0
     if petSpec then
-        local slotIndex = petSpec.before and 0 or (MOVER_GROUPS - 1)
-        petX = gSlots[slotIndex][1] - minGX + petSpec.ox
-        petY = gSlots[slotIndex][2] - maxGY + petSpec.oy
+        local slot = petSpec.before and 0 or (MOVER_GROUPS - 1)
+        petX = gSlots[slot][1] - minGX + petSpec.ox
+        petY = gSlots[slot][2] - maxGY + petSpec.oy
         if isOverlay then
             padL = max(0, -petX)
             padT = max(0, petY)
@@ -266,9 +266,9 @@ local function RefreshPreview()
     if groupOrder then
         previewSlotByGroup = {}
         local previewSlot = 0
-        for _, group in ipairs(groupOrder) do
-            if group <= 4 then
-                previewSlotByGroup[group] = previewSlot
+        for _, set in ipairs(groupOrder) do
+            if set <= 4 then
+                previewSlotByGroup[set] = previewSlot
                 previewSlot = previewSlot + 1
             end
         end
@@ -287,13 +287,7 @@ local function RefreshPreview()
             f:ClearAllPoints()
             local fx = gx + (rawUX[u] - minUX)
             local fy = gy + (rawUY[u] - maxUY)
-            f:SetPoint(
-                "TOPLEFT",
-                anchorFrame,
-                "TOPLEFT",
-                fx + anchorPad + padL,
-                fy - anchorPad - topExtra - padT
-            )
+            f:SetPoint("TOPLEFT", anchor, "TOPLEFT", fx + anchorPad + padL, fy - anchorPad - topExtra - padT)
             ApplyPreviewData(f, frameIdx)
 
             if f._health and previewHealthValues[frameIdx] then
@@ -314,7 +308,7 @@ local function RefreshPreview()
         -- Group number label anchored to the first unit of each group
         local labelFS = previewGroupLabels[g + 1]
         if not labelFS then
-            labelFS = anchorFrame:CreateFontString(nil, "OVERLAY")
+            labelFS = anchor:CreateFontString(nil, "OVERLAY")
             previewGroupLabels[g + 1] = labelFS
         end
         ApplyFont(labelFS, s.groupNumberSize or 10)
@@ -365,7 +359,7 @@ local function RefreshPreview()
             petSpec,
             s,
             reparentTo,
-            anchorFrame,
+            anchor,
             petX + anchorPad + padL,
             petY - anchorPad - topExtra - padT
         )
@@ -666,9 +660,9 @@ local function HidePreview(skipRestore)
 end
 
 local function ApplyPreviewMode()
-    local modeName = saved.profile.previewMode or "overlay"
+    local mode = saved.profile.previewMode or "overlay"
 
-    if modeName == "none" then
+    if mode == "none" then
         if previewActive then
             HidePreview()
         end
@@ -678,7 +672,7 @@ local function ApplyPreviewMode()
         ShowPreview()
         return
     end
-    local isOverlay = (modeName == "overlay")
+    local isOverlay = (mode == "overlay")
     if not isOverlay and overlayContainer then
         overlayContainer:Hide()
     end

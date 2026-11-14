@@ -26,11 +26,11 @@ local function Build(calc, itemLink, fallback, payload)
         if not canaccessallvalues(payload.lines) or not payload.lines then
             return nil
         end
-        for _, lineTex in ipairs(payload.lines) do
-            if not canaccessallvalues(lineTex) or not canaccessallvalues(lineTex.type) then
+        for _, line in ipairs(payload.lines) do
+            if not canaccessallvalues(line) or not canaccessallvalues(line.type) then
                 return nil
             end
-            if lineTex.type == Enum.TooltipDataLineType.ItemUpgradeLevel then
+            if line.type == Enum.TooltipDataLineType.ItemUpgradeLevel then
                 return false
             end
         end
@@ -128,10 +128,10 @@ local function OnUpgradeLine(tooltip, fallback)
         return
     end
     local memo = fallback and memoPost or memoPre
-    local lineTex = memo[itemLink]
-    if lineTex == nil then
-        lineTex = Build(calc, itemLink, fallback, payload)
-        if lineTex == nil then
+    local line = memo[itemLink]
+    if line == nil then
+        line = Build(calc, itemLink, fallback, payload)
+        if line == nil then
             return
         end
         if memoN >= MEMO_MAX then
@@ -139,16 +139,16 @@ local function OnUpgradeLine(tooltip, fallback)
             wipe(memoPost)
             memoN = 0
         end
-        memo[itemLink] = lineTex
+        memo[itemLink] = line
         memoN = memoN + 1
     end
-    if not lineTex then
+    if not line then
         return
     end
-    if lineTex.crest then
-        tooltip:AddDoubleLine(lineTex.text, lineTex.crest, lineTex.r, lineTex.g, lineTex.b, 1, 1, 1)
+    if line.crest then
+        tooltip:AddDoubleLine(line.text, line.crest, line.r, line.g, line.b, 1, 1, 1)
     else
-        tooltip:AddLine(lineTex.text, lineTex.r, lineTex.g, lineTex.b)
+        tooltip:AddLine(line.text, line.r, line.g, line.b)
     end
     return true
 end

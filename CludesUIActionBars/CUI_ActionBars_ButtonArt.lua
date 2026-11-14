@@ -13,7 +13,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 
 local ipairs, pcall = ipairs, pcall
-local upper = math.max
+local max = math.max
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
 local Pix = CludesUI.PP
@@ -102,15 +102,15 @@ do
         if not (isItem or tex) then
             return
         end
-        for slotIndex = 1, 19 do
+        for slot = 1, 19 do
             local hit
             if isItem then
-                hit = GetInventoryItemID("player", slotIndex) == ident
+                hit = GetInventoryItemID("player", slot) == ident
             else
-                hit = GetInventoryItemTexture("player", slotIndex) == tex
+                hit = GetInventoryItemTexture("player", slot) == tex
             end
             if hit then
-                return GetInventoryItemQuality("player", slotIndex)
+                return GetInventoryItemQuality("player", slot)
             end
         end
         if isItem then
@@ -235,16 +235,16 @@ function mod.AB_PaintClassicButton(btn, wid, hgt)
         hgt = wid
     end
     local sw, sh = wid / 36, hgt / 36
-    local glyph = btn.icon
-    if glyph then
+    local icon = btn.icon
+    if icon then
         if btn.IconMask then
-            glyph:RemoveMaskTexture(btn.IconMask)
+            icon:RemoveMaskTexture(btn.IconMask)
             btn.IconMask:Hide()
             btn.IconMask:SetTexture(nil)
             btn.IconMask:ClearAllPoints()
             btn.IconMask:SetSize(0.001, 0.001)
         end
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexCoord(0, 1, 0, 1)
     end
     -- The 12.1 rounded slot background stays transparent (the square ring
     -- below is the slot); alpha, so Blizzard's own art passes keep working.
@@ -694,7 +694,7 @@ end
 mod._eabBorderLevel = function(btn, behind, above)
     local lvl = btn:GetFrameLevel()
     if behind then
-        return upper(0, lvl - 1)
+        return max(0, lvl - 1)
     end
     if above then
         return lvl + 20
@@ -821,14 +821,9 @@ local function ApplyButtonBorders(
         end
     end
     if zoom > 0 then
-        local glyph = btn.icon or btn.Icon
-        if
-            glyph
-            and glyph.SetTexCoord
-            and not (fd.shapeMask and fd.shapeMask:IsShown())
-            and not fd.cropped
-        then
-            glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+        local icon = btn.icon or btn.Icon
+        if icon and icon.SetTexCoord and not (fd.shapeMask and fd.shapeMask:IsShown()) and not fd.cropped then
+            icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
 end
@@ -866,9 +861,9 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         -- Remove shape mask if previously applied
         if fd.shapeMask then
             local mask = fd.shapeMask
-            local glyph = btn.icon or btn.Icon
-            if glyph then
-                pcall(glyph.RemoveMaskTexture, glyph, mask)
+            local icon = btn.icon or btn.Icon
+            if icon then
+                pcall(icon.RemoveMaskTexture, icon, mask)
             end
             -- Unmask slot BG and icon BG from main mask
             if fd.slotBG then
@@ -1002,21 +997,21 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
             end
         end
         -- Restore icon
-        local glyph = btn.icon or btn.Icon
-        if glyph then
-            glyph:ClearAllPoints()
-            glyph:SetSize(0, 0)
-            glyph:SetAllPoints(btn)
+        local icon = btn.icon or btn.Icon
+        if icon then
+            icon:ClearAllPoints()
+            icon:SetSize(0, 0)
+            icon:SetAllPoints(btn)
             if shape == "cropped" then
                 local z = (zoom or 0)
-                glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+                icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
                 fd.cropped = true
             else
                 fd.cropped = false
                 if zoom and zoom > 0 then
-                    glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+                    icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
                 else
-                    glyph:SetTexCoord(0, 1, 0, 1)
+                    icon:SetTexCoord(0, 1, 0, 1)
                 end
             end
         end
@@ -1090,12 +1085,12 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:Show()
 
-    local glyph = btn.icon or btn.Icon
+    local icon = btn.icon or btn.Icon
 
     -- Always remove existing mask references before re-adding
     -- (AddMaskTexture is additive; stale references cause shape-inside-shape)
-    if glyph then
-        pcall(glyph.RemoveMaskTexture, glyph, mask)
+    if icon then
+        pcall(icon.RemoveMaskTexture, icon, mask)
     end
     if fd.slotBG then
         pcall(fd.slotBG.RemoveMaskTexture, fd.slotBG, mask)
@@ -1182,8 +1177,8 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     end
 
     -- Apply mask to icon
-    if glyph then
-        glyph:AddMaskTexture(mask)
+    if icon then
+        icon:AddMaskTexture(mask)
     end
 
     -- Overlay/animation mask: with a border (brdSize >= 1) use a separate inset
@@ -1254,10 +1249,10 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
         iconExp = 0
     end
     local halfIE = iconExp / 2
-    if glyph then
-        glyph:ClearAllPoints()
-        Pix.Point(glyph, "TOPLEFT", btn, "TOPLEFT", -halfIE, halfIE)
-        Pix.Point(glyph, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", halfIE, -halfIE)
+    if icon then
+        icon:ClearAllPoints()
+        Pix.Point(icon, "TOPLEFT", btn, "TOPLEFT", -halfIE, halfIE)
+        Pix.Point(icon, "BOTTOMRIGHT", btn, "BOTTOMRIGHT", halfIE, -halfIE)
     end
 
     -- Mask inset for border
@@ -1273,8 +1268,8 @@ local function ApplyShapeToButton(btn, shape, brdOn, brdR, brdG, brdB, brdA, brd
     local insetPx = SHAPE_INSETS[shape] or 17
     local visRatio = (128 - 2 * insetPx) / 128
     local expand = ((1 / visRatio) - 1) * 0.5
-    if glyph then
-        glyph:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+    if icon then
+        icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
     end
 
     -- Hide square borders (both PP and textured)

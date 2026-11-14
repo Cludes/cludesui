@@ -93,7 +93,7 @@ local DEFAULTS = {
 local BAR_TEXTURES, BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
 
 local routes = CludesUI._FlightTimerRoutes
-local barFrame, events, ticker, hooked
+local bar, events, ticker, hooked
 local pending -- destination picked on the flight map, waiting for takeoff
 local flight -- the flight in progress
 
@@ -109,8 +109,8 @@ end
 
 -- How much further a label must sit from a mark of this height, centred on
 -- the track, to clear a track taller than the mark.
-local function Rise(dim)
-    return math.max(0, (Get("trackHeight") - dim) / 2)
+local function Rise(size)
+    return math.max(0, (Get("trackHeight") - size) / 2)
 end
 
 local function Speed()
@@ -141,8 +141,8 @@ end
 
 local function FillColor()
     if Get("classColored") then
-        local _, classFile = UnitClass("player")
-        local cc = classFile and CludesUI.GetClassColor(classFile)
+        local _, class = UnitClass("player")
+        local cc = class and CludesUI.GetClassColor(class)
         if cc then
             return cc.r, cc.g, cc.b
         end
@@ -185,8 +185,8 @@ local function RouteInfo(slot)
 end
 
 -- Text in Forever Essentials' font and outline (Fonts page, else the global font).
-local function StyleFont(fontStr, dim)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, "essentials")
+local function StyleFont(fontStr, size)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials")
 end
 
 -- A mark on the route (an end, a stop, "you"): an icon with a label.
@@ -267,17 +267,17 @@ local function LayoutRoute(b, fl)
     -- above it; a hidden dot still places its name.
     local caps = Get("showEndCaps")
     for idx = 1, 2 do
-        local m, sideName = b.ends[idx], idx == 1 and "LEFT" or "RIGHT"
+        local m, side = b.ends[idx], idx == 1 and "LEFT" or "RIGHT"
         ShowMark(m, MarkText(num > 0, num > 0 and points[idx == 1 and 1 or num].name, nameList))
         if not caps then
             m.icon:Hide()
         end
         m.icon:SetVertexColor(FillColor())
         m.label:ClearAllPoints()
-        m.label:SetPoint("BOTTOM" .. sideName, m.icon, "TOP" .. sideName, dx, 4 + dy + Rise(PIN_SIZE / 2))
+        m.label:SetPoint("BOTTOM" .. side, m.icon, "TOP" .. side, dx, 4 + dy + Rise(PIN_SIZE / 2))
         -- Each end name gets at most 47% of the bar's width; a longer one is cut off.
         m.label:SetWidth(Get("width") * 0.47)
-        m.label:SetJustifyH(sideName)
+        m.label:SetJustifyH(side)
     end
 
     -- Where each stop sits comes from its arrival time, known only with route
@@ -330,42 +330,42 @@ local function LayoutRoute(b, fl)
     -- "You are here": a white post at the centre, where each stop is reached;
     -- a direct flight has no stops to reach, so none.
     ShowMark(b.you, MarkText(scroll, CludesUI.L("You"), nameList))
-    local glyph = b.you.icon
+    local icon = b.you.icon
     local height = Get("separatorHeight")
-    local tex, dim = Get("borderTexture"), Get("borderSize")
+    local tex, size = Get("borderTexture"), Get("borderSize")
     if
         scroll
         and Get("showSeparator")
         and Get("customSeparator")
-        and dim > 0
+        and size > 0
         and CludesUI.GetBorderCompanion(tex, "sepV")
     then
         if not b.separatorAnchor then
             b.separatorAnchor = CreateFrame("Frame", nil, b.over)
         end
-        local anchorFrame = b.separatorAnchor
-        anchorFrame:ClearAllPoints()
-        anchorFrame:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
-        anchorFrame:SetSize(1, height)
+        local anchor = b.separatorAnchor
+        anchor:ClearAllPoints()
+        anchor:SetPoint("TOPLEFT", b, "CENTER", 0, height / 2)
+        anchor:SetSize(1, height)
         CludesUI.PlaceBorderDividerV(
-            glyph,
-            anchorFrame,
+            icon,
+            anchor,
             false,
             false,
             tex,
-            dim,
-            CludesUI.BorderPx(Get("borderSizePx"), dim, tex),
+            size,
+            CludesUI.BorderPx(Get("borderSizePx"), size, tex),
             b.over:GetEffectiveScale()
         )
-        glyph:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
+        icon:SetVertexColor(Get("borderR"), Get("borderG"), Get("borderB"), 1)
     else
-        glyph:SetTexture(WHITE)
-        glyph:SetTexCoord(0, 1, 0, 1)
-        glyph:SetVertexColor(1, 1, 1, 1)
-        glyph:ClearAllPoints()
-        glyph:SetPoint("CENTER", b, "CENTER")
-        glyph:SetSize(2, height)
-        glyph:SetShown(scroll and Get("showSeparator"))
+        icon:SetTexture(WHITE)
+        icon:SetTexCoord(0, 1, 0, 1)
+        icon:SetVertexColor(1, 1, 1, 1)
+        icon:ClearAllPoints()
+        icon:SetPoint("CENTER", b, "CENTER")
+        icon:SetSize(2, height)
+        icon:SetShown(scroll and Get("showSeparator"))
     end
     b.you.label:ClearAllPoints()
     b.you.label:SetPoint("BOTTOM", b, "CENTER", 0, math.max(height, Get("trackHeight")) / 2 + 2)
@@ -376,12 +376,12 @@ local RequestLanding -- the early exit button's click; defined with the flight c
 -- Separate hosts let size 0 hide the border without hiding the track or button.
 local function StyleBorder(ownerFrame, isExit)
     local Pix = CludesUI.PP
-    local hostRegion = ownerFrame.travelBorder
+    local host = ownerFrame.travelBorder
     if isExit and not Get("exitBorder") then
         Pix.HideBorder(ownerFrame)
-        if hostRegion then
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
         end
         return
     end
@@ -393,22 +393,22 @@ local function StyleBorder(ownerFrame, isExit)
         custom = Read().borderTexture ~= nil or Get("borderSizePx")
     end
     if not custom then
-        if hostRegion then
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
         end
-        local dim, r, g, b = 1, 0, 0, 0
+        local size, r, g, b = 1, 0, 0, 0
         if not isExit then
             local cap = math.floor((Get("trackHeight") / (Pix.mult or 1) - 1) / 2)
-            dim = math.max(0, math.min(Get("borderSize"), cap))
+            size = math.max(0, math.min(Get("borderSize"), cap))
             r, g, b = Get("borderR"), Get("borderG"), Get("borderB")
         end
         if Pix.GetBorders(ownerFrame) then
-            Pix.UpdateBorder(ownerFrame, dim, r, g, b, 1)
+            Pix.UpdateBorder(ownerFrame, size, r, g, b, 1)
         else
-            Pix.CreateBorder(ownerFrame, r, g, b, 1, dim, "OVERLAY", 2)
+            Pix.CreateBorder(ownerFrame, r, g, b, 1, size, "OVERLAY", 2)
         end
-        if dim > 0 then
+        if size > 0 then
             Pix.ShowBorder(ownerFrame)
         else
             Pix.HideBorder(ownerFrame)
@@ -416,19 +416,19 @@ local function StyleBorder(ownerFrame, isExit)
         return
     end
     Pix.HideBorder(ownerFrame)
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, ownerFrame)
-        hostRegion:SetAllPoints(ownerFrame)
-        ownerFrame.travelBorder = hostRegion
+    if not host then
+        host = CreateFrame("Frame", nil, ownerFrame)
+        host:SetAllPoints(ownerFrame)
+        ownerFrame.travelBorder = host
     end
-    hostRegion:SetFrameLevel(
+    host:SetFrameLevel(
         Get("borderBehind") and math.max(0, ownerFrame:GetFrameLevel() - 1) or ownerFrame:GetFrameLevel() + 1
     )
-    local dim, tex = Get("borderSize"), Get("borderTexture")
+    local size, tex = Get("borderSize"), Get("borderTexture")
     local prefixText = isExit and "exitBorder" or "borderTexture"
     CludesUI.ApplyBorderStyle(
-        hostRegion,
-        dim,
+        host,
+        size,
         Get("borderR"),
         Get("borderG"),
         Get("borderB"),
@@ -441,7 +441,7 @@ local function StyleBorder(ownerFrame, isExit)
         nil,
         nil,
         nil,
-        CludesUI.BorderPx(Get("borderSizePx"), dim, tex)
+        CludesUI.BorderPx(Get("borderSizePx"), size, tex)
     )
 end
 
@@ -557,20 +557,20 @@ local function BuildBar(hostFrame)
 end
 
 local function CreateBar()
-    if barFrame then
+    if bar then
         return
     end
-    barFrame = BuildBar(UIParent)
-    barFrame:Hide()
-    StyleBar(barFrame, flight)
-    F.Place(barFrame)
+    bar = BuildBar(UIParent)
+    bar:Hide()
+    StyleBar(bar, flight)
+    F.Place(bar)
 end
 
 local RefreshPreview -- the options preview's restyle; defined with it below
 
 local function ApplyStyle()
-    if barFrame then
-        StyleBar(barFrame, flight)
+    if bar then
+        StyleBar(bar, flight)
     end
     RefreshPreview()
 end
@@ -579,36 +579,36 @@ end
 -- as CludesUI's widget tooltips: 0.25 s, easing out on show, in on hide.
 local FADE_TIME = 0.25
 local function ShowBar(show)
-    local g = barFrame.fade
+    local g = bar.fade
     if g then
         g:Stop()
     end
     if not Get("fade") then
-        barFrame:SetAlpha(1)
-        barFrame:SetShown(show)
+        bar:SetAlpha(1)
+        bar:SetShown(show)
         return
     end
-    if not show and not barFrame:IsShown() then
+    if not show and not bar:IsShown() then
         return
     end
     if not g then
-        g = barFrame:CreateAnimationGroup()
+        g = bar:CreateAnimationGroup()
         g.alpha = g:CreateAnimation("Alpha")
         g.alpha:SetDuration(FADE_TIME)
         g:SetScript("OnFinished", function(self)
-            barFrame:SetAlpha(self.to)
+            bar:SetAlpha(self.to)
             if self.to == 0 then
-                barFrame:Hide()
+                bar:Hide()
             end
         end)
-        barFrame.fade = g
+        bar.fade = g
     end
-    if show and not barFrame:IsShown() then
-        barFrame:SetAlpha(0)
-        barFrame:Show()
+    if show and not bar:IsShown() then
+        bar:SetAlpha(0)
+        bar:Show()
     end
     g.to = show and 1 or 0
-    g.alpha:SetFromAlpha(barFrame:GetAlpha())
+    g.alpha:SetFromAlpha(bar:GetAlpha())
     g.alpha:SetToAlpha(g.to)
     g.alpha:SetSmoothing(show and "OUT" or "IN")
     g:Play()
@@ -620,7 +620,7 @@ local function EndFlight()
         ticker:Cancel()
         ticker = nil
     end
-    if barFrame then
+    if bar then
         ShowBar(false)
     end
 end
@@ -635,10 +635,10 @@ local function UpdateText()
         flight.early = true
         Land()
     elseif flight.eta then
-        barFrame.time:SetText(TimeLeft(flight, elapsed))
-        ScrollStrip(barFrame, flight, elapsed)
+        bar.time:SetText(TimeLeft(flight, elapsed))
+        ScrollStrip(bar, flight, elapsed)
     else
-        barFrame.time:SetText(FormatTime(elapsed))
+        bar.time:SetText(FormatTime(elapsed))
     end
 end
 
@@ -663,9 +663,9 @@ local function StartFlight(yards, points)
         flight.eta = yards / (Speed() * flight.mult)
     end
     CreateBar()
-    ArmTimer(barFrame, flight)
+    ArmTimer(bar, flight)
     ShowBar(true)
-    StyleBar(barFrame, flight)
+    StyleBar(bar, flight)
     UpdateText()
     if not ticker then
         ticker = C_Timer.NewTicker(1, UpdateText)
@@ -742,7 +742,7 @@ local function Apply()
             hooksecurefunc("TakeTaxiNode", OnTakeTaxiNode)
             hooksecurefunc("TaxiRequestEarlyLanding", function()
                 if flight then
-                    Retarget(barFrame, flight)
+                    Retarget(bar, flight)
                     UpdateText()
                 end
             end)
@@ -835,7 +835,7 @@ local function PreviewLanding()
 end
 
 RequestLanding = function(b)
-    if b == barFrame then
+    if b == bar then
         -- The hook on TaxiRequestEarlyLanding retargets the bar.
         if flight and not flight.early then
             TaxiRequestEarlyLanding()
@@ -931,7 +931,7 @@ CludesUI._FlightTimer = {
     Apply = Apply,
     ApplyStyle = ApplyStyle,
     ApplyPosition = function()
-        F.Place(barFrame)
+        F.Place(bar)
     end,
     textures = { lookup = BAR_TEXTURES, names = BAR_TEXTURE_NAMES, order = BAR_TEXTURE_ORDER },
     CreateSettingsPreview = CreateSettingsPreview,
@@ -946,7 +946,7 @@ F.Start(Apply, {
         if build then
             CreateBar()
         end
-        return barFrame
+        return bar
     end,
     -- Follows the text around the track.
     height = BoxHeight,

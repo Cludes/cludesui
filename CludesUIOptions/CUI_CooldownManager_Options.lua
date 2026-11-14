@@ -60,7 +60,7 @@ initFrame:SetScript("OnEvent", function(self)
         saved = _G._CUCME_AceDB
     end)
 
-    local function SavedDB()
+    local function DB()
         if not saved then
             saved = _G._CUCME_AceDB
         end
@@ -369,11 +369,11 @@ initFrame:SetScript("OnEvent", function(self)
                         if edge.pandemicGlow == nil then
                             return antiClip and 0 or -1
                         end
-                        local look = edge.pandemicGlowStyle or 1
-                        if antiClip and look == -1 then
+                        local style = edge.pandemicGlowStyle or 1
+                        if antiClip and style == -1 then
                             return 0
                         end
-                        return look
+                        return style
                     end
                     return PandemicGet(edge, f)
                 end,
@@ -917,7 +917,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end)
 
-    local function ShowBarGlowSpellPicker(anchorFrame, barIdx, btnIdx, onChanged, overrideAssignKey)
+    local function ShowBarGlowSpellPicker(anchor, barIdx, btnIdx, onChanged, overrideAssignKey)
         local backdrop = mod.GetBarGlows()
         local assignKey = overrideAssignKey or (barIdx .. "_" .. btnIdx)
         local buffList = backdrop.assignments[assignKey] or {}
@@ -980,7 +980,7 @@ initFrame:SetScript("OnEvent", function(self)
         iconSid = iconSid or buttonSid
         local buttonInfo = iconSid and C_Spell.GetSpellInfo(iconSid)
         local usableIcon = buttonInfo and buttonInfo.iconID
-        local dropMenu = mod.ShowBarGlowBuffMenu(anchorFrame, {
+        local dropMenu = mod.ShowBarGlowBuffMenu(anchor, {
             usableItem = { icon = usableIcon },
             isChecked = function(spellRef)
                 return assignedSet[spellRef]
@@ -1093,7 +1093,7 @@ initFrame:SetScript("OnEvent", function(self)
         wipe(_bgPreviewGlowOverlays)
         wipe(_bgPreviewGlowActive)
 
-        _glowHeaderBuilder = function(headerFrame, width)
+        _glowHeaderBuilder = function(header, width)
             -- Re-read current state each build
             local bgData = mod.GetBarGlows()
             local sel = NormalizeSelectedBar(bgData.selectedBar or 1)
@@ -1152,9 +1152,9 @@ initFrame:SetScript("OnEvent", function(self)
             local tDimA = CludesUI.TEXT_DIM_A or 0.85
             local ITEM_H = 26
 
-            local ddBtn = CreateFrame("Button", nil, headerFrame)
+            local ddBtn = CreateFrame("Button", nil, header)
             Pix.Size(ddBtn, ddW, DD_H)
-            ddBtn:SetFrameLevel(headerFrame:GetFrameLevel() + 5)
+            ddBtn:SetFrameLevel(header:GetFrameLevel() + 5)
             local ddBg = ddBtn:CreateTexture(nil, "BACKGROUND")
             ddBg:SetAllPoints()
             ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
@@ -1192,33 +1192,33 @@ initFrame:SetScript("OnEvent", function(self)
                 local targets = BuildBGTargetList()
                 for _, t in ipairs(targets) do
                     local entryVal = t.value
-                    local itemInfo = CreateFrame("Button", nil, dropMenu)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local iLbl = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local item = CreateFrame("Button", nil, dropMenu)
+                    item:SetHeight(ITEM_H)
+                    item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local iLbl = item:CreateFontString(nil, "OVERLAY")
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetWordWrap(false)
                     iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
+                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
                     iLbl:SetText(t.label)
-                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local iHl = item:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     local isCurrent = (entryVal == sel)
                     iHl:SetAlpha(isCurrent and selA or 0)
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(isCurrent and selA or 0)
                     end)
-                    itemInfo:SetScript("OnClick", function()
+                    item:SetScript("OnClick", function()
                         dropMenu:Hide()
                         bgData.selectedBar = entryVal
                         bgData.selectedButton = nil
@@ -1269,10 +1269,10 @@ initFrame:SetScript("OnEvent", function(self)
                     ddMenu:Hide()
                 end
             end)
-            Pix.Point(ddBtn, "TOP", headerFrame, "TOP", 0, -20)
+            Pix.Point(ddBtn, "TOP", header, "TOP", 0, -20)
 
             -- (i) next to the picker: what the page does, on hover
-            local details = CreateFrame("Frame", nil, headerFrame)
+            local details = CreateFrame("Frame", nil, header)
             Pix.Size(details, 16, 16)
             Pix.Point(details, "LEFT", ddBtn, "RIGHT", 10, 0)
             details:SetFrameLevel(ddBtn:GetFrameLevel())
@@ -1312,7 +1312,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 -- The live icon's on-screen size (width/height match, UI scale) in this panel's scale
                 local liveW =
-                    mod.BarGlowPreviewIconSize(mod.cdmBarIcons and mod.cdmBarIcons[cdmBarKey], headerFrame)
+                    mod.BarGlowPreviewIconSize(mod.cdmBarIcons and mod.cdmBarIcons[cdmBarKey], header)
                 if liveW then
                     realBtnW, realBtnH = liveW, liveW
                 end
@@ -1429,9 +1429,9 @@ initFrame:SetScript("OnEvent", function(self)
                 local xOff = startX + (i - 1) * (scaledBtnW + scaledPad)
                 local isSelected = (_glowSelectedButton == i)
 
-                local bf = CreateFrame("Button", nil, headerFrame)
+                local bf = CreateFrame("Button", nil, header)
                 bf:SetSize(scaledBtnW, scaledBtnH)
-                bf:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", xOff, startY)
+                bf:SetPoint("TOPLEFT", header, "TOPLEFT", xOff, startY)
                 _glowBtnFrames[i] = bf
                 bf:RegisterForClicks("LeftButtonUp", "RightButtonDown")
 
@@ -1495,15 +1495,15 @@ initFrame:SetScript("OnEvent", function(self)
                 local SHAPE_MASKS = isCDMBar and mod.CDM_SHAPE_MASKS or AB_SHAPE_MASKS
                 local SHAPE_BORDERS = isCDMBar and mod.CDM_SHAPE_BORDERS or AB_SHAPE_BORDERS
                 if btnShape ~= "none" and btnShape ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[btnShape] then
-                    local maskTex = bf:CreateMaskTexture()
-                    maskTex:SetAllPoints(bf)
-                    maskTex:SetTexture(SHAPE_MASKS[btnShape], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-                    iconTex:AddMaskTexture(maskTex)
-                    bgTex:AddMaskTexture(maskTex)
+                    local mask = bf:CreateMaskTexture()
+                    mask:SetAllPoints(bf)
+                    mask:SetTexture(SHAPE_MASKS[btnShape], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                    iconTex:AddMaskTexture(mask)
+                    bgTex:AddMaskTexture(mask)
                     -- Store shape metadata for glow preview (StartNativeGlow reads these)
                     bf._shapeApplied = true
                     bf._shapeName = btnShape
-                    bf._shapeMask = maskTex
+                    bf._shapeMask = mask
                     -- Shape border (always created for hover/accent tinting; invisible when brdSize == 0)
                     if SHAPE_BORDERS and SHAPE_BORDERS[btnShape] then
                         local sbt = bf:CreateTexture(nil, "OVERLAY", nil, 6)
@@ -1678,8 +1678,8 @@ initFrame:SetScript("OnEvent", function(self)
                 local function ActivateInline()
                     local PP3 = CludesUI and CludesUI.PP
                     -- Clear previous active button visuals
-                    if headerFrame._activeBtnRef and headerFrame._activeBtnRef ~= bf then
-                        local prev = headerFrame._activeBtnRef
+                    if header._activeBtnRef and header._activeBtnRef ~= bf then
+                        local prev = header._activeBtnRef
                         -- Revert border: if prev has assignments, switch to white; otherwise hide
                         local prevKey = prev._assignKey or (barIdx .. "_" .. (prev._btnIdx or 0))
                         local prevAssigns = bgData.assignments[prevKey]
@@ -1722,13 +1722,13 @@ initFrame:SetScript("OnEvent", function(self)
                     -- Remove hover toggle since border is now permanent
                     bf:SetScript("OnEnter", nil)
                     bf:SetScript("OnLeave", nil)
-                    headerFrame._activeBtnRef = bf
+                    header._activeBtnRef = bf
                 end
                 bf._btnIdx = i
 
                 -- Track the initially active button
                 if isSelected then
-                    headerFrame._activeBtnRef = bf
+                    header._activeBtnRef = bf
                 end
 
                 -- Left click: select this button. Right click: select + toggle spell picker.
@@ -1773,10 +1773,10 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             -- Tip text below the button grid
-            local tipFS = headerFrame:CreateFontString(nil, "OVERLAY")
+            local tipFS = header:CreateFontString(nil, "OVERLAY")
             tipFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
             tipFS:SetTextColor(1, 1, 1, 0.70)
-            tipFS:SetPoint("TOP", headerFrame, "TOP", 0, -(20 + DD_H + 20 + scaledBtnH + 20))
+            tipFS:SetPoint("TOP", header, "TOP", 0, -(20 + DD_H + 20 + scaledBtnH + 20))
             tipFS:SetText(CludesUI.L("Left click a button to edit its glow, right click to add a new glow"))
 
             return 20 + DD_H + 20 + scaledBtnH + 20 + 14 + 15
@@ -1872,7 +1872,7 @@ initFrame:SetScript("OnEvent", function(self)
                             if not shade then
                                 return
                             end
-                            local look = BarHasCustomShape(curBar) and 2 or (record.glowStyle or 1)
+                            local style = BarHasCustomShape(curBar) and 2 or (record.glowStyle or 1)
                             local cr, cg, cb
                             if record.colorMode == "class" then
                                 local cc = CludesUI.GetClassColor(CludesUI._playerClass)
@@ -1885,11 +1885,11 @@ initFrame:SetScript("OnEvent", function(self)
                             -- style takes the shared panel extras.
                             mod.StartNativeGlow(
                                 shade,
-                                look,
+                                style,
                                 cr,
                                 cg,
                                 cb,
-                                look == 8 and { panel = true, alpha = record.glowAlpha }
+                                style == 8 and { panel = true, alpha = record.glowAlpha }
                                     or CludesUI.Glows.PANEL_EXTRA
                             )
                         end
@@ -2041,7 +2041,7 @@ initFrame:SetScript("OnEvent", function(self)
                                             previewBtn._accentBrd:Show()
                                         end
                                     else
-                                        local look = BarHasCustomShape(curBar) and 2
+                                        local style = BarHasCustomShape(curBar) and 2
                                             or (record.glowStyle or 1)
                                         local cr, cg, cb
                                         if record.colorMode == "class" then
@@ -2053,11 +2053,11 @@ initFrame:SetScript("OnEvent", function(self)
                                         end
                                         mod.StartNativeGlow(
                                             shade,
-                                            look,
+                                            style,
                                             cr,
                                             cg,
                                             cb,
-                                            look == 8 and { panel = true, alpha = record.glowAlpha }
+                                            style == 8 and { panel = true, alpha = record.glowAlpha }
                                                 or CludesUI.Glows.PANEL_EXTRA
                                         )
                                         _bgPreviewGlowActive[pvKey] = true
@@ -2226,7 +2226,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- BuffBarsPage_Options.lua), set up here so the hooks keep their order.
     local BuildBuffBarsPage, RefreshTBBPopout = mod.CDMO_InitBuffBarsPage(
         Pix,
-        SavedDB,
+        DB,
         Refresh,
         FONT_PATH,
         GetCDMOptOutline,
@@ -2260,7 +2260,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- when a buff-family bar is selected). Sets the index immediately, like
     -- CludesUI._setUnitFrameUnit, so header and rebuilt page both reflect it.
     function CludesUI._setCDMBar(keyOrType)
-        local p = SavedDB()
+        local p = DB()
         local barList = p and p.cdmBars and p.cdmBars.bars
         if not barList then
             return
@@ -2333,7 +2333,7 @@ initFrame:SetScript("OnEvent", function(self)
 
     --- Get the currently selected CDM bar data
     local function SelectedCDMBar()
-        local p = SavedDB()
+        local p = DB()
         if not p or not p.cdmBars or not p.cdmBars.bars then
             return nil
         end
@@ -2358,10 +2358,10 @@ initFrame:SetScript("OnEvent", function(self)
         end
         -- Stop fake cooldown on preview slot
         if optionState._cdmPreview and optionState._cdmPreview._previewSlots then
-            local slotIndex = optionState._cdmPreview._previewSlots[1]
-            if slotIndex and slotIndex._previewCD then
-                slotIndex._previewCD:Clear()
-                slotIndex._previewCD:Hide()
+            local slot = optionState._cdmPreview._previewSlots[1]
+            if slot and slot._previewCD then
+                slot._previewCD:Clear()
+                slot._previewCD:Hide()
             end
         end
     end
@@ -2380,14 +2380,14 @@ initFrame:SetScript("OnEvent", function(self)
         if not optionState._cdmPreview or not optionState._cdmPreview._previewSlots then
             return
         end
-        local slotIndex = optionState._cdmPreview._previewSlots[1]
-        if not slotIndex or not slotIndex:IsShown() then
+        local slot = optionState._cdmPreview._previewSlots[1]
+        if not slot or not slot:IsShown() then
             return
         end
 
         -- Ensure cooldown widget exists on preview slot
-        if not slotIndex._previewCD then
-            local cd = CreateFrame("Cooldown", nil, slotIndex, "CooldownFrameTemplate")
+        if not slot._previewCD then
+            local cd = CreateFrame("Cooldown", nil, slot, "CooldownFrameTemplate")
             cd:SetAllPoints()
             cd:SetDrawEdge(false)
             cd:SetDrawSwipe(true)
@@ -2404,15 +2404,15 @@ initFrame:SetScript("OnEvent", function(self)
                 cd:SetSnapToPixelGrid(false)
                 cd:SetTexelSnappingBias(0)
             end
-            slotIndex._previewCD = cd
+            slot._previewCD = cd
         end
 
         -- The timers below stand down once the preview slot was dressed again
         -- for a rebuilt preview (page reuse): its state belongs to that build.
-        local slotGen = PoolGen(slotIndex)
+        local slotGen = PoolGen(slot)
         -- Always refresh font (smaller than the bar's cooldown font size, shadow style)
         C_Timer.After(0, function()
-            if PoolGen(slotIndex) ~= slotGen or not slotIndex._previewCD then
+            if PoolGen(slot) ~= slotGen or not slot._previewCD then
                 return
             end
             local fSize = (edge.cooldownFontSize or 12) - 2
@@ -2420,13 +2420,13 @@ initFrame:SetScript("OnEvent", function(self)
                 fSize = 6
             end
             local fontFile = (CludesUI.GetFontPath("cdm")) or STANDARD_TEXT_FONT
-            for _, regionFrame in ipairs({ slotIndex._previewCD:GetRegions() }) do
+            for _, regionFrame in ipairs({ slot._previewCD:GetRegions() }) do
                 if regionFrame:GetObjectType() == "FontString" then
                     SetPVFont(regionFrame, fontFile, fSize)
                     if mod.AnchorCooldownText then
                         mod.AnchorCooldownText(
                             regionFrame,
-                            slotIndex._previewCD,
+                            slot._previewCD,
                             edge.cooldownTextPosition or "center",
                             edge.cooldownTextX or 0,
                             edge.cooldownTextY or 0
@@ -2438,16 +2438,16 @@ initFrame:SetScript("OnEvent", function(self)
         end)
 
         -- Ensure glow overlay exists
-        if not slotIndex._glowOverlay then
-            local shade = CreateFrame("Frame", nil, slotIndex)
-            shade:SetAllPoints(slotIndex)
+        if not slot._glowOverlay then
+            local shade = CreateFrame("Frame", nil, slot)
+            shade:SetAllPoints(slot)
             -- Above the Blizzard Style ring (+15) as on the live icons (+16).
-            shade:SetFrameLevel(slotIndex:GetFrameLevel() + (CludesUI.BlizzStyle.Get("cdmicons") and 16 or 3))
+            shade:SetFrameLevel(slot:GetFrameLevel() + (CludesUI.BlizzStyle.Get("cdmicons") and 16 or 3))
             shade:SetAlpha(0)
             shade._cuiGlowPreview = true -- exempt from Show Glows Only in Combat
-            slotIndex._glowOverlay = shade
+            slot._glowOverlay = shade
         end
-        _cdmActivePreviewOverlay = slotIndex._glowOverlay
+        _cdmActivePreviewOverlay = slot._glowOverlay
 
         -- Resolve active animation color
         local animR, animG, animB = 1.0, 0.85, 0.0
@@ -2469,14 +2469,14 @@ initFrame:SetScript("OnEvent", function(self)
         local PREVIEW_DURATION = 5 -- seconds
 
         if anim == "none" then
-            slotIndex._previewCD:SetSwipeColor(0, 0, 0, swAlpha)
-            slotIndex._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
-            slotIndex._previewCD:Show()
+            slot._previewCD:SetSwipeColor(0, 0, 0, swAlpha)
+            slot._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
+            slot._previewCD:Show()
             mod.StopNativeGlow(_cdmActivePreviewOverlay)
         else
-            slotIndex._previewCD:SetSwipeColor(animR, animG, animB, swAlpha)
-            slotIndex._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
-            slotIndex._previewCD:Show()
+            slot._previewCD:SetSwipeColor(animR, animG, animB, swAlpha)
+            slot._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
+            slot._previewCD:Show()
 
             if anim ~= "blizzard" then
                 local glowIdx = tonumber(anim)
@@ -2497,15 +2497,15 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Auto-stop glow after preview duration ends
         C_Timer.After(PREVIEW_DURATION, function()
-            if myToken ~= _cdmActivePreviewToken or PoolGen(slotIndex) ~= slotGen then
+            if myToken ~= _cdmActivePreviewToken or PoolGen(slot) ~= slotGen then
                 return
             end
             if _cdmActivePreviewOverlay then
                 mod.StopNativeGlow(_cdmActivePreviewOverlay)
             end
-            if slotIndex._previewCD then
-                slotIndex._previewCD:Clear()
-                slotIndex._previewCD:Hide()
+            if slot._previewCD then
+                slot._previewCD:Clear()
+                slot._previewCD:Hide()
             end
         end)
     end
@@ -2756,11 +2756,11 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Keep Keys on Bar Swap (global)",
                         tooltip = 'Keep keybind text identical when your action bar swaps -- rogue stealth, druid forms, skyriding. Also covers conditional macros like "/cast [bonusbar:1] Backstab; Shadow Dance", where the key would otherwise jump to whichever branch is live.\n\nThe key then only changes when you actually move the ability or rebind it.\n\nOn by default. Applies to every CDM bar at once.',
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return (p and p.cdmBars and p.cdmBars.stableKeybinds) == true
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p or not p.cdmBars then
                                 return
                             end
@@ -2826,7 +2826,7 @@ initFrame:SetScript("OnEvent", function(self)
         _cdmActivePreviewOn = _cdmActivePreviewOn,
         AnyIconAlwaysShowOn = AnyIconAlwaysShowOn,
         BuildKeybindStyleControls = BuildKeybindStyleControls,
-        DB = SavedDB,
+        DB = DB,
         durationPositionOrder = durationPositionOrder,
         durationPositionValues = durationPositionValues,
         FitMenuWidth = FitMenuWidth,
@@ -2856,7 +2856,7 @@ initFrame:SetScript("OnEvent", function(self)
         local _, hgt, heading
         hostFrame._showRowDivider = true
         local function Settings()
-            return SavedDB().rotationAssistIcon
+            return DB().rotationAssistIcon
         end
         local function Apply()
             mod.RefreshRotationAssistIcon()
@@ -3199,7 +3199,7 @@ initFrame:SetScript("OnEvent", function(self)
             if pageName ~= PAGE_CDM_BARS then
                 return nil
             end
-            local p = SavedDB()
+            local p = DB()
             local barList = p and p.cdmBars and p.cdmBars.bars
             if not barList or #barList == 0 then
                 return nil

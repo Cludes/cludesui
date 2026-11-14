@@ -111,10 +111,7 @@ local function EnsureAssignedSpells(barKeyE)
     -- icon can resolve to a different ID than stored and re-add the same buff. CD/utility bars still need the append (re-talent repop + spillover reconciliation).
     local bdForFamily = mod.barDataByKey and mod.barDataByKey[barKeyE]
     local isBuffFamilyE = mod.IsBarBuffFamily and mod.IsBarBuffFamily(bdForFamily or barKeyE)
-    local liveIcons = not importPending
-        and not isBuffFamilyE
-        and mod.cdmBarIcons
-        and mod.cdmBarIcons[barKeyE]
+    local liveIcons = not importPending and not isBuffFamilyE and mod.cdmBarIcons and mod.cdmBarIcons[barKeyE]
     if liveIcons then
         if not sd.assignedSpells then
             sd.assignedSpells = {}
@@ -162,25 +159,25 @@ local function EnsureAssignedSpells(barKeyE)
         -- variant-aware (mirrors the reseed pass in CUI_CDM_Reconcile.lua): an
         -- exact-match set misses a stored entry with a different variant form, re-inserting a duplicate the normalize pass above then dedupes by deleting the saved slot.
         local insertPos = nil
-        for _, glyph in ipairs(liveIcons) do
+        for _, icon in ipairs(liveIcons) do
             -- Resolve the live icon's DISPLAYED spell the same way the picker does
             -- (canonical = GetSpellID-first, active-frame cache), so a spell whose
             -- cooldownInfo base differs from its live talent form (e.g. 137029 Holy
             -- Paladin vs 432496 Holy Bulwark) dedups against the stored canonical ID
             -- instead of appending a duplicate. Falls back to raw FC spellID for our own custom frames.
-            local _sid = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(glyph))
-                or (mod._ecmeFC[glyph] and mod._ecmeFC[glyph].spellID)
+            local _sid = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(icon))
+                or (mod._ecmeFC[icon] and mod._ecmeFC[icon].spellID)
             -- Skip hosted-buff frames and their placeholders: their bar membership is
             -- the hosted MARKER entry; materializing their canonical spellID here would fabricate a plain COOLDOWN entry for the same spell (the buff frame's id resolves positive).
-            local _fdLI = mod._hookFrameData and mod._hookFrameData[glyph]
-            if glyph._isPlaceholderFrame or (_fdLI and _fdLI._isBuffViewerFrame) then
+            local _fdLI = mod._hookFrameData and mod._hookFrameData[icon]
+            if icon._isPlaceholderFrame or (_fdLI and _fdLI._isBuffViewerFrame) then
                 -- Advance the cursor over the hosted buff's MARKER entry so a spell
                 -- inserted after it lands after the buff, not squeezed beside the previous CD spell (mirrors the reseed pass).
                 if
                     type(_sid) == "number"
                     and _sid > 0
                     and mod.HostedBuffMarkerToSpell
-                    and not (mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(glyph))
+                    and not (mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(icon))
                 then
                     for idx = 1, #sd.assignedSpells do
                         local dec = mod.HostedBuffMarkerToSpell(sd.assignedSpells[idx])
@@ -196,7 +193,7 @@ local function EnsureAssignedSpells(barKeyE)
             end
             -- Skip overflow-diverted icons: session-only here but BELONG to their
             -- source bar's assignedSpells -- materializing them (or advancing the cursor) would write the diversion into this bar's saved list.
-            if _sid and mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(glyph) then
+            if _sid and mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(icon) then
                 _sid = nil
             end
             if _sid and _sid ~= 0 then
@@ -563,16 +560,16 @@ local function ShowCustomItemIDPopup(barId, onAdded)
         popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-        titleText:SetTextColor(1, 1, 1, 1)
-        titleText:SetText(CludesUI.L("Add Custom Item"))
-        dialog._title = titleText
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+        title:SetPoint("TOP", dialog, "TOP", 0, -18)
+        title:SetTextColor(1, 1, 1, 1)
+        title:SetText(CludesUI.L("Add Custom Item"))
+        dialog._title = title
 
         local editBox = CreateFrame("EditBox", nil, dialog)
         editBox:SetSize(180, 28)
-        editBox:SetPoint("TOP", titleText, "BOTTOM", 0, -16)
+        editBox:SetPoint("TOP", title, "BOTTOM", 0, -16)
         editBox:SetAutoFocus(true)
         editBox:SetNumeric(true)
         editBox:SetMaxLetters(9)
@@ -747,16 +744,16 @@ local function ShowEquipmentSlotPopup(barId, onAdded)
         popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-        titleText:SetTextColor(1, 1, 1, 1)
-        titleText:SetText(CludesUI.L("Add Equipment Slot"))
-        dialog._title = titleText
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+        title:SetPoint("TOP", dialog, "TOP", 0, -18)
+        title:SetTextColor(1, 1, 1, 1)
+        title:SetText(CludesUI.L("Add Equipment Slot"))
+        dialog._title = title
 
         local editBox = CreateFrame("EditBox", nil, dialog)
         editBox:SetSize(180, 28)
-        editBox:SetPoint("TOP", titleText, "BOTTOM", 0, -16)
+        editBox:SetPoint("TOP", title, "BOTTOM", 0, -16)
         editBox:SetAutoFocus(true)
         editBox:SetNumeric(true)
         editBox:SetMaxLetters(2)
@@ -789,14 +786,14 @@ local function ShowEquipmentSlotPopup(barId, onAdded)
             else
                 placeholder:Hide()
             end
-            local slotIndex = tonumber(self:GetText())
-            local slotName = slotIndex and mod.INV_SLOT_NAMES[slotIndex]
+            local slot = tonumber(self:GetText())
+            local slotName = slot and mod.INV_SLOT_NAMES[slot]
             if slotName then
-                local itemId = GetInventoryItemID("player", slotIndex)
+                local itemId = GetInventoryItemID("player", slot)
                 local itemName = itemId and C_Item.GetItemNameByID(itemId)
                 nameLine:SetTextColor(0.6, 1, 0.6, 1)
                 nameLine:SetText(slotName .. " - " .. (itemName or EMPTY or ""))
-            elseif slotIndex then
+            elseif slot then
                 nameLine:SetTextColor(1, 0.4, 0.4, 0.9)
                 nameLine:SetText("Enter a slot ID from 1 to 19")
             else
@@ -878,12 +875,12 @@ local function ShowEquipmentSlotPopup(barId, onAdded)
     end
 
     local function DoAdd()
-        local slotIndex = tonumber(dialog._editBox:GetText())
-        if not slotIndex or not mod.INV_SLOT_NAMES[slotIndex] then
+        local slot = tonumber(dialog._editBox:GetText())
+        if not slot or not mod.INV_SLOT_NAMES[slot] then
             SetStatus("Enter a slot ID from 1 to 19")
             return
         end
-        local marker = -slotIndex
+        local marker = -slot
         local sdChk = mod.GetBarSpellData(barId)
         if sdChk and sdChk.assignedSpells then
             for _, existing in ipairs(sdChk.assignedSpells) do
@@ -914,14 +911,14 @@ end
 --  Shows ONLY spells from CDM buff categories (2, 3).
 --  None grayed out. Selecting moves the spell to the target bar.
 ---------------------------------------------------------------------------
-local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
+local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, RefreshCDPreview, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.RefreshCDPreview, environ.optState
     if optionState._spellPickerMenu and optionState._spellPickerMenu:IsShown() then
         local open = optionState._spellPickerMenu
         open:Hide()
-        if open._anchorFrame == anchorFrame and open._anchorGen == PoolGen(anchorFrame) then
+        if open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor) then
             return
         end
     end
@@ -977,19 +974,19 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
 
     -- Helper: create a spell row
     local function MakeSpellRow(sp)
-        local itemInfo = CreateFrame("Button", nil, inner)
-        itemInfo:SetHeight(ITEM_H)
-        itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        local item = CreateFrame("Button", nil, inner)
+        item:SetHeight(ITEM_H)
+        item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+        item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+        item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-        local iconTex = itemInfo:CreateTexture(nil, "ARTWORK")
+        local iconTex = item:CreateTexture(nil, "ARTWORK")
         iconTex:SetSize(ITEM_H - 4, ITEM_H - 4)
         iconTex:SetPoint("LEFT", 4, 0)
         iconTex:SetTexture(sp.icon)
         iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-        local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+        local labelFS = item:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
         labelFS:SetPoint("LEFT", iconTex, "RIGHT", 6, 0)
         labelFS:SetPoint("RIGHT", -4, 0)
@@ -997,7 +994,7 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
         labelFS:SetText(CludesUI.L(sp.name or ""))
         labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
 
-        local highlight = itemInfo:CreateTexture(nil, "ARTWORK")
+        local highlight = item:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0)
 
@@ -1010,14 +1007,14 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
             iconTex:SetAlpha(0.5)
         end
 
-        itemInfo:SetScript("OnEnter", function()
+        item:SetScript("OnEnter", function()
             labelFS:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
             if notLearned then
-                CludesUI.ShowWidgetTooltip(itemInfo, CludesUI.L("Not currently talented"))
+                CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
             end
         end)
-        itemInfo:SetScript("OnLeave", function()
+        item:SetScript("OnLeave", function()
             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetColorTexture(1, 1, 1, 0)
             if notLearned then
@@ -1028,7 +1025,7 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
         -- Gray the row in place and make it inert. Called after the user
         -- clicks it to add the buff, so the picker can stay open for adding
         -- several buffs in a row.
-        itemInfo._grayOut = function()
+        item._grayOut = function()
             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
             iconTex:SetDesaturated(true)
             iconTex:SetAlpha(0.4)
@@ -1036,13 +1033,13 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
             if notLearned then
                 CludesUI.HideWidgetTooltip()
             end
-            itemInfo:SetScript("OnEnter", nil)
-            itemInfo:SetScript("OnLeave", nil)
-            itemInfo:SetScript("OnClick", nil)
+            item:SetScript("OnEnter", nil)
+            item:SetScript("OnLeave", nil)
+            item:SetScript("OnClick", nil)
         end
 
         mH = mH + ITEM_H
-        return itemInfo
+        return item
     end
 
     -- Custom Spell ID entry -- add an arbitrary buff by spell ID, tracked
@@ -1209,13 +1206,13 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
         local sdRows = mod.GetBarSpellData(targetBarKey)
         local cdTracked = sdRows and mod.CollectCdClaimSet(sdRows)
         for _, sp in ipairs(knownSpells) do
-            local itemInfo = MakeSpellRow(sp)
+            local item = MakeSpellRow(sp)
             if cdTracked and sp.cdID and cdTracked[sp.cdID] then
-                if itemInfo._grayOut then
-                    itemInfo._grayOut()
+                if item._grayOut then
+                    item._grayOut()
                 end
             else
-                itemInfo:SetScript("OnClick", function()
+                item:SetScript("OnClick", function()
                     -- cdID rides along so collided buffs can be claimed per
                     -- viewer slot rather than per (shared) spellID.
                     if onChanged then
@@ -1223,8 +1220,8 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
                     end
                     -- Keep the picker open so several buffs can be added in a
                     -- row; gray this row in place to reflect that it was added.
-                    if itemInfo._grayOut then
-                        itemInfo._grayOut()
+                    if item._grayOut then
+                        item._grayOut()
                     end
                 end)
             end
@@ -1294,13 +1291,13 @@ local function ShowBuffBarPicker(anchorFrame, targetBarKey, onChanged)
     end
 
     dropMenu:ClearAllPoints()
-    dropMenu:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
-    dropMenu._anchorFrame = anchorFrame
-    dropMenu._anchorGen = PoolGen(anchorFrame)
+    dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+    dropMenu._anchorFrame = anchor
+    dropMenu._anchorGen = PoolGen(anchor)
     optionState._spellPickerMenu = dropMenu
 
     dropMenu:SetScript("OnUpdate", function(m)
-        if not m:IsMouseOver() and not anchorFrame:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
             m:Hide()
         end
     end)
@@ -1320,14 +1317,14 @@ end
 -- catalog buff is listed, a "None" row clears, one click picks and closes, nothing is
 -- hosted and there is no Custom Spell ID row (a replacement needs a Blizzard viewer
 -- frame). Absent = the hosting picker below.
-local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked)
+local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.optState
     if optionState._spellPickerMenu and optionState._spellPickerMenu:IsShown() then
         local open = optionState._spellPickerMenu
         open:Hide()
-        if open._anchorFrame == anchorFrame and open._anchorGen == PoolGen(anchorFrame) then
+        if open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor) then
             return
         end
     end
@@ -1465,17 +1462,17 @@ local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked
 
     -- Class buff rows.
     local function MakeSpellRow(sp)
-        local itemInfo = CreateFrame("Button", nil, inner)
-        itemInfo:SetHeight(ITEM_H)
-        itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        local iconTex = itemInfo:CreateTexture(nil, "ARTWORK")
+        local item = CreateFrame("Button", nil, inner)
+        item:SetHeight(ITEM_H)
+        item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+        item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+        item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        local iconTex = item:CreateTexture(nil, "ARTWORK")
         iconTex:SetSize(ITEM_H - 4, ITEM_H - 4)
         iconTex:SetPoint("LEFT", 4, 0)
         iconTex:SetTexture(sp.icon)
         iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+        local labelFS = item:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
         labelFS:SetPoint("LEFT", iconTex, "RIGHT", 6, 0)
         labelFS:SetPoint("RIGHT", -4, 0)
@@ -1484,7 +1481,7 @@ local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked
         labelFS:SetMaxLines(1)
         labelFS:SetText(CludesUI.L(sp.name or ""))
         labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-        local highlight = itemInfo:CreateTexture(nil, "ARTWORK")
+        local highlight = item:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0)
         -- Tracked-but-untalented buffs: desaturate + hint, still clickable (AddBuffToCDUtilBar has no learned gate; routes when talented).
@@ -1493,21 +1490,21 @@ local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked
             iconTex:SetDesaturated(true)
             iconTex:SetAlpha(0.5)
         end
-        itemInfo:SetScript("OnEnter", function()
+        item:SetScript("OnEnter", function()
             labelFS:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
             if notLearned then
-                CludesUI.ShowWidgetTooltip(itemInfo, CludesUI.L("Not currently talented"))
+                CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
             end
         end)
-        itemInfo:SetScript("OnLeave", function()
+        item:SetScript("OnLeave", function()
             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetColorTexture(1, 1, 1, 0)
             if notLearned then
                 CludesUI.HideWidgetTooltip()
             end
         end)
-        itemInfo:SetScript("OnClick", function()
+        item:SetScript("OnClick", function()
             if notLearned then
                 CludesUI.HideWidgetTooltip()
             end
@@ -1532,12 +1529,12 @@ local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked
             iconTex:SetDesaturated(true)
             iconTex:SetAlpha(0.4)
             highlight:SetColorTexture(1, 1, 1, 0)
-            itemInfo:SetScript("OnEnter", nil)
-            itemInfo:SetScript("OnLeave", nil)
-            itemInfo:SetScript("OnClick", nil)
+            item:SetScript("OnEnter", nil)
+            item:SetScript("OnLeave", nil)
+            item:SetScript("OnClick", nil)
         end)
         mH = mH + ITEM_H
-        return itemInfo
+        return item
     end
     for _, sp in ipairs(knownSpells) do
         MakeSpellRow(sp)
@@ -1598,13 +1595,13 @@ local function ShowBuffToCDPicker(anchorFrame, targetBarKey, onChanged, onPicked
     end
 
     dropMenu:ClearAllPoints()
-    dropMenu:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
-    dropMenu._anchorFrame = anchorFrame
-    dropMenu._anchorGen = PoolGen(anchorFrame)
+    dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+    dropMenu._anchorFrame = anchor
+    dropMenu._anchorGen = PoolGen(anchor)
     optionState._spellPickerMenu = dropMenu
 
     dropMenu:SetScript("OnUpdate", function(m)
-        if not m:IsMouseOver() and not anchorFrame:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
             m:Hide()
         end
     end)
@@ -1646,15 +1643,15 @@ local function ShowDurationPopup(currentVal, onConfirm)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
         dialog._dimmer = dimmer
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-        titleText:SetTextColor(1, 1, 1, 1)
-        titleText:SetText(CludesUI.L("Active State Duration"))
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+        title:SetPoint("TOP", dialog, "TOP", 0, -18)
+        title:SetTextColor(1, 1, 1, 1)
+        title:SetText(CludesUI.L("Active State Duration"))
 
         local hint = dialog:CreateFontString(nil, "OVERLAY")
         hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", titleText, "BOTTOM", 0, -6)
+        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
         hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
         hint:SetText(CludesUI.L("Seconds the active state shows after use"))
 
@@ -1744,7 +1741,7 @@ end
 -- hint (already localized), e.g. the Blackout glow opacity. Both texts are
 -- set on every show. Mirrors ShowDurationPopup's look; onConfirm receives
 -- the integer percent.
-local function ShowAlphaPopup(currentPct, onConfirm, titleText, hint)
+local function ShowAlphaPopup(currentPct, onConfirm, title, hint)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
     local popupName = "CUI_CDM_AlphaPopup"
@@ -1786,20 +1783,20 @@ local function ShowAlphaPopup(currentPct, onConfirm, titleText, hint)
         hintFS:SetTextColor(0.7, 0.7, 0.7, 0.85)
         dialog._hint = hintFS
 
-        local boxFrame = CreateFrame("EditBox", nil, dialog)
-        boxFrame:SetSize(180, 28)
-        boxFrame:SetPoint("TOP", hintFS, "BOTTOM", 0, -12)
-        boxFrame:SetAutoFocus(true)
-        boxFrame:SetNumeric(true)
-        boxFrame:SetMaxLetters(3)
-        boxFrame:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-        boxFrame:SetTextColor(1, 1, 1, 0.9)
-        boxFrame:SetJustifyH("CENTER")
-        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("EditBox", nil, dialog)
+        box:SetSize(180, 28)
+        box:SetPoint("TOP", hintFS, "BOTTOM", 0, -12)
+        box:SetAutoFocus(true)
+        box:SetNumeric(true)
+        box:SetMaxLetters(3)
+        box:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+        box:SetTextColor(1, 1, 1, 0.9)
+        box:SetJustifyH("CENTER")
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-        CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.12, boxBg)
-        dialog._box = boxFrame
+        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
+        dialog._box = box
 
         local ar, ag, ab = CludesUI.GetAccentColor()
         local okBtn = CreateFrame("Button", nil, dialog)
@@ -1845,7 +1842,7 @@ local function ShowAlphaPopup(currentPct, onConfirm, titleText, hint)
         dialog._cancelBtn = cancelBtn
 
         local function Commit()
-            local val = tonumber(boxFrame:GetText())
+            local val = tonumber(box:GetText())
             if val and val >= 1 and val <= 100 then
                 dimmer:Hide()
                 if dialog._onConfirm then
@@ -1854,13 +1851,13 @@ local function ShowAlphaPopup(currentPct, onConfirm, titleText, hint)
             end
         end
         okBtn:SetScript("OnClick", Commit)
-        boxFrame:SetScript("OnEnterPressed", Commit)
-        boxFrame:SetScript("OnEscapePressed", function()
+        box:SetScript("OnEnterPressed", Commit)
+        box:SetScript("OnEscapePressed", function()
             dimmer:Hide()
         end)
     end
     dialog._onConfirm = onConfirm
-    dialog._title:SetText(titleText or CludesUI.L("Lower Alpha"))
+    dialog._title:SetText(title or CludesUI.L("Lower Alpha"))
     dialog._hint:SetText(hint or CludesUI.L("Icon opacity while on cooldown (1-100%)"))
     dialog._box:SetText(currentPct and tostring(currentPct) or "")
     mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
@@ -1874,7 +1871,7 @@ end
 -- Threshold Decimals apply) unless the caller passes its own title and hint
 -- (already localized), e.g. Also Show Below. Both texts are set on every
 -- show. Mirrors ShowAlphaPopup; onConfirm receives the integer seconds.
-local function ShowThresholdSecondsPopup(currentVal, onConfirm, titleText, hint)
+local function ShowThresholdSecondsPopup(currentVal, onConfirm, title, hint)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
     local popupName = "CUI_CDM_ThresholdSecondsPopup"
@@ -1904,32 +1901,32 @@ local function ShowThresholdSecondsPopup(currentVal, onConfirm, titleText, hint)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
         dialog._dimmer = dimmer
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-        titleText:SetTextColor(1, 1, 1, 1)
-        dialog._title = titleText
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+        title:SetPoint("TOP", dialog, "TOP", 0, -18)
+        title:SetTextColor(1, 1, 1, 1)
+        dialog._title = title
 
         local hint = dialog:CreateFontString(nil, "OVERLAY")
         hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", titleText, "BOTTOM", 0, -6)
+        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
         hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
         dialog._hint = hint
 
-        local boxFrame = CreateFrame("EditBox", nil, dialog)
-        boxFrame:SetSize(180, 28)
-        boxFrame:SetPoint("TOP", hint, "BOTTOM", 0, -12)
-        boxFrame:SetAutoFocus(true)
-        boxFrame:SetNumeric(true)
-        boxFrame:SetMaxLetters(2)
-        boxFrame:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-        boxFrame:SetTextColor(1, 1, 1, 0.9)
-        boxFrame:SetJustifyH("CENTER")
-        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("EditBox", nil, dialog)
+        box:SetSize(180, 28)
+        box:SetPoint("TOP", hint, "BOTTOM", 0, -12)
+        box:SetAutoFocus(true)
+        box:SetNumeric(true)
+        box:SetMaxLetters(2)
+        box:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+        box:SetTextColor(1, 1, 1, 0.9)
+        box:SetJustifyH("CENTER")
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-        CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.12, boxBg)
-        dialog._box = boxFrame
+        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
+        dialog._box = box
 
         local ar, ag, ab = CludesUI.GetAccentColor()
         local okBtn = CreateFrame("Button", nil, dialog)
@@ -1975,7 +1972,7 @@ local function ShowThresholdSecondsPopup(currentVal, onConfirm, titleText, hint)
         dialog._cancelBtn = cancelBtn
 
         local function Commit()
-            local val = tonumber(boxFrame:GetText())
+            local val = tonumber(box:GetText())
             if val and val >= 0 and val <= 59 then
                 dimmer:Hide()
                 if dialog._onConfirm then
@@ -1984,13 +1981,13 @@ local function ShowThresholdSecondsPopup(currentVal, onConfirm, titleText, hint)
             end
         end
         okBtn:SetScript("OnClick", Commit)
-        boxFrame:SetScript("OnEnterPressed", Commit)
-        boxFrame:SetScript("OnEscapePressed", function()
+        box:SetScript("OnEnterPressed", Commit)
+        box:SetScript("OnEscapePressed", function()
             dimmer:Hide()
         end)
     end
     dialog._onConfirm = onConfirm
-    dialog._title:SetText(titleText or CludesUI.L("Threshold Seconds"))
+    dialog._title:SetText(title or CludesUI.L("Threshold Seconds"))
     dialog._hint:SetText(hint or CludesUI.L("Seconds left when threshold text starts (0 = off)"))
     dialog._box:SetText(currentVal and tostring(currentVal) or "")
     mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
@@ -2035,42 +2032,42 @@ mod.ShowCDMCustomIconPopup = function(currentID, onConfirm)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
         dialog._dimmer = dimmer
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-        titleText:SetTextColor(1, 1, 1, 1)
-        titleText:SetText(CludesUI.L("Custom Icon"))
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+        title:SetPoint("TOP", dialog, "TOP", 0, -18)
+        title:SetTextColor(1, 1, 1, 1)
+        title:SetText(CludesUI.L("Custom Icon"))
 
         local hint = dialog:CreateFontString(nil, "OVERLAY")
         hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", titleText, "BOTTOM", 0, -6)
+        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
         hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
         hint:SetText(CludesUI.L("Icon ID always shown for this spell (empty removes)"))
 
-        local boxFrame = CreateFrame("EditBox", nil, dialog)
-        boxFrame:SetSize(180, 28)
-        boxFrame:SetPoint("TOP", hint, "BOTTOM", 0, -12)
-        boxFrame:SetAutoFocus(true)
-        boxFrame:SetNumeric(true)
-        boxFrame:SetMaxLetters(9)
-        boxFrame:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-        boxFrame:SetTextColor(1, 1, 1, 0.9)
-        boxFrame:SetJustifyH("CENTER")
-        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("EditBox", nil, dialog)
+        box:SetSize(180, 28)
+        box:SetPoint("TOP", hint, "BOTTOM", 0, -12)
+        box:SetAutoFocus(true)
+        box:SetNumeric(true)
+        box:SetMaxLetters(9)
+        box:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+        box:SetTextColor(1, 1, 1, 0.9)
+        box:SetJustifyH("CENTER")
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-        CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.12, boxBg)
-        dialog._box = boxFrame
+        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
+        dialog._box = box
 
         -- Live preview of the typed ID (question mark for empty/unknown;
         -- fires via OnTextChanged, including the SetText on reopen below).
         local prev = dialog:CreateTexture(nil, "ARTWORK")
         prev:SetSize(30, 30)
-        prev:SetPoint("TOP", boxFrame, "BOTTOM", 0, -10)
+        prev:SetPoint("TOP", box, "BOTTOM", 0, -10)
         prev:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         prev:SetTexture(134400)
         dialog._prev = prev
-        boxFrame:SetScript("OnTextChanged", function(b)
+        box:SetScript("OnTextChanged", function(b)
             local ident = tonumber(b:GetText())
             prev:SetTexture((ident and ident > 0) and ident or 134400)
         end)
@@ -2119,7 +2116,7 @@ mod.ShowCDMCustomIconPopup = function(currentID, onConfirm)
         dialog._cancelBtn = cancelBtn
 
         local function Commit()
-            local val = tonumber(boxFrame:GetText())
+            local val = tonumber(box:GetText())
             dimmer:Hide()
             if dialog._onConfirm then
                 if val and val > 0 then
@@ -2130,8 +2127,8 @@ mod.ShowCDMCustomIconPopup = function(currentID, onConfirm)
             end
         end
         okBtn:SetScript("OnClick", Commit)
-        boxFrame:SetScript("OnEnterPressed", Commit)
-        boxFrame:SetScript("OnEscapePressed", function()
+        box:SetScript("OnEnterPressed", Commit)
+        box:SetScript("OnEscapePressed", function()
             dimmer:Hide()
         end)
     end

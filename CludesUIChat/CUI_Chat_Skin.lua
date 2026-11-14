@@ -349,11 +349,11 @@ local function SkinChatFrame(castFrame)
                     yOff or -ICON_SPACING
                 )
             end
-            local glyph = button:CreateTexture(nil, "ARTWORK")
+            local icon = button:CreateTexture(nil, "ARTWORK")
             -- Stock styles: the kit dresses the button (no CludesUI tint,
             -- alpha or hover hooks).
             if CHAT.SB_KIT and key then
-                button._icon = glyph
+                button._icon = icon
                 if key == "scroll" then
                     CHAT.SB_DressScroll(button, "sidebar")
                 else
@@ -361,17 +361,17 @@ local function SkinChatFrame(castFrame)
                 end
                 return button
             end
-            glyph:SetAllPoints()
-            glyph:SetTexture(texPath)
-            glyph:SetDesaturated(true)
-            glyph:SetVertexColor(1, 1, 1, ICON_ALPHA)
+            icon:SetAllPoints()
+            icon:SetTexture(texPath)
+            icon:SetDesaturated(true)
+            icon:SetVertexColor(1, 1, 1, ICON_ALPHA)
             button:HookScript("OnEnter", function()
-                glyph:SetVertexColor(1, 1, 1, ICON_HOVER_ALPHA)
+                icon:SetVertexColor(1, 1, 1, ICON_HOVER_ALPHA)
             end)
             button:HookScript("OnLeave", function()
-                glyph:SetVertexColor(1, 1, 1, ICON_ALPHA)
+                icon:SetVertexColor(1, 1, 1, ICON_ALPHA)
             end)
-            button._icon = glyph
+            button._icon = icon
             return button
         end
 
@@ -389,14 +389,14 @@ local function SkinChatFrame(castFrame)
 
         -- Chain icons are created in the saved order (drag-to-reorder in the
         -- options dropdown; a new order takes effect on the next reload).
-        local anchorFrame = nil
+        local anchor = nil
         local friendsBtn, friendsCount, durabilityBtn, durabilityPct, copyBtn, portalBtn, voiceBtn, settingsBtn
         local guildBtn, guildCount, chatMenuBtn
 
         local function ChainAnchor(button)
             button:ClearAllPoints()
-            if anchorFrame then
-                button:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -ICON_SPACING)
+            if anchor then
+                button:SetPoint("TOP", anchor, "BOTTOM", 0, -ICON_SPACING)
             else
                 button:SetPoint("TOP", sidebar, "TOP", 0, -ICON_SPACING + iconTopShift)
             end
@@ -468,7 +468,7 @@ local function SkinChatFrame(castFrame)
             CFD(castFrame).friendsCount = friendsCount
             -- A count inside its button (the stock QuickJoin plate) is not a
             -- tail: the chain hangs off the button.
-            anchorFrame = friendsBtn._sbTailInside and friendsBtn or friendsCount
+            anchor = friendsBtn._sbTailInside and friendsBtn or friendsCount
         end
 
         local function CreateGuildIcon()
@@ -526,7 +526,7 @@ local function SkinChatFrame(castFrame)
             gcEvents:SetScript("OnEvent", UpdateGuildCount)
 
             CFD(castFrame).guildCount = guildCount
-            anchorFrame = guildCount
+            anchor = guildCount
         end
 
         local function CreateDurabilityIcon()
@@ -562,8 +562,8 @@ local function SkinChatFrame(castFrame)
             local lastDurText
             local function UpdateDurability()
                 local lowest = 100
-                for slotIndex = 1, 18 do
-                    local current, mx = GetInventoryItemDurability(slotIndex)
+                for slot = 1, 18 do
+                    local current, mx = GetInventoryItemDurability(slot)
                     if current and mx and mx > 0 then
                         local pct = (current / mx) * 100
                         if pct < lowest then
@@ -604,7 +604,7 @@ local function SkinChatFrame(castFrame)
 
             CFD(castFrame).durabilityPct = durabilityPct
             -- A percent inside its button is not a tail (as friends above).
-            anchorFrame = durabilityBtn._sbTailInside and durabilityBtn or durabilityPct
+            anchor = durabilityBtn._sbTailInside and durabilityBtn or durabilityPct
         end
 
         -- Friends/Guild/Durability have bespoke creators (count or percent text
@@ -634,21 +634,15 @@ local function SkinChatFrame(castFrame)
                     special.create()
                 end
             else
-                local spec_def = MIDDLE_DEFS[key]
-                if spec_def and icfg[key] ~= false then
-                    local button = MakeSidebarIcon(
-                        sidebar,
-                        spec_def.path or (MEDIA .. spec_def.tex),
-                        nil,
-                        nil,
-                        nil,
-                        spec_def.key
-                    )
-                    if spec_def.size then
-                        button:SetSize(spec_def.size, spec_def.size)
+                local def = MIDDLE_DEFS[key]
+                if def and icfg[key] ~= false then
+                    local button =
+                        MakeSidebarIcon(sidebar, def.path or (MEDIA .. def.tex), nil, nil, nil, def.key)
+                    if def.size then
+                        button:SetSize(def.size, def.size)
                     end
                     ChainAnchor(button)
-                    anchorFrame = button
+                    anchor = button
                     middleBtns[key] = button
                 end
             end

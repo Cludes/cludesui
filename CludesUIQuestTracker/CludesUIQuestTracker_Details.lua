@@ -15,7 +15,7 @@ end
 local _, mod = ...
 local EQT = mod.EQT
 
-local Widgets, H = 360, 480
+local W, H = 360, 480
 local PAD = 14
 local HEADER_H = 52 -- title, meta line, divider
 local FOOTER_H = 50 -- divider, button row
@@ -88,16 +88,16 @@ end
 
 -- Calls fn once an entry's uncached item loads.
 function EQT.OnRewardLoad(e, func)
-    local itemInfo = e.itemID and Item:CreateFromItemID(e.itemID)
-    if itemInfo and not itemInfo:IsItemEmpty() and not itemInfo:IsItemDataCached() then
-        itemInfo:ContinueOnItemLoad(func)
+    local item = e.itemID and Item:CreateFromItemID(e.itemID)
+    if item and not item:IsItemEmpty() and not item:IsItemDataCached() then
+        item:ContinueOnItemLoad(func)
     end
 end
 
 -------------------------------------------------------------------------------
 -- Window
 -------------------------------------------------------------------------------
-local window, scroll, childFrame, titleText, meta
+local window, scroll, childFrame, title, meta
 local texts, tiles, marks = {}, {}, {}
 local usedTexts, usedTiles, usedMarks = 0, 0, 0
 local questID
@@ -113,19 +113,19 @@ local function Dim()
     return d.r, d.g, d.b, d.a
 end
 
-local function StyleText(fontStr, dim)
+local function StyleText(fontStr, size)
     local flag = CludesUI.GetFontOutlineFlag("questTracker")
-    if not pcall(fontStr.SetFont, fontStr, EQT.GetFont(), dim, flag) then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", dim, flag)
+    if not pcall(fontStr.SetFont, fontStr, EQT.GetFont(), size, flag) then
+        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, flag)
     end
 end
 
 local function ContentWidth()
-    return Widgets - PAD * 2
+    return W - PAD * 2
 end
 
 -- Wrapped text at (x, y); returns its height.
-local function AddText(textValue, posX, posY, dim, r, g, b, a)
+local function AddText(textValue, posX, posY, size, r, g, b, a)
     usedTexts = usedTexts + 1
     local fontStr = texts[usedTexts]
     if not fontStr then
@@ -134,7 +134,7 @@ local function AddText(textValue, posX, posY, dim, r, g, b, a)
         fontStr:SetWordWrap(true)
         texts[usedTexts] = fontStr
     end
-    StyleText(fontStr, dim)
+    StyleText(fontStr, size)
     fontStr:SetSpacing(2)
     fontStr:SetWidth(ContentWidth() - posX)
     fontStr:SetTextColor(r, g, b, a or 1)
@@ -251,8 +251,8 @@ end
 local function AddTiles(entries, posY)
     local wid = (ContentWidth() - GAP) / 2
     for idx, e in ipairs(entries) do
-        local column = (idx - 1) % 2
-        AddTile(e, column * (wid + GAP), posY + math.floor((idx - 1) / 2) * (TILE + GAP), wid)
+        local col = (idx - 1) % 2
+        AddTile(e, col * (wid + GAP), posY + math.floor((idx - 1) / 2) * (TILE + GAP), wid)
     end
     local rowList = math.ceil(#entries / 2)
     return rowList * TILE + math.max(0, rowList - 1) * GAP
@@ -301,7 +301,7 @@ function Refresh()
     end
     usedTexts, usedTiles, usedMarks = 0, 0, 0
     local dr, dg, saved, da = Dim()
-    titleText:SetText(C_QuestLog.GetTitleForQuestID(questID) or "")
+    title:SetText(C_QuestLog.GetTitleForQuestID(questID) or "")
     meta:SetText(MetaText())
     window.bar:SetColorTexture(Accent())
 
@@ -398,7 +398,7 @@ end
 
 local function Button(textValue, onClick)
     local b = CreateFrame("Button", nil, window)
-    b:SetSize((Widgets - PAD * 2 - GAP * 3) / 4, BTN_H)
+    b:SetSize((W - PAD * 2 - GAP * 3) / 4, BTN_H)
     local _, _, labelFS = CludesUI.MakeStyledButton(b, textValue, 11, CludesUI.WB_COLOURS, onClick)
     labelFS:SetWidth(b:GetWidth() - 6)
     labelFS:SetWordWrap(false)
@@ -418,7 +418,7 @@ end
 
 local function Build()
     window = CreateFrame("Frame", "CUI_QuestDetails", UIParent)
-    window:SetSize(Widgets, H)
+    window:SetSize(W, H)
     window:SetFrameStrata("MEDIUM")
     window:SetToplevel(true)
     window:SetClampedToScreen(true)
@@ -444,13 +444,13 @@ local function Build()
     window.bar = window:CreateTexture(nil, "ARTWORK")
     window.bar:SetSize(2, 32)
     window.bar:SetPoint("TOPLEFT", PAD, -PAD + 2)
-    titleText = window:CreateFontString(nil, "OVERLAY")
-    StyleText(titleText, 15)
-    titleText:SetTextColor(1, 1, 1)
-    titleText:SetPoint("TOPLEFT", window.bar, "TOPRIGHT", 8, 0)
-    titleText:SetPoint("RIGHT", -34, 0)
-    titleText:SetJustifyH("LEFT")
-    titleText:SetWordWrap(false)
+    title = window:CreateFontString(nil, "OVERLAY")
+    StyleText(title, 15)
+    title:SetTextColor(1, 1, 1)
+    title:SetPoint("TOPLEFT", window.bar, "TOPRIGHT", 8, 0)
+    title:SetPoint("RIGHT", -34, 0)
+    title:SetJustifyH("LEFT")
+    title:SetWordWrap(false)
     meta = window:CreateFontString(nil, "OVERLAY")
     StyleText(meta, 11)
     meta:SetTextColor(Dim())

@@ -301,23 +301,23 @@ _quickKeybindState.UpdateMacroButtonCommand = function(btnFrame)
         return
     end
 
-    local slotPos
+    local index
     if
         (btnFrame == MacroFrameSelectedMacroButton or btnFrame == MacroFrame.SelectedMacroButton)
         and MacroFrame.GetSelectedIndex
     then
         local selected = MacroFrame:GetSelectedIndex()
         if selected then
-            slotPos = MacroFrame:GetMacroDataIndex(selected)
+            index = MacroFrame:GetMacroDataIndex(selected)
         end
     elseif btnFrame.GetElementData then
         local payload = btnFrame:GetElementData()
         if payload then
-            slotPos = MacroFrame:GetMacroDataIndex(payload)
+            index = MacroFrame:GetMacroDataIndex(payload)
         end
     end
 
-    local name = slotPos and GetMacroInfo(slotPos)
+    local name = index and GetMacroInfo(index)
     btnFrame.commandName = name and ("MACRO " .. name) or nil
 end
 
@@ -669,26 +669,26 @@ _quickKeybindState.GetDimOverlay = function()
     if _quickKeybindState.dimFrame then
         return _quickKeybindState.dimFrame
     end
-    local dim = CreateFrame("Frame", nil, UIParent)
-    dim:SetFrameStrata("HIGH")
-    dim:SetFrameLevel(0)
-    dim:SetAllPoints(UIParent)
-    dim:EnableMouse(false)
-    dim:SetMouseClickEnabled(false)
-    dim:SetMouseMotionEnabled(false)
-    local texture = dim:CreateTexture(nil, "BACKGROUND")
+    local size = CreateFrame("Frame", nil, UIParent)
+    size:SetFrameStrata("HIGH")
+    size:SetFrameLevel(0)
+    size:SetAllPoints(UIParent)
+    size:EnableMouse(false)
+    size:SetMouseClickEnabled(false)
+    size:SetMouseMotionEnabled(false)
+    local texture = size:CreateTexture(nil, "BACKGROUND")
     texture:SetAllPoints()
     texture:SetColorTexture(0, 0, 0, 0.40)
-    dim:SetAlpha(0)
-    dim:Hide()
-    _quickKeybindState.dimFrame = dim
-    return dim
+    size:SetAlpha(0)
+    size:Hide()
+    _quickKeybindState.dimFrame = size
+    return size
 end
 
 _quickKeybindState.ShowDim = function()
-    local dim = _quickKeybindState.GetDimOverlay()
-    dim:Show()
-    UIFrameFadeIn(dim, 0.2, dim:GetAlpha(), 1)
+    local size = _quickKeybindState.GetDimOverlay()
+    size:Show()
+    UIFrameFadeIn(size, 0.2, size:GetAlpha(), 1)
     -- Raise action bar frames above the dim
     for _, details in ipairs(BAR_CONFIG) do
         local widget = barFrames[details.key]
@@ -714,14 +714,14 @@ _quickKeybindState.ShowDim = function()
 end
 
 _quickKeybindState.HideDim = function()
-    local dim = _quickKeybindState.dimFrame
-    if not dim then
+    local size = _quickKeybindState.dimFrame
+    if not size then
         return
     end
-    UIFrameFadeOut(dim, 0.2, dim:GetAlpha(), 0)
+    UIFrameFadeOut(size, 0.2, size:GetAlpha(), 0)
     C_Timer_After(0.2, function()
-        if dim:GetAlpha() < 0.01 then
-            dim:Hide()
+        if size:GetAlpha() < 0.01 then
+            size:Hide()
         end
     end)
     -- Restore bar strata
@@ -844,12 +844,10 @@ _qkbHookFrame:SetScript("OnEvent", function(self, evt, addonName)
             self:UnregisterEvent("ADDON_LOADED")
         end
     end
-end)-------------------------------------------------------------------------------
---  Swiftmend Brightness Fix (action bar scan): scans all EABButton slots for
---  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
+end)--  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
 --  rearrangement is covered.
 -------------------------------------------------------------------------------
-;
+; ------------------------------------------------------------------------------- --  Swiftmend Brightness Fix (action bar scan): scans all EABButton slots for
 (function()
     local function ScanABSwiftmend()
         local _, cls = UnitClass("player")
@@ -861,8 +859,8 @@ end)----------------------------------------------------------------------------
         if not hook or not iconID then
             return
         end
-        for slotIndex = 1, 180 do
-            local btn = _G["EABButton" .. slotIndex]
+        for slot = 1, 180 do
+            local btn = _G["EABButton" .. slot]
             if btn and btn.icon then
                 local t = btn.icon:GetTexture()
                 if not issecretvalue(t) and t == iconID then

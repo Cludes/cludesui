@@ -481,17 +481,16 @@ do
             GameMenuFrame.Border:SetAlpha(0)
         end
         -- Header: strip art, accent the title, nudge down.
-        local headerFrame = GameMenuFrame.Header
-        if headerFrame then
-            local regions2 = { headerFrame:GetRegions() }
+        local header = GameMenuFrame.Header
+        if header then
+            local regions2 = { header:GetRegions() }
             for idx = 1, #regions2 do
                 local r = regions2[idx]
                 if r and r:IsObjectType("Texture") then
                     r:SetAlpha(0)
                 end
             end
-            local headerText = headerFrame.Text
-                or (headerFrame.GetRegions and select(1, headerFrame:GetRegions()))
+            local headerText = header.Text or (header.GetRegions and select(1, header:GetRegions()))
             if headerText and headerText.SetTextColor then
                 local r, g, b = CludesUI._getPopupMenuButtonTextColor()
                 headerText:SetTextColor(r, g, b, 1)
@@ -499,8 +498,8 @@ do
                 local _, hSize = headerText:GetFont()
                 headerText:SetFont(cuiFont, hSize or 16, "")
             end
-            headerFrame:ClearAllPoints()
-            headerFrame:SetPoint("TOP", GameMenuFrame, "TOP", 0, -10)
+            header:ClearAllPoints()
+            header:SetPoint("TOP", GameMenuFrame, "TOP", 0, -10)
         end
         local gmBg = GameMenuFrame:CreateTexture(nil, "BACKGROUND")
         gmBg:SetAllPoints()
@@ -592,8 +591,8 @@ do
                     local fontStr = menuBtn:GetFontString()
                     if fontStr then
                         local cuiFont = CludesUI.GetFontPath("blizzardSkin") or nil
-                        local _, dim, flags = fontStr:GetFont()
-                        fontStr:SetFont(cuiFont or "Fonts\\FRIZQT__.TTF", (dim or 14) - 2, flags or "")
+                        local _, size, flags = fontStr:GetFont()
+                        fontStr:SetFont(cuiFont or "Fonts\\FRIZQT__.TTF", (size or 14) - 2, flags or "")
                     end
                 end
                 ApplyButtonStyle(menuBtn)

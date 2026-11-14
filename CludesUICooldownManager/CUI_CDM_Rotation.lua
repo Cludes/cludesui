@@ -31,13 +31,13 @@ local function CDMIconsForSpell(spellId, result)
         spellBase = spellId
     end
     for _, icons in pairs(cdmBarIcons) do
-        for _, glyph in ipairs(icons) do
-            local ifc = _ecmeFC[glyph]
+        for _, icon in ipairs(icons) do
+            local ifc = _ecmeFC[icon]
             local spellRef = ifc and ifc.spellID
             if type(spellRef) ~= "number" or (issecretvalue and issecretvalue(spellRef)) then
                 spellRef = nil
             end
-            if spellRef and glyph:IsShown() then
+            if spellRef and icon:IsShown() then
                 -- Direct/base match first (cheap); only resolve the icon's own base if those
                 -- miss, to keep the common path light. sid > 0: item/trinket icons store -itemID/-13/-14, which must not be fed to GetBaseSpell.
                 local match = (spellRef == spellId) or (spellRef == spellBase)
@@ -48,7 +48,7 @@ local function CDMIconsForSpell(spellId, result)
                     end
                 end
                 if match then
-                    result[#result + 1] = glyph
+                    result[#result + 1] = icon
                 end
             end
         end
@@ -104,15 +104,15 @@ do
         return GetCVarBool and GetCVarBool("assistedCombatHighlight")
     end
 
-    local function _rotCreateHighlight(glyph)
+    local function _rotCreateHighlight(icon)
         local success, hf =
-            pcall(CreateFrame, "Frame", nil, glyph, "ActionBarButtonAssistedCombatHighlightTemplate")
+            pcall(CreateFrame, "Frame", nil, icon, "ActionBarButtonAssistedCombatHighlightTemplate")
         if not success or not hf then
             return nil
         end
         hf:SetAllPoints()
         -- Sit above everything on the icon: Blizzard's cooldown swipe, our border frame, our glowOverlay (+6), and any proc alert frames. +15 clears them all with margin.
-        hf:SetFrameLevel(glyph:GetFrameLevel() + 15)
+        hf:SetFrameLevel(icon:GetFrameLevel() + 15)
         hf:Hide()
         if hf.Flipbook and hf.Flipbook.Anim then
             hf.Flipbook.Anim:Play()
@@ -121,9 +121,9 @@ do
         return hf
     end
 
-    local function _rotCreateCustom(glyph)
-        local overlayFrame = CreateFrame("Frame", nil, glyph)
-        overlayFrame:SetFrameLevel(glyph:GetFrameLevel() + 15)
+    local function _rotCreateCustom(icon)
+        local overlayFrame = CreateFrame("Frame", nil, icon)
+        overlayFrame:SetFrameLevel(icon:GetFrameLevel() + 15)
         overlayFrame:SetAlpha(0)
         return overlayFrame
     end
@@ -167,13 +167,13 @@ do
     end
 
     local function _rotResolveColor(conf)
-        local modeName = conf and conf.rotationAssistColorMode or "default"
-        if modeName == "class" then
+        local mode = conf and conf.rotationAssistColorMode or "default"
+        if mode == "class" then
             local c = CludesUI.GetClassColor(CludesUI._playerClass)
             if c then
                 return c.r, c.g, c.b
             end
-        elseif modeName == "custom" then
+        elseif mode == "custom" then
             return conf.rotationAssistColorR or 1,
                 conf.rotationAssistColorG or 0,
                 conf.rotationAssistColorB or 0
@@ -183,8 +183,8 @@ do
         return nil
     end
 
-    local function _rotHide(glyph)
-        local rfc = glyph and _ecmeFC[glyph]
+    local function _rotHide(icon)
+        local rfc = icon and _ecmeFC[icon]
         local hf = rfc and rfc.rotationHighlight
         if hf then
             if hf.Flipbook and hf.Flipbook.Anim then
@@ -200,18 +200,18 @@ do
         end
     end
 
-    local function _rotShow(glyph)
-        if not glyph then
+    local function _rotShow(icon)
+        if not icon then
             return
         end
-        local rfc = FC(glyph)
+        local rfc = FC(icon)
         local conf = _rotConfig()
-        local look = conf and conf.rotationAssistStyle or "blizzard"
-        if look ~= "solid" and not ROT_STYLE_TO_GLOW[look] then
-            look = "blizzard"
+        local style = conf and conf.rotationAssistStyle or "blizzard"
+        if style ~= "solid" and not ROT_STYLE_TO_GLOW[style] then
+            style = "blizzard"
         end
 
-        if look ~= "blizzard" then
+        if style ~= "blizzard" then
             local hf0 = rfc.rotationHighlight
             if hf0 then
                 if hf0.Flipbook and hf0.Flipbook.Anim then
@@ -221,7 +221,7 @@ do
             end
             local overlayFrame = rfc.rotationCustomHighlight
             if not overlayFrame then
-                overlayFrame = _rotCreateCustom(glyph)
+                overlayFrame = _rotCreateCustom(icon)
                 rfc.rotationCustomHighlight = overlayFrame
             end
             local outset = conf.rotationAssistOutset or 1
@@ -231,9 +231,9 @@ do
                 outset = 12
             end
             overlayFrame:ClearAllPoints()
-            overlayFrame:SetPoint("TOPLEFT", glyph, "TOPLEFT", -outset, outset)
-            overlayFrame:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", outset, -outset)
-            overlayFrame:SetFrameLevel(glyph:GetFrameLevel() + 15)
+            overlayFrame:SetPoint("TOPLEFT", icon, "TOPLEFT", -outset, outset)
+            overlayFrame:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", outset, -outset)
+            overlayFrame:SetFrameLevel(icon:GetFrameLevel() + 15)
             local thickness = conf.rotationAssistThickness or 3
             if thickness < 1 then
                 thickness = 1
@@ -241,7 +241,7 @@ do
                 thickness = 8
             end
             local cr, cg, cb = _rotResolveColor(conf)
-            local glowStyle = ROT_STYLE_TO_GLOW[look]
+            local glowStyle = ROT_STYLE_TO_GLOW[style]
             -- Pixel Glow lines/speed/background (unset = the engine defaults).
             local lines, speed = conf.rotationAssistLines or 8, conf.rotationAssistSpeed or 4
             local bgc = conf.rotationAssistBackground and conf.rotationAssistBackgroundColor
@@ -252,21 +252,21 @@ do
                 mod._rotKeyScratch = kt
             end
             kt[1], kt[2], kt[3], kt[4], kt[5], kt[6], kt[7] =
-                look, cr or -1, cg or -1, cb or -1, thickness, outset, glowStyle or 0
+                style, cr or -1, cg or -1, cb or -1, thickness, outset, glowStyle or 0
             kt[8], kt[9], kt[10] = lines, speed, conf.rotationAssistBackground and 1 or 0
             kt[11], kt[12], kt[13] = bgc and bgc.r or 0, bgc and bgc.g or 0, bgc and bgc.b or 0
             local cfgKey = table.concat(kt, ":", 1, 13)
             if overlayFrame._rotCfgKey ~= cfgKey or not overlayFrame._glowActive then
                 overlayFrame._rotCfgKey = cfgKey
-                if look == "solid" then
+                if style == "solid" then
                     StopNativeGlow(overlayFrame)
                     _rotSolidBorder(overlayFrame, thickness, cr or 1.0, cg or 0.788, cb or 0.137)
                     overlayFrame._glowActive = true
                     overlayFrame:SetAlpha(1)
                 else
                     _rotHideSolid(overlayFrame)
-                    local wid = (glyph:GetWidth() or 36) + outset * 2
-                    local hgt = (glyph:GetHeight() or 36) + outset * 2
+                    local wid = (icon:GetWidth() or 36) + outset * 2
+                    local hgt = (icon:GetHeight() or 36) + outset * 2
                     StartNativeGlow(overlayFrame, glowStyle, cr, cg, cb, {
                         N = lines,
                         th = thickness,
@@ -292,20 +292,20 @@ do
         end
         local hf = rfc.rotationHighlight
         if not hf then
-            hf = _rotCreateHighlight(glyph)
+            hf = _rotCreateHighlight(icon)
             if not hf then
                 return
             end
             rfc.rotationHighlight = hf
         end
         if hf.Flipbook then
-            local wid = glyph:GetWidth() or 36
-            local hgt = glyph:GetHeight() or 36
+            local wid = icon:GetWidth() or 36
+            local hgt = icon:GetHeight() or 36
             local ox = wid * ROT_GLOW_RATIO
             local oy = hgt * ROT_GLOW_RATIO
             hf.Flipbook:ClearAllPoints()
-            hf.Flipbook:SetPoint("TOPLEFT", glyph, "TOPLEFT", -ox, oy)
-            hf.Flipbook:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", ox, -oy)
+            hf.Flipbook:SetPoint("TOPLEFT", icon, "TOPLEFT", -ox, oy)
+            hf.Flipbook:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", ox, -oy)
         end
         hf:Show()
         if hf.Flipbook and hf.Flipbook.Anim then
@@ -318,9 +318,9 @@ do
 
     local function UpdateRotationHighlightsNow()
         if not _rotCVarOn() then
-            for glyph in pairs(mod._rotationGlowedIcons) do
-                _rotHide(glyph)
-                mod._rotationGlowedIcons[glyph] = nil
+            for icon in pairs(mod._rotationGlowedIcons) do
+                _rotHide(icon)
+                mod._rotationGlowedIcons[icon] = nil
             end
             return
         end
@@ -335,16 +335,16 @@ do
         local newSet = _rotSpareSet
         wipe(newSet)
         if suggestedSpell then
-            for _, glyph in ipairs(CDMIconsForSpell(suggestedSpell, _rotMatched)) do
-                _rotShow(glyph)
-                newSet[glyph] = true
+            for _, icon in ipairs(CDMIconsForSpell(suggestedSpell, _rotMatched)) do
+                _rotShow(icon)
+                newSet[icon] = true
             end
         end
 
         local oldSet = mod._rotationGlowedIcons
-        for glyph in pairs(oldSet) do
-            if not newSet[glyph] then
-                _rotHide(glyph)
+        for icon in pairs(oldSet) do
+            if not newSet[icon] then
+                _rotHide(icon)
             end
         end
         _rotSpareSet = oldSet
@@ -370,8 +370,8 @@ do
     local function _rotSyncCombat()
         local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
         mod._rotationInCombat = inCombat and true or false
-        for glyph in pairs(mod._rotationGlowedIcons) do
-            local rfc2 = glyph and _ecmeFC[glyph]
+        for icon in pairs(mod._rotationGlowedIcons) do
+            local rfc2 = icon and _ecmeFC[icon]
             local hf = rfc2 and rfc2.rotationHighlight
             if hf and hf:IsShown() and hf.Flipbook and hf.Flipbook.Anim then
                 if mod._rotationInCombat then
@@ -460,8 +460,8 @@ end
 -- secret or unknown answer leaves their colour alone. Cleared to nil when no
 -- override is live, since Blizzard's own check is correct for the base spell.
 -- On ns.* because the main chunk is at Lua 5.1's 200-local cap.
-function mod.ApplyOverrideRangeTint(glyph, overrideSpellID)
-    local fd = _getFD(glyph)
+function mod.ApplyOverrideRangeTint(icon, overrideSpellID)
+    local fd = _getFD(icon)
     local texture = fd and fd.tex
     local C = CooldownViewerConstants
     if not (texture and C) then
@@ -506,7 +506,7 @@ function mod.ApplyOverrideRangeTint(glyph, overrideSpellID)
         texture:SetVertexColor(C.ITEM_NOT_IN_RANGE_COLOR:GetRGBA())
         return
     end
-    local spellRef = overrideSpellID or glyph.rangeCheckSpellID
+    local spellRef = overrideSpellID or icon.rangeCheckSpellID
     if not spellRef then
         return
     end
@@ -532,8 +532,8 @@ end
 -- since a spell can become theirs while ours is armed.
 function mod.BlizzardArmsRange(spellId)
     for _, icons in pairs(cdmBarIcons) do
-        for _, glyph in ipairs(icons) do
-            if glyph.rangeCheckSpellID == spellId then
+        for _, icon in ipairs(icons) do
+            if icon.rangeCheckSpellID == spellId then
                 return true
             end
         end
@@ -571,19 +571,19 @@ function mod.DisarmOverrideRanges()
     if not armed then
         return
     end
-    for baseValue, shade in pairs(armed) do
+    for base, shade in pairs(armed) do
         if not mod.BlizzardArmsRange(shade) and not mod.CustomSpellRangeHolds(shade) then
             C_Spell.EnableSpellRangeCheck(shade, false)
         end
-        armed[baseValue] = nil
+        armed[base] = nil
     end
     -- The tracked ids go with the registrations ("the new spec's overrides
     -- re-arm on their own events"): a value left behind would keep that icon's
     -- hook polling a dead spell and hold the repaint gate open. Also what
     -- keeps the live count exact across spec changes.
     for _, icons in pairs(cdmBarIcons) do
-        for _, glyph in ipairs(icons) do
-            local fd = _getFD(glyph)
+        for _, icon in ipairs(icons) do
+            local fd = _getFD(icon)
             if fd and fd._oorSpellID ~= nil then
                 fd._oorSpellID = nil
             end
@@ -610,10 +610,10 @@ function mod.RepaintOverrideRange(spellId)
         return
     end
     for _, icons in pairs(cdmBarIcons) do
-        for _, glyph in ipairs(icons) do
-            local fd = _getFD(glyph)
+        for _, icon in ipairs(icons) do
+            local fd = _getFD(icon)
             if fd and fd._oorSpellID == spellId then
-                mod.ApplyOverrideRangeTint(glyph, spellId)
+                mod.ApplyOverrideRangeTint(icon, spellId)
             end
         end
     end
@@ -634,9 +634,9 @@ function mod.ResyncCdmRange(baseSpellID, overrideSpellID)
     local liveOverride = (overrideSpellID and overrideSpellID ~= baseSpellID) and overrideSpellID or nil
     mod.ArmOverrideRange(baseSpellID, liveOverride)
     for _, icons in pairs(cdmBarIcons) do
-        for _, glyph in ipairs(icons) do
-            if glyph.rangeCheckSpellID == baseSpellID then
-                mod.ApplyOverrideRangeTint(glyph, liveOverride)
+        for _, icon in ipairs(icons) do
+            if icon.rangeCheckSpellID == baseSpellID then
+                mod.ApplyOverrideRangeTint(icon, liveOverride)
             end
         end
     end

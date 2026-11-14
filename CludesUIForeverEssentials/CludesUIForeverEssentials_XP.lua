@@ -71,7 +71,7 @@ local cardFrame
 local sessionStart, sessionXP = 0, 0
 local paused, pausedAt, pausedTotal = false, nil, 0
 local lastXP, lastXPMax
-local cur, anchorFrame -- the level being timed, and when its clock last started
+local cur, anchor -- the level being timed, and when its clock last started
 local trendBase, trendAt, trendDir = 0, 0, 0
 
 -- Per character: { current = { level, base, partial }, levels = { [level] = { total } } }
@@ -87,12 +87,12 @@ local function Splits()
 end
 
 local function LevelTime()
-    return cur and (cur.base + (anchorFrame and GetTime() - anchorFrame or 0)) or 0
+    return cur and (cur.base + (anchor and GetTime() - anchor or 0)) or 0
 end
 
 local function StartLevel(s, fromStart, level)
     cur = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
-    anchorFrame = not paused and GetTime() or nil
+    anchor = not paused and GetTime() or nil
     s.current = cur
 end
 
@@ -104,7 +104,7 @@ local function TrackSplits(newLevel)
     if not cur then
         local saved = s.current
         if saved and saved.level == UnitLevel("player") then
-            cur, anchorFrame = saved, not paused and GetTime() or nil
+            cur, anchor = saved, not paused and GetTime() or nil
         else
             StartLevel(s, UnitXP("player") == 0)
         end
@@ -113,8 +113,8 @@ local function TrackSplits(newLevel)
     if level > cur.level then
         s.levels[cur.level] = { total = not cur.partial and LevelTime() or nil }
         StartLevel(s, true, level)
-    elseif not anchorFrame and not paused then
-        anchorFrame = GetTime()
+    elseif not anchor and not paused then
+        anchor = GetTime()
     end
 end
 
@@ -145,7 +145,7 @@ function module.XPStart()
     pausedTotal = pausedTotal + GetTime() - pausedAt
     paused, pausedAt = false, nil
     if cur then
-        anchorFrame = GetTime()
+        anchor = GetTime()
     end
     if Update then
         Update()
@@ -156,8 +156,8 @@ function module.XPPause()
         return
     end
     paused, pausedAt = true, GetTime()
-    if cur and anchorFrame then
-        cur.base, anchorFrame = LevelTime(), nil
+    if cur and anchor then
+        cur.base, anchor = LevelTime(), nil
     end
     if Update then
         Update()
@@ -221,9 +221,9 @@ Update = function()
         cardFrame:Hide()
         return
     end
-    local dim = X.Get("size")
-    CludesUI.Kit.Font(cardFrame.rate, dim + 4, "essentials")
-    CludesUI.Kit.Font(cardFrame.info, dim - 3, "essentials")
+    local size = X.Get("size")
+    CludesUI.Kit.Font(cardFrame.rate, size + 4, "essentials")
+    CludesUI.Kit.Font(cardFrame.info, size - 3, "essentials")
     local nowTime = GetTime()
     local elapsed = nowTime - sessionStart - pausedTotal - (paused and nowTime - pausedAt or 0)
     local rate = sessionXP / (math.max(elapsed, MINUTE) / HOUR)
@@ -257,8 +257,8 @@ Update = function()
     if X.Get("splits") then
         local s = Splits()
         local keyList = {}
-        for level, recd in pairs(s and s.levels or {}) do
-            if type(level) == "number" and recd.total and (not cur or level < cur.level) then
+        for level, rec in pairs(s and s.levels or {}) do
+            if type(level) == "number" and rec.total and (not cur or level < cur.level) then
                 keyList[#keyList + 1] = level
             end
         end
@@ -273,11 +273,11 @@ Update = function()
         end
     end
     cardFrame.info:SetText(table.concat(lines, "\n"))
-    local upper = UnitXPMax("player")
-    if upper > 0 then
-        local share = UnitXP("player") / upper
+    local max = UnitXPMax("player")
+    if max > 0 then
+        local share = UnitXP("player") / max
         cardFrame.bar:SetValue(share)
-        local rested = math.min((GetXPExhaustion() or 0) / upper, 1 - share)
+        local rested = math.min((GetXPExhaustion() or 0) / max, 1 - share)
         cardFrame.rested:SetWidth(math.max(0.01, (share + rested) * cardFrame.bar:GetWidth()))
     end
     cardFrame.toggle.t:SetText(paused and ">" or "||")
@@ -297,9 +297,9 @@ xEv:SetScript("OnEvent", function(_, evt, arg1)
         return
     end
     if evt == "PLAYER_XP_UPDATE" then
-        local xp, upper = UnitXP("player"), UnitXPMax("player")
+        local xp, max = UnitXP("player"), UnitXPMax("player")
         local gained = xp >= lastXP and xp - lastXP or (lastXPMax - lastXP) + xp
-        lastXP, lastXPMax = xp, upper
+        lastXP, lastXPMax = xp, max
         if not paused then
             sessionXP = sessionXP + gained
         end
@@ -311,8 +311,8 @@ end)
 local clock
 local function XApply()
     if not X.Enabled() then
-        if cur and anchorFrame then
-            cur.base, anchorFrame = LevelTime(), nil
+        if cur and anchor then
+            cur.base, anchor = LevelTime(), nil
         end
         xEv:UnregisterAllEvents()
         if clock then
@@ -461,9 +461,9 @@ local function Roster()
     end
     for _, unitToken in ipairs(units) do
         local name, unitGuid = UnitName(unitToken), UnitGUID(unitToken)
-        local _, classFile = UnitClass(unitToken)
-        if name and unitGuid and not (Secret(name) or Secret(unitGuid) or Secret(classFile)) then
-            entries[#entries + 1] = { unit = unitToken, name = name, class = classFile, guid = unitGuid }
+        local _, class = UnitClass(unitToken)
+        if name and unitGuid and not (Secret(name) or Secret(unitGuid) or Secret(class)) then
+            entries[#entries + 1] = { unit = unitToken, name = name, class = class, guid = unitGuid }
         end
     end
     return entries
@@ -536,9 +536,9 @@ local function GRefresh()
         gFrame:Hide()
         return
     end
-    local dim = G.Get("size")
-    local rowH = math.max(18, dim + 6)
-    local nameW = 90 * dim / 12
+    local size = G.Get("size")
+    local rowH = math.max(18, size + 6)
+    local nameW = 90 * size / 12
     gFrame:SetSize(G.Get("width"), #entries * (rowH + 2) - 2)
     for idx, m in ipairs(entries) do
         local r = Row(idx)
@@ -546,9 +546,9 @@ local function GRefresh()
         r:SetPoint("TOPLEFT", 0, -(idx - 1) * (rowH + 2))
         r:SetPoint("TOPRIGHT", 0, -(idx - 1) * (rowH + 2))
         r:SetHeight(rowH)
-        CludesUI.Kit.Font(r.name, dim, "essentials")
+        CludesUI.Kit.Font(r.name, size, "essentials")
         r.name:SetWidth(nameW - 4)
-        CludesUI.Kit.Font(r.text, dim - 1, "essentials")
+        CludesUI.Kit.Font(r.text, size - 1, "essentials")
         r.bar:SetPoint("TOPLEFT", nameW, 0)
         local c = m.class and RAID_CLASS_COLORS[m.class]
         r.name:SetText(m.name)
@@ -592,15 +592,15 @@ gEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
             SendSoon()
             return
         end
-        local unitGuid, level, xp, upper = msg:match(MESSAGE_PATTERN)
+        local unitGuid, level, xp, max = msg:match(MESSAGE_PATTERN)
         if not unitGuid or not unitGuid:find("^Player%-") or unitGuid == UnitGUID("player") then
             return
         end
-        level, xp, upper = tonumber(level), tonumber(xp), tonumber(upper)
-        if level > 1000 or xp > MAX_XP or upper > MAX_XP or not SenderIs(sender, unitGuid) then
+        level, xp, max = tonumber(level), tonumber(xp), tonumber(max)
+        if level > 1000 or xp > MAX_XP or max > MAX_XP or not SenderIs(sender, unitGuid) then
             return
         end
-        others[unitGuid] = { level = level, xp = xp, max = upper }
+        others[unitGuid] = { level = level, xp = xp, max = max }
         return GRefresh()
     elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ENTERING_WORLD" then
         local inGroup = {}

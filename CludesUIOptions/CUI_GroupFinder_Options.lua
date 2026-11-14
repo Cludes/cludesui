@@ -434,19 +434,19 @@ initFrame:SetScript("OnEvent", function(self)
             -- the effect's style and each status's color (the list's own
             -- colors and keys: ns.STATUS_LINES, CUI_GroupFinder_ResultsList.lua)
             local function Picker(key, labelText)
-                local lineTex = mod.STATUS_LINES[key]
+                local line = mod.STATUS_LINES[key]
                 return {
                     type = "colorpicker",
                     label = labelText,
                     get = function()
-                        local c = mod.OwnListGet(lineTex[5])
+                        local c = mod.OwnListGet(line[5])
                         if type(c) == "table" then
                             return c.r, c.g, c.b
                         end
-                        return lineTex[2], lineTex[3], lineTex[4]
+                        return line[2], line[3], line[4]
                     end,
                     set = function(r, g, b)
-                        mod.SetOwnListValue(lineTex[5], { r = r, g = g, b = b })
+                        mod.SetOwnListValue(line[5], { r = r, g = g, b = b })
                     end,
                 }
             end

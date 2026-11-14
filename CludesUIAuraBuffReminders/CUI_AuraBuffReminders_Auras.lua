@@ -704,7 +704,7 @@ function REMIND.RescanOwnOtherAura(spellID)
     local stateVersion = REMIND._ownOtherAuraStateVersion
     local isRaid = IsInRaid()
     local count = isRaid and GetNumGroupMembers() or (IsInGroup() and GetNumSubgroupMembers() or 0)
-    local slotPos = 1
+    local index = 1
     local sawUnknown = false
 
     local function scanNext()
@@ -718,9 +718,9 @@ function REMIND.RescanOwnOtherAura(spellID)
             return
         end
 
-        while slotPos <= count do
-            local u = (isRaid and "raid" or "party") .. slotPos
-            slotPos = slotPos + 1
+        while index <= count do
+            local u = (isRaid and "raid" or "party") .. index
+            index = index + 1
             -- If our last known target is dead, its aura cannot be reliably
             -- disproved. Do not let a recovery scan publish false and flash the
             -- reminder while that target remains in the group.
@@ -945,7 +945,7 @@ end
 -------------------------------------------------------------------------------
 local BLADED_SET, BLUNT_SET, RANGED_SET
 do
-    local Widgets = (Enum and Enum.ItemWeaponSubclass) or {}
+    local W = (Enum and Enum.ItemWeaponSubclass) or {}
     local function setFrom(...)
         local t = {}
         for idx = 1, select("#", ...) do
@@ -956,17 +956,9 @@ do
         end
         return t
     end
-    BLADED_SET = setFrom(
-        Widgets.Axe1H,
-        Widgets.Axe2H,
-        Widgets.Sword1H,
-        Widgets.Sword2H,
-        Widgets.Dagger,
-        Widgets.Polearm,
-        Widgets.Warglaive
-    )
-    BLUNT_SET = setFrom(Widgets.Mace1H, Widgets.Mace2H, Widgets.Staff, Widgets.Fist)
-    RANGED_SET = setFrom(Widgets.Bow, Widgets.Gun, Widgets.Crossbow, Widgets.Wand)
+    BLADED_SET = setFrom(W.Axe1H, W.Axe2H, W.Sword1H, W.Sword2H, W.Dagger, W.Polearm, W.Warglaive)
+    BLUNT_SET = setFrom(W.Mace1H, W.Mace2H, W.Staff, W.Fist)
+    RANGED_SET = setFrom(W.Bow, W.Gun, W.Crossbow, W.Wand)
 end
 
 local function GetWeaponCategory(slotID)
@@ -1064,14 +1056,14 @@ end
 -- restriction edges). Hung on EABR.
 REMIND._groupClassSet = REMIND._groupClassSet or {}
 function REMIND.BuildGroupClassSet()
-    local group = wipe(REMIND._groupClassSet)
+    local set = wipe(REMIND._groupClassSet)
     if IsInRaid() then
         for idx = 1, GetNumGroupMembers() do
             local u = "raid" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
-                local _, classFile = UnitClass(u)
-                if classFile ~= nil and not isSecret(classFile) then
-                    group[classFile] = true
+                local _, class = UnitClass(u)
+                if class ~= nil and not isSecret(class) then
+                    set[class] = true
                 end
             end
         end
@@ -1079,14 +1071,14 @@ function REMIND.BuildGroupClassSet()
         for idx = 1, GetNumSubgroupMembers() do
             local u = "party" .. idx
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
-                local _, classFile = UnitClass(u)
-                if classFile ~= nil and not isSecret(classFile) then
-                    group[classFile] = true
+                local _, class = UnitClass(u)
+                if class ~= nil and not isSecret(class) then
+                    set[class] = true
                 end
             end
         end
     end
-    return group
+    return set
 end
 
 -------------------------------------------------------------------------------
@@ -1186,8 +1178,8 @@ function REMIND.UnitBenefits(u, benefit)
             -- A spec listed under any benefit set is a real, mapped spec:
             -- its absence here is a definitive no. Anything else (starter
             -- specs, future IDs) falls back to the checks below.
-            for _, group in pairs(REMIND.SPEC_BENEFITS) do
-                if group[specInfo] then
+            for _, set in pairs(REMIND.SPEC_BENEFITS) do
+                if set[specInfo] then
                     return false
                 end
             end
@@ -1197,11 +1189,11 @@ function REMIND.UnitBenefits(u, benefit)
     if not classSet then
         return true
     end
-    local _, classFile = UnitClass(u)
-    if classFile == nil or isSecret(classFile) then
+    local _, class = UnitClass(u)
+    if class == nil or isSecret(class) then
         return false
     end
-    if not classSet[classFile] then
+    if not classSet[class] then
         return false
     end
     -- Role refinement for members with no spec data: some class+benefit
@@ -1215,21 +1207,16 @@ function REMIND.UnitBenefits(u, benefit)
     local role = CludesUI.UnitEffectiveRole(u)
     if role ~= nil and not isSecret(role) then
         if benefit == "intellect" and not REMIND.FOREVER then
-            if (classFile == "PALADIN" or classFile == "MONK") and (role == "DAMAGER" or role == "TANK") then
+            if (class == "PALADIN" or class == "MONK") and (role == "DAMAGER" or role == "TANK") then
                 return false
             end
-            if classFile == "DRUID" and role == "TANK" then
+            if class == "DRUID" and role == "TANK" then
                 return false
             end
         elseif benefit == "attackPower" then
             if
                 role == "HEALER"
-                and (
-                    classFile == "PALADIN"
-                    or classFile == "MONK"
-                    or classFile == "DRUID"
-                    or classFile == "SHAMAN"
-                )
+                and (class == "PALADIN" or class == "MONK" or class == "DRUID" or class == "SHAMAN")
             then
                 return false
             end

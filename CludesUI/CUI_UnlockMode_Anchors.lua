@@ -55,9 +55,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
-                for _, barFrame in ipairs(cdmBars.bars) do
-                    if barFrame.key == rawKey then
-                        return barFrame.growDirection or "CENTER"
+                for _, bar in ipairs(cdmBars.bars) do
+                    if bar.key == rawKey then
+                        return bar.growDirection or "CENTER"
                     end
                 end
             end
@@ -105,9 +105,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
-                for _, barFrame in ipairs(cdmBars.bars) do
-                    if barFrame.key == rawKey then
-                        local g = barFrame.growDirection
+                for _, bar in ipairs(cdmBars.bars) do
+                    if bar.key == rawKey then
+                        local g = bar.growDirection
                         if g and g ~= "CENTER" then
                             return g
                         end
@@ -200,25 +200,25 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local uiCY = bT * elemScale - hgt * 0.5
 
         local growDir = GetBarGrowDirActual(barId)
-        local anchorFrame, aX, aY
+        local anchor, aX, aY
         if growDir == "RIGHT" then
-            anchorFrame = "LEFT"
+            anchor = "LEFT"
             aX = bL * elemScale
             aY = uiCY
         elseif growDir == "LEFT" then
-            anchorFrame = "RIGHT"
+            anchor = "RIGHT"
             aX = (bL * elemScale) + wid
             aY = uiCY
         elseif growDir == "DOWN" then
-            anchorFrame = "TOP"
+            anchor = "TOP"
             aX = uiCX
             aY = bT * elemScale
         elseif growDir == "UP" then
-            anchorFrame = "BOTTOM"
+            anchor = "BOTTOM"
             aX = uiCX
             aY = bT * elemScale - hgt
         else
-            anchorFrame = "CENTER"
+            anchor = "CENTER"
             aX = uiCX
             aY = uiCY
         end
@@ -231,7 +231,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- Snap to the physical pixel grid so subpixel coords never persist into pendingPositions -> CommitPositions -> SavedVariables.
         local PPr = Pix or (CludesUI and CludesUI.PP)
         if PPr then
-            if anchorFrame == "CENTER" then
+            if anchor == "CENTER" then
                 cRelX = PPr.SnapCenterForDim(cRelX, wid, uiS)
                 cRelY = PPr.SnapCenterForDim(cRelY, hgt, uiS)
             else
@@ -250,7 +250,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
 
         pcall(function()
             CludesUI.ClearFramePoints(b)
-            CludesUI.SetFramePoint(b, anchorFrame, UIParent, "CENTER", setX, setY)
+            CludesUI.SetFramePoint(b, anchor, UIParent, "CENTER", setX, setY)
         end)
 
         -- Keep mover's stored center in sync so drag/snap logic stays consistent
@@ -260,7 +260,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
     end
 
-    local function SetAnchorInfo(childKey, targetKey, sideName, offsetX, offsetY)
+    local function SetAnchorInfo(childKey, targetKey, side, offsetX, offsetY)
         local saved = GetAnchorDB()
         if not saved then
             return
@@ -282,7 +282,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         saved[childKey] = {
             target = targetKey,
-            side = sideName,
+            side = side,
             offsetX = offsetX,
             offsetY = offsetY,
             fallback = fb,
@@ -567,9 +567,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return false
         end
         local tooltip = function()
-            local targetUnit = getFn(barId)
-            if targetUnit then
-                local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(targetUnit)) or targetUnit
+            local target = getFn(barId)
+            if target then
+                local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(target)) or target
                 return isWidth
                         and CludesUI.Lf(
                             "Width matched to %1$s. Unmatch in Layout Mode to edit.",
@@ -1442,9 +1442,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
         _resizeNotifyThrottle[key] = nowTime
 
         -- Detect which axis changed by comparing to last known size
-        local barFrame = LM.GetBarFrame(key)
-        local curW = barFrame and barFrame:GetWidth()
-        local curH = barFrame and barFrame:GetHeight()
+        local bar = LM.GetBarFrame(key)
+        local curW = bar and bar:GetWidth()
+        local curH = bar and bar:GetHeight()
         -- A secret size (a frame riding an engine aura container under aura
         -- restriction) can't be compared; the next plain resize converges.
         if issecretvalue and (issecretvalue(curW) or issecretvalue(curH)) then
@@ -1628,7 +1628,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- NotifyElementResized cannot do this, since its self re-pull keys on a size
     -- change. Never in unlock mode; a no-op for elements in no match. mask (the
     -- notifier's): 1 = width only, 2 = height only, nil = both.
-    function CludesUI.ReapplyMatchPads(key, maskTex)
+    function CludesUI.ReapplyMatchPads(key, mask)
         if LM.isUnlocked or not key then
             return
         end
@@ -1642,14 +1642,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
             mp.w[key], mp.h[key] = pw or 0, ph or 0
         end
         local wdb = MatchH.GetWidthMatchDB()
-        if wdb and maskTex ~= 2 then
+        if wdb and mask ~= 2 then
             if wdb[key] then
                 MatchH.ApplyWidthMatch(key, wdb[key])
             end
             CludesUI.PropagateWidthMatch(key)
         end
         local hdb = MatchH.GetHeightMatchDB()
-        if hdb and maskTex ~= 1 then
+        if hdb and mask ~= 1 then
             if hdb[key] then
                 MatchH.ApplyHeightMatch(key, hdb[key])
             end
@@ -1667,13 +1667,13 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return
         end
         local isH = (axis == "h")
-        local targetUnit
+        local target
         if isH then
-            targetUnit = MatchH.GetHeightMatchInfo(key)
+            target = MatchH.GetHeightMatchInfo(key)
         else
-            targetUnit = MatchH.GetWidthMatchInfo(key)
+            target = MatchH.GetWidthMatchInfo(key)
         end
-        if not targetUnit then
+        if not target then
             return
         end
         local ax = isH and "h" or "w"
@@ -1683,9 +1683,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         MatchH.SetMatchExtra(ax, key, px)
         if isH then
-            MatchH.ApplyHeightMatch(key, targetUnit)
+            MatchH.ApplyHeightMatch(key, target)
         else
-            MatchH.ApplyWidthMatch(key, targetUnit)
+            MatchH.ApplyWidthMatch(key, target)
         end
         LM.hasChanges = true
         local m = movers[key]
@@ -1773,9 +1773,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 return 0
             end
             visiting[k] = true
-            local targetUnit = saved[k]
-            if targetUnit and saved[targetUnit] then
-                depth[k] = 1 + GetDepth(targetUnit, visiting)
+            local target = saved[k]
+            if target and saved[target] then
+                depth[k] = 1 + GetDepth(target, visiting)
             else
                 depth[k] = 0
             end
@@ -1867,11 +1867,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if LM.isUnlocked then
                 return
             end
-            local barFrame = LM.GetBarFrame(key)
-            if not barFrame then
+            local bar = LM.GetBarFrame(key)
+            if not bar then
                 return
             end
-            local l, t = barFrame:GetLeft(), barFrame:GetTop()
+            local l, t = bar:GetLeft(), bar:GetTop()
             -- A frame riding an engine aura container (a Blizzard Style cast bar
             -- under its frame's aura stack) reports a secret position: nothing to
             -- compare, and its children cannot follow it anyway (they re-anchor on
@@ -1907,8 +1907,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if key and key:find("^ECHAT_") then
             return
         end
-        local barFrame = LM.GetBarFrame(key)
-        if not barFrame then
+        local bar = LM.GetBarFrame(key)
+        if not bar then
             return
         end
         -- The quest tracker key: Blizzard's tracker is laid out by its managed
@@ -1917,21 +1917,21 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- hooks. WoW Forever's custom tracker, a frame of ours under the same key
         -- that grows with its quests, does: its resize re-applies its anchor link,
         -- which otherwise keeps its centre and moves the edge it hangs from.
-        if key == "EQT_Tracker" and barFrame ~= _G.CUI_CustomQuestTracker then
+        if key == "EQT_Tracker" and bar ~= _G.CUI_CustomQuestTracker then
             return
         end
-        if not _sizeHookedFrames[barFrame] then
-            _sizeHookedFrames[barFrame] = true
-            barFrame:HookScript("OnSizeChanged", function()
+        if not _sizeHookedFrames[bar] then
+            _sizeHookedFrames[bar] = true
+            bar:HookScript("OnSizeChanged", function()
                 if LM.isUnlocked then
                     return
                 end
                 CludesUI.NotifyElementResized(key)
             end)
         end
-        if not _pointHookedFrames[barFrame] then
-            _pointHookedFrames[barFrame] = true
-            hooksecurefunc(barFrame, "SetPoint", function()
+        if not _pointHookedFrames[bar] then
+            _pointHookedFrames[bar] = true
+            hooksecurefunc(bar, "SetPoint", function()
                 NotifyElementMoved(key)
             end)
         end
@@ -2143,12 +2143,12 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     local place = saved and saved[key]
                     if place and place.point then
                         if not LM.ApplyCenterPosition(key, place) then
-                            local barFrame = LM.GetBarFrame(key)
-                            if barFrame then
+                            local bar = LM.GetBarFrame(key)
+                            if bar then
                                 pcall(function()
-                                    CludesUI.ClearFramePoints(barFrame)
+                                    CludesUI.ClearFramePoints(bar)
                                     CludesUI.SetFramePoint(
-                                        barFrame,
+                                        bar,
                                         place.point,
                                         UIParent,
                                         place.relPoint or place.point,
@@ -2227,24 +2227,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- center on the cross axis to match (the snap axis already holds its own edge,
         -- e.g. cx = tL - cW/2 keeps the right edge at tL). Zero for center-growth bars
         -- and non-CDM/AB elements (GetBarGrowDirActual returns "CENTER"). cW/cH are UIParent-space dims. Fallback/override anchor code only.
-        CludesUI._FallbackGrowShift = function(childKey, sideName, cW, cH)
+        CludesUI._FallbackGrowShift = function(childKey, side, cW, cH)
             local gd = GetBarGrowDirActual(childKey)
             if not gd or gd == "CENTER" then
                 return 0, 0
             end
             local horiz = (gd == "LEFT" or gd == "RIGHT")
-            local crossX = (
-                sideName == "TOP"
-                or sideName == "BOTTOM"
-                or sideName == "CENTER"
-                or sideName == nil
-            )
-            local crossY = (
-                sideName == "LEFT"
-                or sideName == "RIGHT"
-                or sideName == "CENTER"
-                or sideName == nil
-            )
+            local crossX = (side == "TOP" or side == "BOTTOM" or side == "CENTER" or side == nil)
+            local crossY = (side == "LEFT" or side == "RIGHT" or side == "CENTER" or side == nil)
             -- RIGHT/UP fix the near edge (left/bottom) -> center sits +half past it;
             -- LEFT/DOWN fix the far edge (right/top) -> center sits -half before it.
             if horiz and crossX then
@@ -2270,7 +2260,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not fb or not fb.target then
                 return false
             end
-            local sideName = fb.side
+            local side = fb.side
             local inactive
             if not targetBar then
                 inactive = true
@@ -2300,15 +2290,15 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local tCY = (tT + tB) / 2
             -- Growth-edge extent applies to the fallback target too.
             if CludesUI._GetAnchorTargetExtent then
-                local ext = CludesUI._GetAnchorTargetExtent(fb.target, sideName)
+                local ext = CludesUI._GetAnchorTargetExtent(fb.target, side)
                 if ext then
-                    if sideName == "TOP" then
+                    if side == "TOP" then
                         tT = ext
-                    elseif sideName == "BOTTOM" then
+                    elseif side == "BOTTOM" then
                         tB = ext
-                    elseif sideName == "LEFT" then
+                    elseif side == "LEFT" then
                         tL = ext
-                    elseif sideName == "RIGHT" then
+                    elseif side == "RIGHT" then
                         tR = ext
                     end
                 end
@@ -2316,13 +2306,13 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local cW = (childBar:GetWidth() or 50) * cS / uiS
             local cH = (childBar:GetHeight() or 50) * cS / uiS
             local cx, cy
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 cx, cy = tL - cW / 2, tCY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 cx, cy = tR + cW / 2, tCY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 cx, cy = tCX, tT + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 cx, cy = tCX, tB - cH / 2
             else
                 cx, cy = tCX, tCY
@@ -2334,7 +2324,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- Keep the growth-fixed edge (not the center) pinned on the cross axis so
             -- a differently-sized bar on another character still lines up, like a
             -- standard anchor. Inert (0,0) for center-growth / non-bar children.
-            local gsx, gsy = CludesUI._FallbackGrowShift(childKey, sideName, cW, cH)
+            local gsx, gsy = CludesUI._FallbackGrowShift(childKey, side, cW, cH)
             cx = cx + gsx
             cy = cy + gsy
             -- Temporary per-target visual shift (e.g. "Shift Elements if No
@@ -2389,7 +2379,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
 
         -- Store the fallback link (target + side), chosen through the same element
         -- pick mode as regular anchoring.
-        function CludesUI.SetAnchorFallback(childKey, targetKey, sideName)
+        function CludesUI.SetAnchorFallback(childKey, targetKey, side)
             local saved = GetAnchorDB()
             local details = saved and saved[childKey]
             if not details or not details.target then
@@ -2398,7 +2388,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not targetKey or targetKey == childKey or targetKey == details.target then
                 return false
             end
-            details.fallback = { target = targetKey, side = sideName or "BOTTOM" }
+            details.fallback = { target = targetKey, side = side or "BOTTOM" }
             CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
             CludesUI._EnsureFallbackWatchers()
             if CludesUI._RefreshFallbackGhosts then

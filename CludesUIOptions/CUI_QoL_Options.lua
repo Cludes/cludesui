@@ -55,9 +55,9 @@ local function ShowTransformsPopup()
 
         -- Group items per category; the tallest column drives the popup height.
         local catItems = {}
-        for _, itemInfo in ipairs(payload.items) do
-            catItems[itemInfo.cat] = catItems[itemInfo.cat] or {}
-            catItems[itemInfo.cat][#catItems[itemInfo.cat] + 1] = itemInfo
+        for _, item in ipairs(payload.items) do
+            catItems[item.cat] = catItems[item.cat] or {}
+            catItems[item.cat][#catItems[item.cat] + 1] = item
         end
         local maxRows = 0
         for _, category in ipairs(payload.order) do
@@ -100,27 +100,27 @@ local function ShowTransformsPopup()
         backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
 
-        local titleText = dialog:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT, 22, "")
-        titleText:SetTextColor(1, 1, 1, 1)
-        titleText:SetPoint("TOP", dialog, "TOP", 0, -32)
-        titleText:SetText(CludesUI.L("Hide Item Transforms"))
+        local title = dialog:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT, 22, "")
+        title:SetTextColor(1, 1, 1, 1)
+        title:SetPoint("TOP", dialog, "TOP", 0, -32)
+        title:SetText(CludesUI.L("Hide Item Transforms"))
 
-        local subFrame = dialog:CreateFontString(nil, "OVERLAY")
-        subFrame:SetFont(FONT, 14, "")
-        subFrame:SetTextColor(1, 1, 1, 0.45)
-        subFrame:SetPoint("TOP", titleText, "BOTTOM", 0, -8)
-        subFrame:SetText(CludesUI.L("Checked transforms are removed automatically when applied to you."))
+        local sub = dialog:CreateFontString(nil, "OVERLAY")
+        sub:SetFont(FONT, 14, "")
+        sub:SetTextColor(1, 1, 1, 0.45)
+        sub:SetPoint("TOP", title, "BOTTOM", 0, -8)
+        sub:SetText(CludesUI.L("Checked transforms are removed automatically when applied to you."))
 
         local rowList = {}
         local function RefreshRows()
-            for _, rowFrame in ipairs(rowList) do
-                if transformsStaged[rowFrame._key] then
-                    rowFrame._check:Show()
-                    rowFrame._boxBorder:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
+            for _, row in ipairs(rowList) do
+                if transformsStaged[row._key] then
+                    row._check:Show()
+                    row._boxBorder:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                 else
-                    rowFrame._check:Hide()
-                    rowFrame._boxBorder:SetColor(0.4, 0.4, 0.4, 0.6)
+                    row._check:Hide()
+                    row._boxBorder:SetColor(0.4, 0.4, 0.4, 0.6)
                 end
             end
         end
@@ -128,8 +128,8 @@ local function ShowTransformsPopup()
 
         -- Check All / Uncheck All links
         local function SetAll(val)
-            for _, itemInfo in ipairs(payload.items) do
-                transformsStaged[itemInfo.key] = val
+            for _, item in ipairs(payload.items) do
+                transformsStaged[item.key] = val
             end
             RefreshRows()
         end
@@ -191,53 +191,53 @@ local function ShowTransformsPopup()
             heading:SetText(CludesUI.L(payload.labels[category] or category))
 
             local itemList = catItems[category] or {}
-            for idx, itemInfo in ipairs(itemList) do
-                local rowFrame = CreateFrame("Button", nil, dialog)
-                rowFrame:SetSize(COL_W, ROW_H)
-                rowFrame:SetPoint(
+            for idx, item in ipairs(itemList) do
+                local row = CreateFrame("Button", nil, dialog)
+                row:SetSize(COL_W, ROW_H)
+                row:SetPoint(
                     "TOPLEFT",
                     dialog,
                     "TOPLEFT",
                     colX,
                     -(CONTENT_TOP + HDR_H + 4 + (idx - 1) * ROW_H)
                 )
-                rowFrame._key = itemInfo.key
+                row._key = item.key
 
-                local boxFrame = CreateFrame("Frame", nil, rowFrame)
-                boxFrame:SetSize(18, 18)
-                boxFrame:SetPoint("LEFT", rowFrame, "LEFT", 4, 0)
-                boxFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-                local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+                local box = CreateFrame("Frame", nil, row)
+                box:SetSize(18, 18)
+                box:SetPoint("LEFT", row, "LEFT", 4, 0)
+                box:SetFrameLevel(row:GetFrameLevel() + 1)
+                local boxBg = box:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                rowFrame._boxBorder = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
-                local check = boxFrame:CreateTexture(nil, "ARTWORK")
-                check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
-                check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
+                row._boxBorder = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+                local check = box:CreateTexture(nil, "ARTWORK")
+                check:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+                check:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
                 check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                CludesUI.RoundBody(boxFrame, check, 1)
-                rowFrame._check = check
+                CludesUI.RoundBody(box, check, 1)
+                row._check = check
 
-                local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+                local labelFS = row:CreateFontString(nil, "OVERLAY")
                 labelFS:SetFont(FONT, 13, "")
-                labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
-                labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", -2, 0)
+                labelFS:SetPoint("LEFT", box, "RIGHT", 8, 0)
+                labelFS:SetPoint("RIGHT", row, "RIGHT", -2, 0)
                 labelFS:SetJustifyH("LEFT")
                 labelFS:SetWordWrap(false)
                 labelFS:SetTextColor(1, 1, 1, 0.65)
-                labelFS:SetText(CludesUI.L(itemInfo.label))
+                labelFS:SetText(CludesUI.L(item.label))
 
-                rowFrame:SetScript("OnEnter", function()
+                row:SetScript("OnEnter", function()
                     labelFS:SetTextColor(1, 1, 1, 0.95)
                 end)
-                rowFrame:SetScript("OnLeave", function()
+                row:SetScript("OnLeave", function()
                     labelFS:SetTextColor(1, 1, 1, 0.65)
                 end)
-                rowFrame:SetScript("OnClick", function()
-                    transformsStaged[itemInfo.key] = not transformsStaged[itemInfo.key]
+                row:SetScript("OnClick", function()
+                    transformsStaged[item.key] = not transformsStaged[item.key]
                     RefreshRows()
                 end)
-                rowList[#rowList + 1] = rowFrame
+                rowList[#rowList + 1] = row
             end
         end
 
@@ -269,12 +269,12 @@ local function ShowTransformsPopup()
             end
             CludesUIDB.hideTransformItems = CludesUIDB.hideTransformItems or {}
             local t = CludesUIDB.hideTransformItems
-            for _, itemInfo in ipairs(payload.items) do
-                local staged = transformsStaged[itemInfo.key] and true or false
-                if staged == not itemInfo.defaultOff then
-                    t[itemInfo.key] = nil -- matches the per-key default
+            for _, item in ipairs(payload.items) do
+                local staged = transformsStaged[item.key] and true or false
+                if staged == not item.defaultOff then
+                    t[item.key] = nil -- matches the per-key default
                 else
-                    t[itemInfo.key] = staged -- stored deviations only
+                    t[item.key] = staged -- stored deviations only
                 end
             end
             if CludesUI._applyHideTransforms then
@@ -307,8 +307,8 @@ local function ShowTransformsPopup()
     end
 
     -- Seed the staged state from the saved settings, then show
-    for _, itemInfo in ipairs(payload.items) do
-        transformsStaged[itemInfo.key] = CludesUI.GetHideTransformItem(itemInfo.key) and true or false
+    for _, item in ipairs(payload.items) do
+        transformsStaged[item.key] = CludesUI.GetHideTransformItem(item.key) and true or false
     end
     transformsPopup._refreshRows()
     transformsPopup._dimmer:Show()
@@ -1540,17 +1540,17 @@ initFrame:SetScript("OnEvent", function(self)
             local fpsBlocks = {}
             for _, e in ipairs(fpsTips) do
                 local sw = e[1]
-                local blockData = CreateFrame("Frame", nil, sw)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, sw)
+                block:SetAllPoints()
+                block:SetFrameLevel(sw:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Show FPS Counter"))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                fpsBlocks[#fpsBlocks + 1] = blockData
+                fpsBlocks[#fpsBlocks + 1] = block
             end
 
             -- While the counter is off both swatches dim flat; while on, the
@@ -1563,11 +1563,11 @@ initFrame:SetScript("OnEvent", function(self)
                 if fpsUpdClass then
                     fpsUpdClass()
                 end
-                local offset = fpsOff()
-                for _, blockData in ipairs(fpsBlocks) do
-                    blockData:SetShown(offset)
+                local off = fpsOff()
+                for _, block in ipairs(fpsBlocks) do
+                    block:SetShown(off)
                 end
-                local m = not offset and fpsMode() or nil
+                local m = not off and fpsMode() or nil
                 fpsClassSw:SetAlpha(m == "class" and 1 or 0.3)
                 fpsSwatch:SetAlpha(m == "custom" and 1 or 0.3)
             end
@@ -1815,8 +1815,8 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = durOff()
-                if offset then
+                local off = durOff()
+                if off then
                     durSwatch:SetAlpha(0.3)
                     durSwBlock:Show()
                 else
@@ -1891,8 +1891,8 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = durOff()
-                if offset then
+                local off = durOff()
+                if off then
                     durPreviewShown = false
                     RefreshDurEye()
                     CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
@@ -2379,17 +2379,17 @@ initFrame:SetScript("OnEvent", function(self)
             local ssBlocks = {}
             for _, e in ipairs(ssTips) do
                 local sw = e[1]
-                local blockData = CreateFrame("Frame", nil, sw)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, sw)
+                block:SetAllPoints()
+                block:SetFrameLevel(sw:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Secondary Stat Display"))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                ssBlocks[#ssBlocks + 1] = blockData
+                ssBlocks[#ssBlocks + 1] = block
             end
 
             -- While the display is off every swatch dims flat; while on, the
@@ -2405,11 +2405,11 @@ initFrame:SetScript("OnEvent", function(self)
                 if ssUpdMulti then
                     ssUpdMulti()
                 end
-                local offset = statsOff()
-                for _, blockData in ipairs(ssBlocks) do
-                    blockData:SetShown(offset)
+                local off = statsOff()
+                for _, block in ipairs(ssBlocks) do
+                    block:SetShown(off)
                 end
-                local m = not offset and ssMode() or nil
+                local m = not off and ssMode() or nil
                 ssMulti:SetAlpha(m == "palette" and 1 or 0.3)
                 ssClass:SetAlpha(m == "class" and 1 or 0.3)
                 ssCustom:SetAlpha(m == "custom" and 1 or 0.3)
@@ -2624,8 +2624,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 set = function(val)
                     -- The hold key cannot be the button it claims.
-                    local baseValue = val and val:match("[^%-]+$")
-                    if baseValue == "BUTTON1" or baseValue == "BUTTON2" then
+                    local base = val and val:match("[^%-]+$")
+                    if base == "BUTTON1" or base == "BUTTON2" then
                         return
                     end
                     CludesUIDB.envPingKey = val
@@ -2786,17 +2786,17 @@ initFrame:SetScript("OnEvent", function(self)
         -- "Custom" if enabled) -- i.e. H/V widths differ or don't match a preset.
         -- Checked regardless of None so a saved custom config can be restored.
         local function crosshairIsCustom()
-            local Prm = CludesUI.CROSSHAIR_PRESETS
+            local P = CludesUI.CROSSHAIR_PRESETS
             local s = cget("crosshairSize")
             local sizeForBase = (s and s ~= "None" and s) or "Normal"
-            local baseValue = (Prm and (Prm[sizeForBase] or Prm.Normal)) or { width = 2 }
-            local hw = cget("crosshairHWidth") or baseValue.width
-            local vw = cget("crosshairVWidth") or baseValue.width
+            local base = (P and (P[sizeForBase] or P.Normal)) or { width = 2 }
+            local hw = cget("crosshairHWidth") or base.width
+            local vw = cget("crosshairVWidth") or base.width
             if hw ~= vw then
                 return true
             end
-            if Prm then
-                for _, p in pairs(Prm) do
+            if P then
+                for _, p in pairs(P) do
                     if p.width == hw then
                         return false
                     end
@@ -2834,16 +2834,16 @@ initFrame:SetScript("OnEvent", function(self)
             },
             order = { "None", "Thin", "Normal", "Thick", "custom" },
             getValue = function()
-                local dim = cget("crosshairSize") or "None"
-                if dim == "None" then
+                local size = cget("crosshairSize") or "None"
+                if size == "None" then
                     return "None"
                 end
-                local Prm = CludesUI.CROSSHAIR_PRESETS
-                local baseValue = (Prm and (Prm[dim] or Prm.Normal)) or { width = 2 }
-                local hw = cget("crosshairHWidth") or baseValue.width
-                local vw = cget("crosshairVWidth") or baseValue.width
-                if hw == vw and Prm then
-                    for name, p in pairs(Prm) do
+                local P = CludesUI.CROSSHAIR_PRESETS
+                local base = (P and (P[size] or P.Normal)) or { width = 2 }
+                local hw = cget("crosshairHWidth") or base.width
+                local vw = cget("crosshairVWidth") or base.width
+                if hw == vw and P then
+                    for name, p in pairs(P) do
                         if p.width == hw then
                             return name
                         end
@@ -3004,8 +3004,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local function presetThick()
                 local s = cget("crosshairSize")
-                local Prm = CludesUI.CROSSHAIR_PRESETS
-                local p = Prm and (Prm[s] or Prm.Normal)
+                local P = CludesUI.CROSSHAIR_PRESETS
+                local p = P and (P[s] or P.Normal)
                 return (p and p.width) or 2
             end
             local function applyCH()
@@ -3212,8 +3212,8 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = crosshairOff()
-                if offset then
+                local off = crosshairOff()
+                if off then
                     chSwatch:SetAlpha(0.3)
                     chSwBlock:Show()
                 else
@@ -3296,9 +3296,9 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = meleeOff()
-                mcSwatch:SetAlpha(offset and 0.3 or 1)
-                if offset then
+                local off = meleeOff()
+                mcSwatch:SetAlpha(off and 0.3 or 1)
+                if off then
                     mcBlock:Show()
                 else
                     mcBlock:Hide()

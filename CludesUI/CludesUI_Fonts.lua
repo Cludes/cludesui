@@ -442,13 +442,13 @@ function CludesUI.GetFontOutlineFlag(addonKey)
 
     local saved = CludesUI.GetFontsDB()
     local override = CludesUI.GetModuleFontEntry(addonKey)
-    local modeName
+    local mode
     if override and override.outline and override.outline ~= "__global" then
-        modeName = override.outline
+        mode = override.outline
     else
-        modeName = saved.outlineMode or "none"
+        mode = saved.outlineMode or "none"
     end
-    local flag = CludesUI.OutlineFlagForMode(modeName)
+    local flag = CludesUI.OutlineFlagForMode(mode)
     c[k] = flag
     return flag
 end
@@ -456,11 +456,11 @@ end
 -- The WoW font flag for one outline mode ("outline", "thick"; anything else is
 -- none/shadow), slug-gated. For a feature with its own outline choice; resolve
 -- "__global" through GetFontOutlineFlag first.
-function CludesUI.OutlineFlagForMode(modeName)
+function CludesUI.OutlineFlagForMode(mode)
     local flag
-    if modeName == "outline" then
+    if mode == "outline" then
         flag = "OUTLINE, SLUG"
-    elseif modeName == "thick" then
+    elseif mode == "thick" then
         flag = "THICKOUTLINE, SLUG"
     else
         flag = ""
@@ -512,13 +512,13 @@ end
 function CludesUI.GetFontUseShadow(addonKey)
     local saved = CludesUI.GetFontsDB()
     local override = CludesUI.GetModuleFontEntry(addonKey)
-    local modeName
+    local mode
     if override and override.outline and override.outline ~= "__global" then
-        modeName = override.outline
+        mode = override.outline
     else
-        modeName = saved.outlineMode or "none"
+        mode = saved.outlineMode or "none"
     end
-    return modeName == "none" or modeName == "shadow"
+    return mode == "none" or mode == "shadow"
 end
 
 -- Runtime FontString:SetShadowOffset/SetShadowColor does NOT render a drop shadow;
@@ -728,8 +728,8 @@ end
 -- The shadow on the family and on each member (PrimeFontShadow's values), and the
 -- family and its members into the set the game text passes skip. Once, at creation.
 function CludesUI._DressFontFamily(fam, shadow)
-    local group = CludesUI._fontFamilySet
-    group[fam] = true
+    local set = CludesUI._fontFamilySet
+    set[fam] = true
     local a, posX, posY = 0, 0, 0
     if shadow then
         a, posX, posY = 1, 1, -1
@@ -740,7 +740,7 @@ function CludesUI._DressFontFamily(fam, shadow)
     for idx = 1, #alphabets do
         local member = fam:GetFontObjectForAlphabet(alphabets[idx])
         if member then
-            group[member] = true
+            set[member] = true
             member:SetShadowColor(0, 0, 0, a)
             member:SetShadowOffset(posX, posY)
         end
@@ -749,8 +749,8 @@ end
 
 -- Builds and caches the family for one key. A path the client cannot load takes the
 -- client's standard font.
-function CludesUI._BuildFontFamily(filePath, dim, flags, shadow)
-    if type(filePath) ~= "string" or type(dim) ~= "number" or not (dim > 0) then
+function CludesUI._BuildFontFamily(filePath, size, flags, shadow)
+    if type(filePath) ~= "string" or type(size) ~= "number" or not (size > 0) then
         return nil
     end
     local cache = CludesUI._fontFamilies
@@ -759,10 +759,10 @@ function CludesUI._BuildFontFamily(filePath, dim, flags, shadow)
         bySize = {}
         cache[filePath] = bySize
     end
-    local byFlags = bySize[dim]
+    local byFlags = bySize[size]
     if not byFlags then
         byFlags = {}
-        bySize[dim] = byFlags
+        bySize[size] = byFlags
     end
     local byShadow = byFlags[flags]
     if not byShadow then
@@ -790,7 +790,7 @@ function CludesUI._BuildFontFamily(filePath, dim, flags, shadow)
                 file = CludesUI.LocaleGlyphFont(CludesUI._FONT_CJK_LOCALE[alphabet])
             end
         end
-        members[idx] = { alphabet = alphabet, file = file, height = dim, flags = flags }
+        members[idx] = { alphabet = alphabet, file = file, height = size, flags = flags }
     end
     CludesUI._fontFamilyCount = CludesUI._fontFamilyCount + 1
     local success, fam = pcall(create, "CUIFontFamily" .. CludesUI._fontFamilyCount, members)
@@ -804,7 +804,7 @@ function CludesUI._BuildFontFamily(filePath, dim, flags, shadow)
     byShadow[shadow] = fam
     if face ~= filePath and CludesUI._fontPathPending[filePath] then
         local entries = CludesUI._fontFamPending
-        entries[#entries + 1] = { fam = fam, path = filePath, size = dim, flags = flags }
+        entries[#entries + 1] = { fam = fam, path = filePath, size = size, flags = flags }
     end
     return fam
 end
@@ -812,17 +812,17 @@ end
 -- The family font object for a face, size, outline flags and shadow, or nil when the
 -- client has no font families (or this one could not be made): the caller then sets
 -- the font the plain way. One family per key for the session.
-function CludesUI.GetFontFamily(filePath, dim, flags, shadow)
+function CludesUI.GetFontFamily(filePath, size, flags, shadow)
     flags = flags or ""
     shadow = shadow and true or false
     -- Scaled texts (raid and party auto-resize, size offsets) hand fractional sizes:
     -- families are kept per quarter point, so a slider drag reuses a few of them (a
     -- font object is never freed), at most an eighth of a point off.
-    if type(dim) == "number" then
-        dim = math.floor(dim * 4 + 0.5) / 4
+    if type(size) == "number" then
+        size = math.floor(size * 4 + 0.5) / 4
     end
     local t = CludesUI._fontFamilies[filePath]
-    t = t and t[dim]
+    t = t and t[size]
     t = t and t[flags]
     local fam = t and t[shadow]
     if fam then
@@ -831,21 +831,21 @@ function CludesUI.GetFontFamily(filePath, dim, flags, shadow)
     if fam == false then
         return nil
     end
-    return CludesUI._BuildFontFamily(filePath, dim, flags, shadow)
+    return CludesUI._BuildFontFamily(filePath, size, flags, shadow)
 end
 
 -- Sets a font string's font as a family (see the block above). A string already on
 -- that family is not touched. Its first switch from a font object that is not one
 -- of ours keeps the string's justification and text colour, which a template object
 -- may have given it. With no family: PrimeFontShadow, then a plain SetFont.
-function CludesUI.SetFontFamily(fontStr, filePath, dim, flags, shadow)
+function CludesUI.SetFontFamily(fontStr, filePath, size, flags, shadow)
     if not (fontStr and fontStr.SetFontObject) then
         return
     end
-    local fam = CludesUI.GetFontFamily(filePath, dim, flags, shadow)
+    local fam = CludesUI.GetFontFamily(filePath, size, flags, shadow)
     if not fam then
         CludesUI.PrimeFontShadow(fontStr, shadow)
-        fontStr:SetFont(filePath, dim, flags)
+        fontStr:SetFont(filePath, size, flags)
         return
     end
     local current = fontStr:GetFontObject()
@@ -894,7 +894,7 @@ end
 -- when given, else its own size times `scale`; `flags` when given, else its own.
 -- A member already in `done` is skipped, so a member several alphabets or objects
 -- share changes once (a scale never compounds).
-function CludesUI._SetFontMemberFace(member, filePath, dim, flags, scale, done)
+function CludesUI._SetFontMemberFace(member, filePath, size, flags, scale, done)
     if done[member] then
         return
     end
@@ -907,12 +907,12 @@ function CludesUI._SetFontMemberFace(member, filePath, dim, flags, scale, done)
     if not face then
         return
     end
-    pcall(member.SetFont, member, face, dim or msize * (scale or 1), flags or mflags or "")
+    pcall(member.SetFont, member, face, size or msize * (scale or 1), flags or mflags or "")
 end
 
 -- SetFontObjectFace's body with the caller's `done` set (a game text pass shares one
 -- set across every object it changes).
-function CludesUI._FontObjectFaceInto(object, filePath, dim, flags, scale, done)
+function CludesUI._FontObjectFaceInto(object, filePath, size, flags, scale, done)
     if CludesUI._FontObjectIsFamily(object) then
         local alphabets = CludesUI._FONT_ALPHABETS
         for idx = 1, #alphabets do
@@ -923,17 +923,17 @@ function CludesUI._FontObjectFaceInto(object, filePath, dim, flags, scale, done)
                 if face and not CludesUI._FontMemberTakesPath(alphabet, face) then
                     face = nil
                 end
-                CludesUI._SetFontMemberFace(member, face, dim, flags, scale, done)
+                CludesUI._SetFontMemberFace(member, face, size, flags, scale, done)
             end
         end
         -- The family's own font as well (it changes no member): GetFont() reads it and
         -- copies take it (the guild chat copies the main chat window's font). Only
         -- where the client's own alphabet takes the face.
         if not filePath or CludesUI._FontMemberTakesPath(CludesUI._FONT_CLIENT_OWN, filePath) then
-            CludesUI._SetFontMemberFace(object, filePath, dim, flags, scale, done)
+            CludesUI._SetFontMemberFace(object, filePath, size, flags, scale, done)
         end
     else
-        CludesUI._SetFontMemberFace(object, filePath, dim, flags, scale, done)
+        CludesUI._SetFontMemberFace(object, filePath, size, flags, scale, done)
     end
 end
 
@@ -943,13 +943,13 @@ end
 -- the others keep their own faces; `size` (nil: each member's own size times `scale`,
 -- default 1) and `flags` (nil: each member's own) go to every member. A plain object
 -- takes the same on itself.
-function CludesUI.SetFontObjectFace(object, filePath, dim, flags, scale)
+function CludesUI.SetFontObjectFace(object, filePath, size, flags, scale)
     if not (object and type(object) == "table" and object.GetFont and object.SetFont) then
         return
     end
     local done = CludesUI._fontFaceDone
     wipe(done)
-    CludesUI._FontObjectFaceInto(object, filePath, dim, flags, scale, done)
+    CludesUI._FontObjectFaceInto(object, filePath, size, flags, scale, done)
 end
 
 -- Each member's (or a plain object's) face, size and flags, and a family's own
@@ -966,13 +966,13 @@ function CludesUI.SnapshotFontObject(object)
         for idx = 1, #alphabets do
             local success, member = pcall(object.GetFontObjectForAlphabet, object, alphabets[idx])
             if success and member then
-                local face, dim, flags = member:GetFont()
-                snap[alphabets[idx]] = { face = face, size = dim, flags = flags }
+                local face, size, flags = member:GetFont()
+                snap[alphabets[idx]] = { face = face, size = size, flags = flags }
             end
         end
     else
-        local face, dim, flags = object:GetFont()
-        snap.plain = { face = face, size = dim, flags = flags }
+        local face, size, flags = object:GetFont()
+        snap.plain = { face = face, size = size, flags = flags }
     end
     return snap
 end
@@ -1108,9 +1108,9 @@ function CludesUI.ApplyGlobalFontToGameText()
                 if not (labelText and labelText.GetFont) then
                     return
                 end
-                local face, dim, flags = labelText:GetFont() -- not in an and-chain, that keeps only face
-                if face == old and dim then
-                    labelText:SetFont(filePath, dim, flags or "")
+                local face, size, flags = labelText:GetFont() -- not in an and-chain, that keeps only face
+                if face == old and size then
+                    labelText:SetFont(filePath, size, flags or "")
                 end
             end)
         end)
@@ -1203,36 +1203,36 @@ end
 
 -- Applies the icon-text outline flag AND the matching shadow in one call. Checked -> "OUTLINE,
 -- SLUG", no shadow; unchecked -> the user's outline choice, and when that resolves to "" (Drop Shadow/None) a drop shadow is applied for legibility.
-function CludesUI.ApplyIconTextFont(fontStr, fontFile, dim, moduleKey)
+function CludesUI.ApplyIconTextFont(fontStr, fontFile, size, moduleKey)
     if not (fontStr and fontStr.SetFont) then
         return
     end
     local flag = CludesUI.GetIconTextOutlineFlag(moduleKey)
     -- Prime the shadow FontObject before SetFont (see PrimeFontShadow).
     CludesUI.PrimeFontShadow(fontStr, flag == "")
-    fontStr:SetFont(fontFile, dim, flag)
+    fontStr:SetFont(fontFile, size, flag)
 end
 
 -- Body text in a module's font: fontPath/flags default to the module's (nil key = global)
 -- font and outline; a "" flag (Drop Shadow/None) gets the drop shadow.
-function CludesUI.ApplyModuleFont(fontStr, fontFile, dim, moduleKey, flags)
+function CludesUI.ApplyModuleFont(fontStr, fontFile, size, moduleKey, flags)
     if not (fontStr and fontStr.SetFont) then
         return
     end
     flags = flags or CludesUI.GetFontOutlineFlag(moduleKey)
     CludesUI.PrimeFontShadow(fontStr, flags == "")
-    fontStr:SetFont(fontFile or CludesUI.GetFontPath(moduleKey), dim, flags)
+    fontStr:SetFont(fontFile or CludesUI.GetFontPath(moduleKey), size, flags)
 end
 
 -- ApplyModuleFont for a text that can show other players' writing: the same defaults
 -- (the module's font and outline; a "" flag gets the drop shadow) as a font family
 -- (SetFontFamily). Once a string has a family, no ApplyModuleFont may reach it.
-function CludesUI.ApplyModuleFontFamily(fontStr, fontFile, dim, moduleKey, flags)
+function CludesUI.ApplyModuleFontFamily(fontStr, fontFile, size, moduleKey, flags)
     if not (fontStr and fontStr.SetFont) then
         return
     end
     flags = flags or CludesUI.GetFontOutlineFlag(moduleKey)
-    CludesUI.SetFontFamily(fontStr, fontFile or CludesUI.GetFontPath(moduleKey), dim, flags, flags == "")
+    CludesUI.SetFontFamily(fontStr, fontFile or CludesUI.GetFontPath(moduleKey), size, flags, flags == "")
 end
 
 -- Build font dropdown values/order ("CUI Global Font" first) for W:DualRow configs.

@@ -168,13 +168,13 @@ if CludesUI.IS_FOREVER then
     local function Layout(widget, fontStr)
         local p = saved.profile
         local posKey = POS[p.threatPctPosition] and p.threatPctPosition or "CENTER"
-        local dim = p.threatPctSize
+        local size = p.threatPctSize
         local posX, posY = p.threatPctXOffset, p.threatPctYOffset
         local font = GetSelectedFont()
         local outline = CludesUI.GetFontOutlineFlag("unitFrames")
         if
             widget._tpPos == posKey
-            and widget._tpSize == dim
+            and widget._tpSize == size
             and widget._tpX == posX
             and widget._tpY == posY
             and widget._tpFont == font
@@ -182,10 +182,10 @@ if CludesUI.IS_FOREVER then
         then
             return
         end
-        widget._tpPos, widget._tpSize, widget._tpX, widget._tpY = posKey, dim, posX, posY
+        widget._tpPos, widget._tpSize, widget._tpX, widget._tpY = posKey, size, posX, posY
         widget._tpFont, widget._tpOutline = font, outline
         local place = POS[posKey]
-        SetFSFont(fontStr, dim)
+        SetFSFont(fontStr, size)
         fontStr:ClearAllPoints()
         Pix.Point(
             fontStr,

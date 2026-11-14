@@ -17,14 +17,14 @@ end
 Inner.broken = true
 
 local Pix = CludesUI.PP
-local floor, min, upper = math.floor, math.min, math.max
+local floor, min, max = math.floor, math.min, math.max
 
 local ERB, ResolveBandConfig = Inner.ERB, Inner.ResolveBandConfig
 local ResolveThresholdSpecEntry, DEFAULTS = Inner.ResolveThresholdSpecEntry, Inner.DEFAULTS
 
-local healthBar
+local health
 Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    healthBar = val
+    health = val
 end
 local primaryBar
 Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
@@ -368,17 +368,17 @@ function mod.ERB_SeparatorArt(c, pick, role)
         key = "pixels"
         filePath = CludesUI.GetBorderCompanion(key, role)
     end
-    local dim = CludesUI.GetBorderCompanion(key, "sepSize") or 16
+    local size = CludesUI.GetBorderCompanion(key, "sepSize") or 16
     local bs = c and c.borderSize or 0
     if bs > 0 and CludesUI.GetBorderCompanion(tex, "sepSize") then
         local px = CludesUI.BorderPx(c.borderSizePx, bs, tex)
         if px then
-            return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, dim, true
+            return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, size, true
         end
         local EM = CludesUI.BORDER_EDGE_MAP
-        return filePath, (EM[bs] or EM[1]) / 16, dim, false
+        return filePath, (EM[bs] or EM[1]) / 16, size, false
     end
-    return filePath, 1, dim, false
+    return filePath, 1, size, false
 end
 -- True while a bar's border style is textured (not Solid, not empty): the only
 -- state that shows its Border Options cog, so the separator and lift settings
@@ -401,45 +401,45 @@ do
     -- options addon fills it in place), read through this block local and never
     -- through the public slot, so a slot written later cannot reach the live bars.
     local POOL = CludesUI._Pool
-    function mod.ERB_Separators(barFrame, c, hOn, level, slots, total, isVertical, isReversed)
-        local hostRegion = barFrame._erbSep
+    function mod.ERB_Separators(bar, c, hOn, level, slots, total, isVertical, isReversed)
+        local host = bar._erbSep
         local gaps = (slots and total and total > 1) and (total - 1) or 0
         if not hOn and gaps == 0 then
-            if hostRegion and hostRegion:IsShown() then
-                hostRegion:Hide()
-                CludesUI.RegisterPxReapply(hostRegion, nil)
+            if host and host:IsShown() then
+                host:Hide()
+                CludesUI.RegisterPxReapply(host, nil)
             end
             return
         end
-        if not hostRegion then
+        if not host then
             -- On an options preview (an options page pool host) the piece is
             -- pooled with the preview; on a live bar this is CreateFrame.
-            hostRegion = POOL.CreateFrame("Frame", nil, barFrame)
-            hostRegion:EnableMouse(false)
-            barFrame._erbSep = hostRegion
+            host = POOL.CreateFrame("Frame", nil, bar)
+            host:EnableMouse(false)
+            bar._erbSep = host
         end
-        mod.ERB_AnchorBorderHost(hostRegion, barFrame)
+        mod.ERB_AnchorBorderHost(host, bar)
         if level then
-            hostRegion:SetFrameLevel(level)
+            host:SetFrameLevel(level)
         end
-        hostRegion._erbC, hostRegion._erbHOn = c, hOn and true or false
+        host._erbC, host._erbHOn = c, hOn and true or false
         if gaps > 0 then
             -- Gap midpoints along the pip layout's own axis (one reused table).
-            local mids = hostRegion._erbMids
+            local mids = host._erbMids
             if not mids then
                 mids = {}
-                hostRegion._erbMids = mids
+                host._erbMids = mids
             end
             for idx = 1, gaps do
                 mids[idx] = (slots[idx].x1 + slots[idx + 1].x0) / 2
             end
         end
-        hostRegion._erbVN, hostRegion._erbVert, hostRegion._erbRev =
+        host._erbVN, host._erbVert, host._erbRev =
             gaps, isVertical and true or false, isReversed and true or false
-        hostRegion:Show()
+        host:Show()
         -- Art sized from an exact Border Size is pixels at UIParent scale: re-placed
         -- (no rebuild) when the pixel grid moves, only while it is.
-        CludesUI.RegisterPxReapply(hostRegion, mod.ERB_SepPlace(hostRegion) and mod.ERB_SepPlace or nil)
+        CludesUI.RegisterPxReapply(host, mod.ERB_SepPlace(host) and mod.ERB_SepPlace or nil)
     end
 end -- POOL block
 -- Places a separator host's pieces from its last build; also the UI-scale
@@ -449,21 +449,21 @@ end -- POOL block
 -- vertical strip's left edge 2 x f before the gap midpoint, full bar height; a
 -- vertical pip layout stacks its pips, so there the horizontal strip runs
 -- across the bar with its top edge 2 x f above the midpoint.
-function mod.ERB_SepPlace(hostRegion)
-    local c = hostRegion._erbC
+function mod.ERB_SepPlace(host)
+    local c = host._erbC
     if not c then
         return false
     end
-    local es = hostRegion:GetEffectiveScale()
+    local es = host:GetEffectiveScale()
     local r, g, b, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     local exact = false
-    local hgt = hostRegion._erbH
-    if hostRegion._erbHOn then
-        local filePath, f, dim, ex = mod.ERB_SeparatorArt(c, c.edgeSepArt, "sepH")
+    local hgt = host._erbH
+    if host._erbHOn then
+        local filePath, f, size, ex = mod.ERB_SeparatorArt(c, c.edgeSepArt, "sepH")
         if not hgt then
-            hgt = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
+            hgt = host:CreateTexture(nil, "OVERLAY", nil, 7)
             Pix.DisablePixelSnap(hgt)
-            hostRegion._erbH = hgt
+            host._erbH = hgt
         end
         local posY = Pix.SnapForES((c.edgeSepY or 0) - 2 * f, es)
         local _, _, leftX, right =
@@ -472,30 +472,30 @@ function mod.ERB_SepPlace(hostRegion)
         hgt:SetTexCoord(0, 1, 1, 0)
         hgt:SetVertexColor(r, g, b, a)
         hgt:ClearAllPoints()
-        hgt:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", -Pix.SnapForES(leftX, es), posY)
-        hgt:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", Pix.SnapForES(right, es), posY)
-        hgt:SetHeight(Pix.SnapForES(dim * f, es))
+        hgt:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", -Pix.SnapForES(leftX, es), posY)
+        hgt:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", Pix.SnapForES(right, es), posY)
+        hgt:SetHeight(Pix.SnapForES(size * f, es))
         hgt:Show()
         exact = ex and true or false
     elseif hgt then
         hgt:Hide()
     end
-    local num, pool = hostRegion._erbVN or 0, hostRegion._erbV
+    local num, pool = host._erbVN or 0, host._erbV
     if num > 0 then
-        local vert, rev, mids = hostRegion._erbVert, hostRegion._erbRev, hostRegion._erbMids
-        local filePath, f, dim, ex = mod.ERB_SeparatorArt(c, c.edgeSepArt, vert and "sepH" or "sepV")
+        local vert, rev, mids = host._erbVert, host._erbRev, host._erbMids
+        local filePath, f, size, ex = mod.ERB_SeparatorArt(c, c.edgeSepArt, vert and "sepH" or "sepV")
         if ex then
             exact = true
         end
-        local th, lead = Pix.SnapForES(dim * f, es), 2 * f
+        local th, lead = Pix.SnapForES(size * f, es), 2 * f
         if not pool then
             pool = {}
-            hostRegion._erbV = pool
+            host._erbV = pool
         end
         for idx = 1, num do
             local t = pool[idx]
             if not t then
-                t = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
+                t = host:CreateTexture(nil, "OVERLAY", nil, 7)
                 Pix.DisablePixelSnap(t)
                 pool[idx] = t
             end
@@ -504,19 +504,19 @@ function mod.ERB_SepPlace(hostRegion)
             t:SetVertexColor(r, g, b, a)
             t:ClearAllPoints()
             if vert and rev then
-                local offset = Pix.SnapForES(mids[idx] + lead, es)
-                t:SetPoint("TOPLEFT", hostRegion, "BOTTOMLEFT", 0, offset)
-                t:SetPoint("TOPRIGHT", hostRegion, "BOTTOMRIGHT", 0, offset)
+                local off = Pix.SnapForES(mids[idx] + lead, es)
+                t:SetPoint("TOPLEFT", host, "BOTTOMLEFT", 0, off)
+                t:SetPoint("TOPRIGHT", host, "BOTTOMRIGHT", 0, off)
                 t:SetHeight(th)
             elseif vert then
-                local offset = Pix.SnapForES(lead - mids[idx], es)
-                t:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 0, offset)
-                t:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", 0, offset)
+                local off = Pix.SnapForES(lead - mids[idx], es)
+                t:SetPoint("TOPLEFT", host, "TOPLEFT", 0, off)
+                t:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, off)
                 t:SetHeight(th)
             else
-                local offset = Pix.SnapForES(mids[idx] - lead, es)
-                t:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", offset, 0)
-                t:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", offset, 0)
+                local off = Pix.SnapForES(mids[idx] - lead, es)
+                t:SetPoint("TOPLEFT", host, "TOPLEFT", off, 0)
+                t:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", off, 0)
                 t:SetWidth(th)
             end
             t:Show()
@@ -554,7 +554,7 @@ function mod.ERB_ClassSeps(sp, slots, total, isVertical, isReversed)
     if cachedSecondary.type ~= "runes" and pw ~= "WHIRLWIND_STACKS" and pw ~= "SWEEPING_STRIKES" then
         local bandOn, bands = ResolveBandConfig(sp, ResolveThresholdSpecEntry(sp))
         if bandOn then
-            lvl = min(14, upper(7, #bands + 3))
+            lvl = min(14, max(7, #bands + 3))
         end
     end
     mod.ERB_Separators(
@@ -589,8 +589,8 @@ end
 -- unchanged; nothing while the host is absent or hidden.
 function mod.ERB_PowerSepLayer()
     local pb = primaryBar
-    local hostRegion = pb and pb._erbSep
-    if not (hostRegion and hostRegion:IsShown()) then
+    local host = pb and pb._erbSep
+    if not (host and host:IsShown()) then
         return
     end
     local bf = pb._border._frame
@@ -598,13 +598,13 @@ function mod.ERB_PowerSepLayer()
     local lvl = bf:GetFrameLevel() + 2
     local cbf = secondaryFrame and secondaryFrame._barBorder and secondaryFrame._barBorder._frame
     if cbf and cbf:GetFrameStrata() == strata then
-        lvl = upper(lvl, cbf:GetFrameLevel() + 2)
+        lvl = max(lvl, cbf:GetFrameLevel() + 2)
     end
-    if hostRegion:GetFrameStrata() ~= strata then
-        hostRegion:SetFrameStrata(strata)
+    if host:GetFrameStrata() ~= strata then
+        host:SetFrameStrata(strata)
     end
-    if hostRegion:GetFrameLevel() ~= lvl then
-        hostRegion:SetFrameLevel(lvl)
+    if host:GetFrameLevel() ~= lvl then
+        host:SetFrameLevel(lvl)
     end
 end
 -- Draw Above GCD Bar: while on, with the GCD bar enabled and a textured power
@@ -670,19 +670,19 @@ function mod.ERB_ClassRaise(sp)
     local wanted = 10
     if sp.raiseLevel then
         local strata, topY = f:GetFrameStrata(), 0
-        local hb = healthBar and healthBar._border and healthBar._border._frame
+        local hb = health and health._border and health._border._frame
         if hb and hb:GetFrameStrata() == strata then
             topY = hb:GetFrameLevel()
         end
         local pbf = primaryBar and primaryBar._border and primaryBar._border._frame
         if pbf and pbf:GetFrameStrata() == strata then
-            topY = upper(topY, pbf:GetFrameLevel())
+            topY = max(topY, pbf:GetFrameLevel())
         end
         local gb = ERB.db.profile.gcdBar
         if gb and gb.enabled and (gb.frameStrata or "MEDIUM") == strata then
-            topY = upper(topY, 20)
+            topY = max(topY, 20)
         end
-        wanted = upper(10, topY + 5)
+        wanted = max(10, topY + 5)
     end
     if f:GetFrameLevel() ~= wanted then
         f:SetFrameLevel(wanted)
@@ -718,22 +718,22 @@ end
 -- so its line stays on the seam), full icon height, the cast border's colour
 -- and alpha as vertex colour. Returns true while sized from an exact Border
 -- Size. tex = our divider texture, icon = the icon frame.
-function mod.ERB_PlaceDividerArt(tex, glyph, onRight, c)
-    local filePath, f, dim, exact = mod.ERB_SeparatorArt(c, "match", "sepV")
+function mod.ERB_PlaceDividerArt(tex, icon, onRight, c)
+    local filePath, f, size, exact = mod.ERB_SeparatorArt(c, "match", "sepV")
     local es = tex:GetParent():GetEffectiveScale()
     local lead = Pix.SnapForES(2 * f, es)
     tex:SetTexture(filePath)
     tex:ClearAllPoints()
     if onRight then
         tex:SetTexCoord(1, 0, 0, 1)
-        tex:SetPoint("TOPRIGHT", glyph, "TOPLEFT", lead, 0)
-        tex:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMLEFT", lead, 0)
+        tex:SetPoint("TOPRIGHT", icon, "TOPLEFT", lead, 0)
+        tex:SetPoint("BOTTOMRIGHT", icon, "BOTTOMLEFT", lead, 0)
     else
         tex:SetTexCoord(0, 1, 0, 1)
-        tex:SetPoint("TOPLEFT", glyph, "TOPRIGHT", -lead, 0)
-        tex:SetPoint("BOTTOMLEFT", glyph, "BOTTOMRIGHT", -lead, 0)
+        tex:SetPoint("TOPLEFT", icon, "TOPRIGHT", -lead, 0)
+        tex:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", -lead, 0)
     end
-    tex:SetWidth(Pix.SnapForES(dim * f, es))
+    tex:SetWidth(Pix.SnapForES(size * f, es))
     tex:SetVertexColor(c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1)
     return exact and true or false
 end
@@ -744,12 +744,12 @@ end
 -- leaving the art: texcoords, the vertex colour back to white (SetColorTexture
 -- keeps a stale one) and the UI-scale re-place dropped. Two compares while it
 -- was never on. The state is kept on our own texture.
-function mod.ERB_CastDividerArt(tex, show, glyph, onRight, c, stock)
+function mod.ERB_CastDividerArt(tex, show, icon, onRight, c, stock)
     if show and c.iconDividerArt and not stock and CludesUI.GetBorderCompanion(c.borderTexture, "sepV") then
-        tex._erbArt, tex._erbIcon, tex._erbRight, tex._erbC = true, glyph, onRight and true or false, c
+        tex._erbArt, tex._erbIcon, tex._erbRight, tex._erbC = true, icon, onRight and true or false, c
         CludesUI.RegisterPxReapply(
             tex,
-            mod.ERB_PlaceDividerArt(tex, glyph, onRight, c) and mod.ERB_DividerReapply or nil
+            mod.ERB_PlaceDividerArt(tex, icon, onRight, c) and mod.ERB_DividerReapply or nil
         )
         return true
     end
@@ -799,8 +799,8 @@ function mod.ERB_SeatClassicChrome(tex, rect, thick, vertical, k)
     -- parent on its layer, created once, and the handle itself draws nothing.
     local p = tex._classicPieces
     if not p then
-        local layer, subFrame = tex:GetDrawLayer()
-        p = CF.Create(tex:GetParent(), layer, subFrame)
+        local layer, sub = tex:GetDrawLayer()
+        p = CF.Create(tex:GetParent(), layer, sub)
         tex._classicPieces = p
         tex:Hide()
     end
@@ -817,18 +817,18 @@ end
 -- `k` is the frame scale (ERB_ClassicFrameK; nil = full size).
 do
     local POOL = CludesUI._Pool -- read as in ns.ERB_Separators' block
-    function mod.ERB_ApplyClassicBarChrome(hostRegion, rect, fw, fh, vertical, k)
-        if not hostRegion then
+    function mod.ERB_ApplyClassicBarChrome(host, rect, fw, fh, vertical, k)
+        if not host then
             return
         end
-        rect = rect or hostRegion
-        local af = hostRegion._classicArt
+        rect = rect or host
+        local af = host._classicArt
         if not af then
             -- On an options preview (an options page pool host) the art frame is
             -- pooled with the preview; on a live bar this is CreateFrame.
-            af = POOL.CreateFrame("Frame", nil, hostRegion)
+            af = POOL.CreateFrame("Frame", nil, host)
             af:EnableMouse(false)
-            hostRegion._classicArt = af
+            host._classicArt = af
             local tex = af:CreateTexture(nil, "OVERLAY", nil, 2)
             if tex.SetSnapToPixelGrid then
                 tex:SetSnapToPixelGrid(false)
@@ -838,11 +838,11 @@ do
         end
         af:ClearAllPoints()
         af:SetAllPoints(rect)
-        af:SetFrameLevel(hostRegion:GetFrameLevel() + 9)
+        af:SetFrameLevel(host:GetFrameLevel() + 9)
         -- A bar the "Border Around All" frame wears keeps its own art hidden.
-        af:SetShown(not hostRegion._classicGrouped)
+        af:SetShown(not host._classicGrouped)
         if vertical == nil then
-            vertical = hostRegion._blizzVertical
+            vertical = host._blizzVertical
                 or (rect.GetOrientation and rect:GetOrientation() == "VERTICAL")
                 or false
         end
@@ -866,29 +866,29 @@ end -- POOL block
 -- alone: this panel keeps its stock reach (the atlas slices, so its rims
 -- stay 1px round the fill; a vertical bar's turned copy is a texcoord cut
 -- and stretches).
-function mod.ERB_ApplyBlizzBarChrome(hostRegion, rect, fw, fh, vertical, k)
-    if not hostRegion then
+function mod.ERB_ApplyBlizzBarChrome(host, rect, fw, fh, vertical, k)
+    if not host then
         return
     end
-    rect = rect or hostRegion
+    rect = rect or host
     -- Classic WoW UI takes the vanilla frame instead: no panel, mask or bevel.
     if mod.ERB_BarsClassic() then
-        mod.ERB_ApplyClassicBarChrome(hostRegion, rect, fw, fh, vertical, k)
+        mod.ERB_ApplyClassicBarChrome(host, rect, fw, fh, vertical, k)
         return
     end
-    local backdrop = hostRegion._blizzBarBg
+    local backdrop = host._blizzBarBg
     if not backdrop then
-        backdrop = hostRegion:CreateTexture(nil, "BACKGROUND", nil, -2)
+        backdrop = host:CreateTexture(nil, "BACKGROUND", nil, -2)
         if backdrop.SetSnapToPixelGrid then
             backdrop:SetSnapToPixelGrid(false)
             backdrop:SetTexelSnappingBias(0)
         end
-        hostRegion._blizzBarBg = backdrop
+        host._blizzBarBg = backdrop
         if C_Texture.GetAtlasInfo(mod.ERB_BLIZZ_BAR_FILL) then
-            local maskTex = rect:CreateMaskTexture()
-            maskTex:SetAtlas(mod.ERB_BLIZZ_BAR_FILL)
-            maskTex:SetAllPoints(rect)
-            hostRegion._blizzBarMask = maskTex
+            local mask = rect:CreateMaskTexture()
+            mask:SetAtlas(mod.ERB_BLIZZ_BAR_FILL)
+            mask:SetAllPoints(rect)
+            host._blizzBarMask = mask
         end
     end
     -- A vertical bar (orientation option, or the class row's own flag) takes
@@ -898,46 +898,46 @@ function mod.ERB_ApplyBlizzBarChrome(hostRegion, rect, fw, fh, vertical, k)
     -- The caller's target orientation wins (the rect's own may still be the
     -- previous one on the pass that flips it); nil reads it from the host.
     if vertical == nil then
-        vertical = hostRegion._blizzVertical
+        vertical = host._blizzVertical
             or (rect.GetOrientation and rect:GetOrientation() == "VERTICAL")
             or false
     end
     -- A bar the "Border Around All" panel holds keeps its own panel hidden.
-    local grouped = hostRegion._classicGrouped
+    local grouped = host._classicGrouped
     if vertical then
         -- The turned panel, nine-sliced by hand like the group's (a turned
         -- copy is a texcoord cut, which stretches and slides its rims in
         -- under the fill): rims 1px round the fill at any size. Seated once
         -- per rect (fixed per bar); the pieces follow it.
-        local pcs = hostRegion._blizzBar9
+        local pcs = host._blizzBar9
         local details = C_Texture.GetAtlasInfo(mod.ERB_BLIZZ_BAR_BG)
         if not pcs and details then
             pcs = {}
             for idx = 1, 9 do
-                local t = hostRegion:CreateTexture(nil, "BACKGROUND", nil, -2)
+                local t = host:CreateTexture(nil, "BACKGROUND", nil, -2)
                 if t.SetSnapToPixelGrid then
                     t:SetSnapToPixelGrid(false)
                     t:SetTexelSnappingBias(0)
                 end
                 pcs[idx] = t
             end
-            hostRegion._blizzBar9 = pcs
+            host._blizzBar9 = pcs
         end
         if pcs then
-            if hostRegion._blizzBar9Rect ~= rect and details then
-                hostRegion._blizzBar9Rect = rect
+            if host._blizzBar9Rect ~= rect and details then
+                host._blizzBar9Rect = rect
                 mod.ERB_SeatBlizzPanel9(pcs, rect, true, details)
             end
             for idx = 1, 9 do
                 pcs[idx]:SetShown(not grouped)
             end
-            hostRegion._blizzBar9On = true
+            host._blizzBar9On = true
         end
         backdrop:Hide()
     else
-        if hostRegion._blizzBar9On then
-            hostRegion._blizzBar9On = nil
-            local pcs = hostRegion._blizzBar9
+        if host._blizzBar9On then
+            host._blizzBar9On = nil
+            local pcs = host._blizzBar9
             for idx = 1, 9 do
                 pcs[idx]:Hide()
             end
@@ -948,12 +948,12 @@ function mod.ERB_ApplyBlizzBarChrome(hostRegion, rect, fw, fh, vertical, k)
         backdrop:SetPoint("BOTTOMRIGHT", rect, "BOTTOMRIGHT", 6, -7)
         backdrop:SetShown(not grouped)
     end
-    mod.ERB_SeatBlizzMask(hostRegion)
+    mod.ERB_SeatBlizzMask(host)
     -- Health/power: the fill's own StatusBar carries the bevel (sized from the
     -- caller's target size: the bar may still be animating to it).
     if rect.GetStatusBarTexture then
         rect._blizzVertical = vertical and true or false
-        mod.ERB_BlizzBarShadow(rect, hostRegion._blizzBarMask, fw, fh)
+        mod.ERB_BlizzBarShadow(rect, host._blizzBarMask, fw, fh)
     end
 end
 

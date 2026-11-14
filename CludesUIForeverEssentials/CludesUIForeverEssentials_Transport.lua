@@ -55,17 +55,17 @@ local Times = {}
 
 local docks = {}
 for name, route in pairs(Routes) do
-    for slotPos, dock in ipairs(route.docks) do
-        docks[dock.stop] = { name = name, index = slotPos }
+    for index, dock in ipairs(route.docks) do
+        docks[dock.stop] = { name = name, index = index }
     end
 end
 
-local function Saved(slotIndex)
+local function Saved(slot)
     local c = F.Cfg()
-    c[slotIndex] = c[slotIndex] or {}
+    c[slot] = c[slot] or {}
     local realm = GetRealmName() or "?"
-    c[slotIndex][realm] = c[slotIndex][realm] or {}
-    return c[slotIndex][realm]
+    c[slot][realm] = c[slot][realm] or {}
+    return c[slot][realm]
 end
 local function Rows()
     return Saved("sightings")
@@ -84,8 +84,8 @@ end
 
 function Times.Prune(nowTime)
     local reset = nowTime + (C_DateAndTime.GetSecondsUntilWeeklyReset() or 0) - 7 * 86400
-    for key, rowFrame in pairs(Rows()) do
-        if rowFrame.last < reset or not Data[key] then
+    for key, row in pairs(Rows()) do
+        if row.last < reset or not Data[key] then
             Rows()[key] = nil
         end
     end
@@ -109,19 +109,19 @@ end
 
 local function Store(name, route, since, period, shared)
     local rides = Rides()
-    local rowFrame = rides[name]
-    if rowFrame and since == rowFrame.at then
+    local row = rides[name]
+    if row and since == row.at then
         return false
     end
-    if rowFrame then
-        local p = rowFrame.period or route.period
-        local cycles = math.floor((since - rowFrame.base) / p + 0.5)
-        local measured = cycles >= 1 and (since - rowFrame.base) / cycles
-        if cycles >= 0 and math.abs(since - rowFrame.base - cycles * p) <= RIDE_MISS then
+    if row then
+        local p = row.period or route.period
+        local cycles = math.floor((since - row.base) / p + 0.5)
+        local measured = cycles >= 1 and (since - row.base) / cycles
+        if cycles >= 0 and math.abs(since - row.base - cycles * p) <= RIDE_MISS then
             if measured and InBand(measured, route) then
-                rowFrame.period = measured
+                row.period = measured
             end
-            rowFrame.at, rowFrame.shared = since, shared
+            row.at, row.shared = since, shared
             return true
         end
     end
@@ -148,88 +148,88 @@ function Times.Shared(name, at, period, nowTime)
     if period and not InBand(period, route) then
         return false
     end
-    local rowFrame = Rides()[name]
-    if rowFrame and rowFrame.at >= at then
+    local row = Rides()[name]
+    if row and row.at >= at then
         return false
     end
     return Store(name, route, at, period, true)
 end
 
 function Times.Latest(name)
-    local rowFrame = Rides()[name]
-    if rowFrame and not rowFrame.shared then
-        return rowFrame.at, rowFrame.period
+    local row = Rides()[name]
+    if row and not row.shared then
+        return row.at, row.period
     end
 end
 
-function Times.Dock(name, slotPos, nowTime)
+function Times.Dock(name, index, nowTime)
     local route = Routes[name]
     local ride = route and Rides()[name]
-    local rowFrame = ride or (route and Schedule[name])
-    if not rowFrame then
+    local row = ride or (route and Schedule[name])
+    if not row then
         return nil, "new"
     end
-    if nowTime < rowFrame.at then
+    if nowTime < row.at then
         return nil, "stale"
     end
-    local dock = route.docks[slotPos]
-    local period = rowFrame.period or route.period
-    if not ride and nowTime - rowFrame.at > SCHEDULE_CYCLES * period then
+    local dock = route.docks[index]
+    local period = row.period or route.period
+    if not ride and nowTime - row.at > SCHEDULE_CYCLES * period then
         return nil, "expired"
     end
-    local phase = (nowTime - rowFrame.at) % period
+    local phase = (nowTime - row.at) % period
     if phase >= dock.arrive and phase < dock.leave then
         return dock.leave - phase, DEPARTURE
     end
     return (dock.arrive - phase) % period, ARRIVAL
 end
 
-function Times.Record(key, kindOf, nowTime)
+function Times.Record(key, kind, nowTime)
     local timing = Data[key]
-    if not timing or (kindOf ~= ARRIVAL and kindOf ~= DEPARTURE) then
+    if not timing or (kind ~= ARRIVAL and kind ~= DEPARTURE) then
         return false
     end
-    local name, slotPos = Times.RouteAt(key)
+    local name, index = Times.RouteAt(key)
     if name then
-        local dock = Routes[name].docks[slotPos]
-        return Times.Ride(name, nowTime - (kindOf == ARRIVAL and dock.arrive or dock.leave))
+        local dock = Routes[name].docks[index]
+        return Times.Ride(name, nowTime - (kind == ARRIVAL and dock.arrive or dock.leave))
     end
     local rowList = Rows()
-    local rowFrame = rowList[key]
-    if rowFrame and nowTime == rowFrame.last then
+    local row = rowList[key]
+    if row and nowTime == row.last then
         return false
     end
-    local period = rowFrame and rowFrame.period
-    if rowFrame and rowFrame.kind == kindOf and nowTime > rowFrame.last then
-        period = Refine(nowTime - rowFrame.last, timing.period) or period
+    local period = row and row.period
+    if row and row.kind == kind and nowTime > row.last then
+        period = Refine(nowTime - row.last, timing.period) or period
     end
     rowList[key] = {
-        arrival = kindOf == ARRIVAL and nowTime or nowTime - timing.dwell,
+        arrival = kind == ARRIVAL and nowTime or nowTime - timing.dwell,
         last = nowTime,
-        kind = kindOf,
+        kind = kind,
         period = period,
     }
     return true
 end
 
 function Times.Next(key, nowTime)
-    local name, slotPos = Times.RouteAt(key)
+    local name, index = Times.RouteAt(key)
     if name then
-        return Times.Dock(name, slotPos, nowTime)
+        return Times.Dock(name, index, nowTime)
     end
     local timing = Data[key]
-    local rowFrame = timing and Rows()[key]
-    if not rowFrame then
+    local row = timing and Rows()[key]
+    if not row then
         return nil, "new"
     end
-    if nowTime < rowFrame.last then
+    if nowTime < row.last then
         return nil, "stale"
     end
-    local period = rowFrame.period or timing.period
-    if nowTime - rowFrame.last > STALE_CYCLES * period then
+    local period = row.period or timing.period
+    if nowTime - row.last > STALE_CYCLES * period then
         return nil, "expired"
     end
-    local phase = (nowTime - rowFrame.arrival) % period
+    local phase = (nowTime - row.arrival) % period
     if phase < timing.dwell then
         return timing.dwell - phase, DEPARTURE
     end
@@ -337,8 +337,8 @@ local function CallsWatch(map)
             if not stop or (quietUntil[stop] and GetTime() < quietUntil[stop]) then
                 return
             end
-            local name, slotPos = Times.RouteAt(stop)
-            local dock = Routes[name].docks[slotPos]
+            local name, index = Times.RouteAt(stop)
+            local dock = Routes[name].docks[index]
             quietUntil[stop] = GetTime() + dock.leave - dock.arrive + 5
             Times.Record(stop, ARRIVAL, GetServerTime())
         end)
@@ -391,8 +391,8 @@ for name, route in pairs(Routes) do
         end
     end
 end
-local baseValue = #NAUTICUS_DIGITS
-for idx = 1, baseValue do
+local base = #NAUTICUS_DIGITS
+for idx = 1, base do
     digit[NAUTICUS_DIGITS:byte(idx)] = idx - 1
 end
 
@@ -406,16 +406,16 @@ local function Uncrunch(textValue)
         if not value then
             return nil
         end
-        number, place = number + value * place, place * baseValue
+        number, place = number + value * place, place * base
     end
     return number
 end
 local function Crunch(number)
     local textValue = ""
     repeat
-        local remain = number % baseValue
+        local remain = number % base
         textValue = textValue .. NAUTICUS_DIGITS:sub(remain + 1, remain + 1)
-        number = (number - remain) / baseValue
+        number = (number - remain) / base
     until number == 0
     return textValue
 end
@@ -472,9 +472,9 @@ Times.OnTimed = function(name)
     if not ShareOn() then
         return
     end
-    local group = GroupChannel()
-    if group then
-        SendTo(name, group)
+    local set = GroupChannel()
+    if set then
+        SendTo(name, set)
     end
     if IsInGuild() then
         SendTo(name, "GUILD")
@@ -568,9 +568,9 @@ shareEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
                 end
             end
         elseif PEER_HEARD[channel] and prefixText == FOREVER_PREFIX then
-            local ident, slotPos, arrival, observed = msg:match(FOREVER_TIMING)
+            local ident, index, arrival, observed = msg:match(FOREVER_TIMING)
             local name = named[tonumber(ident)]
-            local dock = name and Routes[name].docks[tonumber(slotPos)]
+            local dock = name and Routes[name].docks[tonumber(index)]
             if dock then
                 Times.Shared(
                     name,
@@ -602,14 +602,14 @@ shareEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
         return
     end
     own = own or UnitGUID("player")
-    local group = GroupChannel()
-    if group and not inGroup then
-        C_ChatInfo.SendAddonMessage(PREFIX, ASK, group)
+    local set = GroupChannel()
+    if set and not inGroup then
+        C_ChatInfo.SendAddonMessage(PREFIX, ASK, set)
         for name in pairs(Routes) do
-            SendTo(name, group)
+            SendTo(name, set)
         end
     end
-    inGroup = group ~= nil
+    inGroup = set ~= nil
     if not guildAsked and IsInGuild() then
         guildAsked = true
         C_ChatInfo.SendAddonMessage(PREFIX, ASK, "GUILD")
@@ -787,8 +787,8 @@ local LEAVING_SOON = 30
 local DOCKED, LEAVING, SAILING = { 1, 0.82, 0 }, { 1, 0.25, 0.25 }, { 0.25, 1, 0.25 }
 local CITY_ZONES = { [1454] = 1411, [1456] = 1412, [1457] = 1438, [1458] = 1420 }
 
-local function Colour(kindOf, seconds)
-    if kindOf == ARRIVAL then
+local function Colour(kind, seconds)
+    if kind == ARRIVAL then
         return SAILING
     end
     return seconds > LEAVING_SOON and DOCKED or LEAVING
@@ -797,21 +797,21 @@ local function MS(seconds)
     local r = math.ceil(seconds)
     return math.floor(r / 60), r % 60
 end
-local function Countdown(seconds, kindOf)
-    return ((kindOf == ARRIVAL) and "Arrives in %d:%02d" or "Departs in %d:%02d"):format(MS(seconds))
+local function Countdown(seconds, kind)
+    return ((kind == ARRIVAL) and "Arrives in %d:%02d" or "Departs in %d:%02d"):format(MS(seconds))
 end
 local function Tinted(textValue, c)
     return ("|cff%02x%02x%02x%s|r"):format(c[1] * 255, c[2] * 255, c[3] * 255, textValue)
 end
 
 local function TimeText(key, nowTime)
-    local seconds, kindOf = Times.Next(key, nowTime)
+    local seconds, kind = Times.Next(key, nowTime)
     if seconds then
-        return Countdown(seconds, kindOf), Colour(kindOf, seconds)
+        return Countdown(seconds, kind), Colour(kind, seconds)
     end
     local named = Times.RouteAt(key) ~= nil
-    local textValue = kindOf == "stale" and "Server clock changed; time it again."
-        or kindOf == "expired" and "Estimate out of date"
+    local textValue = kind == "stale" and "Server clock changed; time it again."
+        or kind == "expired" and "Estimate out of date"
         or "Not timed yet"
     return textValue,
         { 0.6, 0.6, 0.6 },
@@ -825,15 +825,15 @@ local function ShowTip(pin)
     if name then
         GameTooltip:SetText(name, 0.25, 0.75, 1)
         local any
-        for slotPos, dock in ipairs(Routes[name].docks) do
+        for index, dock in ipairs(Routes[name].docks) do
             local zone = Data[dock.stop] and C_Map.GetMapInfo(Data[dock.stop].map)
             GameTooltip:AddLine(zone and (dock.place .. ", " .. zone.name) or dock.place, 1, 1, 1)
-            local seconds, kindOf = Times.Dock(name, slotPos, nowTime)
+            local seconds, kind = Times.Dock(name, index, nowTime)
             if seconds then
                 any = true
-                local c = Colour(kindOf, seconds)
+                local c = Colour(kind, seconds)
                 GameTooltip:AddDoubleLine(
-                    kindOf == ARRIVAL and "Arrival:" or "Departure:",
+                    kind == ARRIVAL and "Arrival:" or "Departure:",
                     ("%dm %02ds"):format(MS(seconds)),
                     1,
                     0.82,
@@ -844,7 +844,7 @@ local function ShowTip(pin)
                 )
             else
                 GameTooltip:AddLine(
-                    kindOf == "stale" and "Server clock changed; time it again." or "Not timed yet",
+                    kind == "stale" and "Server clock changed; time it again." or "Not timed yet",
                     0.6,
                     0.6,
                     0.6
@@ -947,9 +947,9 @@ function module.TransportDrawZone()
     if #nameList == 0 then
         nameList[1], times[1] = "Boat to Booty Bay", Tinted("Departs in 0:42", DOCKED)
     end
-    local dim = Get("size")
-    CludesUI.Kit.Font(hud.names, dim, "essentials")
-    CludesUI.Kit.Font(hud.times, dim, "essentials")
+    local size = Get("size")
+    CludesUI.Kit.Font(hud.names, size, "essentials")
+    CludesUI.Kit.Font(hud.times, size, "essentials")
     hud.names:SetText(table.concat(nameList, "\n"))
     hud.times:SetText(table.concat(times, "\n"))
     hud:SetSize(
@@ -964,11 +964,11 @@ local function Refresh()
     wipe(zoneSpots)
     local map = Enabled() and C_Map.GetBestMapForUnit("player")
     if map then
-        local sideName = UnitFactionGroup("player") == "Horde" and "H" or "A"
+        local side = UnitFactionGroup("player") == "Horde" and "H" or "A"
         local same = SameMap(map)
         local zone = CITY_ZONES[same] or same
         for key, stop in pairs(Data) do
-            if stop.map == same and stop.side:find(sideName, 1, true) then
+            if stop.map == same and stop.side:find(side, 1, true) then
                 if not stop.mapX then
                     local _, pos =
                         C_Map.GetMapPosFromWorldPos(stop.continent, CreateVector2D(stop.x, stop.y), map)
@@ -980,7 +980,7 @@ local function Refresh()
                     spots[#spots + 1] = key
                 end
             end
-            if stop.map == zone and stop.side:find(sideName, 1, true) then
+            if stop.map == zone and stop.side:find(side, 1, true) then
                 zoneSpots[#zoneSpots + 1] = key
             end
         end

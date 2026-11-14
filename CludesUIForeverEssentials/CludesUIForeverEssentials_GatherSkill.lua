@@ -144,11 +144,11 @@ events:SetScript("OnEvent", function(self, evt, itemId, success)
 end)
 
 -- The player's skill in a gathering skill line, nil without it.
-local function Skill(lineTex)
-    for _, slotPos in ipairs({ GetProfessions() }) do
-        if slotPos then
-            local _, _, rank, _, _, _, ident = GetProfessionInfo(slotPos)
-            if ident == lineTex then
+local function Skill(line)
+    for _, index in ipairs({ GetProfessions() }) do
+        if index then
+            local _, _, rank, _, _, _, ident = GetProfessionInfo(index)
+            if ident == line then
                 return rank
             end
         end
@@ -232,14 +232,14 @@ local function OnObjectTooltip(tooltip, payload)
         return
     end
     local lines = payload and payload.lines
-    local titleText = lines and lines[1] and lines[1].leftText
-    if not titleText or issecretvalue(titleText) then
+    local title = lines and lines[1] and lines[1].leftText
+    if not title or issecretvalue(title) then
         return
     end
     if not nodes then
         Build()
     end
-    local node = nodes[titleText]
+    local node = nodes[title]
     if not node then
         return
     end

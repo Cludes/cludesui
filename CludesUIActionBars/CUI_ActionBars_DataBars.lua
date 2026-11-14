@@ -12,7 +12,7 @@ local _, mod = ...
 
 local _G = _G
 local ipairs, type = ipairs, type
-local upper = math.max
+local max = math.max
 local InCombatLockdown = InCombatLockdown
 local C_Timer_After = C_Timer.After
 
@@ -69,13 +69,13 @@ end
 -- Color mode per bar: nil/reactive = state-driven defaults, "accent" = live
 -- accent color, "custom" = stored custom color.
 function mod.ResolveDataBarColor(s, r, g, b)
-    local modeName = s and s.colorMode
-    if modeName == "accent" then
+    local mode = s and s.colorMode
+    if mode == "accent" then
         local ACC = CludesUI.CLUDES_GREEN
         if ACC then
             return ACC.r or r, ACC.g or g, ACC.b or b
         end
-    elseif modeName == "custom" then
+    elseif mode == "custom" then
         local c = s.customColor
         if c then
             return c.r or 1, c.g or 1, c.b or 1
@@ -112,39 +112,39 @@ CludesUI.RegAccent({
 -- above it. A child of the holder, so the mouseover fade carries it; the
 -- holder's alpha is never read or written. On ns.
 mod.ApplyDataBarBorder = function(holderFrame, s)
-    local hostRegion = holderFrame._cbHost
-    local lineTex = holderFrame._border and holderFrame._border._frame
+    local host = holderFrame._cbHost
+    local line = holderFrame._border and holderFrame._border._frame
     if not s.customBorder then
         if holderFrame._cbOn then
             holderFrame._cbOn = nil
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
             -- An XP bar art frame keeps the line hidden.
-            if lineTex and not holderFrame._xpArtOn then
-                lineTex:Show()
+            if line and not holderFrame._xpArtOn then
+                line:Show()
             end
         end
         return
     end
     local lvl = holderFrame:GetFrameLevel()
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, holderFrame)
-        hostRegion:SetAllPoints(holderFrame)
-        hostRegion:EnableMouse(false)
-        holderFrame._cbHost = hostRegion
+    if not host then
+        host = CreateFrame("Frame", nil, holderFrame)
+        host:SetAllPoints(holderFrame)
+        host:EnableMouse(false)
+        holderFrame._cbHost = host
     end
-    hostRegion:SetFrameLevel(lvl + 1)
+    host:SetFrameLevel(lvl + 1)
     if not holderFrame._cbOn then
         holderFrame._cbOn = true
-        if lineTex then
-            lineTex:Hide()
+        if line then
+            line:Hide()
         end
     end
     local texture = s.borderTexture or "solid"
     local c = s.borderColor
     local sz, px = ResolveBorderThickness(s)
     CludesUI.ApplyBorderStyle(
-        hostRegion,
+        host,
         sz,
         c and c.r or 0,
         c and c.g or 0,
@@ -162,7 +162,7 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
     )
     local topY = lvl + 2
     if texture ~= "" and texture ~= "solid" then
-        local edge = CludesUI._bdBorderData[hostRegion]
+        local edge = CludesUI._bdBorderData[host]
         if edge then
             if s.borderBehind then
                 topY = lvl
@@ -172,7 +172,7 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
     end
     local textHost = holderFrame._textHost
     if textHost then
-        local wanted = upper(lvl + 3, topY + 1)
+        local wanted = max(lvl + 3, topY + 1)
         if textHost:GetFrameLevel() ~= wanted then
             textHost:SetFrameLevel(wanted)
         end
@@ -200,7 +200,7 @@ function mod.DataBarPlaceText(widget, s)
         textValue:SetRotation(rot)
         widget._textRotated = (rot ~= 0) or nil
     end
-    local anchorFrame = s.textAnchor
+    local anchor = s.textAnchor
     local ox, oy = s.textOffsetX or 0, s.textOffsetY or 0
     local bgOn = s.showTextBg
     local backdrop = widget._textBg
@@ -211,13 +211,13 @@ function mod.DataBarPlaceText(widget, s)
     textValue:ClearAllPoints()
     if rot == 0 then
         local ap, padX = "CENTER", 0
-        if anchorFrame == "top" then
+        if anchor == "top" then
             ap = "TOP"
-        elseif anchorFrame == "bottom" then
+        elseif anchor == "bottom" then
             ap = "BOTTOM"
-        elseif anchorFrame == "left" then
+        elseif anchor == "left" then
             ap, padX = "LEFT", 4
-        elseif anchorFrame == "right" then
+        elseif anchor == "right" then
             ap, padX = "RIGHT", -4
         end
         textValue:SetPoint(ap, widget._textHost, ap, ox + padX, oy)
@@ -241,14 +241,14 @@ function mod.DataBarPlaceText(widget, s)
             sh = s.textSize or 9
         end
         local vx, vy = 0, 0
-        if anchorFrame == "top" or anchorFrame == "bottom" then
-            vy = upper(0, (s.height or 18) / 2 - 1 - 4 - sw / 2)
-            if anchorFrame == "bottom" then
+        if anchor == "top" or anchor == "bottom" then
+            vy = max(0, (s.height or 18) / 2 - 1 - 4 - sw / 2)
+            if anchor == "bottom" then
                 vy = -vy
             end
-        elseif anchorFrame == "left" or anchorFrame == "right" then
-            vx = upper(0, (s.width or 400) / 2 - 1 - sh / 2)
-            if anchorFrame == "left" then
+        elseif anchor == "left" or anchor == "right" then
+            vx = max(0, (s.width or 400) / 2 - 1 - sh / 2)
+            if anchor == "left" then
                 vx = -vx
             end
         end
@@ -261,7 +261,7 @@ function mod.DataBarPlaceText(widget, s)
             -- No pad across the bar at a left or right anchor, where the
             -- text sits flush with the border.
             backdrop:ClearAllPoints()
-            backdrop:SetSize((anchorFrame == "left" or anchorFrame == "right") and sh or sh + 2, sw + 6)
+            backdrop:SetSize((anchor == "left" or anchor == "right") and sh or sh + 2, sw + 6)
             backdrop:SetPoint("CENTER", widget, "CENTER", vx, vy)
         end
         widget._textPost = true
@@ -405,25 +405,25 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
         holderFrame._border = CludesUI.MakeBorder(holderFrame, 0, 0, 0, 1)
     end
 
-    local barFrame =
+    local bar =
         CreateFrame("StatusBar", not hostFrame and "CludesEAB_" .. barId .. "_Bar" or nil, holderFrame)
-    barFrame:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+    bar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
     if Pix then
-        Pix.SetInside(barFrame, holderFrame, 1, 1)
+        Pix.SetInside(bar, holderFrame, 1, 1)
     else
-        barFrame:SetPoint("TOPLEFT", 1, -1)
-        barFrame:SetPoint("BOTTOMRIGHT", -1, 1)
+        bar:SetPoint("TOPLEFT", 1, -1)
+        bar:SetPoint("BOTTOMRIGHT", -1, 1)
     end
-    barFrame:SetMinMaxValues(0, 1)
-    barFrame:SetValue(0)
-    barFrame:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
+    bar:SetMinMaxValues(0, 1)
+    bar:SetValue(0)
+    bar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
 
     -- Text lives on its own host ABOVE the MakeBorder strips: the border
     -- container renders two levels above the holder, and frame level beats
     -- draw layer, so a string on the bar itself gets cut by the border edges
     -- whenever the glyphs reach them (large Text Size / short bars).
-    local textHost = CreateFrame("Frame", nil, barFrame)
-    textHost:SetAllPoints(barFrame)
+    local textHost = CreateFrame("Frame", nil, bar)
+    textHost:SetAllPoints(bar)
     local edges = holderFrame._border and holderFrame._border.edges
     textHost:SetFrameLevel(
         ((edges and edges.GetFrameLevel and edges:GetFrameLevel()) or holderFrame:GetFrameLevel() + 2) + 1
@@ -443,7 +443,7 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
     textValue:SetPoint("CENTER", sInit and sInit.textOffsetX or 0, sInit and sInit.textOffsetY or 0)
     textValue:SetTextColor(1, 1, 1, 1)
 
-    holderFrame._bar = barFrame
+    holderFrame._bar = bar
     holderFrame._text = textValue
     holderFrame._updateFunc = updateFunc
 
@@ -518,7 +518,7 @@ local function UpdateRepBar()
         return
     end
 
-    local barFrame = widget._bar
+    local bar = widget._bar
     local textValue = widget._text
 
     local payload = C_Reputation
@@ -606,7 +606,7 @@ local function UpdateRepBar()
     end
 
     local color = DATA_BAR_COLORS.rep[reaction] or DATA_BAR_COLORS.rep[4]
-    barFrame:SetStatusBarColor(mod.ResolveDataBarColor(s, color.r, color.g, color.b))
+    bar:SetStatusBarColor(mod.ResolveDataBarColor(s, color.r, color.g, color.b))
 
     -- Hide capped / maxed factions (Exalted with no paragon, max friendship, etc.)
     if nextReactionThreshold == math.huge or currentReactionThreshold == nextReactionThreshold then
@@ -620,8 +620,8 @@ local function UpdateRepBar()
         maximum = 1
     end
 
-    barFrame:SetMinMaxValues(0, maximum)
-    barFrame:SetValue(current)
+    bar:SetMinMaxValues(0, maximum)
+    bar:SetValue(current)
 
     local pct = (current / maximum) * 100
     -- The tooltip must show the same numbers the bar shows. Recomputing them
@@ -767,7 +767,7 @@ if not CludesUI.IS_FOREVER then
             return
         end
 
-        local barFrame = widget._bar
+        local bar = widget._bar
         local textValue = widget._text
 
         -- No house / no data yet / max house level (no next-level requirement).
@@ -787,9 +787,9 @@ if not CludesUI.IS_FOREVER then
         if current > st.needed then
             current = st.needed
         end
-        barFrame:SetMinMaxValues(0, st.needed)
-        barFrame:SetValue(current)
-        barFrame:SetStatusBarColor(
+        bar:SetMinMaxValues(0, st.needed)
+        bar:SetValue(current)
+        bar:SetStatusBarColor(
             mod.ResolveDataBarColor(
                 s,
                 DATA_BAR_COLORS.favor.r,

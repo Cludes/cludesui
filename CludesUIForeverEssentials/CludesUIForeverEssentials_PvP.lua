@@ -686,16 +686,13 @@ local function TargetMacro(name)
     if not first then
         return "/targetexact " .. name
     end
-    return table.concat(
-        {
-            "/cleartarget",
-            "/targetexact " .. first .. " " .. second,
-            "/targetexact [noexists] " .. name,
-            "/targetexact [noexists] " .. first,
-            "/target [noexists] " .. first .. " " .. second,
-        },
-        "\n"
-    )
+    return table.concat({
+        "/cleartarget",
+        "/targetexact " .. first .. " " .. second,
+        "/targetexact [noexists] " .. name,
+        "/targetexact [noexists] " .. first,
+        "/target [noexists] " .. first .. " " .. second,
+    }, "\n")
 end
 
 local function RowMenu(owner, name)

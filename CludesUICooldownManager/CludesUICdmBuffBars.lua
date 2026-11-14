@@ -29,11 +29,11 @@ end
 
 -- Weak-keyed external store for Blizzard bar FontString refs: never write custom properties onto Blizzard StatusBar frames (taint).
 local _blizzBarFS = setmetatable({}, { __mode = "k" })
-local function BBFS(barFrame)
-    local d = _blizzBarFS[barFrame]
+local function BBFS(bar)
+    local d = _blizzBarFS[bar]
     if not d then
         d = {}
-        _blizzBarFS[barFrame] = d
+        _blizzBarFS[bar] = d
     end
     return d
 end
@@ -64,8 +64,8 @@ local function FormatTime(remaining)
     return format("%.1f", remaining)
 end
 
-local function SetFont(fontStr, dim)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, "cdm")
+local function SetFont(fontStr, size)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, "cdm")
 end
 
 local function SetTBBTextColor(fontStr, conf, prefixText)
@@ -114,8 +114,8 @@ local function _PandemicShow(self)
     local bk = fc and fc.barKey
     if bk then
         local edge = mod.barDataByKey and mod.barDataByKey[bk]
-        local look = edge and edge.pandemicGlow and edge.pandemicGlowStyle
-        if not look or look ~= -1 then
+        local style = edge and edge.pandemicGlow and edge.pandemicGlowStyle
+        if not style or style ~= -1 then
             if self.PandemicIcon then
                 self.PandemicIcon:Hide()
             end
@@ -163,9 +163,9 @@ local function CarryOver(unitToken, auraInstanceID)
         success, carry = pcall(U.GetRefreshCarryOverDuration, unitToken, auraInstanceID)
     elseif U.GetRefreshExtendedDuration and U.GetAuraBaseDuration then
         local ok1, ext = pcall(U.GetRefreshExtendedDuration, unitToken, auraInstanceID)
-        local ok2, baseValue = pcall(U.GetAuraBaseDuration, unitToken, auraInstanceID)
-        if ok1 and ok2 and ext and baseValue and not issecretvalue(ext) and not issecretvalue(baseValue) then
-            success, carry = true, ext - baseValue
+        local ok2, base = pcall(U.GetAuraBaseDuration, unitToken, auraInstanceID)
+        if ok1 and ok2 and ext and base and not issecretvalue(ext) and not issecretvalue(base) then
+            success, carry = true, ext - base
         end
     end
     if success and carry and not issecretvalue(carry) then
@@ -175,9 +175,9 @@ end
 -- Pandemic fallback for auras Blizzard never flags (currently only Lifebloom).
 -- bar._isLifebloom is cached on our own frame; the call site skips entirely once a
 -- bar is known not to be Lifebloom, so only Lifebloom reaches the throttled scan.
-local function LifebloomPandemic(barFrame, blzChild)
+local function LifebloomPandemic(bar, blzChild)
     -- Resolve identity once. Spell data can be late-loading, so leave the flag nil (retry next frame) until both names resolve.
-    if barFrame._isLifebloom == nil then
+    if bar._isLifebloom == nil then
         if not _lbName then
             _lbName = C_Spell.GetSpellName(LIFEBLOOM_SPELL_ID)
         end
@@ -186,9 +186,9 @@ local function LifebloomPandemic(barFrame, blzChild)
         if not (_lbName and sName) then
             return false
         end
-        barFrame._isLifebloom = (_lbName == sName)
+        bar._isLifebloom = (_lbName == sName)
     end
-    if not barFrame._isLifebloom then
+    if not bar._isLifebloom then
         return false
     end
 

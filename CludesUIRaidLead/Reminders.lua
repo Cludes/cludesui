@@ -81,7 +81,7 @@ end
 -------------------------------------------------------------------------------
 --  Display
 -------------------------------------------------------------------------------
-local anchorFrame, lines = nil, {}
+local anchor, lines = nil, {}
 local isActive = {} -- { text, at (GetTime when due) }
 
 local function Font()
@@ -89,15 +89,15 @@ local function Font()
 end
 
 local function BuildDisplay()
-    if anchorFrame then
+    if anchor then
         return
     end
-    anchorFrame = CreateFrame("Frame", "CludesUIRaidLeadReminders", UIParent)
-    anchorFrame:SetSize(420, 40 * MAX_LINES)
-    anchorFrame:SetFrameStrata("HIGH")
+    anchor = CreateFrame("Frame", "CludesUIRaidLeadReminders", UIParent)
+    anchor:SetSize(420, 40 * MAX_LINES)
+    anchor:SetFrameStrata("HIGH")
     for idx = 1, MAX_LINES do
-        local fontStr = anchorFrame:CreateFontString(nil, "OVERLAY")
-        fontStr:SetPoint("TOP", anchorFrame, "TOP", 0, -(idx - 1) * 40)
+        local fontStr = anchor:CreateFontString(nil, "OVERLAY")
+        fontStr:SetPoint("TOP", anchor, "TOP", 0, -(idx - 1) * 40)
         fontStr:SetJustifyH("CENTER")
         lines[idx] = fontStr
     end
@@ -105,22 +105,22 @@ local function BuildDisplay()
 end
 
 function mod.ApplyReminderLook()
-    if not anchorFrame then
+    if not anchor then
         return
     end
     local r = Settings()
     local p = r.pos
     if not InCombatLockdown() then
-        anchorFrame:ClearAllPoints()
+        anchor:ClearAllPoints()
         if p then
-            anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+            anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
         else
-            anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 220)
+            anchor:SetPoint("CENTER", UIParent, "CENTER", 0, 220)
         end
     end
     for idx = 1, MAX_LINES do
         CludesUI.Kit.Font(lines[idx], r.fontSize, nil)
-        lines[idx]:SetPoint("TOP", anchorFrame, "TOP", 0, -(idx - 1) * (r.fontSize + 12))
+        lines[idx]:SetPoint("TOP", anchor, "TOP", 0, -(idx - 1) * (r.fontSize + 12))
     end
 end
 
@@ -144,7 +144,7 @@ local function Repaint()
         end
     end
     if #isActive == 0 then
-        anchorFrame:SetScript("OnUpdate", nil)
+        anchor:SetScript("OnUpdate", nil)
     end
 end
 
@@ -196,7 +196,7 @@ local function Show(record)
     if r.sound and r.sound ~= "" then
         PlaySoundFile(SOUND_DIR .. r.sound, "Master")
     end
-    anchorFrame:SetScript("OnUpdate", Repaint)
+    anchor:SetScript("OnUpdate", Repaint)
     Repaint()
 end
 
@@ -216,7 +216,7 @@ function mod.ShowReminder(textValue, at, speak, sound)
     if sound and r.sound and r.sound ~= "" then
         PlaySoundFile(SOUND_DIR .. r.sound, "Master")
     end
-    anchorFrame:SetScript("OnUpdate", Repaint)
+    anchor:SetScript("OnUpdate", Repaint)
     Repaint()
 end
 
@@ -269,7 +269,7 @@ end
 function mod.StopReminders()
     run = run + 1
     wipe(isActive)
-    if anchorFrame then
+    if anchor then
         Repaint()
     end
 end
@@ -340,7 +340,7 @@ reg:SetScript("OnEvent", function()
             end,
             getFrame = function()
                 BuildDisplay()
-                return anchorFrame
+                return anchor
             end,
             getSize = function()
                 return 420, (Settings().fontSize + 12) * 2

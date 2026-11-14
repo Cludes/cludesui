@@ -93,8 +93,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- Preview font setter: the plates' own font families (SetFSFont), so a
     -- preview name, title or cast target draws as on a live plate. Every font
     -- write to a preview text goes through it, never a plain SetFont.
-    local function SetPVFont(fontStr, fontFile, dim, flags)
-        CludesUI.ApplyModuleFontFamily(fontStr, fontFile, dim, "nameplates", flags)
+    local function SetPVFont(fontStr, fontFile, size, flags)
+        CludesUI.ApplyModuleFontFamily(fontStr, fontFile, size, "nameplates", flags)
     end
     local floor = math.floor
     local NAME_RAID_MARKER_GAP = 3
@@ -102,12 +102,12 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  DB helper reads from the centralized profile via ns.db
     ---------------------------------------------------------------------------
-    local function SavedDB()
+    local function DB()
         return mod.db and mod.db.profile
     end
 
     local function DBVal(key)
-        local saved = SavedDB()
+        local saved = DB()
         if saved and saved[key] ~= nil then
             return saved[key]
         end
@@ -115,7 +115,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function DBColor(key)
-        local saved = SavedDB()
+        local saved = DB()
         local c = (saved and saved[key]) or defaultSet[key]
         return c.r, c.g, c.b
     end
@@ -292,7 +292,7 @@ initFrame:SetScript("OnEvent", function(self)
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = SavedDB()
+                local d = DB()
                 if f == "style" then
                     return mod.GetDispelGlowStyle and mod.GetDispelGlowStyle() or defaultSet.dispelGlowStyle
                 elseif f == "mode" then
@@ -301,7 +301,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.GlowOptions.FlatGet(d, "dispelGlow", f)
             end,
             set = function(f, a, b2, c2)
-                local d = SavedDB()
+                local d = DB()
                 if f == "style" then
                     if a == 0 then
                         d.dispelGlow = false
@@ -325,7 +325,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return DBVal("dispelGlowUseTypeColor") or false
                     end,
                     set = function(v)
-                        SavedDB().dispelGlowUseTypeColor = v
+                        DB().dispelGlowUseTypeColor = v
                         RefreshAuraGlows()
                         CludesUI:RefreshPage()
                     end,
@@ -351,7 +351,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 onChange = RefreshCastGlows,
                 get = function(f)
-                    local d = SavedDB()
+                    local d = DB()
                     if f == "style" then
                         return d[k.style] or defaultSet[k.style] or 1
                     elseif f == "mode" then
@@ -360,7 +360,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return GO.FlatGet(d, prefixText, f, defaultSet)
                 end,
                 set = function(f, a, b2, c2)
-                    local d = SavedDB()
+                    local d = DB()
                     if f == "style" then
                         if a == 0 then
                             d[prefixText] = false
@@ -401,7 +401,7 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             onChange = RefreshAuraGlows,
             get = function(f)
-                local d = SavedDB()
+                local d = DB()
                 if f == "style" then
                     return mod.GetPandemicGlowStyle()
                 elseif f == "mode" then
@@ -410,7 +410,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.GlowOptions.FlatGet(d, "pandemicGlow", f, defaultSet)
             end,
             set = function(f, a, b2, c2)
-                local d = SavedDB()
+                local d = DB()
                 if f == "style" then
                     if a == 0 then
                         d.pandemicGlow = false
@@ -554,7 +554,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local function GetElementAtPosition(place)
-            local saved = SavedDB()
+            local saved = DB()
             for _, key in ipairs(slotKeys) do
                 -- A leftover Faction slot is ignored while Rare/Quest + Faction is on
                 -- (the badge rides the classification slot), so it is not shown here either.
@@ -577,10 +577,10 @@ initFrame:SetScript("OnEvent", function(self)
         local function SetElementAtPosition(place, element)
             -- The Quest Objective Text view reads the Rare/Quest slot and its Quest
             -- half: fix its own keys before either can move.
-            mod.NP_MaterializeQuestText(SavedDB())
+            mod.NP_MaterializeQuestText(DB())
             if element == "none" then
                 -- Clear: find whatever element is at this position and move it to "none"
-                local saved = SavedDB()
+                local saved = DB()
                 for _, key in ipairs(slotKeys) do
                     if (saved[key] or defaultSet[key]) == place then
                         saved[key] = "none"
@@ -593,26 +593,26 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- "Debuffs + CC" rides the debuff slot key; the two entries differ only by debuffIncludeCC.
             if element == "debuffsccs" then
-                SavedDB().debuffIncludeCC = true
+                DB().debuffIncludeCC = true
                 element = "debuffs"
             elseif element == "debuffs" then
-                SavedDB().debuffIncludeCC = false
+                DB().debuffIncludeCC = false
             end
             -- "Rare/Quest + Faction" rides the classification slot key and takes the
             -- faction badge with it (its own Faction slot is cleared); picking either
             -- one alone splits them again.
             if element == "classfaction" then
-                SavedDB().classificationIncludeFaction = true
-                SavedDB().factionSlot = "none"
+                DB().classificationIncludeFaction = true
+                DB().factionSlot = "none"
                 element = "classification"
             elseif element == "classification" or element == "faction" then
-                SavedDB().classificationIncludeFaction = false
+                DB().classificationIncludeFaction = false
             end
             local key = elementToKey[element]
             if not key then
                 return
             end
-            local saved = SavedDB()
+            local saved = DB()
             -- Clear old holder of this position (set to "none"), no swapping
             for _, otherKey in ipairs(slotKeys) do
                 if otherKey ~= key and (saved[otherKey] or defaultSet[otherKey]) == place then
@@ -657,7 +657,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Exclusive slot assignment for the new Core Text Positions system.
         local textSlotKeys = mod.textSlotKeys
         local function SetTextElementAtSlot(slotKey, element)
-            local saved = SavedDB()
+            local saved = DB()
             -- Custom keeps its template per slot: any number of slots may show it.
             if element ~= "none" and element ~= "custom" then
                 for _, key in ipairs(textSlotKeys) do
@@ -686,9 +686,9 @@ initFrame:SetScript("OnEvent", function(self)
         }
         local timerPosOrder = { "none", "topleft", "topright", "bottomleft", "bottomright", "center" }
 
-        local function AuraDurationVal(kindOf, suffix)
-            local saved = SavedDB()
-            local key = kindOf .. "DurationText" .. suffix
+        local function AuraDurationVal(kind, suffix)
+            local saved = DB()
+            local key = kind .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
             if saved and saved[key] ~= nil then
                 return saved[key]
@@ -760,7 +760,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Reverse lookup: find which Core Position slot holds a given element
         local function FindCorePosForElement(element)
-            local saved = SavedDB()
+            local saved = DB()
             local key = elementToKey[element]
             if not key then
                 return nil
@@ -774,7 +774,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Reverse lookup: find which text slot holds a given element
         local function FindTextSlotForElement(element)
-            local saved = SavedDB()
+            local saved = DB()
             for _, key in ipairs(textSlotKeys) do
                 if (saved[key] or defaultSet[key]) == element then
                     return key
@@ -828,20 +828,20 @@ initFrame:SetScript("OnEvent", function(self)
             -- Classic WoW UI: the level in the health border's plate. Its row
             -- exists only on that style, so this resolves to nothing elsewhere.
             classicLevel = function()
-                local rowFrame = hostFrame._classicPlateRow
-                if not rowFrame then
+                local row = hostFrame._classicPlateRow
+                if not row then
                     return nil
                 end
-                return { section = styleHeader, target = rowFrame, slotSide = "left" }
+                return { section = styleHeader, target = row, slotSide = "left" }
             end,
             -- WoW Forever: the level box, whose row exists only under that
             -- variant.
             foreverLevelBox = function()
-                local rowFrame = hostFrame._foreverBoxRow
-                if not rowFrame then
+                local row = hostFrame._foreverBoxRow
+                if not row then
                     return nil
                 end
-                return { section = styleHeader, target = rowFrame, slotSide = "left" }
+                return { section = styleHeader, target = row, slotSide = "left" }
             end,
             debuffIcon = function()
                 return ResolveCoreMapping("debuffs")
@@ -860,24 +860,24 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             -- The Quest Objective Text's effective slot.
             questText = function()
-                return ResolveCorePos(mod.NP_GetQuestTextSlot(SavedDB()))
+                return ResolveCorePos(mod.NP_GetQuestTextSlot(DB()))
             end,
             -- Combined with Rare/Quest, the badge's settings live on that row.
             factionIcon = function()
-                if SavedDB().classificationIncludeFaction then
+                if DB().classificationIncludeFaction then
                     return ResolveCoreMapping("classification")
                 end
                 return ResolveCoreMapping("faction")
             end,
             enemyName = function()
                 -- The name FontString renders whichever name-family variant is slotted; resolve the row for any of them.
-                local slotIndex = FindTextSlotForElement("enemyName")
+                local slot = FindTextSlotForElement("enemyName")
                     or FindTextSlotForElement("levelName")
                     or FindTextSlotForElement("nameLevel")
-                if not slotIndex then
+                if not slot then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
-                local details = textSlotToRow[slotIndex]
+                local details = textSlotToRow[slot]
                 if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
@@ -888,16 +888,16 @@ initFrame:SetScript("OnEvent", function(self)
                 }
             end,
             healthText = function()
-                local slotIndex = FindTextSlotForElement("healthPercent")
+                local slot = FindTextSlotForElement("healthPercent")
                     or FindTextSlotForElement("healthPercentNoSign")
                     or FindTextSlotForElement("healthPctNum")
                     or FindTextSlotForElement("healthNumPct")
                     or FindTextSlotForElement("healthPctNumDash")
                     or FindTextSlotForElement("healthNumPctDash")
-                if not slotIndex then
+                if not slot then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
-                local details = textSlotToRow[slotIndex]
+                local details = textSlotToRow[slot]
                 if not details then
                     return { section = coreTextHeader, target = textFirstRow }
                 end
@@ -1269,9 +1269,9 @@ initFrame:SetScript("OnEvent", function(self)
                     cpOverlay = cpBtn
                     -- Disable hover/click when class resource setting is off
                     local function UpdateCPOverlay()
-                        local offset = DBVal("showClassPower") ~= true
-                        cpBtn:EnableMouse(not offset)
-                        cpBtn:SetAlpha(offset and 0 or 1)
+                        local off = DBVal("showClassPower") ~= true
+                        cpBtn:EnableMouse(not off)
+                        cpBtn:SetAlpha(off and 0 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(UpdateCPOverlay)
                     UpdateCPOverlay()
@@ -1484,11 +1484,11 @@ initFrame:SetScript("OnEvent", function(self)
                 r.RefreshHealthText()
             end
         end
-        proxy.SetDisabled = function(offset)
-            _disabled = offset
+        proxy.SetDisabled = function(off)
+            _disabled = off
             local r = Built()
             if r and r._health then
-                r._health:SetAlpha(offset and 0.3 or 1)
+                r._health:SetAlpha(off and 0.3 or 1)
             end
         end
         proxy.SetColorOverride = function(func)
@@ -1517,11 +1517,11 @@ initFrame:SetScript("OnEvent", function(self)
         if parentRow:IsVisible() then
             EnsureBuilt()
         end
-        local slotIndex = colorType .. ":" .. tostring(colorKey)
-        local position = _colorPreviewSlot[slotIndex]
+        local slot = colorType .. ":" .. tostring(colorKey)
+        local position = _colorPreviewSlot[slot]
         if not position then
             position = #_colorPagePreviews + 1
-            _colorPreviewSlot[slotIndex] = position
+            _colorPreviewSlot[slot] = position
         end
         _colorPagePreviews[position] = proxy
         return proxy
@@ -1530,8 +1530,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- Textured Background: the Texture Settings cog row, shared by the Display
     -- page and Global Settings > Textures. kind: "health" or "cast"; apply: the
     -- page's own refresh after a write.
-    local function TexBgRowCfg(kindOf, apply)
-        local cast = kindOf == "cast"
+    local function TexBgRowCfg(kind, apply)
+        local cast = kind == "cast"
         local key = cast and "castTextureBg" or "healthTextureBg"
         local texKey = cast and "castBarTexture" or "healthBarTexture"
         return mod.NP_BlizzOnlyGate({
@@ -1548,7 +1548,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return DBVal(key) == true
             end,
             set = function(v)
-                SavedDB()[key] = v and true or false
+                DB()[key] = v and true or false
                 apply()
             end,
         })
@@ -1560,7 +1560,7 @@ initFrame:SetScript("OnEvent", function(self)
         _colorPagePreviews = _colorPagePreviews,
         ADDON_NAME = ADDON_NAME,
         BAR_W = BAR_W,
-        DB = SavedDB,
+        DB = DB,
         DBColor = DBColor,
         DBVal = DBVal,
         defaults = defaultSet,
@@ -1699,7 +1699,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Invalidate page cache so pages are rebuilt with fresh defaults
             CludesUI:InvalidatePageCache()
             -- Preserve user-saved presets (display + color), Custom presets, AND spec assignments across reset
-            local old = SavedDB()
+            local old = DB()
             if old then
                 local pD = old._presets
                 local oD = old._presetOrder
@@ -1756,7 +1756,7 @@ initFrame:SetScript("OnEvent", function(self)
         if msg == "reset" then
             -- The reload first (RequestReload); the reset below lands before it.
             CludesUI.RequestReload()
-            local _db = SavedDB()
+            local _db = DB()
             if _db then
                 local pD = _db._presets
                 local oD = _db._presetOrder

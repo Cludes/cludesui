@@ -146,11 +146,11 @@ local function ShowStyleChoicePopup()
     Pix.Point(eyebrow, "TOP", dialog, "TOP", 0, -26)
     eyebrow:SetText(CludesUI.L("CHOOSE YOUR LOOK"))
 
-    local titleText = dialog:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont(FONT, 26, "")
-    titleText:SetTextColor(1, 1, 1, 1)
-    Pix.Point(titleText, "TOP", eyebrow, "BOTTOM", 0, -6)
-    titleText:SetText(CludesUI.L("How should CludesUI look?"))
+    local title = dialog:CreateFontString(nil, "OVERLAY")
+    title:SetFont(FONT, 26, "")
+    title:SetTextColor(1, 1, 1, 1)
+    Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
+    title:SetText(CludesUI.L("How should CludesUI look?"))
 
     local desc = dialog:CreateFontString(nil, "OVERLAY")
     desc:SetFont(FONT, 14, "")
@@ -158,7 +158,7 @@ local function ShowStyleChoicePopup()
     desc:SetWidth(POPUP_W - 90)
     desc:SetJustifyH("CENTER")
     desc:SetWordWrap(true)
-    Pix.Point(desc, "TOP", titleText, "BOTTOM", 0, -10)
+    Pix.Point(desc, "TOP", title, "BOTTOM", 0, -10)
     desc:SetText(
         CludesUI.L(
             "CludesUI's features work with every look. Change your mind any time under Global Settings > Style."

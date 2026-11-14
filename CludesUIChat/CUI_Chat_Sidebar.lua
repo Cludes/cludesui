@@ -598,24 +598,24 @@ local INPUT_TOP_DROP = 5
 -- the focus (a draft left in it). That also reads right inside the focus-lost
 -- callback: clicking away from an emptied box fires it before Blizzard
 -- deactivates the box, and the rule already says it closes.
-local function BoxUp(boxFrame)
-    if not boxFrame:IsShown() then
+local function BoxUp(box)
+    if not box:IsShown() then
         return false
     end
     if GetCVar("chatStyle") ~= "im" then
         return true
     end
-    if boxFrame:HasFocus() then
+    if box:HasFocus() then
         return true
     end
-    return boxFrame == ChatFrameUtil.GetActiveWindow() and not boxFrame:ShouldDeactivateChatOnEditFocusLost()
+    return box == ChatFrameUtil.GetActiveWindow() and not box:ShouldDeactivateChatOnEditFocusLost()
 end
 
 local function DockedEditBoxShown()
     for i = 1, 10 do
         local ownerFrame = _G["ChatFrame" .. i]
-        local boxFrame = ownerFrame and _G["ChatFrame" .. i .. "EditBox"]
-        if boxFrame and ownerFrame.isDocked and BoxUp(boxFrame) then
+        local box = ownerFrame and _G["ChatFrame" .. i .. "EditBox"]
+        if box and ownerFrame.isDocked and BoxUp(box) then
             return true
         end
     end

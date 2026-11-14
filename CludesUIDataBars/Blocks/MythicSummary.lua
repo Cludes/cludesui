@@ -9,7 +9,7 @@ end -- Mythic+ Tools does not load on WoW Forever: no runs, no factory (the main
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -18,16 +18,16 @@ local pairs = pairs
 local type = type
 local format = string.format
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  M+ SUMMARY (newest Run Summary record; click opens it like /ov, the
@@ -65,29 +65,29 @@ local function LatestRun()
 end
 
 -- Level in its keystone-rarity color, as in the Run Summary header.
-local function RunText(recd)
-    if not recd then
+local function RunText(rec)
+    if not rec then
         return CludesUI.L("No runs recorded yet")
     end
-    local level = "+" .. (recd.level or 0)
+    local level = "+" .. (rec.level or 0)
     local kcol = C_ChallengeMode
         and C_ChallengeMode.GetKeystoneLevelRarityColor
-        and C_ChallengeMode.GetKeystoneLevelRarityColor(recd.level or 0)
+        and C_ChallengeMode.GetKeystoneLevelRarityColor(rec.level or 0)
     if type(kcol) == "table" and kcol.r then
         level = CludesUI.HexColor(kcol.r, kcol.g, kcol.b) .. level .. "|r"
     end
-    return level .. " " .. (recd.mapName or "?")
+    return level .. " " .. (rec.mapName or "?")
 end
 
 -- Completion time as m:ss, green when timed, red when depleted.
-local function RunTime(recd)
-    local ms = recd.timeMS
+local function RunTime(rec)
+    local ms = rec.timeMS
     if not ms then
         return "-", 0.6, 0.6, 0.6
     end
     local secs = floor(ms / 1000)
     local textValue = format("%d:%02d", floor(secs / 60), secs % 60)
-    if recd.onTime then
+    if rec.onTime then
         return textValue, 0.176, 0.796, 0.349
     end
     return textValue, 0.9, 0.3, 0.3
@@ -108,8 +108,8 @@ local function ConfirmClear()
     })
 end
 
-mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
@@ -132,11 +132,11 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
         end
         local barCfg = barCtx.cfg
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local recd = LatestRun()
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local rec = LatestRun()
         -- Hide When Empty: no runs collapses the block (GetAutoLength reports
         -- 0, so the solver drops the slot). Show/Hide wait out lockdown.
-        local collapsed = not recd and D().hideWhenEmpty == true
+        local collapsed = not rec and D().hideWhenEmpty == true
         if contentFrame:IsShown() == collapsed then
             if InCombatLockdown() then
                 mod.DeferUntilOOC("mplussummary:" .. instance.key, function()
@@ -152,7 +152,7 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
             MaybeRelayout(instance)
             return
         end
-        local textValue = RunText(recd)
+        local textValue = RunText(rec)
 
         mod.SetFont(labelText, fontSize, barCfg)
         if mouseOver then
@@ -171,12 +171,12 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
         end
         if barCtx.IsVertical() then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             labelText:SetText(textValue)
             mod.SetWrappedText(labelText, innerW, "CENTER")
             labelText:ClearAllPoints()
             labelText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-            local totalH = upper(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
+            local totalH = max(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -186,7 +186,7 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
             labelText:ClearAllPoints()
             labelText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
-            local totalW = upper(min(slotW, tw + 4), 10)
+            local totalW = max(min(slotW, tw + 4), 10)
             contentFrame:SetSize(totalW, barH)
             btnFrame:SetSize(totalW, barH)
         end
@@ -204,9 +204,9 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
             mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
         end
         for idx = 1, total do
-            local recd = runs[idx]
-            local t, tr, tg, tb = RunTime(recd)
-            mod.Tip_AddDouble(RunText(recd), t, 0.8, 0.8, 0.8, tr, tg, tb)
+            local rec = runs[idx]
+            local t, tr, tg, tb = RunTime(rec)
+            mod.Tip_AddDouble(RunText(rec), t, 0.8, 0.8, 0.8, tr, tg, tb)
         end
         mod.Tip_AddLine(" ")
         mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, ar, ag, ab)
@@ -261,9 +261,9 @@ mod.BlockFactories.mplussummary = function(blockCfg, slotIndex, contentFrame, ba
             return 0
         end
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

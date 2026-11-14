@@ -398,15 +398,15 @@ function mod.CollectCdClaimSet(sd)
     if not sd or not sd.assignedSpells then
         return nil
     end
-    local group
+    local set
     for _, ident in ipairs(sd.assignedSpells) do
         local cd = mod.CdClaimMarkerToCdID(ident)
         if cd then
-            group = group or {}
-            group[cd] = true
+            set = set or {}
+            set[cd] = true
         end
     end
-    return group
+    return set
 end
 
 -- Family store key for a bar ("spellSettingsBuff" for buff-family bars, "spellSettingsCD" for everything else, including the ghost CD bar).
@@ -829,9 +829,9 @@ end
 -- settings by the EQUIPPED item (-itemID) so each item tracks separately; bar allocation
 -- stays slot-based. Everything else (item presets, racials, custom spells) keys by its own token.
 function mod.ResolveCustomActiveKey(frameKey)
-    local slotIndex = mod.SlotIDFromKey(frameKey)
-    if slotIndex then
-        local itemId = GetInventoryItemID("player", slotIndex)
+    local slot = mod.SlotIDFromKey(frameKey)
+    if slot then
+        local itemId = GetInventoryItemID("player", slot)
         if itemId then
             return -itemId
         end
@@ -852,10 +852,10 @@ function mod.GetEffectiveCustomActiveState(frameKey)
     if not storage then
         return nil
     end
-    local slotIndex = mod.SlotIDFromKey(frameKey)
-    if slotIndex then
+    local slot = mod.SlotIDFromKey(frameKey)
+    if slot then
         local slotE = storage[frameKey]
-        local itemId = GetInventoryItemID("player", slotIndex)
+        local itemId = GetInventoryItemID("player", slot)
         local itemE = itemId and storage[-itemId] or nil
         if itemE then
             mod.ChainSettings(itemE, slotE)
@@ -1083,12 +1083,12 @@ end
 
 -- CD Ready glow color: the icon's pick, else white for the drawn styles (their
 -- long-standing look) and nil for FlipBooks (the atlas's own untinted look).
-function mod.CdReadyGlowColor(look, prefs)
+function mod.CdReadyGlowColor(style, prefs)
     local r, g, b = mod.ResolveGlowColor(prefs)
     if r then
         return r, g, b
     end
-    local e = mod.GLOW_STYLES[look]
+    local e = mod.GLOW_STYLES[style]
     if e and not (e.procedural or e.buttonGlow or e.autocast or e.shapeGlow) then
         return nil
     end

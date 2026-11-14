@@ -9,7 +9,7 @@ end -- no season crests on WoW Forever: no factory, no ns.CrestColorMode (the ma
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -17,20 +17,20 @@ local wipe = wipe
 local format = string.format
 local tconcat = table.concat
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local CONTENT_BASE = Keys.CONTENT_BASE
-local CRESTS = Keys.CRESTS
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
+local CONTENT_BASE = K.CONTENT_BASE
+local CRESTS = K.CRESTS
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  CRESTS (season upgrade currencies, one compact readout)
@@ -69,8 +69,8 @@ function mod.CrestColorMode(b)
     return not b.useClassColor and not b.useAccentColor and not b.useDynamicColor and b.color == nil
 end
 
-mod.BlockFactories.crests = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = { "CURRENCY_DISPLAY_UPDATE" }
 
@@ -148,7 +148,7 @@ mod.BlockFactories.crests = function(blockCfg, slotIndex, contentFrame, barCtx)
         local s = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
 
         local showIcons = s.showIcons ~= false
@@ -214,12 +214,12 @@ mod.BlockFactories.crests = function(blockCfg, slotIndex, contentFrame, barCtx)
         mod.SetFont(crestText, fontSize, barCfg)
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             crestText:SetText(textValue)
             mod.SetWrappedText(crestText, innerW, "CENTER")
             crestText:ClearAllPoints()
             crestText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-            local totalH = upper(8 + mod.SnapToPixelGrid(crestText:GetStringHeight()), barH)
+            local totalH = max(8 + mod.SnapToPixelGrid(crestText:GetStringHeight()), barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -230,8 +230,8 @@ mod.BlockFactories.crests = function(blockCfg, slotIndex, contentFrame, barCtx)
             crestText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             local tw = mod.SnapToPixelGrid(crestText:GetStringWidth())
             local totalW = min(slotW, tw + 4)
-            contentFrame:SetSize(upper(totalW, 10), barH)
-            btnFrame:SetSize(upper(totalW, 10), barH)
+            contentFrame:SetSize(max(totalW, 10), barH)
+            btnFrame:SetSize(max(totalW, 10), barH)
         end
 
         if mouseOver then
@@ -310,9 +310,9 @@ mod.BlockFactories.crests = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 120, 24)
+        return max(contentFrame:GetWidth() or 120, 24)
     end
 
     function instance:Destroy()

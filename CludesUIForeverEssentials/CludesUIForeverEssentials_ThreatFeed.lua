@@ -47,10 +47,10 @@ local RANKS = setmetatable({}, {
 -- The icon a Damage Meters row carries for a class: WoW Forever's one spec
 -- per class. Kept once found; a failed read tries again next time.
 local specIcons = {}
-local function SpecIcon(unitToken, classFile)
-    local glyph = specIcons[classFile]
-    if glyph then
-        return glyph
+local function SpecIcon(unitToken, class)
+    local icon = specIcons[class]
+    if icon then
+        return icon
     end
     local _, _, classID = UnitClass(unitToken)
     if issecretvalue(classID) or type(classID) ~= "number" then
@@ -60,7 +60,7 @@ local function SpecIcon(unitToken, classFile)
     if issecretvalue(fileID) or type(fileID) ~= "number" then
         return nil
     end
-    specIcons[classFile] = fileID
+    specIcons[class] = fileID
     return fileID
 end
 
@@ -92,16 +92,16 @@ local function FillRow(r, e, rank, c)
         r.name, r.classFilename, r.specIconID = CludesUI.L("Pull Aggro"), nil, nil
         r.rankText, r.threatColor = "", c.pullColor
     else
-        local classFile = mod.ClassOf(unitToken)
+        local class = mod.ClassOf(unitToken)
         local name = CUI.WithSurname(UnitName(unitToken))
         if not issecretvalue(name) and name == nil then
             name = unitToken
         end
-        r.name, r.classFilename = name, classFile
+        r.name, r.classFilename = name, class
         if e.isPet then
             r.specIconID = PET_ICON
         else
-            r.specIconID = classFile and SpecIcon(unitToken, classFile) or nil
+            r.specIconID = class and SpecIcon(unitToken, class) or nil
         end
         r.rankText = RANKS[rank]
         r.threatColor = (e.own and c.playerColor) or (e.tanking and c.tankColor) or nil
@@ -168,7 +168,7 @@ local function Build()
         sources[idx] = nil
     end
     -- (The secret test first: a secret name cannot be tested or joined.)
-    local titleText = session.threatTitle
+    local title = session.threatTitle
     local name = mob and CUI.WithSurname(UnitName(mob))
     if issecretvalue(name) or not name then
         titleName = nil
@@ -177,7 +177,7 @@ local function Build()
         titleName = name
         session.threatTitle = format(CludesUI.L("Threat - %s"), name)
     end
-    return total > 0 or had > 0 or session.threatTitle ~= titleText
+    return total > 0 or had > 0 or session.threatTitle ~= title
 end
 
 -- The two threat events fire for every unit in every fight nearby, so they are

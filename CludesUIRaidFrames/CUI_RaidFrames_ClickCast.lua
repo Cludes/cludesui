@@ -110,12 +110,12 @@ local EXTERNAL_SPELLS = {
 -- available" is as likely stale as true, and an all-unknown list shadows
 -- nothing anyway. Singe Magic is exempt -- the pet book holds only the
 -- summoned demon's spells.
-local function ClassPresetSpells(spellList, classFile)
+local function ClassPresetSpells(spellList, class)
     local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
     local canCheck = C_SpellBook.IsSpellInSpellBook and bank
     local usable, all = {}, {}
     for _, sp in ipairs(spellList) do
-        if sp.class == classFile then
+        if sp.class == class then
             all[#all + 1] = sp
             if sp.pet or not canCheck or C_SpellBook.IsSpellInSpellBook(sp.id, bank, true) then
                 usable[#usable + 1] = sp
@@ -128,8 +128,8 @@ end
 -- The dispels the Dispels key casts: this class's preset entries, and on WoW
 -- Forever only the first of them (see the Forever list below). The list is a
 -- fresh table per call, so it is cut in place.
-local function DispelPresetSpells(classFile)
-    local entries = ClassPresetSpells(DISPEL_SPELLS, classFile)
+local function DispelPresetSpells(class)
+    local entries = ClassPresetSpells(DISPEL_SPELLS, class)
     if CludesUI.IS_FOREVER then
         for i = #entries, 2, -1 do
             entries[i] = nil
@@ -205,13 +205,13 @@ end
 -- holds one spell ID or a list of rank IDs.
 local REZ_SPELL_IDS = {}
 for _, kit in pairs(REZ_BY_CLASS) do
-    for _, slotIndex in pairs(kit) do
-        if type(slotIndex) == "table" then
-            for _, spellRef in ipairs(slotIndex) do
+    for _, slot in pairs(kit) do
+        if type(slot) == "table" then
+            for _, spellRef in ipairs(slot) do
                 REZ_SPELL_IDS[spellRef] = true
             end
         else
-            REZ_SPELL_IDS[slotIndex] = true
+            REZ_SPELL_IDS[slot] = true
         end
     end
 end
@@ -289,7 +289,7 @@ local KEY_DISPLAY = {
 -------------------------------------------------------------------------------
 --  State
 -------------------------------------------------------------------------------
-local headerFrame = nil -- SecureHandlerStateTemplate (frame bindings + cui_cc driver)
+local header = nil -- SecureHandlerStateTemplate (frame bindings + cui_cc driver)
 local bindProxy = nil -- SecureActionButtonTemplate (unnamed frame fallback)
 local globalBtn = nil -- SecureActionButtonTemplate (hovercast bindings)
 local registeredFrames = {}
@@ -1023,9 +1023,9 @@ function mod.CC_GetBindingRankText(b)
     if not ident then
         return nil
     end
-    local subFrame = C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(ident)
-    if subFrame and subFrame ~= "" then
-        return subFrame
+    local sub = C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(ident)
+    if sub and sub ~= "" then
+        return sub
     end
     return nil
 end
@@ -1048,15 +1048,15 @@ end
 
 -- Picker tooltip for a WoW Forever ranked spell entry; false when the entry
 -- carries no rank (the caller keeps its own tooltip, if any).
-function mod.CC_RankTip(ownerFrame, itemInfo)
-    if not (itemInfo and (itemInfo.lowRank or itemInfo.ranked)) then
+function mod.CC_RankTip(ownerFrame, item)
+    if not (item and (item.lowRank or item.ranked)) then
         return false
     end
     local textValue
-    if itemInfo.lowRank then
-        textValue = itemInfo.rankText and (itemInfo.name .. " (" .. itemInfo.rankText .. ")") or itemInfo.name
+    if item.lowRank then
+        textValue = item.rankText and (item.name .. " (" .. item.rankText .. ")") or item.name
     else
-        textValue = itemInfo.name .. "\n" .. CludesUI.L("Always casts your highest rank.")
+        textValue = item.name .. "\n" .. CludesUI.L("Always casts your highest rank.")
     end
     CludesUI.ShowWidgetTooltip(ownerFrame, textValue)
     return true
@@ -1074,21 +1074,21 @@ local function BuildReactionMacroText(binding, guard)
             if binding.oocOnly then
                 conds[#conds + 1] = "nocombat"
             end
-            local lineTex = SpellCastLine(part, "[" .. table.concat(conds, ",") .. guard .. "]")
-            if not lineTex then
+            local line = SpellCastLine(part, "[" .. table.concat(conds, ",") .. guard .. "]")
+            if not line then
                 return
             end
-            lines[#lines + 1] = lineTex
+            lines[#lines + 1] = line
         elseif part.type == "item" then
-            local targetUnit = part.itemSlot or part.itemName
-            if not targetUnit then
+            local target = part.itemSlot or part.itemName
+            if not target then
                 return
             end
             local conds = { "@mouseover", reaction, "exists", "nodead" }
             if binding.oocOnly then
                 conds[#conds + 1] = "nocombat"
             end
-            lines[#lines + 1] = "/use [" .. table.concat(conds, ",") .. guard .. "] " .. targetUnit
+            lines[#lines + 1] = "/use [" .. table.concat(conds, ",") .. guard .. "] " .. target
         end
     end
     AddAction(binding.friendlyAction, "help")
@@ -1129,8 +1129,8 @@ local rezItemID = nil
 local function BuildRezLines(binding, guard, standalone, noItem)
     local _, pClass = UnitClass("player")
     local kit = REZ_BY_CLASS[pClass]
-    local itemInfo = not noItem and rezItemID
-    if not kit and not itemInfo then
+    local item = not noItem and rezItemID
+    if not kit and not item then
         return nil
     end
     local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
@@ -1176,9 +1176,9 @@ local function BuildRezLines(binding, guard, standalone, noItem)
             combatCond = ",nocombat"
         end
         lines[#lines + 1] = "/cast [@mouseover,help,dead" .. combatCond .. guard .. "] " .. battleName
-    elseif itemInfo and not binding.oocOnly then
+    elseif item and not binding.oocOnly then
         -- No battle rez in the class: the carried combat rez item instead.
-        lines[#lines + 1] = "/use [@mouseover,help,dead,combat" .. guard .. "] item:" .. itemInfo
+        lines[#lines + 1] = "/use [@mouseover,help,dead,combat" .. guard .. "] item:" .. item
     end
     if groupName then
         lines[#lines + 1] = "/cast [@mouseover,help,dead,nocombat" .. guard .. "] " .. groupName
@@ -1338,20 +1338,20 @@ local function BuildBaseMacroText(binding)
         end
         return body
     elseif binding.type == "item" then
-        local targetUnit = binding.itemSlot or binding.itemName
-        if not targetUnit then
+        local target = binding.itemSlot or binding.itemName
+        if not target then
             return nil
         end
         local unitType = mod.CC_GetBindingUnitType(binding)
         local reaction = unitType == "friendly" and ",help" or unitType == "harmful" and ",harm" or ""
-        local cmd = "/use [@mouseover" .. reaction .. ",exists,nodead" .. guard .. "] " .. targetUnit
+        local cmd = "/use [@mouseover" .. reaction .. ",exists,nodead" .. guard .. "] " .. target
         if binding.oocOnly then
             cmd = "/stopmacro [combat]\n" .. cmd
         end
         return cmd
     elseif binding.type == "trinket1" or binding.type == "trinket2" then
-        local slotIndex = binding.type == "trinket1" and 13 or 14
-        local cmd = "/use [@mouseover,exists,nodead" .. guard .. "] " .. slotIndex
+        local slot = binding.type == "trinket1" and 13 or 14
+        local cmd = "/use [@mouseover,exists,nodead" .. guard .. "] " .. slot
         if binding.oocOnly then
             cmd = "/stopmacro [combat]\n" .. cmd
         end
@@ -1427,17 +1427,17 @@ local function AddTargetingClears(textValue)
         return hit
     end
     local out, seen = {}, {}
-    for lineTex in (textValue .. "\n"):gmatch("([^\n]*)\n") do
-        local cond = lineTex:match("^/cast%s+(%b[])")
-            or lineTex:match("^/use%s+(%b[])")
-            or lineTex:match("^/click%s+(%b[])")
+    for line in (textValue .. "\n"):gmatch("([^\n]*)\n") do
+        local cond = line:match("^/cast%s+(%b[])")
+            or line:match("^/use%s+(%b[])")
+            or line:match("^/click%s+(%b[])")
         -- One clear per condition set: a dispel list repeats the same
         -- conditions on every line, and the first clear already covers them.
         if cond and not seen[cond] then
             seen[cond] = true
             out[#out + 1] = "/stopspelltarget " .. cond
         end
-        out[#out + 1] = lineTex
+        out[#out + 1] = line
     end
     local result = table.concat(out, "\n")
     clearMemo[textValue] = result
@@ -1479,23 +1479,23 @@ local function BuildMacroText(binding)
     if binding.type ~= "macro" then
         cleared = AddTargetingClears(plain)
     end
-    local baseValue = FitMacro(cleared, hover) or FitMacro(plain, hover) or plain
+    local base = FitMacro(cleared, hover) or FitMacro(plain, hover) or plain
     if not binding.smartRez then
-        return baseValue
+        return base
     end
     -- A pinned WoW Forever rez rank is the rez itself: the by-name rez lines
     -- would cast the top rank ahead of it on every dead target.
     if PinnedRankID(binding) and IsRezSpellBinding(binding) then
-        return baseValue
+        return base
     end
     -- Smart Rez never applies to non-cast bindings or the rez binding itself.
     if binding.type == "target" or binding.type == "menu" or binding.type == "dynamicrez" then
-        return baseValue
+        return base
     end
     local guard = hover and MOUNT_GUARD or ""
     local rez = BuildRezLines(binding, guard)
     if not rez or #rez == 0 then
-        return baseValue
+        return base
     end
     -- A plain spell binding produces no base macro (applied as a direct spell);
     -- convert it to a macro so the rez lines can lead, then cast on the same unit.
@@ -1521,7 +1521,7 @@ local function BuildMacroText(binding)
             textValue = FitMacro(Join(table.concat(spells, "\n"), plain), hover)
         end
     end
-    return textValue or baseValue
+    return textValue or base
 end
 
 function mod.CC_GetBindingIcon(b)
@@ -1670,17 +1670,17 @@ function mod.CC_GetClassSpells(topOnly)
     local seen = {}
     local lowNames = {} -- WoW Forever: names that have lower ranks
 
-    for tabButton = 1, numTabs do
-        local lineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tabButton)
+    for tab = 1, numTabs do
+        local lineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
         if lineInfo then
             local tabName = lineInfo.name or ""
             local isGeneral = (tabName == "General" or tabName == GENERAL or tabName == "")
             local isOffSpec = lineInfo.offSpecID and lineInfo.offSpecID ~= 0
 
             if not isGeneral and not isOffSpec and not lineInfo.shouldHide then
-                local offset = lineInfo.itemIndexOffset or 0
+                local off = lineInfo.itemIndexOffset or 0
                 local total = lineInfo.numSpellBookItems or 0
-                for si = offset + 1, offset + total do
+                for si = off + 1, off + total do
                     local spellType, actionId, spellId = C_SpellBook.GetSpellBookItemType(si, bank)
                     if spellType == Enum.SpellBookItemType.Spell then
                         local spellRef = spellId or actionId
@@ -1689,9 +1689,9 @@ function mod.CC_GetClassSpells(topOnly)
                             if not isPassive then
                                 seen[spellRef] = true
                                 local name = C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef)
-                                local glyph = C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
+                                local icon = C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
                                 if name then
-                                    local sp = { id = spellRef, name = name, icon = glyph }
+                                    local sp = { id = spellRef, name = name, icon = icon }
                                     if RANKS then
                                         if
                                             C_SpellBook.IsSpellBookItemLowRank
@@ -1701,13 +1701,13 @@ function mod.CC_GetClassSpells(topOnly)
                                         end
                                         local details = C_SpellBook.GetSpellBookItemInfo
                                             and C_SpellBook.GetSpellBookItemInfo(si, bank)
-                                        local subFrame = details and details.subName
-                                        if (not subFrame or subFrame == "") and C_Spell.GetSpellSubtext then
-                                            subFrame = C_Spell.GetSpellSubtext(spellRef)
+                                        local sub = details and details.subName
+                                        if (not sub or sub == "") and C_Spell.GetSpellSubtext then
+                                            sub = C_Spell.GetSpellSubtext(spellRef)
                                         end
-                                        if subFrame and subFrame ~= "" then
-                                            sp.rankText = subFrame
-                                            sp.rankNum = tonumber(subFrame:match("(%d+)"))
+                                        if sub and sub ~= "" then
+                                            sp.rankText = sub
+                                            sp.rankNum = tonumber(sub:match("(%d+)"))
                                         end
                                     end
                                     if not (topOnly and sp.lowRank) then
@@ -1818,8 +1818,8 @@ function mod.CC_GetEquippedItems()
     if C_Container then
         for bag = 0, 4 do
             local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slotIndex = 1, numSlots do
-                local containerInfo = C_Container.GetContainerItemInfo(bag, slotIndex)
+            for slot = 1, numSlots do
+                local containerInfo = C_Container.GetContainerItemInfo(bag, slot)
                 if containerInfo and containerInfo.itemID and not seen[containerInfo.itemID] then
                     local itemId = containerInfo.itemID
                     local spellName = C_Item.GetItemSpell(itemId)
@@ -2025,8 +2025,8 @@ local COMMAND_CLICK_BODY = [[
 local function UnwrapOwn(widget, script)
     local above
     while true do
-        local hgt, pre, post = headerFrame:UnwrapScript(widget, script)
-        if not hgt or hgt == headerFrame then
+        local hgt, pre, post = header:UnwrapScript(widget, script)
+        if not hgt or hgt == header then
             break
         end
         above = above or {}
@@ -2075,7 +2075,7 @@ local function ConfigureCommandClicks(widget, bindings)
     end
     if attrs then
         if not previous then
-            headerFrame:WrapScript(widget, "OnClick", COMMAND_CLICK_BODY)
+            header:WrapScript(widget, "OnClick", COMMAND_CLICK_BODY)
         end
         if not commandClickAttrs then
             commandClickAttrs = setmetatable({}, { __mode = "k" })
@@ -2297,7 +2297,7 @@ local function DoRegisterFrame(widget)
     if not widget or not widget.RegisterForClicks then
         return
     end
-    if not headerFrame then
+    if not header then
         return
     end
     -- Hard guarantee: while disabled, ZERO frames touched (no RegisterForClicks/
@@ -2327,7 +2327,7 @@ local function DoRegisterFrame(widget)
     end
     if not wrappedFrames[widget] then
         wrappedFrames[widget] = true
-        headerFrame:WrapScript(
+        header:WrapScript(
             widget,
             "OnEnter",
             [[
@@ -2343,7 +2343,7 @@ local function DoRegisterFrame(widget)
             end
         ]]
         )
-        headerFrame:WrapScript(
+        header:WrapScript(
             widget,
             "OnLeave",
             [[
@@ -2425,7 +2425,7 @@ local function DoUnregisterFrame(widget)
     end
     if wrappedFrames[widget] then
         wrappedFrames[widget] = nil
-        if headerFrame and headerFrame.UnwrapScript then
+        if header and header.UnwrapScript then
             pcall(UnwrapOwn, widget, "OnEnter")
             pcall(UnwrapOwn, widget, "OnLeave")
         end
@@ -2478,14 +2478,14 @@ local function WrapTipEater(widget)
         return
     end
     wrappedFrames[widget] = true
-    headerFrame:WrapScript(widget, "OnEnter", TIP_ENTER_BODY)
-    headerFrame:WrapScript(widget, "OnLeave", TIP_LEAVE_BODY)
+    header:WrapScript(widget, "OnEnter", TIP_ENTER_BODY)
+    header:WrapScript(widget, "OnLeave", TIP_LEAVE_BODY)
 end
 
 -- Runs before every registration sweep (init, enable, regen) so an eater is
 -- always wrapped with ITS bodies before DoRegisterFrame could reach it.
 local function SyncTipEaters()
-    if not (ccInitialized and headerFrame) then
+    if not (ccInitialized and header) then
         return
     end
     for widget in pairs(tipEaters) do
@@ -2508,11 +2508,11 @@ end
 -- A parked eater must never be re-shown by the peek: drop the header's
 -- references to it. Out-of-combat only (Execute), like parking itself.
 function mod.CC_ReleaseTipEater(widget)
-    if not (tipEaters[widget] and ccInitialized and headerFrame) then
+    if not (tipEaters[widget] and ccInitialized and header) then
         return
     end
-    headerFrame:SetFrameRef("cui_tipclear", widget)
-    headerFrame:Execute([[
+    header:SetFrameRef("cui_tipclear", widget)
+    header:Execute([[
         local f = self:GetFrameRef("cui_tipclear")
         if cui_tippeeked == f then cui_tippeeked = nil end
         if cui_hoverframe == f then cui_hoverframe = nil end
@@ -2522,19 +2522,19 @@ end
 -- The tooltip modifier ("shift" / "control" / "alt"), nil to disarm. Header
 -- writes, so out-of-combat only; before init the key parks until CC_Init.
 function mod.CC_SetTipModKey(key)
-    if not (ccInitialized and headerFrame) then
+    if not (ccInitialized and header) then
         pendingTipKey = key or false
         return
     end
-    UnregisterStateDriver(headerFrame, "cui_tipmod")
-    headerFrame:SetAttribute("cui_tipmod_key", key)
+    UnregisterStateDriver(header, "cui_tipmod")
+    header:SetAttribute("cui_tipmod_key", key)
     if not key then
-        headerFrame:Execute([[
+        header:Execute([[
             if cui_tippeeked then cui_tippeeked:Show(); cui_tippeeked = nil end
         ]])
         return
     end
-    headerFrame:SetAttribute(
+    header:SetAttribute(
         "_onstate-cui_tipmod",
         [[
         if newstate == "held" then
@@ -2550,7 +2550,7 @@ function mod.CC_SetTipModKey(key)
     ]]
     )
     local cond = (key == "control") and "ctrl" or key
-    RegisterStateDriver(headerFrame, "cui_tipmod", "[mod:" .. cond .. "] held; shown")
+    RegisterStateDriver(header, "cui_tipmod", "[mod:" .. cond .. "] held; shown")
 end
 
 function mod.CC_RegisterFrame(widget)
@@ -2842,8 +2842,8 @@ function mod.CC_ApplyBindings()
     end
 
     local enterScript, leaveScript, kbClearLines = GenerateKeyBindSnippets(bindings)
-    headerFrame:SetAttribute("cui_setup_onenter", enterScript)
-    headerFrame:SetAttribute("cui_setup_onleave", leaveScript)
+    header:SetAttribute("cui_setup_onenter", enterScript)
+    header:SetAttribute("cui_setup_onleave", leaveScript)
 
     ---------------------------------------------------------------
     -- Hovercast + frame keyboard failsafe, unified on ONE header state driver
@@ -2859,12 +2859,12 @@ function mod.CC_ApplyBindings()
     ---------------------------------------------------------------
     -- Retires the previous driver(s) and wipes prior override bindings
     -- (teardown also resets cui_hoveractive), then rebuilds.
-    UnregisterStateDriver(headerFrame, "cui_cc")
-    UnregisterStateDriver(headerFrame, "cui_fbs") -- legacy: split failsafe driver
+    UnregisterStateDriver(header, "cui_cc")
+    UnregisterStateDriver(header, "cui_fbs") -- legacy: split failsafe driver
     UnregisterStateDriver(globalBtn, "cui_mo") -- legacy: globalBtn hover driver
-    if headerFrame._ccClearScript then
+    if header._ccClearScript then
         pcall(function()
-            headerFrame:Execute(headerFrame._ccClearScript)
+            header:Execute(header._ccClearScript)
         end)
     end
     ClearHoverAttrs(globalBtn, lastHoverCount)
@@ -2910,19 +2910,19 @@ function mod.CC_ApplyBindings()
     -- Hover set/clear bodies: stored as header attributes, invoked via
     -- RunAttribute from both the OnEnter wrap and the state driver, so they
     -- always run with self=header (owner of the override bindings).
-    headerFrame:SetAttribute("cui_hover_set", table.concat(hoverSetLines, "\n"))
-    headerFrame:SetAttribute("cui_hover_clear", table.concat(hoverClearLines, "\n"))
+    header:SetAttribute("cui_hover_set", table.concat(hoverSetLines, "\n"))
+    header:SetAttribute("cui_hover_clear", table.concat(hoverClearLines, "\n"))
 
     -- Teardown (next rebuild): self:ClearBindings() wipes every override this
     -- header owns in one shot (safe -- they re-establish on next hover). A
     -- per-key list is fragile: when the LAST binding is unbound the state driver
     -- isn't re-registered (gate below), so it could miss an override still
     -- active from an in-progress hover, stuck firing until /reload.
-    headerFrame._ccClearScript = "self:ClearBindings()\neui_hoveractive = false"
+    header._ccClearScript = "self:ClearBindings()\neui_hoveractive = false"
 
     if #hoverSetLines > 0 or #kbClearLines > 0 then
         local fbFailsafe = table.concat(kbClearLines, "\n")
-        headerFrame:SetAttribute("_onstate-cui_cc", [[
+        header:SetAttribute("_onstate-cui_cc", [[
             if newstate == "on" then
                 if not cui_hoveractive then
                     self:RunAttribute("cui_hover_set")
@@ -2939,7 +2939,7 @@ function mod.CC_ApplyBindings()
         -- with tonumber(newValue) or newValue, so a "1; 0" driver would arrive as
         -- NUMBER 1 and never match quoted "1" -- leaving nameplates (whose only
         -- path is this driver) permanently unbound.
-        RegisterStateDriver(headerFrame, "cui_cc", "[@mouseover,exists] on; off")
+        RegisterStateDriver(header, "cui_cc", "[@mouseover,exists] on; off")
     end
 
     lastBindingCount = #bindings
@@ -2973,7 +2973,7 @@ function mod.CC_AddSpecBinding(binding)
     mod.CC_ApplyBindings()
 end
 
-function mod.CC_RemoveSpecBinding(slotPos)
+function mod.CC_RemoveSpecBinding(index)
     local cc = GetClickCastDB()
     if not cc then
         return
@@ -2982,7 +2982,7 @@ function mod.CC_RemoveSpecBinding(slotPos)
     if not specID or not cc.specs[specID] then
         return
     end
-    tremove(cc.specs[specID], slotPos)
+    tremove(cc.specs[specID], index)
     mod.CC_ApplyBindings()
 end
 
@@ -2998,12 +2998,12 @@ function mod.CC_AddGlobalBinding(binding)
     mod.CC_ApplyBindings()
 end
 
-function mod.CC_RemoveGlobalBinding(slotPos)
+function mod.CC_RemoveGlobalBinding(index)
     local cc = GetClickCastDB()
     if not cc then
         return
     end
-    tremove(cc.globals, slotPos)
+    tremove(cc.globals, index)
     mod.CC_ApplyBindings()
 end
 
@@ -3382,8 +3382,8 @@ function mod.CC_Init()
     -- BaseTemplate the driver would write the state but nothing listens, so hovercast
     -- would only work via the OnEnter wrap (everywhere except nameplates). Same
     -- SecureHandler_OnLoad, so Execute/ WrapScript/RunAttribute are unchanged.
-    headerFrame = CreateFrame("Frame", "CUIClickCastHeader", UIParent, "SecureHandlerStateTemplate")
-    mod._ccHeader = headerFrame
+    header = CreateFrame("Frame", "CUIClickCastHeader", UIParent, "SecureHandlerStateTemplate")
+    mod._ccHeader = header
 
     bindProxy = CreateFrame(
         "Button",
@@ -3397,7 +3397,7 @@ function mod.CC_Init()
     bindProxy:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -100, 100)
     bindProxy:Show()
     mod._ccBindProxy = bindProxy
-    headerFrame:SetFrameRef("bindProxy", bindProxy)
+    header:SetFrameRef("bindProxy", bindProxy)
 
     globalBtn = CreateFrame(
         "Button",
@@ -3413,10 +3413,10 @@ function mod.CC_Init()
     globalBtn:Show()
     mod._ccGlobalBtn = globalBtn
 
-    headerFrame:SetAttribute("cui_setup_onenter", "")
-    headerFrame:SetAttribute("cui_setup_onleave", "")
-    headerFrame:SetAttribute("cui_hover_set", "")
-    headerFrame:SetAttribute("cui_hover_clear", "")
+    header:SetAttribute("cui_setup_onenter", "")
+    header:SetAttribute("cui_setup_onleave", "")
+    header:SetAttribute("cui_hover_set", "")
+    header:SetAttribute("cui_hover_clear", "")
 
     -- Shell-pool adoption (ns.TakeShell, main file) so this frame's event tree
     -- bills to click-cast, not the parent addon's lifecycle dispatch.
@@ -3480,12 +3480,12 @@ local function CC_PickerCell(childFrame, i, Pix, accent)
         cells = {}
         childFrame._cells = cells
     end
-    local cellFrame = cells[i]
-    if cellFrame then
-        return cellFrame
+    local cell = cells[i]
+    if cell then
+        return cell
     end
-    cellFrame = CreateFrame("Button", nil, childFrame)
-    local iconFr = CreateFrame("Frame", nil, cellFrame)
+    cell = CreateFrame("Button", nil, childFrame)
+    local iconFr = CreateFrame("Frame", nil, cell)
     iconFr:SetSize(32, 32)
     local iconTx = iconFr:CreateTexture(nil, "ARTWORK")
     iconTx:SetAllPoints()
@@ -3497,9 +3497,9 @@ local function CC_PickerCell(childFrame, i, Pix, accent)
     if Pix then
         Pix.CreateBorder(iconBd, accent.r, accent.g, accent.b, 1, 2)
     end
-    cellFrame._icon, cellFrame._tex, cellFrame._bd = iconFr, iconTx, iconBd
-    cells[i] = cellFrame
-    return cellFrame
+    cell._icon, cell._tex, cell._bd = iconFr, iconTx, iconBd
+    cells[i] = cell
+    return cell
 end
 
 -- Picker grid divider line above row r (r >= 1), made on first use.
@@ -3663,12 +3663,12 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             brd:SetColor(r, g, b, rest)
         end)
     end
-    local function Edge(hostRegion, layer, a)
-        local texture = hostRegion:CreateTexture(nil, layer)
+    local function Edge(host, layer, a)
+        local texture = host:CreateTexture(nil, layer)
         texture:SetColorTexture(1, 1, 1, a)
         return texture
     end
-    function CC.Sidebar(outer, backdrop, headerFrame, total)
+    function CC.Sidebar(outer, backdrop, header, total)
         backdrop:SetColorTexture(1, 1, 1, 0.025)
         local band = Edge(outer, "BACKGROUND", 0.035)
         band:SetPoint("TOPLEFT")
@@ -3683,25 +3683,25 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         cap:SetPoint("TOPLEFT")
         cap:SetPoint("TOPRIGHT")
         cap:SetHeight(2)
-        for _, sideName in ipairs({ "LEFT", "RIGHT" }) do
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
             local e = Edge(outer, "ARTWORK", 0.10)
-            e:SetPoint("TOP" .. sideName)
-            e:SetPoint("BOTTOM" .. sideName)
+            e:SetPoint("TOP" .. side)
+            e:SetPoint("BOTTOM" .. side)
             e:SetWidth(1)
         end
-        headerFrame:ClearAllPoints()
-        headerFrame:SetPoint("LEFT", outer, "TOPLEFT", 14, -19)
-        headerFrame:SetText(headerFrame:GetText():upper())
-        headerFrame:SetTextColor(1, 1, 1, 1)
+        header:ClearAllPoints()
+        header:SetPoint("LEFT", outer, "TOPLEFT", 14, -19)
+        header:SetText(header:GetText():upper())
+        header:SetTextColor(1, 1, 1, 1)
         local num = CludesUI.MakeFont(outer, 11, nil, 1, 1, 1, 0.45)
         num:SetPoint("RIGHT", outer, "TOPRIGHT", -14, -19)
         num:SetText(tostring(total))
     end
-    function CC.Card(hostRegion, posX, topY, wid, bottomY)
-        local body = Edge(hostRegion, "BACKGROUND", 0.025)
-        body:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", posX, topY)
+    function CC.Card(host, posX, topY, wid, bottomY)
+        local body = Edge(host, "BACKGROUND", 0.025)
+        body:SetPoint("TOPLEFT", host, "TOPLEFT", posX, topY)
         body:SetSize(wid, topY - bottomY)
-        local band = Edge(hostRegion, "BACKGROUND", 0.035)
+        local band = Edge(host, "BACKGROUND", 0.035)
         band:SetPoint("TOPLEFT", body, "TOPLEFT")
         band:SetPoint("TOPRIGHT", body, "TOPRIGHT")
         band:SetHeight(34)
@@ -3710,33 +3710,33 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             { "BOTTOMLEFT", "BOTTOMRIGHT", 0, 1 },
         }
         for _, pc in ipairs(pieces) do
-            local e = Edge(hostRegion, "ARTWORK", 0.10)
+            local e = Edge(host, "ARTWORK", 0.10)
             e:SetPoint(pc[1], body, pc[1])
             e:SetPoint(pc[2], body, pc[2])
             e:SetHeight(1)
         end
-        local div = Edge(hostRegion, "ARTWORK", 0.10)
+        local div = Edge(host, "ARTWORK", 0.10)
         div:SetPoint("TOPLEFT", band, "BOTTOMLEFT")
         div:SetPoint("TOPRIGHT", band, "BOTTOMRIGHT")
         div:SetHeight(1)
-        for _, sideName in ipairs({ "LEFT", "RIGHT" }) do
-            local e = Edge(hostRegion, "ARTWORK", 0.10)
-            e:SetPoint("TOP" .. sideName, body, "TOP" .. sideName)
-            e:SetPoint("BOTTOM" .. sideName, body, "BOTTOM" .. sideName)
+        for _, side in ipairs({ "LEFT", "RIGHT" }) do
+            local e = Edge(host, "ARTWORK", 0.10)
+            e:SetPoint("TOP" .. side, body, "TOP" .. side)
+            e:SetPoint("BOTTOM" .. side, body, "BOTTOM" .. side)
             e:SetWidth(1)
         end
     end
 
     -- StyleFont dresses a font string the way MakeFont makes one; the reused
     -- picker strings are re-dressed with it on every open.
-    local function StyleFont(fontStr, dim, r, g, b, a)
+    local function StyleFont(fontStr, size, r, g, b, a)
         CludesUI.PrimeFontShadow(fontStr, outlineFlag == "" and useShadow)
-        fontStr:SetFont(fontFile, dim, outlineFlag)
+        fontStr:SetFont(fontFile, size, outlineFlag)
         fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
     end
-    local function MakeFont(p, dim, r, g, b, a)
+    local function MakeFont(p, size, r, g, b, a)
         local fontStr = p:CreateFontString(nil, "OVERLAY")
-        StyleFont(fontStr, dim, r, g, b, a)
+        StyleFont(fontStr, size, r, g, b, a)
         return fontStr
     end
 
@@ -3751,49 +3751,49 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         posY,
         wid,
         hgt,
-        glyph,
+        icon,
         dimmed,
         textValue,
         lblSize,
         lblGap
     )
-        local cellFrame = CC_PickerCell(childFrame, i, Pix, accentColor)
-        cellFrame:SetSize(wid, hgt)
-        cellFrame:ClearAllPoints()
-        cellFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", posX, posY)
-        cellFrame:Show()
-        local iconFr, iconTx, iconBd = cellFrame._icon, cellFrame._tex, cellFrame._bd
-        iconTx:SetTexture(glyph or 134400)
+        local cell = CC_PickerCell(childFrame, i, Pix, accentColor)
+        cell:SetSize(wid, hgt)
+        cell:ClearAllPoints()
+        cell:SetPoint("TOPLEFT", childFrame, "TOPLEFT", posX, posY)
+        cell:Show()
+        local iconFr, iconTx, iconBd = cell._icon, cell._tex, cell._bd
+        iconTx:SetTexture(icon or 134400)
         iconTx:SetAlpha(dimmed and 0.3 or 1)
         iconBd:Hide()
         if Pix then
             Pix.SetBorderColor(iconBd, accentColor.r, accentColor.g, accentColor.b, 1)
         end
         iconFr:ClearAllPoints()
-        local labelFS = cellFrame._lbl
+        local labelFS = cell._lbl
         if textValue then
             if labelFS then
                 StyleFont(labelFS, lblSize, 1, 1, 1, dimmed and 0.3 or 0.7)
             else
-                labelFS = MakeFont(cellFrame, lblSize, 1, 1, 1, dimmed and 0.3 or 0.7)
-                cellFrame._lbl = labelFS
+                labelFS = MakeFont(cell, lblSize, 1, 1, 1, dimmed and 0.3 or 0.7)
+                cell._lbl = labelFS
             end
             labelFS:SetAlpha(1)
             labelFS:ClearAllPoints()
-            labelFS:SetPoint("TOP", cellFrame, "TOP", 0, 0)
+            labelFS:SetPoint("TOP", cell, "TOP", 0, 0)
             labelFS:SetWidth(wid + 4)
             labelFS:SetJustifyH("CENTER")
             labelFS:SetWordWrap(false)
             labelFS:SetText(textValue)
             labelFS:Show()
             iconFr:SetPoint("TOP", labelFS, "BOTTOM", 0, -lblGap)
-            return cellFrame, iconBd, labelFS
+            return cell, iconBd, labelFS
         end
         if labelFS then
             labelFS:Hide()
         end
-        iconFr:SetPoint("TOP", cellFrame, "TOP", 0, 0)
-        return cellFrame, iconBd, nil
+        iconFr:SetPoint("TOP", cell, "TOP", 0, 0)
+        return cell, iconBd, nil
     end
 
     -- Selected binding state (persists across rebuilds via namespace)
@@ -3859,9 +3859,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     if hasDynamicRez then
         local kit = REZ_BY_CLASS[pClass]
         if kit then
-            for _, slotIndex in pairs(kit) do
+            for _, slot in pairs(kit) do
                 -- Every rank of a slot shares one name.
-                local spellRef = type(slotIndex) == "table" and slotIndex[1] or slotIndex
+                local spellRef = type(slot) == "table" and slot[1] or slot
                 local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef)
                 if name then
                     boundSpells[name] = true
@@ -4012,7 +4012,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     end
 
     -- Sidebar tile builder (BM replica).
-    local function BuildTile(scrollChild, tileY, binding, isSelected, sideName, position, onSelect, onDelete)
+    local function BuildTile(scrollChild, tileY, binding, isSelected, side, position, onSelect, onDelete)
         local tile = CreateFrame("Button", nil, scrollChild)
         tile:SetSize(sidebarW, TILE_H)
         tile:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, tileY)
@@ -4044,15 +4044,15 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         end
 
         local textX = 8 + ICON_SZ + 8
-        local titleText = MakeFont(tile, 13, 1, 1, 1, 1)
-        titleText:SetPoint("TOPLEFT", tile, "TOPLEFT", textX, -8)
-        titleText:SetPoint("RIGHT", tile, "RIGHT", -30, 0)
-        titleText:SetJustifyH("LEFT")
-        titleText:SetWordWrap(false)
-        titleText:SetText(CludesUI.L(mod.CC_GetBindingName(binding)))
+        local title = MakeFont(tile, 13, 1, 1, 1, 1)
+        title:SetPoint("TOPLEFT", tile, "TOPLEFT", textX, -8)
+        title:SetPoint("RIGHT", tile, "RIGHT", -30, 0)
+        title:SetJustifyH("LEFT")
+        title:SetWordWrap(false)
+        title:SetText(CludesUI.L(mod.CC_GetBindingName(binding)))
 
         local keySub = MakeFont(tile, 11, 0.75, 0.75, 0.75, 0.65)
-        keySub:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
+        keySub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
         keySub:SetPoint("RIGHT", tile, "RIGHT", -30, 0)
         keySub:SetJustifyH("LEFT")
         keySub:SetWordWrap(false)
@@ -4065,10 +4065,10 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- A spell the character has not got right now dims when another binding
         -- took its key; the binding stays for the loadout that has it.
-        local untalented = (sideName == "spec" or sideName == "global") and IsShadowedBinding(binding)
+        local untalented = (side == "spec" or side == "global") and IsShadowedBinding(binding)
         if untalented then
             iconTex:SetAlpha(0.35)
-            titleText:SetAlpha(0.45)
+            title:SetAlpha(0.45)
             keySub:SetAlpha(0.45)
         end
 
@@ -4076,7 +4076,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         -- real collisions, positioned in the sidebar action area so the marker
         -- never obscures the spell icon.
         if
-            (sideName == "spec" or sideName == "global")
+            (side == "spec" or side == "global")
             and IsReactionBinding(binding)
             and IsBindingActive(binding)
             and binding.key
@@ -4110,7 +4110,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     CludesUI.HideWidgetTooltip()
                 end)
                 warning:SetScript("OnClick", function()
-                    onSelect(sideName, position)
+                    onSelect(side, position)
                 end)
             end
         end
@@ -4144,7 +4144,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         sep:SetColorTexture(1, 1, 1, 0.04)
 
         tile:SetScript("OnClick", function()
-            onSelect(sideName, position)
+            onSelect(side, position)
         end)
         tile:SetScript("OnEnter", function(self)
             if not isSelected then
@@ -4168,7 +4168,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
     -- Icon grid popup builder. side: "left" or "right"; sidebarFrame: the
     -- sidebar outer frame for anchoring.
-    local function BuildIconGridPopup(anchorBtn, sidebarFrame, sideName, itemList, onSelect)
+    local function BuildIconGridPopup(anchorBtn, sidebarFrame, side, itemList, onSelect)
         local GRID_COLS = 5
         local ICON_SZ2 = 32
         local CELL_W = 48 -- horizontal slot width (text truncates here)
@@ -4224,7 +4224,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         dialog:SetFrameStrata("FULLSCREEN_DIALOG")
         dialog:SetFrameLevel(200)
 
-        if sideName == "left" then
+        if side == "left" then
             dialog:SetPoint(
                 "TOPLEFT",
                 sidebarFrame,
@@ -4263,10 +4263,10 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             self:SetVerticalScroll(max(0, min(mx, s - delta * 30)))
         end)
 
-        for i, itemInfo in ipairs(itemList) do
-            local column = (i - 1) % GRID_COLS
+        for i, item in ipairs(itemList) do
+            local col = (i - 1) % GRID_COLS
             local r = floor((i - 1) / GRID_COLS)
-            local cx = column * (CELL_W + COL_GAP)
+            local cx = col * (CELL_W + COL_GAP)
             local cy = rowY[r]
             local hasText = rowHasText[r]
             local cellH = rowH[r]
@@ -4275,7 +4275,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 return v
             end
 
-            if column == 0 and r > 0 then
+            if col == 0 and r > 0 then
                 local divY = cy + ROW_GAP / 2
                 local div = childFrame:CreateTexture(nil, "ARTWORK")
                 div:SetHeight(pxSnap(1))
@@ -4287,16 +4287,16 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end
             end
 
-            local cellFrame = CreateFrame("Button", nil, childFrame)
-            cellFrame:SetSize(CELL_W, cellH)
-            cellFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", cx, cy)
+            local cell = CreateFrame("Button", nil, childFrame)
+            cell:SetSize(CELL_W, cellH)
+            cell:SetPoint("TOPLEFT", childFrame, "TOPLEFT", cx, cy)
 
-            local iconFrame = CreateFrame("Frame", nil, cellFrame)
+            local iconFrame = CreateFrame("Frame", nil, cell)
             iconFrame:SetSize(ICON_SZ2, ICON_SZ2)
             local iconTex = iconFrame:CreateTexture(nil, "ARTWORK")
             iconTex:SetAllPoints()
             iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            iconTex:SetTexture(itemInfo.icon or 134400)
+            iconTex:SetTexture(item.icon or 134400)
 
             local iconBdr = CreateFrame("Frame", nil, iconFrame)
             iconBdr:SetAllPoints()
@@ -4307,32 +4307,32 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end
 
             local cellLbl = nil
-            if hasText and itemInfo.name and itemInfo.name ~= "" then
-                cellLbl = MakeFont(cellFrame, LABEL_FONT, 1, 1, 1, 0.7)
-                cellLbl:SetPoint("TOP", cellFrame, "TOP", 0, 0)
+            if hasText and item.name and item.name ~= "" then
+                cellLbl = MakeFont(cell, LABEL_FONT, 1, 1, 1, 0.7)
+                cellLbl:SetPoint("TOP", cell, "TOP", 0, 0)
                 cellLbl:SetWidth(CELL_W + 4)
                 cellLbl:SetJustifyH("CENTER")
                 cellLbl:SetWordWrap(false)
-                cellLbl:SetText(itemInfo.name)
+                cellLbl:SetText(item.name)
                 iconFrame:SetPoint("TOP", cellLbl, "BOTTOM", 0, -LABEL_GAP)
             else
-                iconFrame:SetPoint("TOP", cellFrame, "TOP", 0, 0)
+                iconFrame:SetPoint("TOP", cell, "TOP", 0, 0)
             end
 
-            cellFrame:SetScript("OnEnter", function()
+            cell:SetScript("OnEnter", function()
                 iconBdr:Show()
                 if cellLbl then
                     cellLbl:SetAlpha(1)
                 end
             end)
-            cellFrame:SetScript("OnLeave", function()
+            cell:SetScript("OnLeave", function()
                 iconBdr:Hide()
                 if cellLbl then
                     cellLbl:SetAlpha(0.7)
                 end
             end)
-            cellFrame:SetScript("OnClick", function()
-                onSelect(itemInfo)
+            cell:SetScript("OnClick", function()
+                onSelect(item)
                 dialog:Hide()
             end)
         end
@@ -4377,8 +4377,8 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         mod.CC_BuildPage(page, hostFrame, yOffset)
     end
 
-    local function SelectBinding(sideName, position)
-        mod._ccSelSide = sideName
+    local function SelectBinding(side, position)
+        mod._ccSelSide = side
         mod._ccSelIndex = position
         RebuildPage()
     end
@@ -4584,11 +4584,11 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 return v
             end
             for i, itm in ipairs(itemsG) do
-                local column = (i - 1) % GCG
+                local col = (i - 1) % GCG
                 local r = floor((i - 1) / GCG)
-                local cx = column * (CWG + CGAPG)
+                local cx = col * (CWG + CGAPG)
                 local cy = rYG[r]
-                if column == 0 and r > 0 then
+                if col == 0 and r > 0 then
                     local div = CC_PickerDivider(gridChildG, r, Pix)
                     div:SetHeight(pxSnapG(1))
                     div:ClearAllPoints()
@@ -4598,7 +4598,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end
                 local dimmedG = (itm.macroName and boundMacros[MacroBoundKey(itm.macroName, itm.macroChar)])
                     or (itm.itemSlot and boundItems[itm.itemSlot])
-                local cellFrame, iconBd, cellLbl = DressPickerCell(
+                local cell, iconBd, cellLbl = DressPickerCell(
                     gridChildG,
                     i,
                     cx,
@@ -4611,19 +4611,19 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     LFONTG,
                     LGAPG
                 )
-                cellFrame:SetScript("OnEnter", function()
+                cell:SetScript("OnEnter", function()
                     iconBd:Show()
                     if cellLbl then
                         cellLbl:SetAlpha(1)
                     end
                 end)
-                cellFrame:SetScript("OnLeave", function()
+                cell:SetScript("OnLeave", function()
                     iconBd:Hide()
                     if cellLbl then
                         cellLbl:SetAlpha(0.7)
                     end
                 end)
-                cellFrame:SetScript("OnClick", function()
+                cell:SetScript("OnClick", function()
                     onItemClick(itm)
                     dialog:Hide()
                 end)
@@ -5041,12 +5041,12 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             local pxSnap3 = mod.PixelSnap or function(v)
                 return v
             end
-            for i, itemInfo in ipairs(items3) do
-                local column = (i - 1) % QB_COLS
+            for i, item in ipairs(items3) do
+                local col = (i - 1) % QB_COLS
                 local r = floor((i - 1) / QB_COLS)
-                local cx = column * (QB_CELL + QB_CGAP)
+                local cx = col * (QB_CELL + QB_CGAP)
                 local cy = rY3[r]
-                if column == 0 and r > 0 then
+                if col == 0 and r > 0 then
                     local div = CC_PickerDivider(gridChildQB, r, Pix)
                     div:SetHeight(pxSnap3(1))
                     div:ClearAllPoints()
@@ -5055,60 +5055,57 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     div:Show()
                 end
                 local dimmed3 = (
-                    itemInfo.id
-                    and mod.CC_IsSpellBound(boundSpells, itemInfo.id, itemInfo.name, itemInfo.lowRank)
+                    item.id
+                    and mod.CC_IsSpellBound(boundSpells, item.id, item.name, item.lowRank)
                 )
-                    or (itemInfo.macroName and boundMacros[MacroBoundKey(
-                        itemInfo.macroName,
-                        itemInfo.macroChar
-                    )])
-                    or (itemInfo.itemSlot and boundItems[itemInfo.itemSlot])
+                    or (item.macroName and boundMacros[MacroBoundKey(item.macroName, item.macroChar)])
+                    or (item.itemSlot and boundItems[item.itemSlot])
                 -- A WoW Forever lower rank labels itself by its rank.
-                local cellFrame, iconBd, cellLbl3 = DressPickerCell(
+                local cell, iconBd, cellLbl3 = DressPickerCell(
                     gridChildQB,
                     i,
                     cx,
                     cy,
                     QB_CELL,
                     rH3[r],
-                    itemInfo.icon,
+                    item.icon,
                     dimmed3,
                     rht3[r]
-                            and itemInfo.name
-                            and itemInfo.name ~= ""
-                            and (itemInfo.lowRank and itemInfo.rankText or itemInfo.name)
+                            and item.name
+                            and item.name ~= ""
+                            and (item.lowRank and item.rankText or item.name)
                         or nil,
                     QB_LFONT,
                     QB_LGAP
                 )
-                cellFrame:RegisterForClicks("AnyUp")
-                cellFrame:EnableKeyboard(false)
-                cellFrame:SetScript("OnEnter", function()
+                cell:RegisterForClicks("AnyUp")
+                cell:EnableKeyboard(false)
+                cell:SetScript("OnEnter", function()
                     iconBd:Show()
                     if cellLbl3 then
                         cellLbl3:SetAlpha(1)
                     end
-                    hoveredItem = itemInfo
+                    hoveredItem = item
                     if not InCombatLockdown() then
-                        cellFrame:EnableKeyboard(true)
+                        cell:EnableKeyboard(true)
                     end
-                    mod.CC_RankTip(cellFrame, itemInfo)
+                    mod.CC_RankTip(cell, item)
                 end)
-                cellFrame:SetScript("OnLeave", function()
+                cell:SetScript("OnLeave", function()
                     iconBd:Hide()
                     if cellLbl3 then
                         cellLbl3:SetAlpha(dimmed3 and 0.3 or 0.7)
                     end
                     hoveredItem = nil
                     if not InCombatLockdown() then
-                        cellFrame:EnableKeyboard(false)
+                        cell:EnableKeyboard(false)
                     end
-                    if itemInfo.lowRank or itemInfo.ranked then
+                    if item.lowRank or item.ranked then
                         CludesUI.HideWidgetTooltip()
                     end
                 end)
                 -- Key press while hovering: bind this item to that key
-                cellFrame:SetScript("OnKeyDown", function(self, key)
+                cell:SetScript("OnKeyDown", function(self, key)
                     if InCombatLockdown() then
                         return
                     end
@@ -5181,7 +5178,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     end
                 end)
                 -- Mouse click while hovering: bind with modifier+button
-                cellFrame:SetScript("OnClick", function(self, btnFrame)
+                cell:SetScript("OnClick", function(self, btnFrame)
                     if not hoveredItem then
                         return
                     end
@@ -5424,13 +5421,13 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 return v
             end
 
-            for i, itemInfo in ipairs(items2) do
-                local column = (i - 1) % GC2
+            for i, item in ipairs(items2) do
+                local col = (i - 1) % GC2
                 local r = floor((i - 1) / GC2)
-                local cx = column * (CW2 + CGAP2)
+                local cx = col * (CW2 + CGAP2)
                 local cy = rY2[r]
 
-                if column == 0 and r > 0 then
+                if col == 0 and r > 0 then
                     local divY = cy + RGAP2 / 2
                     local div = CC_PickerDivider(gridChild, r, Pix)
                     div:SetHeight(pxSnap2(1))
@@ -5441,51 +5438,45 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end
 
                 local dimmed = (
-                    itemInfo.id
-                    and mod.CC_IsSpellBound(boundSpells, itemInfo.id, itemInfo.name, itemInfo.lowRank)
+                    item.id
+                    and mod.CC_IsSpellBound(boundSpells, item.id, item.name, item.lowRank)
                 )
-                    or (itemInfo.macroName and boundMacros[MacroBoundKey(
-                        itemInfo.macroName,
-                        itemInfo.macroChar
-                    )])
-                    or (itemInfo.itemSlot and boundItems[itemInfo.itemSlot])
+                    or (item.macroName and boundMacros[MacroBoundKey(item.macroName, item.macroChar)])
+                    or (item.itemSlot and boundItems[item.itemSlot])
                 -- A WoW Forever lower rank labels itself by its rank.
-                local cellFrame, iconBdr2, cellLbl2 = DressPickerCell(
+                local cell, iconBdr2, cellLbl2 = DressPickerCell(
                     gridChild,
                     i,
                     cx,
                     cy,
                     CW2,
                     rH2[r],
-                    itemInfo.icon,
+                    item.icon,
                     dimmed,
-                    rht[r]
-                            and itemInfo.name
-                            and itemInfo.name ~= ""
-                            and (itemInfo.lowRank and itemInfo.rankText or itemInfo.name)
+                    rht[r] and item.name and item.name ~= "" and (item.lowRank and item.rankText or item.name)
                         or nil,
                     LFONT2,
                     LGAP2
                 )
 
-                cellFrame:SetScript("OnEnter", function()
+                cell:SetScript("OnEnter", function()
                     iconBdr2:Show()
                     if cellLbl2 then
                         cellLbl2:SetAlpha(1)
                     end
-                    mod.CC_RankTip(cellFrame, itemInfo)
+                    mod.CC_RankTip(cell, item)
                 end)
-                cellFrame:SetScript("OnLeave", function()
+                cell:SetScript("OnLeave", function()
                     iconBdr2:Hide()
                     if cellLbl2 then
                         cellLbl2:SetAlpha(0.7)
                     end
-                    if itemInfo.lowRank or itemInfo.ranked then
+                    if item.lowRank or item.ranked then
                         CludesUI.HideWidgetTooltip()
                     end
                 end)
-                cellFrame:SetScript("OnClick", function()
-                    onItemClick(itemInfo)
+                cell:SetScript("OnClick", function()
+                    onItemClick(item)
                     dialog:Hide()
                 end)
             end
@@ -5499,19 +5490,19 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
             if ui.mode == "spell" then
                 local spells = mod.CC_GetClassSpells()
-                PopulateGrid(spells, function(itemInfo)
+                PopulateGrid(spells, function(item)
                     mod.CC_AddSpecBinding({
                         type = "spell",
-                        spell = itemInfo.name,
-                        spellID = itemInfo.id,
-                        icon = itemInfo.icon,
+                        spell = item.name,
+                        spellID = item.id,
+                        icon = item.icon,
                         enabled = true,
                         oocOnly = false,
                         hovercast = false,
                         hoverFriendly = true,
                         hoverEnemy = true,
                         -- A WoW Forever lower rank keeps casting that rank.
-                        rankPinned = itemInfo.lowRank,
+                        rankPinned = item.lowRank,
                     })
                     mod._ccSelSide = "spec"
                     mod._ccSelIndex = #(GetSpecBindings())
@@ -5529,12 +5520,12 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                         macroChar = not m.isGlobal,
                     }
                 end
-                PopulateGrid(mItems, function(itemInfo)
+                PopulateGrid(mItems, function(item)
                     mod.CC_AddSpecBinding({
                         type = "macro",
-                        macroName = itemInfo.macroName,
-                        macroChar = itemInfo.macroChar,
-                        icon = itemInfo.icon,
+                        macroName = item.macroName,
+                        macroChar = item.macroChar,
+                        icon = item.icon,
                         enabled = true,
                         oocOnly = false,
                         hovercast = false,
@@ -5548,12 +5539,12 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 end)
             elseif ui.mode == "item" then
                 local eqItems = mod.CC_GetEquippedItems()
-                PopulateGrid(eqItems, function(itemInfo)
+                PopulateGrid(eqItems, function(item)
                     mod.CC_AddSpecBinding({
                         type = "item",
-                        itemSlot = itemInfo.itemSlot,
-                        itemName = itemInfo.name,
-                        icon = itemInfo.icon,
+                        itemSlot = item.itemSlot,
+                        itemName = item.name,
+                        icon = item.icon,
                         enabled = true,
                         oocOnly = false,
                         hovercast = false,
@@ -5565,9 +5556,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     RebuildPage()
                 end)
             else -- "action"
-                PopulateGrid(CC_GetActionItems(), function(itemInfo)
+                PopulateGrid(CC_GetActionItems(), function(item)
                     mod.CC_AddSpecBinding({
-                        type = itemInfo.type,
+                        type = item.type,
                         enabled = true,
                         oocOnly = false,
                         hovercast = false,
@@ -5713,33 +5704,33 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local bodyHost = centerFrame
 
     local function MakeRow(yPos)
-        local rowFrame = CreateFrame("Frame", nil, bodyHost)
-        Pix.Size(rowFrame, rowW, ROW_H)
-        Pix.Point(rowFrame, "TOPLEFT", bodyHost, "TOPLEFT", C_PAD, yPos)
-        CludesUI.RowBg(rowFrame, bodyHost)
-        return rowFrame
+        local row = CreateFrame("Frame", nil, bodyHost)
+        Pix.Size(row, rowW, ROW_H)
+        Pix.Point(row, "TOPLEFT", bodyHost, "TOPLEFT", C_PAD, yPos)
+        CludesUI.RowBg(row, bodyHost)
+        return row
     end
 
-    local function RowLabel(rowFrame, textValue)
+    local function RowLabel(row, textValue)
         local labelFS = CludesUI.MakeFont(
-            rowFrame,
+            row,
             14,
             nil,
             CludesUI.TEXT_WHITE_R,
             CludesUI.TEXT_WHITE_G,
             CludesUI.TEXT_WHITE_B
         )
-        Pix.Point(labelFS, "LEFT", rowFrame, "LEFT", SIDE_PAD, 0)
+        Pix.Point(labelFS, "LEFT", row, "LEFT", SIDE_PAD, 0)
         labelFS:SetText(CludesUI.L(textValue))
         return labelFS
     end
 
-    local function RowToggle(rowFrame, getValue, setValue)
+    local function RowToggle(row, getValue, setValue)
         local toggleW, toggleH = 36, 18
-        local pill = CreateFrame("Button", nil, rowFrame)
+        local pill = CreateFrame("Button", nil, row)
         pill:SetSize(toggleW, toggleH)
-        Pix.Point(pill, "RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
-        pill:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+        Pix.Point(pill, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
+        pill:SetFrameLevel(row:GetFrameLevel() + 2)
         -- Pill and knob on a pixel layer, as the settings toggle draws them.
         local L = CludesUI.MakePixelLayer(pill, CludesUI.TogglePillFit)
         local pillBg = L._frame:CreateTexture(nil, "BACKGROUND")
@@ -5796,9 +5787,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     -- clicks on the same frames. That addon's loaded state can't change without
     -- a /reload, so this one-time check is authoritative for the session.
     do
-        local rowFrame = MakeRow(centerY)
-        local labelFS = RowLabel(rowFrame, "Enable Click Casting")
-        local pill = RowToggle(rowFrame, function()
+        local row = MakeRow(centerY)
+        local labelFS = RowLabel(row, "Enable Click Casting")
+        local pill = RowToggle(row, function()
             return cc.enabled
         end, function(v)
             mod.CC_SetEnabled(v)
@@ -5831,9 +5822,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local gatedTop = centerY -- Y just below the Enable row; the gated region starts here
 
     do
-        local rowFrame = MakeRow(centerY)
-        RowLabel(rowFrame, "Trigger Bindings on Down")
-        RowToggle(rowFrame, function()
+        local row = MakeRow(centerY)
+        RowLabel(row, "Trigger Bindings on Down")
+        RowToggle(row, function()
             return cc.downClick
         end, function(v)
             mod.CC_SetDownClick(v)
@@ -5844,9 +5835,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     -- Clear Stuck Spell Targeting (AddTargetingClears): every binding's macro
     -- changes, so a switch re-applies them all.
     do
-        local rowFrame = MakeRow(centerY)
-        RowLabel(rowFrame, "Clear Stuck Spell Targeting")
-        RowToggle(rowFrame, function()
+        local row = MakeRow(centerY)
+        RowLabel(row, "Clear Stuck Spell Targeting")
+        RowToggle(row, function()
             return cc.clearTargeting ~= false
         end, function(v)
             if v then
@@ -5856,8 +5847,8 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end
             mod.CC_ApplyBindings()
         end)
-        rowFrame:EnableMouse(true)
-        rowFrame:SetScript("OnEnter", function(self)
+        row:EnableMouse(true)
+        row:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(
                 self,
                 CludesUI.L(
@@ -5865,21 +5856,21 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 )
             )
         end)
-        rowFrame:SetScript("OnLeave", function()
+        row:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         centerY = centerY - ROW_H
     end
 
     do
-        local rowFrame = MakeRow(centerY)
-        RowLabel(rowFrame, "Mouseover Frames")
+        local row = MakeRow(centerY)
+        RowLabel(row, "Mouseover Frames")
         local mfValues = { all = "All Unit Frames", rf = "CUI Raid & Party Frames" }
         local mfOrder = { "all", "rf" }
         local ddCtrl = CludesUI.BuildDropdownControl(
-            rowFrame,
+            row,
             190,
-            rowFrame:GetFrameLevel() + 2,
+            row:GetFrameLevel() + 2,
             mfValues,
             mfOrder,
             function()
@@ -5889,7 +5880,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 mod.CC_SetAllFrames(v == "all")
             end
         )
-        Pix.Point(ddCtrl, "RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
+        Pix.Point(ddCtrl, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
         centerY = centerY - ROW_H
     end
     centerY = centerY - 8
@@ -5962,14 +5953,14 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- Keybind row (Party Mode style button)
         do
-            local rowFrame = MakeRow(centerY)
-            RowLabel(rowFrame, "Keybind")
+            local row = MakeRow(centerY)
+            RowLabel(row, "Keybind")
             local function ApplyKey(newKey)
                 selectedBinding.key = newKey
                 mod.CC_ApplyBindings()
                 RebuildPage()
             end
-            local kbBtn = BuildKeybindButton(rowFrame, 180, function()
+            local kbBtn = BuildKeybindButton(row, 180, function()
                 return selectedBinding.key
             end, function(newKey)
                 ApplyKey(newKey)
@@ -5978,7 +5969,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 mod.CC_ApplyBindings()
                 RebuildPage()
             end)
-            Pix.Point(kbBtn, "RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
+            Pix.Point(kbBtn, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
             centerY = centerY - ROW_H
         end
 
@@ -5995,9 +5986,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 or t == "trinket1"
                 or t == "trinket2"
             if canSmartRez then
-                local rowFrame = MakeRow(centerY)
-                RowLabel(rowFrame, "Enable Dynamic Rez")
-                RowToggle(rowFrame, function()
+                local row = MakeRow(centerY)
+                RowLabel(row, "Enable Dynamic Rez")
+                RowToggle(row, function()
                     return selectedBinding.smartRez
                 end, function(v)
                     selectedBinding.smartRez = v
@@ -6019,15 +6010,15 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         -- context menu / targeting in combat); menu/target's combat-gating is
         -- enforced securely via an attribute driver (see SetGatedType).
         if hasAdvancedOpts or selectedBinding.type == "menu" or selectedBinding.type == "target" then
-            local rowFrame = MakeRow(centerY)
+            local row = MakeRow(centerY)
             local oocLabel = "Only Cast Out of Combat"
             if selectedBinding.type == "menu" then
                 oocLabel = "Only Open Menu Out of Combat"
             elseif selectedBinding.type == "target" then
                 oocLabel = "Only Target Out of Combat"
             end
-            RowLabel(rowFrame, oocLabel)
-            RowToggle(rowFrame, function()
+            RowLabel(row, oocLabel)
+            RowToggle(row, function()
                 return selectedBinding.oocOnly
             end, function(v)
                 selectedBinding.oocOnly = v
@@ -6040,8 +6031,8 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         -- Outside the chosen contexts the binding is simply not applied, so
         -- its key keeps doing whatever the player normally has bound.
         do
-            local rowFrame = MakeRow(centerY)
-            RowLabel(rowFrame, "Active In")
+            local row = MakeRow(centerY)
+            RowLabel(row, "Active In")
             -- Same checkbox dropdown the buff manager's filter pickers use, so
             -- any combination of Solo / Party / Raid can be ticked. It renders
             -- the summary itself ("All" when everything is on, "None" when
@@ -6062,9 +6053,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 },
             }
             local cbDD = CludesUI.BuildVisOptsCBDropdown(
-                rowFrame,
+                row,
                 160,
-                rowFrame:GetFrameLevel() + 2,
+                row:GetFrameLevel() + 2,
                 ctxItems,
                 function(key)
                     return CtxEnabled(selectedBinding, key)
@@ -6096,7 +6087,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 nil,
                 #CC_CTX_ORDER
             )
-            Pix.Point(cbDD, "RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
+            Pix.Point(cbDD, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
             centerY = centerY - ROW_H
         end
 
@@ -6107,9 +6098,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             -- Hovercast is unavailable for bare left/right click, so those two
             -- entries are shown disabled with the reason as a tooltip.
             do
-                local rowFrame = MakeRow(centerY)
+                local row = MakeRow(centerY)
                 local isBareMouseBtn = selectedBinding.key == "BUTTON1" or selectedBinding.key == "BUTTON2"
-                RowLabel(rowFrame, "Cast On")
+                RowLabel(row, "Cast On")
                 if isBareMouseBtn and selectedBinding.hovercast then
                     selectedBinding.hovercast = false
                     mod.CC_ApplyBindings()
@@ -6121,9 +6112,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 }
                 local hcOrder = { "frames", "units", "both" }
                 local ddCtrl = CludesUI.BuildDropdownControl(
-                    rowFrame,
+                    row,
                     160,
-                    rowFrame:GetFrameLevel() + 2,
+                    row:GetFrameLevel() + 2,
                     hcValues,
                     hcOrder,
                     function()
@@ -6146,7 +6137,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                         return false
                     end
                 )
-                Pix.Point(ddCtrl, "RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
+                Pix.Point(ddCtrl, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
                 centerY = centerY - ROW_H
             end
 
@@ -6159,20 +6150,20 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 or selectedBinding.hovercast
             then
                 do
-                    local rowFrame = MakeRow(centerY)
-                    RowLabel(rowFrame, "    Unit Types")
-                    local ePill = RowToggle(rowFrame, function()
+                    local row = MakeRow(centerY)
+                    RowLabel(row, "    Unit Types")
+                    local ePill = RowToggle(row, function()
                         return selectedBinding.hoverEnemy == true
                     end, function(v)
                         selectedBinding.hoverEnemy = v
                         mod.CC_ApplyBindings()
                         RebuildPage()
                     end)
-                    local eLbl = MakeFont(rowFrame, 13, 1, 1, 1, 0.8)
+                    local eLbl = MakeFont(row, 13, 1, 1, 1, 0.8)
                     eLbl:SetPoint("RIGHT", ePill, "LEFT", -8, 0)
                     eLbl:SetText(CludesUI.L("Enemy"))
 
-                    local fPill = RowToggle(rowFrame, function()
+                    local fPill = RowToggle(row, function()
                         return selectedBinding.hoverFriendly ~= false
                     end, function(v)
                         selectedBinding.hoverFriendly = v
@@ -6181,7 +6172,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     end)
                     fPill:ClearAllPoints()
                     Pix.Point(fPill, "RIGHT", eLbl, "LEFT", -18, 0)
-                    local fLbl = MakeFont(rowFrame, 13, 1, 1, 1, 0.8)
+                    local fLbl = MakeFont(row, 13, 1, 1, 1, 0.8)
                     fLbl:SetPoint("RIGHT", fPill, "LEFT", -8, 0)
                     fLbl:SetText(CludesUI.L("Friendly"))
                     centerY = centerY - ROW_H
@@ -6213,14 +6204,14 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- Parent to the CUI panel (outside the scroll system) so it's flush with the window edge
         local cuiPanel = scrollFrame:GetParent()
-        local hostRegion = cuiPanel or root
+        local host = cuiPanel or root
         local stripOuter = mod._ccSpellStrip
         if not stripOuter then
-            stripOuter = CreateFrame("Frame", nil, hostRegion)
+            stripOuter = CreateFrame("Frame", nil, host)
             -- Held across renders: never handed out again by the options page
             -- pool should it be made on a pool host (a no-op on the panel).
             POOL.Keep(stripOuter)
-            stripOuter:SetFrameLevel(hostRegion:GetFrameLevel() + 10)
+            stripOuter:SetFrameLevel(host:GetFrameLevel() + 10)
             local stripBg = stripOuter:CreateTexture(nil, "BACKGROUND")
             stripBg:SetAllPoints()
             stripBg:SetColorTexture(0, 0, 0, 0.6)
@@ -6286,13 +6277,13 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         end
         -- Every build starts the strip from the look a new one has: resting
         -- alpha, scrolled to the top, no queued hover update.
-        if stripOuter:GetParent() ~= hostRegion then
-            stripOuter:SetParent(hostRegion)
+        if stripOuter:GetParent() ~= host then
+            stripOuter:SetParent(host)
         end
         stripOuter:SetSize(SPELL_STRIP_W, visibleH)
         stripOuter:ClearAllPoints()
         stripOuter:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 0, 0)
-        stripOuter:SetFrameLevel(hostRegion:GetFrameLevel() + 10)
+        stripOuter:SetFrameLevel(host:GetFrameLevel() + 10)
         stripOuter._overlay:SetFrameLevel(stripOuter:GetFrameLevel() + 20)
         stripOuter._scroll:SetFrameLevel(stripOuter:GetFrameLevel() + 1)
         stripOuter._pending = false
@@ -6310,28 +6301,28 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         local spells = mod.CC_GetClassSpells(true)
         local stripY = 0
         for i, sp in ipairs(spells) do
-            local cellFrame = cells[i]
-            if not cellFrame then
-                cellFrame = CreateFrame("Button", nil, stripChild)
-                cellFrame:SetSize(SS_ICON, SS_ICON)
-                local iconTex = cellFrame:CreateTexture(nil, "ARTWORK")
+            local cell = cells[i]
+            if not cell then
+                cell = CreateFrame("Button", nil, stripChild)
+                cell:SetSize(SS_ICON, SS_ICON)
+                local iconTex = cell:CreateTexture(nil, "ARTWORK")
                 iconTex:SetAllPoints()
                 iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                local iconBdr = CreateFrame("Frame", nil, cellFrame)
+                local iconBdr = CreateFrame("Frame", nil, cell)
                 iconBdr:SetAllPoints()
-                iconBdr:SetFrameLevel(cellFrame:GetFrameLevel() + 1)
+                iconBdr:SetFrameLevel(cell:GetFrameLevel() + 1)
                 iconBdr:Hide()
                 if Pix then
                     Pix.CreateBorder(iconBdr, accentColor.r, accentColor.g, accentColor.b, 1, 2)
                 end
-                cellFrame._tex, cellFrame._bd = iconTex, iconBdr
-                cells[i] = cellFrame
+                cell._tex, cell._bd = iconTex, iconBdr
+                cells[i] = cell
             end
-            cellFrame:ClearAllPoints()
-            cellFrame:SetPoint("TOPLEFT", stripChild, "TOPLEFT", 10, stripY)
-            cellFrame:Show()
+            cell:ClearAllPoints()
+            cell:SetPoint("TOPLEFT", stripChild, "TOPLEFT", 10, stripY)
+            cell:Show()
 
-            local iconTex, iconBdr = cellFrame._tex, cellFrame._bd
+            local iconTex, iconBdr = cell._tex, cell._bd
             iconTex:SetTexture(sp.icon or 134400)
             local alreadyBound = mod.CC_IsSpellBound(boundSpells, sp.id, sp.name)
             iconTex:SetAlpha(alreadyBound and 0.3 or 1)
@@ -6340,19 +6331,19 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 Pix.SetBorderColor(iconBdr, accentColor.r, accentColor.g, accentColor.b, 1)
             end
 
-            cellFrame:SetScript("OnEnter", function()
+            cell:SetScript("OnEnter", function()
                 iconBdr:Show()
                 StripEnter()
-                if not mod.CC_RankTip(cellFrame, sp) then
-                    CludesUI.ShowWidgetTooltip(cellFrame, sp.name)
+                if not mod.CC_RankTip(cell, sp) then
+                    CludesUI.ShowWidgetTooltip(cell, sp.name)
                 end
             end)
-            cellFrame:SetScript("OnLeave", function()
+            cell:SetScript("OnLeave", function()
                 iconBdr:Hide()
                 StripLeave()
                 CludesUI.HideWidgetTooltip()
             end)
-            cellFrame:SetScript("OnClick", function()
+            cell:SetScript("OnClick", function()
                 mod.CC_AddSpecBinding({
                     type = "spell",
                     spell = sp.name,

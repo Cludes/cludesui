@@ -190,19 +190,19 @@ end
 --------------------------------------------------------------------------------
 -- The meter's rows name a spec by its icon; each class's specs map their icon
 -- back to the spec ID (built once per class).
-local function IconSpecs(classID, classFile)
-    local t = specOfIcon[classFile]
+local function IconSpecs(classID, class)
+    local t = specOfIcon[class]
     if t then
         return t
     end
     t = {}
-    specOfIcon[classFile] = t
+    specOfIcon[class] = t
     local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
     for i = 1, num do
-        local ident, _, _, glyph = GetSpecializationInfoForClassID(classID, i)
-        if ident and glyph then
-            t[glyph] = ident
-            specIconOf[ident] = glyph
+        local ident, _, _, icon = GetSpecializationInfoForClassID(classID, i)
+        if ident and icon then
+            t[icon] = ident
+            specIconOf[ident] = icon
         end
     end
     return t
@@ -210,11 +210,11 @@ end
 
 -- The icon the meter's rows show for a member's spec, from their class's
 -- spec list.
-local function IconOf(classID, classFile, specID)
-    if not (classID and classFile and specID) then
+local function IconOf(classID, class, specID)
+    if not (classID and class and specID) then
         return nil
     end
-    IconSpecs(classID, classFile)
+    IconSpecs(classID, class)
     return specIconOf[specID]
 end
 
@@ -337,10 +337,10 @@ local function SyncRoster()
             -- while a unit's identity is restricted) keeps the last plain
             -- value: the same occupant has the same class, and a new one wiped
             -- the record above.
-            local _, classFile, classID = UnitClass(unitToken)
-            classFile = PlainString(classFile)
-            if classFile then
-                m.class = classFile
+            local _, class, classID = UnitClass(unitToken)
+            class = PlainString(class)
+            if class then
+                m.class = class
                 m.classID = (type(classID) == "number" and not Secret(classID)) and classID or m.classID
             end
             local success, role = pcall(UnitGroupRolesAssigned, unitToken)
@@ -485,7 +485,7 @@ local function ReadTree()
         return nil
     end
     local watched = KD.WATCHED_TALENTS
-    local group = {}
+    local set = {}
     local any = false
     for t = 1, #trees do
         local nodes = C_Traits.GetTreeNodes(trees[t])
@@ -501,7 +501,7 @@ local function ReadTree()
                         local di = C_Traits.GetDefinitionInfo(defID)
                         local spellRef = di and di.spellID
                         if spellRef and watched[spellRef] then
-                            group[spellRef] = true
+                            set[spellRef] = true
                         end
                     end
                 end
@@ -513,7 +513,7 @@ local function ReadTree()
     if not any then
         return nil
     end
-    return group
+    return set
 end
 
 local ReadNext
@@ -670,11 +670,11 @@ end
 -- fight), fetched by their readable group GUID.
 -- The key naming a row ("CLASS:icon", "*" for you): one string per
 -- combination, built the first time it is seen.
-local function RowKey(cls, glyph, loc)
+local function RowKey(cls, icon, loc)
     -- An enemy's or a pet's row carries no class and no spec icon: "-" for
     -- each, since a nil cannot index the memo.
     local c = Secret(cls) and "?" or (cls == nil and "-" or tostring(cls))
-    local ic = Secret(glyph) and "?" or (glyph == nil and "-" or glyph)
+    local ic = Secret(icon) and "?" or (icon == nil and "-" or icon)
     local own = (not Secret(loc) and loc == true) and true or false
     local byCls = keyMemo[c]
     if not byCls then
@@ -935,19 +935,19 @@ local function LearnSpecs()
                         local r = source[i]
                         if type(r) == "table" and not Secret(r) then
                             local unitToken = UnitOfGUID(r.sourceGUID)
-                            local glyph = r.specIconID
+                            local icon = r.specIconID
                             local m = unitToken and roster[unitToken]
                             if
                                 m
                                 and unitToken ~= "player"
                                 and m.specSrc ~= "inspect"
-                                and type(glyph) == "number"
-                                and not Secret(glyph)
+                                and type(icon) == "number"
+                                and not Secret(icon)
                             then
                                 local map = m.class and m.classID and IconSpecs(m.classID, m.class)
-                                local specInfo = map and map[glyph]
-                                if m.specIcon ~= glyph or m.specID ~= specInfo then
-                                    m.specIcon, m.specID, m.specSrc = glyph, specInfo, "meter"
+                                local specInfo = map and map[icon]
+                                if m.specIcon ~= icon or m.specID ~= specInfo then
+                                    m.specIcon, m.specID, m.specSrc = icon, specInfo, "meter"
                                     if ResolveKick(m) then
                                         changed = true
                                     end
@@ -976,8 +976,8 @@ local function KeyUnits(key, result)
         result[1] = "player"
         return result
     end
-    local cls, glyph = key:match("^([^:]+):([^:%*]+)")
-    glyph = tonumber(glyph)
+    local cls, icon = key:match("^([^:]+):([^:%*]+)")
+    icon = tonumber(icon)
     for i = 2, #GROUP_UNITS do
         local m = roster[GROUP_UNITS[i]]
         if
@@ -985,7 +985,7 @@ local function KeyUnits(key, result)
             and m.guid
             and m.kick
             and m.class == cls
-            and (glyph == nil or m.specIcon == nil or m.specIcon == glyph)
+            and (icon == nil or m.specIcon == nil or m.specIcon == icon)
         then
             result[#result + 1] = GROUP_UNITS[i]
         end
@@ -1001,13 +1001,13 @@ local function LearnRow(m, key, T)
     if not m or m.specSrc == "inspect" or m.specIcon ~= nil then
         return
     end
-    local cls, glyph = key:match("^([^:]+):([^:%*]+)")
-    glyph = tonumber(glyph)
-    if not glyph or cls ~= m.class then
+    local cls, icon = key:match("^([^:]+):([^:%*]+)")
+    icon = tonumber(icon)
+    if not icon or cls ~= m.class then
         return
     end
     local map = m.classID and IconSpecs(m.classID, m.class)
-    m.specIcon, m.specID, m.specSrc = glyph, map and map[glyph] or nil, "row"
+    m.specIcon, m.specID, m.specSrc = icon, map and map[icon] or nil, "row"
     ResolveKick(m)
     Dispatch("roster", T)
 end

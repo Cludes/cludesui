@@ -771,10 +771,10 @@ function ABAR:ToggleVisKey(key)
     if #participants == 0 then
         return
     end
-    local targetUnit = anyShown and "never" or "always"
+    local target = anyShown and "never" or "always"
     self._visOverride = self._visOverride or {}
     for _, bk in ipairs(participants) do
-        self._visOverride[bk] = targetUnit
+        self._visOverride[bk] = target
     end
     self:RefreshRuntimeVisibility()
 end

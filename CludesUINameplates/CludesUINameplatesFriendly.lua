@@ -128,11 +128,11 @@ local function GetNPCTitle(unitToken)
         return nil
     end
     local cbMode = tonumber(GetCVar("colorblindMode")) or 0
-    local lineTex = payload.lines[2 + cbMode]
-    if not lineTex then
+    local line = payload.lines[2 + cbMode]
+    if not line then
         return nil
     end
-    local textValue = lineTex.leftText
+    local textValue = line.leftText
     -- The secret guard MUST come before any comparison: line.leftText is a secret
     -- string under nameplate taint, and "text == ''" throws on a secret value.
     -- A truthiness check (not text) is secret-safe, so the nil-guard stays first.
@@ -244,14 +244,14 @@ local subTexts = {} -- every built subText1, in build order (pooled plates are n
 local _sfFile, _sfSize, _sfFlags
 local function ApplySubtitleFont()
     local file = GetFont()
-    local dim = GetSubTextSize()
+    local size = GetSubTextSize()
     local flags = (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
-    if file == _sfFile and dim == _sfSize and flags == _sfFlags then
+    if file == _sfFile and size == _sfSize and flags == _sfFlags then
         return
     end
-    _sfFile, _sfSize, _sfFlags = file, dim, flags
+    _sfFile, _sfSize, _sfFlags = file, size, flags
     for i = 1, #subTexts do
-        CludesUI.SetFontFamily(subTexts[i], file, dim, flags, false)
+        CludesUI.SetFontFamily(subTexts[i], file, size, flags, false)
     end
 end
 
@@ -259,7 +259,7 @@ local _ffFile, _ffSize
 local function ApplyFriendlyFontOverride(force)
     SaveOriginalFonts()
     local font = GetFont()
-    local dim = GetFriendlyNameSize()
+    local size = GetFriendlyNameSize()
     -- Blizzard never rewrites the shared font OBJECTS (its plate setup only
     -- SetFontObjects the name strings onto them), so once they carry our
     -- file + size they keep it: an unchanged pair means nothing to restore
@@ -269,7 +269,7 @@ local function ApplyFriendlyFontOverride(force)
     -- (instanced content) the per-string SetTextHeight re-stamp is denied,
     -- and this relayout is the only lever that clears Blizzard's per-instance
     -- height, so the deferred re-apply forces it there (once per burst).
-    if not force and fontOverrideApplied and font == _ffFile and dim == _ffSize then
+    if not force and fontOverrideApplied and font == _ffFile and size == _ffSize then
         return
     end
     -- Restore to known-good originals first, so a member the new font does not
@@ -304,18 +304,18 @@ local function ApplyFriendlyFontOverride(force)
     CludesUI.SetFontObjectFace(
         SystemFont_NamePlate,
         font,
-        dim,
+        size,
         WithOutline(SnapFlags(origNamePlateFont)),
         nil
     )
     CludesUI.SetFontObjectFace(
         SystemFont_NamePlate_Outlined,
         font,
-        dim,
+        size,
         WithOutline(SnapFlags(origNamePlateOutlined)),
         nil
     )
-    _ffFile, _ffSize = font, dim
+    _ffFile, _ffSize = font, size
     fontOverrideApplied = true
 end
 
@@ -629,11 +629,11 @@ end
 -- whole name).
 local function FormatNPCName(name)
     local fp = FP()
-    local modeName = fp and fp.friendlyNPCNameFormat
-    if not modeName then
+    local mode = fp and fp.friendlyNPCNameFormat
+    if not mode then
         return name
     end
-    return CludesUI.ShortName(name, modeName)
+    return CludesUI.ShortName(name, mode)
 end
 
 local function ShowNPCOverlay(nameplate, unitToken)
@@ -656,9 +656,9 @@ local function ShowNPCOverlay(nameplate, unitToken)
     ApplyOverlayStyle(overlayFrame, unitToken)
     -- NPC title (e.g. "Innkeeper", "Flight Master")
     if ShowNPCTitles() then
-        local titleText = GetNPCTitle(unitToken)
-        if titleText then
-            overlayFrame.title:SetText("<" .. titleText .. ">")
+        local title = GetNPCTitle(unitToken)
+        if title then
+            overlayFrame.title:SetText("<" .. title .. ">")
             overlayFrame.title:Show()
         else
             overlayFrame.title:Hide()
@@ -815,11 +815,11 @@ local function GetSubTextColor(unitToken)
     return SUB_TEXT_R, SUB_TEXT_G, SUB_TEXT_B
 end
 
-local function ModeHasTitle(modeName)
-    return modeName == "title" or modeName == "both"
+local function ModeHasTitle(mode)
+    return mode == "title" or mode == "both"
 end
-local function ModeHasGuild(modeName)
-    return modeName == "guild" or modeName == "both"
+local function ModeHasGuild(mode)
+    return mode == "guild" or mode == "both"
 end
 -- Show Level (friendlyShowLevel, default off): a friendly PLAYER's level ahead
 -- of the name, "60 | Name", in both friendly modes.
@@ -876,11 +876,11 @@ do
     local titledShort = { first = {}, last = {}, abbr = {} } -- [mode][full name][string] = result
     local titledCount = { first = 0, last = 0, abbr = 0 }
     -- A mode's cache; a Character Count gets its own on first use.
-    local function TitledCache(modeName)
-        local cache = titledShort[modeName]
-        if not cache and CludesUI.IsNameFormat(modeName) then
+    local function TitledCache(mode)
+        local cache = titledShort[mode]
+        if not cache and CludesUI.IsNameFormat(mode) then
             cache = {}
-            titledShort[modeName], titledCount[modeName] = cache, 0
+            titledShort[mode], titledCount[mode] = cache, 0
         end
         return cache
     end
@@ -903,13 +903,13 @@ do
         end
     end
     FormatFriendlyName = function(unitToken, name, mayHaveTitle)
-        local modeName = FriendlyNameFormat()
-        local cache = modeName and TitledCache(modeName)
+        local mode = FriendlyNameFormat()
+        local cache = mode and TitledCache(mode)
         if not cache then
             return name
         end
         if not mayHaveTitle then
-            return short(name, modeName)
+            return short(name, mode)
         end
         if issecretvalue(name) or type(name) ~= "string" then
             return name
@@ -919,8 +919,8 @@ do
             return name
         end
         local full = WithSurname(first, surname)
-        local rowFrame = cache[full]
-        local s = rowFrame and rowFrame[name]
+        local row = cache[full]
+        local s = row and row[name]
         if s then
             return s
         end
@@ -933,18 +933,18 @@ do
                 i = nil
             end
         end
-        s = i and (name:sub(1, i - 1) .. short(full, modeName) .. name:sub(jdx + 1)) or name
-        if titledCount[modeName] >= 256 then
+        s = i and (name:sub(1, i - 1) .. short(full, mode) .. name:sub(jdx + 1)) or name
+        if titledCount[mode] >= 256 then
             wipe(cache)
-            titledCount[modeName] = 0
-            rowFrame = nil
+            titledCount[mode] = 0
+            row = nil
         end
-        if not rowFrame then
-            rowFrame = {}
-            cache[full] = rowFrame
+        if not row then
+            row = {}
+            cache[full] = row
         end
-        rowFrame[name] = s
-        titledCount[modeName] = titledCount[modeName] + 1
+        row[name] = s
+        titledCount[mode] = titledCount[mode] + 1
         return s
     end
     local aFormat, aMode, aBrackets, aLevel, aDiff, stamped
@@ -1040,11 +1040,11 @@ local function UpdateNameOnlyText(nameFS)
     if UnitCanAttack("player", unitToken) then
         return
     end
-    local modeName = GetBelowNameMode()
+    local mode = GetBelowNameMode()
     local isPlayer = UnitIsPlayer(unitToken)
 
     local wanted
-    if ModeHasTitle(modeName) and isPlayer then
+    if ModeHasTitle(mode) and isPlayer then
         wanted = GetTitledName(unitToken)
     end
     if not wanted then
@@ -1055,14 +1055,14 @@ local function UpdateNameOnlyText(nameFS)
     end
     -- The friendly Name Format, while one is saved (players only).
     if isPlayer and FriendlyNameFormat() then
-        wanted = FormatFriendlyName(unitToken, wanted, ModeHasTitle(modeName))
+        wanted = FormatFriendlyName(unitToken, wanted, ModeHasTitle(mode))
     end
     if isPlayer and ShowFriendlyLevel() then
         wanted = FriendlyLevelText(unitToken) .. " | " .. wanted
     end
 
     local guild
-    if ModeHasGuild(modeName) and isPlayer then
+    if ModeHasGuild(mode) and isPlayer then
         guild = GetGuildInfo and GetGuildInfo(unitToken)
     end
 
@@ -1828,27 +1828,27 @@ function FriendlyFrame:UpdateSubText()
         return
     end
     local lines = 0
-    local dim = 0
+    local size = 0
     if ModeHasGuild(GetBelowNameMode()) and UnitIsPlayer(unitToken) then
         -- The font is ApplySubtitleFont's (set at build and on a change); only
         -- the content and the name-lift offset are per-plate.
-        dim = GetSubTextSize()
+        size = GetSubTextSize()
         lines = ApplySubText(self.subText1, unitToken)
     elseif self._subOff == 4 then
         return -- no guild line drawn: nothing to do
     else
         self.subText1:SetText("")
     end
-    local offset = 4 + lines * (dim + 2)
-    if offset ~= self._subOff then
-        self._subOff = offset
+    local off = 4 + lines * (size + 2)
+    if off ~= self._subOff then
+        self._subOff = off
         -- Both texts hang off the HEALTH BAR (a frame) with computed numbers:
         -- the name's bottom sits at off, so the guild line's top sits 1px
         -- under it. Chaining the line off the name's rect instead is what
         -- made it jitter on moving plates.
-        self.name:SetPoint("BOTTOM", self.health, "TOP", 0, offset)
+        self.name:SetPoint("BOTTOM", self.health, "TOP", 0, off)
         self.subText1:ClearAllPoints()
-        self.subText1:SetPoint("TOP", self.health, "TOP", 0, offset - 1)
+        self.subText1:SetPoint("TOP", self.health, "TOP", 0, off - 1)
     end
 end
 
@@ -2213,10 +2213,10 @@ end
 -- Re-apply the full-plate friendly name text size to all live plates so the
 -- slider updates without a /reload. The name carries an explicit outline flag.
 function mod.RefreshFriendlyNameTextSize()
-    local dim = GetFriendlyNameTextSize()
+    local size = GetFriendlyNameTextSize()
     for _, backing in pairs(friendlyPlates) do
         if backing.name then
-            SetFSFont(backing.name, dim, "OUTLINE, SLUG")
+            SetFSFont(backing.name, size, "OUTLINE, SLUG")
         end
     end
 end

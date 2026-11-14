@@ -1045,9 +1045,9 @@ initFrame:SetScript("OnEvent", function(self)
                             CludesUI.HideWidgetTooltip()
                         end)
                         local function UpdateIlvlSwatch()
-                            local offset = IlvlMode() ~= "custom"
-                            colorSwatch:SetAlpha(offset and 0.3 or 1)
-                            swatchBlock:SetShown(offset)
+                            local off = IlvlMode() ~= "custom"
+                            colorSwatch:SetAlpha(off and 0.3 or 1)
+                            swatchBlock:SetShown(off)
                         end
                         UpdateIlvlSwatch()
                         CludesUI.RegisterWidgetRefresh(UpdateIlvlSwatch)
@@ -1365,8 +1365,8 @@ initFrame:SetScript("OnEvent", function(self)
                     }
                     local splitRow, splitLeft
                     for i = 1, #listSlots, 2 do
-                        local rowFrame
-                        rowFrame, hgt = W:DualRow(
+                        local row
+                        row, hgt = W:DualRow(
                             hostFrame,
                             posY,
                             listSlots[i],
@@ -1374,7 +1374,7 @@ initFrame:SetScript("OnEvent", function(self)
                         )
                         posY = posY - hgt
                         if splitSlot == i or splitSlot == i + 1 then
-                            splitRow, splitLeft = rowFrame, splitSlot == i
+                            splitRow, splitLeft = row, splitSlot == i
                         end
                     end
 
@@ -1768,9 +1768,9 @@ initFrame:SetScript("OnEvent", function(self)
                         local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
                         if co then
                             local listed = {}
-                            for _, itemInfo in ipairs(currencyItems) do
-                                if itemInfo.key then
-                                    listed[itemInfo.key] = true
+                            for _, item in ipairs(currencyItems) do
+                                if item.key then
+                                    listed[item.key] = true
                                 end
                             end
                             local retired = {}
@@ -1784,20 +1784,20 @@ initFrame:SetScript("OnEvent", function(self)
                                 -- Top of the menu: a leftover seasonal currency is
                                 -- exactly what this dropdown gets opened to remove,
                                 -- so it never hides under the live headers.
-                                local blockData = {
+                                local block = {
                                     { isHeader = true, label = CludesUI.L("Retired") },
                                 }
                                 for _, cID in ipairs(retired) do
                                     local cInfo = C_CurrencyInfo.GetCurrencyInfo
                                         and C_CurrencyInfo.GetCurrencyInfo(cID)
-                                    blockData[#blockData + 1] = {
+                                    block[#block + 1] = {
                                         key = cID,
                                         label = (cInfo and cInfo.name) or ("Currency " .. cID),
                                         icon = cInfo and cInfo.iconFileID,
                                     }
                                 end
-                                for i = #blockData, 1, -1 do
-                                    table.insert(currencyItems, 1, blockData[i])
+                                for i = #block, 1, -1 do
+                                    table.insert(currencyItems, 1, block[i])
                                 end
                             end
                         end

@@ -493,7 +493,7 @@ initFrame:SetScript("OnEvent", function(self)
     local GLOBAL_KEY = CludesUI.GLOBAL_KEY or "_CUIGlobal"
     local floor = math.floor
     local ceil = math.ceil
-    local upper = math.max
+    local max = math.max
 
     ---------------------------------------------------------------------------
     --  CVar helpers
@@ -522,14 +522,14 @@ initFrame:SetScript("OnEvent", function(self)
 
     --- Returns current, default as strings (nil-safe)
     local function CVarInfo(cvar)
-        local current, spec_def = C_CVar.GetCVarInfo(cvar)
-        return current or "", spec_def or ""
+        local current, def = C_CVar.GetCVarInfo(cvar)
+        return current or "", def or ""
     end
 
     --- True while the CVar sits at Blizzard's built-in default (untouched by player or addon).
     local function IsAtBlizzardDefault(cvar)
-        local current, spec_def = CVarInfo(cvar)
-        return current == spec_def
+        local current, def = CVarInfo(cvar)
+        return current == def
     end
 
     ---------------------------------------------------------------------------
@@ -1011,9 +1011,9 @@ initFrame:SetScript("OnEvent", function(self)
             Pix.Point(tcSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
             rightRgn._lastInline = tcSwatch
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = isCustomColorOff()
-                tcSwatch:SetAlpha(offset and 0.15 or 1)
-                tcSwatch:EnableMouse(not offset)
+                local off = isCustomColorOff()
+                tcSwatch:SetAlpha(off and 0.15 or 1)
+                tcSwatch:EnableMouse(not off)
                 tcUpdateSwatch()
             end)
             tcSwatch:SetAlpha(isCustomColorOff() and 0.15 or 1)
@@ -1570,7 +1570,7 @@ initFrame:SetScript("OnEvent", function(self)
         local healTip = CludesUI.DisabledTooltip("Healing")
         local fxTip = CludesUI.DisabledTooltip("Target Effects")
         local COMBAT_TEXT = {}
-        for _, itemInfo in ipairs({
+        for _, item in ipairs({
             { key = "floatingCombatTextCombatDamage_v2", label = "Damage" },
             {
                 key = "floatingCombatTextCombatLogPeriodicSpells_v2",
@@ -1610,8 +1610,8 @@ initFrame:SetScript("OnEvent", function(self)
                 excludeFromSummaryFn = FxOff,
             },
         }) do
-            if C_CVar.GetCVarInfo(itemInfo.key) then
-                COMBAT_TEXT[#COMBAT_TEXT + 1] = itemInfo
+            if C_CVar.GetCVarInfo(item.key) then
+                COMBAT_TEXT[#COMBAT_TEXT + 1] = item
             end
         end
         local combatTextRow
@@ -1791,8 +1791,8 @@ initFrame:SetScript("OnEvent", function(self)
                 tooltip = "Pick a module, or ALL, to return to its defaults.",
                 onClick = function()
                     local foci = GetMouseFoci and GetMouseFoci()
-                    local anchorFrame = (foci and foci[1]) or (GetMouseFocus and GetMouseFocus()) or UIParent
-                    CludesUI._ShowModuleResetMenu(anchorFrame, ConfirmResetAll)
+                    local anchor = (foci and foci[1]) or (GetMouseFocus and GetMouseFocus()) or UIParent
+                    CludesUI._ShowModuleResetMenu(anchor, ConfirmResetAll)
                 end,
             }, {
                 type = "labeledButton",

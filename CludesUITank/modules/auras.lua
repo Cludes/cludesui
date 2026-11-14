@@ -3,7 +3,7 @@ if mod.standalone then
     return
 end
 -- Core.lua is loaded before this file (see TOC), so ns.K is available.
-local Keys = mod.K
+local K = mod.K
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  Midnight 12.1 aura access
@@ -77,12 +77,12 @@ end
 local buttonRegions = setmetatable({}, { __mode = "k" })
 
 local function StackPosition(posId)
-    for _, p in ipairs(Keys.STACK_COUNT_POSITIONS) do
+    for _, p in ipairs(K.STACK_COUNT_POSITIONS) do
         if p.id == posId then
             return p
         end
     end
-    return Keys.STACK_COUNT_POSITIONS[1]
+    return K.STACK_COUNT_POSITIONS[1]
 end
 
 -- Four edge textures around `parent`, used for the stack highlight on both the
@@ -116,22 +116,22 @@ end
 
 -- Stack count at which a debuff icon is highlighted, 0 when switched off.
 function mod.StackHighlightAt()
-    return math.max(math.floor(mod.SettingNumber("stackHighlightAt", Keys.STACK_HIGHLIGHT_DEFAULT)), 0)
+    return math.max(math.floor(mod.SettingNumber("stackHighlightAt", K.STACK_HIGHLIGHT_DEFAULT)), 0)
 end
 
 -- The candidateFilters for the debuff row. A fresh table each call: the
 -- engine keeps what it is given.
 function mod.DebuffCandidateFilters()
     local ident = mod.DB().debuffFilter
-    local modeName = Keys.DEBUFF_FILTER_MODES[1]
-    for _, m in ipairs(Keys.DEBUFF_FILTER_MODES) do
+    local mode = K.DEBUFF_FILTER_MODES[1]
+    for _, m in ipairs(K.DEBUFF_FILTER_MODES) do
         if m.id == ident then
-            modeName = m
+            mode = m
             break
         end
     end
     local filters = {}
-    for k, val in pairs(modeName.filters) do
+    for k, val in pairs(mode.filters) do
         filters[k] = val
     end
     return filters
@@ -139,15 +139,15 @@ end
 
 -- Icon edge length for each group. Defensives sit inside the health bar, so
 -- their size follows the configured frame height rather than the default one.
-function mod.AuraIconSize(kindOf)
-    if kindOf == "external" then
+function mod.AuraIconSize(kind)
+    if kind == "external" then
         return mod.SettingNumber("extSize", mod.EXT and mod.EXT.DEFAULT_SIZE or 36)
     end
-    if kindOf == "defensive" then
-        local height = mod.SettingNumber("frameHeight", Keys.DEFAULT_HEIGHT)
-        return math.max(height - Keys.POWER_BAR_HEIGHT - 16, 8)
+    if kind == "defensive" then
+        local height = mod.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
+        return math.max(height - K.POWER_BAR_HEIGHT - 16, 8)
     end
-    return Keys.DEBUFF_ICON_SIZE
+    return K.DEBUFF_ICON_SIZE
 end
 
 -- Applies every icon-appearance setting to one AuraButton. Safe to call at
@@ -162,15 +162,15 @@ local function ApplyButtonSettings(button)
 
     -- Size is re-applied here rather than only at creation, so a frame height
     -- change resizes the defensive icons that already exist.
-    local dim = mod.AuraIconSize(regions.kind)
-    button:SetSize(dim, dim)
+    local size = mod.AuraIconSize(regions.kind)
+    button:SetSize(size, size)
 
     local saved = mod.DB()
     local face = mod.FontPath()
     local flags = mod.FontFlags()
-    local scale = mod.SettingNumber("cdFontScale", Keys.CD_FONT_SCALE_DEFAULT) / 10.0
-    local stackSize = mod.SettingNumber("stackCountSize", Keys.STACK_COUNT_DEFAULT_SIZE)
-    local timerSize = mod.SettingNumber("timerTextSize", Keys.TIMER_TEXT_DEFAULT_SIZE)
+    local scale = mod.SettingNumber("cdFontScale", K.CD_FONT_SCALE_DEFAULT) / 10.0
+    local stackSize = mod.SettingNumber("stackCountSize", K.STACK_COUNT_DEFAULT_SIZE)
+    local timerSize = mod.SettingNumber("timerTextSize", K.TIMER_TEXT_DEFAULT_SIZE)
     local nudgeX = mod.SettingNumber("stackCountNudgeX", 0)
     local nudgeY = mod.SettingNumber("stackCountNudgeY", 0)
     local cdAbove = saved.cdAbove or false
@@ -217,7 +217,7 @@ local function ApplyButtonSettings(button)
             regions.stackBar = CreateFrame("StatusBar", nil, button)
             regions.stackBar:SetAllPoints(button)
             regions.stackBar:SetFrameLevel(regions.cd:GetFrameLevel() + 1)
-            regions.stackEdges = mod.CreateEdges(regions.stackBar, Keys.STACK_HIGHLIGHT_EDGE)
+            regions.stackEdges = mod.CreateEdges(regions.stackBar, K.STACK_HIGHLIGHT_EDGE)
         end
         mod.ColorEdges(regions.stackEdges, mod.FontColor("stackHighlightColor"))
         button:SetApplicationBar(
@@ -291,8 +291,8 @@ local function ApplyButtonSettings(button)
 end
 
 -- Runs inside the container's initializeFrame callback, once per button.
-local function StyleAuraButton(button, kindOf)
-    local regions = { kind = kindOf }
+local function StyleAuraButton(button, kind)
+    local regions = { kind = kind }
     buttonRegions[button] = regions
 
     -- 1px dark edge: a texture filling the button, with the icon inset on
@@ -371,7 +371,7 @@ function mod.CreateDebuffAuraContainer(widget)
     end
 
     local iconSize = mod.AuraIconSize("debuff")
-    local spacing = mod.SettingNumber("debuffSpacing", Keys.DEBUFF_SPACING)
+    local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)
 
     local boxHolder = CreateContainer(widget, iconSize, AnchorUtil.FlowDirection.Left)
     if not boxHolder then
@@ -382,8 +382,8 @@ function mod.CreateDebuffAuraContainer(widget)
     -- With the default "all debuffs" setting no candidate filter is passed at
     -- all, which is exactly what earlier versions did.
     local filters = mod.DebuffCandidateFilters()
-    local addOk, addErr = pcall(boxHolder.AddAuraGroup, boxHolder, "debuffs", Keys.DEBUFF_AURA_FILTER, {
-        maxFrameCount = math.max(mod.SettingNumber("maxDebuffs", Keys.DEBUFF_DEFAULT_COUNT), 0),
+    local addOk, addErr = pcall(boxHolder.AddAuraGroup, boxHolder, "debuffs", K.DEBUFF_AURA_FILTER, {
+        maxFrameCount = math.max(mod.SettingNumber("maxDebuffs", K.DEBUFF_DEFAULT_COUNT), 0),
         sortMethod = AuraContainerSortMethod.UnitFrameDebuff,
         sortDirection = AuraContainerSortDirection.Normal,
         candidateFilters = next(filters) and filters or nil,
@@ -416,20 +416,17 @@ function mod.CreateDefensiveAuraContainer(widget)
     end
 
     local iconSize = mod.AuraIconSize("defensive")
-    local spacing = Keys.DEBUFF_SPACING
+    local spacing = K.DEBUFF_SPACING
 
     local boxHolder = CreateContainer(widget, iconSize, AnchorUtil.FlowDirection.Left)
     if not boxHolder then
         return
     end
-    boxHolder:SetPoint("TOPRIGHT", widget.health, "RIGHT", -Keys.DEBUFF_SPACING, iconSize / 2 - 2)
+    boxHolder:SetPoint("TOPRIGHT", widget.health, "RIGHT", -K.DEBUFF_SPACING, iconSize / 2 - 2)
 
     local addOk, addErr =
-        pcall(boxHolder.AddAuraGroup, boxHolder, "defensives", Keys.BIG_DEFENSIVE_AURA_FILTER, {
-            maxFrameCount = math.max(
-                mod.SettingNumber("maxDefensives", Keys.BIG_DEFENSIVES_DEFAULT_COUNT),
-                0
-            ),
+        pcall(boxHolder.AddAuraGroup, boxHolder, "defensives", K.BIG_DEFENSIVE_AURA_FILTER, {
+            maxFrameCount = math.max(mod.SettingNumber("maxDefensives", K.BIG_DEFENSIVES_DEFAULT_COUNT), 0),
             sortMethod = AuraContainerSortMethod.BigDefensive,
             sortDirection = AuraContainerSortDirection.Normal,
             initializeFrame = function(button)
@@ -470,7 +467,7 @@ function mod.MigratePrivateAuraRow()
     end
 
     saved.auraContainerMigrated = true
-    local previous = mod.SettingNumber("maxPrivateAuras", Keys.PRIVATE_AURAS_DEFAULT_COUNT)
+    local previous = mod.SettingNumber("maxPrivateAuras", K.PRIVATE_AURAS_DEFAULT_COUNT)
     if previous <= 0 then
         return
     end
@@ -528,7 +525,7 @@ function mod.RefreshDebuffContainer(widget)
         widget.debuffContainer,
         "debuffs",
         widget:GetAttribute("unit"),
-        mod.SettingNumber("maxDebuffs", Keys.DEBUFF_DEFAULT_COUNT),
+        mod.SettingNumber("maxDebuffs", K.DEBUFF_DEFAULT_COUNT),
         mod.DebuffsEnabled()
     )
 end
@@ -542,7 +539,7 @@ function mod.RefreshDefensiveContainer(widget)
         widget.defensiveContainer,
         "defensives",
         widget:GetAttribute("unit"),
-        mod.SettingNumber("maxDefensives", Keys.BIG_DEFENSIVES_DEFAULT_COUNT),
+        mod.SettingNumber("maxDefensives", K.BIG_DEFENSIVES_DEFAULT_COUNT),
         true
     )
 end
@@ -634,7 +631,7 @@ function mod.RefreshAuraContainerLayout(widget)
     end
 
     if widget.debuffContainer then
-        local spacing = mod.SettingNumber("debuffSpacing", Keys.DEBUFF_SPACING)
+        local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)
         local iconSize = mod.AuraIconSize("debuff")
         pcall(widget.debuffContainer.SetAuraGroupLayout, widget.debuffContainer, "debuffs", {
             elementSpacing = spacing,
@@ -647,8 +644,8 @@ function mod.RefreshAuraContainerLayout(widget)
     if widget.defensiveContainer then
         local iconSize = mod.AuraIconSize("defensive")
         pcall(widget.defensiveContainer.SetAuraGroupLayout, widget.defensiveContainer, "defensives", {
-            elementSpacing = Keys.DEBUFF_SPACING,
-            lineSpacing = Keys.DEBUFF_SPACING,
+            elementSpacing = K.DEBUFF_SPACING,
+            lineSpacing = K.DEBUFF_SPACING,
             elementWidth = iconSize,
             elementHeight = iconSize,
         })
@@ -659,7 +656,7 @@ function mod.RefreshAuraContainerLayout(widget)
                 "TOPRIGHT",
                 widget.health,
                 "RIGHT",
-                -Keys.DEBUFF_SPACING,
+                -K.DEBUFF_SPACING,
                 iconSize / 2 - 2
             )
         end

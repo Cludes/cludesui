@@ -21,9 +21,9 @@ local function Font()
     return CludesUI.GetFontPath("essentials")
 end
 
-local function Text(hostFrame, dim)
+local function Text(hostFrame, size)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(fontStr, dim, "essentials")
+    CludesUI.Kit.Font(fontStr, size, "essentials")
     fontStr:SetPoint("CENTER")
     return fontStr
 end
@@ -215,33 +215,33 @@ A.Start(AlertApply, {
 -------------------------------------------------------------------------------
 --  Stealth Reminder
 -------------------------------------------------------------------------------
-local Stl = module.Feature(
+local S = module.Feature(
     "stealthReminder",
     { enabled = false, groupOnly = false },
     { point = "CENTER", relPoint = "CENTER", x = 0, y = 180 }
 )
 local stealthFrame, stealthText
-local _, classFile = UnitClass("player")
+local _, class = UnitClass("player")
 local CAT_FORM = 1
 
 local function StealthWanted()
-    if not Stl.Enabled() then
+    if not S.Enabled() then
         return false
     end
     if CludesUI._unlockActive then
         return true
     end
-    if classFile == "DRUID" then
+    if class == "DRUID" then
         if not (GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM) then
             return false
         end
-    elseif classFile ~= "ROGUE" then
+    elseif class ~= "ROGUE" then
         return false
     end
     if InCombatLockdown() or IsStealthed() or IsResting() or UnitIsDeadOrGhost("player") or IsMounted() then
         return false
     end
-    if Stl.Get("groupOnly") and not IsInGroup() then
+    if S.Get("groupOnly") and not IsInGroup() then
         return false
     end
     return true
@@ -270,7 +270,7 @@ local stealthEv = CreateFrame("Frame")
 stealthEv:SetScript("OnEvent", StealthUpdate)
 
 local function StealthApply()
-    if Stl.Enabled() then
+    if S.Enabled() then
         StealthBuild()
         for _, e in ipairs({
             "UPDATE_STEALTH",
@@ -287,7 +287,7 @@ local function StealthApply()
             stealthEv:RegisterEvent(e)
         end
         if not CludesUI._unlockActive then
-            Stl.Place(stealthFrame)
+            S.Place(stealthFrame)
         end
     else
         stealthEv:UnregisterAllEvents()
@@ -295,7 +295,7 @@ local function StealthApply()
     StealthUpdate()
 end
 
-Stl.Start(StealthApply, {
+S.Start(StealthApply, {
     key = "CUI_StealthReminder",
     label = "Stealth Reminder",
     order = 744,
@@ -316,5 +316,5 @@ Stl.Start(StealthApply, {
 CludesUI._CombatExtras = {
     timer = { Get = T.Get, Cfg = T.Cfg, Apply = TimerApply },
     alert = { Get = A.Get, Cfg = A.Cfg, Apply = AlertApply },
-    stealth = { Get = Stl.Get, Cfg = Stl.Cfg, Apply = StealthApply },
+    stealth = { Get = S.Get, Cfg = S.Cfg, Apply = StealthApply },
 }

@@ -185,25 +185,25 @@ do
 end
 
 function ABAR:ApplyVehicleBarVisibility()
-    local barFrame = OverrideActionBar
-    if not barFrame then
+    local bar = OverrideActionBar
+    if not bar then
         return
     end
     local hide = self.db and self.db.profile and self.db.profile.hideBlizzardVehicleBar
     if hide then
         self:ReclaimMicroMenu()
-        barFrame:SetAlpha(0)
+        bar:SetAlpha(0)
         -- Guarded: the restore below may only undo OUR disable, never switch
         -- on mouse Blizzard had off for its own reasons.
         if not self._eabVehMouseOff then
             self._eabVehMouseOff = true
-            SafeEnableMouse(barFrame, false)
+            SafeEnableMouse(bar, false)
         end
     else
-        barFrame:SetAlpha(1)
+        bar:SetAlpha(1)
         if self._eabVehMouseOff then
             self._eabVehMouseOff = nil
-            SafeEnableMouse(barFrame, true)
+            SafeEnableMouse(bar, true)
         end
     end
 end
@@ -281,8 +281,8 @@ do
             if button then
                 local ct = button.CheckedTexture
                 if isSpecialPage then
-                    local slotIndex = idx + (page - 1) * NUM_ACTIONBAR_BUTTONS
-                    if not HasAction(slotIndex) then
+                    local slot = idx + (page - 1) * NUM_ACTIONBAR_BUTTONS
+                    if not HasAction(slot) then
                         -- SetChecked might be protected during combat; pcall.
                         -- Also hide CheckedTexture as a visual fallback.
                         pcall(button.SetChecked, button, false)

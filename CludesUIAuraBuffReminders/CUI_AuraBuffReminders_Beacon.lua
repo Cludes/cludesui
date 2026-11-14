@@ -141,11 +141,11 @@ local function BeaconMakeIcon(spellId)
     f:SetFrameStrata("HIGH")
     f:SetFrameLevel(120)
     f:Hide()
-    local glyph = f:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints()
-    glyph:SetTexture(Tex(spellId))
-    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    f._icon = glyph
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetTexture(Tex(spellId))
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    f._icon = icon
     f._spellID = spellId
     REMIND.ApplyIconBorder(f, false)
     local textValue = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
@@ -343,8 +343,8 @@ local function BeaconRefreshSoon()
 end
 
 local function BeaconInit()
-    local _, classFile = UnitClass("player")
-    _B.isPaladin = (classFile == "PALADIN")
+    local _, class = UnitClass("player")
+    _B.isPaladin = (class == "PALADIN")
     if not _B.isPaladin then
         return
     end

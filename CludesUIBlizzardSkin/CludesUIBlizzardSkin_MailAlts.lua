@@ -75,7 +75,7 @@ local BLIZZ_CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE
 local SHELL_ART = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
 
 local ev = CreateFrame("Frame")
-local panelFrame, titleText, emptyNote
+local panelFrame, title, emptyNote
 local bgArt, bgShade, bgFlat -- the CludesUI look's backdrop layers
 local rowList = {}
 local dirty = true -- the shown list needs a repaint
@@ -139,9 +139,9 @@ local function RecordPlayer()
     end
     local name = PlainString((UnitName("player")))
     local realm = PlainString(GetRealmName())
-    local _, classFile = UnitClass("player")
-    classFile = PlainString(classFile)
-    if not (unitGuid and name and realm and classFile) then
+    local _, class = UnitClass("player")
+    class = PlainString(class)
+    if not (unitGuid and name and realm and class) then
         return
     end
     -- The realm as mail addresses it ("Area52"): the normalized name.
@@ -155,7 +155,7 @@ local function RecordPlayer()
         e = {}
         roster[unitGuid] = e
     end
-    e.name, e.realm, e.realmKey, e.class = name, realm, realmKey, classFile
+    e.name, e.realm, e.realmKey, e.class = name, realm, realmKey, class
     local level = UnitLevel("player")
     if type(level) == "number" and not IsSecret(level) and level > 0 then
         e.level = level
@@ -171,8 +171,8 @@ end
 -- "Level 80 Mage, Horde": the hover line of a list row and of the Shown
 -- Characters entries, in Blizzard's own strings.
 local function Describe(e)
-    local classFile = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[e.class]) or e.class or ""
-    local textValue = e.level and UNIT_TYPE_LEVEL_TEMPLATE:format(e.level, classFile) or classFile
+    local class = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[e.class]) or e.class or ""
+    local textValue = e.level and UNIT_TYPE_LEVEL_TEMPLATE:format(e.level, class) or class
     local faction = e.faction and _G["FACTION_" .. e.faction:upper()]
     if faction then
         textValue = textValue .. ", " .. faction
@@ -190,24 +190,24 @@ local function ConnectedRealms()
         return connected
     end
     local own = PlainString(GetNormalizedRealmName())
-    local group = {}
+    local set = {}
     if own then
-        group[own] = true
+        set[own] = true
     end
     local entries = C_AutoComplete.GetAutoCompleteRealms()
     if type(entries) == "table" then
         for idx = 1, #entries do
             local r = PlainString(entries[idx])
             if r then
-                group[r] = true
+                set[r] = true
             end
         end
     end
     -- Kept once this realm is known: the set never changes in a session.
     if own then
-        connected = group
+        connected = set
     end
-    return group
+    return set
 end
 
 local function ByName(a, b)
@@ -309,9 +309,9 @@ local function RowClick(self, btnFrame)
         CUI.ShowContextMenu(self, MENU)
         return
     end
-    local boxFrame = SendMailNameEditBox
-    if boxFrame and self._target then
-        boxFrame:SetText(self._target)
+    local box = SendMailNameEditBox
+    if box and self._target then
+        box:SetText(self._target)
     end
 end
 
@@ -329,9 +329,9 @@ local function NewRow(idx)
     else
         highlight:SetColorTexture(1, 1, 1, 0.08)
     end
-    local glyph = r:CreateTexture(nil, "ARTWORK")
-    glyph:SetSize(ICON_SIZE, ICON_SIZE)
-    glyph:SetPoint("LEFT", r, "LEFT", 6, 0)
+    local icon = r:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(ICON_SIZE, ICON_SIZE)
+    icon:SetPoint("LEFT", r, "LEFT", 6, 0)
     local lvl = r:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontDisableSmall" or nil)
     local name = r:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontHighlightSmall" or nil)
     if not blizzLook then
@@ -341,11 +341,11 @@ local function NewRow(idx)
     end
     lvl:SetPoint("RIGHT", r, "RIGHT", -6, 0)
     lvl:SetJustifyH("RIGHT")
-    name:SetPoint("LEFT", glyph, "RIGHT", 5, 0)
+    name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     name:SetPoint("RIGHT", lvl, "LEFT", -4, 0)
     name:SetJustifyH("LEFT")
     name:SetWordWrap(false)
-    r._icon, r._name, r._lvl = glyph, name, lvl
+    r._icon, r._name, r._lvl = icon, name, lvl
     r:SetScript("OnClick", RowClick)
     r:SetScript("OnEnter", RowEnter)
     r:SetScript("OnLeave", RowLeave)
@@ -355,15 +355,15 @@ local function NewRow(idx)
     return r
 end
 
-local function DressIcon(texture, classFile)
+local function DressIcon(texture, class)
     local coords
     if blizzLook then
-        coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
+        coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
             texture:SetTexture(BLIZZ_CLASS_ICONS)
         end
     else
-        coords = CUI.CLASS_ICON_SPRITE_COORDS[classFile]
+        coords = CUI.CLASS_ICON_SPRITE_COORDS[class]
         if coords then
             texture:SetTexture(CUI_CLASS_ICONS)
         end
@@ -414,7 +414,7 @@ local function Build()
         topH, inset, gap = BLIZZ_TOP, BLIZZ_INSET, BLIZZ_GAP
         panelFrame = CreateFrame("Frame", "CludesUIMailAltList", SendMailFrame, "DefaultPanelTemplate")
         panelFrame:SetTitleOffsets(6, -6)
-        titleText = panelFrame:GetTitleText()
+        title = panelFrame:GetTitleText()
     else
         topH, inset, gap = CUI_TOP, CUI_INSET, CUI_GAP
         panelFrame = CreateFrame("Frame", "CludesUIMailAltList", SendMailFrame)
@@ -436,13 +436,13 @@ local function Build()
         band:SetPoint("TOPRIGHT")
         band:SetHeight(topH)
         Skin.AddBorder(panelFrame)
-        titleText = panelFrame:CreateFontString(nil, "OVERLAY")
-        Skin.Font(titleText, 1, 1, 1, 12)
-        titleText:SetPoint("CENTER", band, "CENTER", 0, 0)
+        title = panelFrame:CreateFontString(nil, "OVERLAY")
+        Skin.Font(title, 1, 1, 1, 12)
+        title:SetPoint("CENTER", band, "CENTER", 0, 0)
         PaintBackdrop()
         Skin.OnStylesChanged(PaintBackdrop)
     end
-    titleText:SetText(CludesUI.L("Alts"))
+    title:SetText(CludesUI.L("Alts"))
     panelFrame:SetWidth(PANEL_W)
     panelFrame:SetClampedToScreen(true)
     -- It hangs outside the window: a click on its empty parts stays off the world.
@@ -529,13 +529,13 @@ local function ScreenRect(f)
     return l * s, r * s, t * s, b * s
 end
 
-local function Anchor(to, sideName)
-    if placedTo == to and placedSide == sideName then
+local function Anchor(to, side)
+    if placedTo == to and placedSide == side then
         return
     end
-    placedTo, placedSide = to, sideName
+    placedTo, placedSide = to, side
     panelFrame:ClearAllPoints()
-    if sideName == "left" then
+    if side == "left" then
         panelFrame:SetPoint("TOPRIGHT", to, "TOPLEFT", -gap, 0)
     else
         panelFrame:SetPoint("TOPLEFT", to, "TOPRIGHT", gap, 0)
@@ -546,7 +546,7 @@ end
 -- left when the screen has no room on its right.
 Place = function()
     local mf, letter = MailFrame, OpenMailFrame
-    local to, sideName = mf, "right"
+    local to, side = mf, "right"
     local ml, mr, mt = ScreenRect(mf)
     if mr then
         local s = panelFrame:GetEffectiveScale()
@@ -560,10 +560,10 @@ Place = function()
         end
         local screen = UIParent:GetRight() * UIParent:GetEffectiveScale()
         if leftX + wid > screen and ml - g - wid >= 0 then
-            to, sideName = mf, "left"
+            to, side = mf, "left"
         end
     end
-    Anchor(to, sideName)
+    Anchor(to, side)
 end
 
 -- Shown before the paint: a font string measures its height only while visible.

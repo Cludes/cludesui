@@ -289,8 +289,8 @@ local function Tick()
             b:SetStatusBarColor(c[1], c[2], c[3], cast.guess and 0.5 or 0.9)
             b:SetMinMaxValues(0, s.ahead)
             b:SetValue(math.max(0, s.ahead - leftX))
-            local glyph = C_Spell.GetSpellTexture(cast.ability.spellID)
-            b.icon:SetTexture((not Secret(glyph) and glyph) or 134400)
+            local icon = C_Spell.GetSpellTexture(cast.ability.spellID)
+            b.icon:SetTexture((not Secret(icon) and icon) or 134400)
             b.name:SetText(
                 cast.ability.name
                     .. (cast.guess and (" |cffaaaaaa(P" .. cast.ability.phase .. ", est.)|r") or "")
@@ -323,8 +323,8 @@ local function Loads(alert, role, specID)
             return false
         end
     end
-    local _, classFile = UnitClass("player")
-    if Any(lc.Classes) and not lc.Classes[classFile] then
+    local _, class = UnitClass("player")
+    if Any(lc.Classes) and not lc.Classes[class] then
         return false
     end
     if Any(lc.SpecIDs) and not (specID and lc.SpecIDs[specID]) then
@@ -705,8 +705,8 @@ local function Draw()
         local c = Colour(a.category)
         r.swatch:SetColorTexture(c[1], c[2], c[3], 1)
         r.swatch:Show()
-        local glyph = C_Spell.GetSpellTexture(a.spellID)
-        r.icon:SetTexture((not Secret(glyph) and glyph) or 134400)
+        local icon = C_Spell.GetSpellTexture(a.spellID)
+        r.icon:SetTexture((not Secret(icon) and icon) or 134400)
         r.icon:Show()
         local times = {}
         local start = timeline.phases[a.phase] and timeline.phases[a.phase].start or 0
@@ -747,11 +747,11 @@ local function BuildWindow()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
-    local titleText = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(titleText, 15, nil)
-    titleText:SetPoint("TOPLEFT", 10, -8)
-    titleText:SetText("Boss Timeline")
-    CludesUI.Kit.AccentText(titleText)
+    local title = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(title, 15, nil)
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("Boss Timeline")
+    CludesUI.Kit.AccentText(title)
     local close = CludesUI.Kit.Glyph(window, "x", function()
         window:Hide()
     end, nil, nil)

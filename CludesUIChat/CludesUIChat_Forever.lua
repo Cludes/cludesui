@@ -83,78 +83,78 @@ CHAT.FV = FV
 --  The line's art is the latched Border Style's (shipped or Blizzard's live
 --  art; ForeverBorder reads "textured" as the live one).
 -------------------------------------------------------------------------------
-local function NewBox(hostRegion)
-    local boxFrame = { host = hostRegion }
-    boxFrame.fill = hostRegion:CreateTexture(nil, "BACKGROUND")
-    boxFrame.rim = CUI.ForeverBorder(hostRegion, "BORDER", 0, nil, mod.ChatFvKind())
-    return boxFrame
+local function NewBox(host)
+    local box = { host = host }
+    box.fill = host:CreateTexture(nil, "BACKGROUND")
+    box.rim = CUI.ForeverBorder(host, "BORDER", 0, nil, mod.ChatFvKind())
+    return box
 end
 
-local function Seat(t, hostRegion, tp, x1, y1, x2, y2)
+local function Seat(t, host, tp, x1, y1, x2, y2)
     t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", hostRegion, tp, x1, y1)
-    t:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", x2, y2)
+    t:SetPoint("TOPLEFT", host, tp, x1, y1)
+    t:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", x2, y2)
 end
 
 -- The line's outer edge on the host's sides (pulled in by inX), its top ty
 -- off the host point tp (TOPLEFT or BOTTOMLEFT) and its bottom by above the
 -- host's bottom; the fill FOREVER_BORDER.fill in from that edge (its
 -- corners inside the chamfers).
-local function SeatBox(boxFrame, hostRegion, tp, ty, by, inX)
+local function SeatBox(box, host, tp, ty, by, inX)
     local f, posX = BORDER.fill, inX or 0
-    local s = boxFrame.seat
+    local s = box.seat
     if not s then
         s = {}
-        boxFrame.seat = s
+        box.seat = s
     end
     s[1], s[2], s[3], s[4], s[5] = tp, posX, ty, -posX, by
-    CUI.ForeverBorderSeat(boxFrame.rim, hostRegion, tp, posX, ty, -posX, by)
-    if boxFrame.lift then
-        CUI.ForeverBorderSeat(boxFrame.lift, hostRegion, tp, posX, ty, -posX, by)
+    CUI.ForeverBorderSeat(box.rim, host, tp, posX, ty, -posX, by)
+    if box.lift then
+        CUI.ForeverBorderSeat(box.lift, host, tp, posX, ty, -posX, by)
     end
-    Seat(boxFrame.fill, hostRegion, tp, posX + f, ty - f, -posX - f, by + f)
+    Seat(box.fill, host, tp, posX + f, ty - f, -posX - f, by + f)
 end
 
 -- Heavy Bronze: the frame and the body fill under it, on an art host drawn
 -- at the piece's scale; with `lift` also its copper copy (a highlight),
 -- hidden until shown.
-local function NewHeavyBox(hostRegion, lift)
-    local boxFrame = { host = hostRegion, heavy = true }
-    boxFrame.fill = hostRegion:CreateTexture(nil, "BACKGROUND")
-    boxFrame.rim = CUI.ForeverHeavy(hostRegion, "BORDER")
+local function NewHeavyBox(host, lift)
+    local box = { host = host, heavy = true }
+    box.fill = host:CreateTexture(nil, "BACKGROUND")
+    box.rim = CUI.ForeverHeavy(host, "BORDER")
     if lift then
         local l = HEAVY.lift
-        boxFrame.lift = CUI.ForeverHeavy(hostRegion, "ARTWORK", 0, true)
-        CUI.ForeverHeavyPaint(boxFrame.lift, l[1], l[2], l[3], l[4])
-        CUI.ForeverHeavyShown(boxFrame.lift, false)
+        box.lift = CUI.ForeverHeavy(host, "ARTWORK", 0, true)
+        CUI.ForeverHeavyPaint(box.lift, l[1], l[2], l[3], l[4])
+        CUI.ForeverHeavyShown(box.lift, false)
     end
-    return boxFrame
+    return box
 end
 
 -- The rim's outer edge as SeatBox places the line's (UI units); the fill
 -- FOREVER_HEAVY.fill in from it, under the rim.
-local function SeatHeavyBox(boxFrame, hostRegion, tp, ty, by, inX)
+local function SeatHeavyBox(box, host, tp, ty, by, inX)
     local posX = inX or 0
-    CUI.ForeverHeavySeat(boxFrame.rim, hostRegion, tp, posX, ty, -posX, by)
-    if boxFrame.lift then
-        CUI.ForeverHeavySeat(boxFrame.lift, hostRegion, tp, posX, ty, -posX, by)
+    CUI.ForeverHeavySeat(box.rim, host, tp, posX, ty, -posX, by)
+    if box.lift then
+        CUI.ForeverHeavySeat(box.lift, host, tp, posX, ty, -posX, by)
     end
-    CUI.ForeverHeavyFill(boxFrame.rim, boxFrame.fill, hostRegion, tp, posX, ty, -posX, by)
+    CUI.ForeverHeavyFill(box.rim, box.fill, host, tp, posX, ty, -posX, by)
 end
 
 -- The line's copper copy over it (the selected tab, a hovered plate), built
 -- the first time it shows, on the line's seat, from the line's own art.
-local function ShowLift(boxFrame, isShown)
-    local lift = boxFrame.lift
+local function ShowLift(box, isShown)
+    local lift = box.lift
     if not lift then
         if not isShown then
             return
         end
-        local l, s = FV.lift, boxFrame.seat
-        lift = CUI.ForeverBorder(boxFrame.host, "ARTWORK", 0, true, mod.ChatFvKind())
+        local l, s = FV.lift, box.seat
+        lift = CUI.ForeverBorder(box.host, "ARTWORK", 0, true, mod.ChatFvKind())
         CUI.ForeverBorderPaint(lift, l[1], l[2], l[3], l[4])
-        CUI.ForeverBorderSeat(lift, boxFrame.host, s[1], s[2], s[3], s[4], s[5])
-        boxFrame.lift = lift
+        CUI.ForeverBorderSeat(lift, box.host, s[1], s[2], s[3], s[4], s[5])
+        box.lift = lift
     end
     CUI.ForeverBorderShown(lift, isShown)
 end
@@ -210,19 +210,19 @@ end
 -- changes.
 function CHAT.FV_LayoutPanel(castFrame, inputH)
     local d = CFD(castFrame)
-    local hostRegion = d.fvHost
-    if not hostRegion or d.fvInputH == inputH then
+    local host = d.fvHost
+    if not host or d.fvInputH == inputH then
         return
     end
     d.fvInputH = inputH
     local inTall = inputH + 2 * FV.IN_PAD
     if d.fvMsg.heavy then
-        SeatHeavyBox(d.fvMsg, hostRegion, "TOPLEFT", 0, inTall + FV.GAP)
-        SeatHeavyBox(d.fvIn, hostRegion, "BOTTOMLEFT", inTall, 0)
+        SeatHeavyBox(d.fvMsg, host, "TOPLEFT", 0, inTall + FV.GAP)
+        SeatHeavyBox(d.fvIn, host, "BOTTOMLEFT", inTall, 0)
         return
     end
-    SeatBox(d.fvMsg, hostRegion, "TOPLEFT", 0, inTall + FV.GAP)
-    SeatBox(d.fvIn, hostRegion, "BOTTOMLEFT", inTall, 0)
+    SeatBox(d.fvMsg, host, "TOPLEFT", 0, inTall + FV.GAP)
+    SeatBox(d.fvIn, host, "BOTTOMLEFT", inTall, 0)
 end
 
 -- Built once per panel, at its creation. The host sits one level over the
@@ -233,15 +233,15 @@ function CHAT.FV_BuildPanel(castFrame, backdrop, inputH)
     if d.fvHost then
         return
     end
-    local hostRegion = CreateFrame("Frame", nil, backdrop)
+    local host = CreateFrame("Frame", nil, backdrop)
     local New = NewBox
     if mod.ChatFvHeavy() then
-        hostRegion:SetScale(FV.panelK)
+        host:SetScale(FV.panelK)
         New = NewHeavyBox
     end
-    hostRegion:SetAllPoints(backdrop)
-    d.fvHost = hostRegion
-    d.fvMsg, d.fvIn = New(hostRegion), New(hostRegion)
+    host:SetAllPoints(backdrop)
+    d.fvHost = host
+    d.fvMsg, d.fvIn = New(host), New(host)
     CHAT.FV_LayoutPanel(castFrame, inputH)
     local p = FV._fill
     PaintFill(d.fvMsg.fill, p.tex, p.r, p.g, p.b, p.a)
@@ -297,26 +297,26 @@ function CHAT.FV_StyleGhost(g, isActive)
         topY:SetAllPoints(g)
         g._fs:SetParent(topY)
         g._glow:SetParent(topY)
-        local boxFrame
+        local box
         if heavy then
             -- The selected tab's rim reads warmer than the panel's (its
             -- copper copy, shown only while selected).
-            boxFrame = NewHeavyBox(art, true)
-            boxFrame.fill:SetTexture("Interface\\Buttons\\WHITE8X8")
+            box = NewHeavyBox(art, true)
+            box.fill:SetTexture("Interface\\Buttons\\WHITE8X8")
             -- The bottom rim and its inner shadow run under the ghost, where
             -- the clip takes them.
-            SeatHeavyBox(boxFrame, art, "TOPLEFT", 0, -HEAVY.shade * FV.tabK, FV.hvTabInset)
+            SeatHeavyBox(box, art, "TOPLEFT", 0, -HEAVY.shade * FV.tabK, FV.hvTabInset)
         else
             -- The selected tab's line reads warmer than the panel's (the
             -- lift, shown only while selected).
-            boxFrame = NewBox(art)
-            boxFrame.fill:SetTexture("Interface\\Buttons\\WHITE8X8")
+            box = NewBox(art)
+            box.fill:SetTexture("Interface\\Buttons\\WHITE8X8")
             -- The bottom line sits the corners' reach under the ghost, so the
             -- clip takes it and both lower chamfers: the sides run straight
             -- down to the ghost's bottom edge.
-            SeatBox(boxFrame, art, "TOPLEFT", -FV.tabInset, -BORDER.corner, FV.tabInset)
+            SeatBox(box, art, "TOPLEFT", -FV.tabInset, -BORDER.corner, FV.tabInset)
         end
-        g._fvClip, g._fvArt, g._fvTop, g._fvBox = clip, art, topY, boxFrame
+        g._fvClip, g._fvArt, g._fvTop, g._fvBox = clip, art, topY, box
         g._bg:Hide()
         g._underline:Hide()
         g._sep:Hide()
@@ -341,19 +341,19 @@ function CHAT.FV_StyleGhost(g, isActive)
         return
     end
     g._fvOn = isActive
-    local boxFrame = g._fvBox
+    local box = g._fvBox
     local val = isActive and 1 or 0.85
-    if boxFrame.heavy then
-        CUI.ForeverHeavyPaint(boxFrame.rim, val, val, val, 1, not isActive)
-        CUI.ForeverHeavyShown(boxFrame.lift, isActive)
+    if box.heavy then
+        CUI.ForeverHeavyPaint(box.rim, val, val, val, 1, not isActive)
+        CUI.ForeverHeavyShown(box.lift, isActive)
     else
-        CUI.ForeverBorderPaint(boxFrame.rim, val, val, val, 1, not isActive)
-        ShowLift(boxFrame, isActive)
+        CUI.ForeverBorderPaint(box.rim, val, val, val, 1, not isActive)
+        ShowLift(box, isActive)
     end
     if isActive then
-        boxFrame.fill:SetGradient("VERTICAL", tabCol[1], tabCol[2])
+        box.fill:SetGradient("VERTICAL", tabCol[1], tabCol[2])
     else
-        boxFrame.fill:SetGradient("VERTICAL", tabCol[3], tabCol[4])
+        box.fill:SetGradient("VERTICAL", tabCol[3], tabCol[4])
     end
 end
 
@@ -394,19 +394,19 @@ function CHAT.FV_Plate(button, enabled)
         if not enabled then
             return
         end
-        local hostRegion = CreateFrame("Frame", nil, button)
+        local host = CreateFrame("Frame", nil, button)
         local heavy = mod.ChatFvHeavy()
         if heavy then
-            hostRegion:SetScale(FV.btnK)
+            host:SetScale(FV.btnK)
         end
-        hostRegion:SetAllPoints(button)
-        p = heavy and NewHeavyBox(hostRegion, true) or NewBox(hostRegion)
+        host:SetAllPoints(button)
+        p = heavy and NewHeavyBox(host, true) or NewBox(host)
         local c = FV.plateFill
         p.fill:SetColorTexture(c[1], c[2], c[3], c[4])
         if heavy then
-            SeatHeavyBox(p, hostRegion, "TOPLEFT", 0, 0)
+            SeatHeavyBox(p, host, "TOPLEFT", 0, 0)
         else
-            SeatBox(p, hostRegion, "TOPLEFT", 0, 0)
+            SeatBox(p, host, "TOPLEFT", 0, 0)
         end
         button._fvPlate = p
         button:HookScript("OnEnter", heavy and HeavyPlateEnter or PlateEnter)
@@ -441,7 +441,7 @@ if CUI.IS_FOREVER and Entry and CHAT.SB_KITS then
     local function A(atlas, wid, hgt, posY)
         return { atlas = atlas, w = wid, h = hgt, y = posY, tint = ATL_TINT }
     end
-    local function Prm(name, posY)
+    local function P(name, posY)
         return { file = MEDIA .. name, w = 18, h = 18, y = posY }
     end
     local blizz = CHAT.SB_KITS.blizzard
@@ -458,31 +458,31 @@ if CUI.IS_FOREVER and Entry and CHAT.SB_KITS then
             count = "inside",
             glyph = {
                 A("socialqueuing-icon-group", 20, 17, 5),
-                Prm("chat_friends.png", 5),
+                P("chat_friends.png", 5),
             },
         }),
         guild = Entry(FSQ, {
             count = "below",
             glyph = {
                 A("friends-icon-tab-guildmates", 17, 17),
-                Prm("chat_guild.png"),
+                P("chat_guild.png"),
             },
         }),
         durability = Entry(FSQ, {
             count = "inside",
             alert = true,
-            glyph = { Prm("chat_durability.png", 5) },
+            glyph = { P("chat_durability.png", 5) },
             alertColors = {
                 [0] = { TAN[1], TAN[2], TAN[3], 1 },
                 { 1, 0.5, 0.1, 1 },
                 { 0.93, 0.07, 0.07, 1 },
             },
         }),
-        copy = Entry(FSQ, { glyph = { Prm("chat_copy.png") } }),
-        portals = Entry(FSQ, { glyph = { Prm("chat_portal.png") } }),
+        copy = Entry(FSQ, { glyph = { P("chat_copy.png") } }),
+        portals = Entry(FSQ, { glyph = { P("chat_portal.png") } }),
         voice = Entry(FSQ, { glyph = { A("chatframe-button-icon-voicechat", 20, 20) } }),
         chatmenu = Entry(FSQ, { glyph = { { file = CHAT.CHAT_MENU_GLYPH, w = 18, h = 18 } } }),
-        settings = Entry(FSQ, { glyph = { Prm("chat_settings.png") } }),
+        settings = Entry(FSQ, { glyph = { P("chat_settings.png") } }),
         scroll = {
             sidebar = {
                 w = 34,

@@ -286,9 +286,9 @@ function ABAR:OnInitialize()
         end
         -- One slot. Slot 0, no slot or a secret one (Blizzard's own buttons
         -- pass a secret action to the tooltip) means every slot.
-        local function QueueSlotQualityScan(slotIndex)
-            if type(slotIndex) == "number" and not issecretvalue(slotIndex) and slotIndex > 0 then
-                _qSlots[slotIndex] = true
+        local function QueueSlotQualityScan(slot)
+            if type(slot) == "number" and not issecretvalue(slot) and slot > 0 then
+                _qSlots[slot] = true
             else
                 _qFull = true
             end
@@ -304,9 +304,9 @@ function ABAR:OnInitialize()
         -- SPELLS_CHANGED covers that swap; the macro name is handled by the
         -- ForceButtonRefresh sweep on the same event.
         qf:RegisterEvent("SPELLS_CHANGED")
-        qf:SetScript("OnEvent", function(_, evt, slotIndex)
+        qf:SetScript("OnEvent", function(_, evt, slot)
             if evt == "ACTIONBAR_SLOT_CHANGED" then
-                QueueSlotQualityScan(slotIndex)
+                QueueSlotQualityScan(slot)
             else
                 QueueQualityScan()
             end
@@ -318,8 +318,8 @@ function ABAR:OnInitialize()
         -- pattern as tooltip suppression). Also converges anything the hover's
         -- item-data load just made resolvable.
         if GameTooltip then
-            hooksecurefunc(GameTooltip, "SetAction", function(_, slotIndex)
-                QueueSlotQualityScan(slotIndex)
+            hooksecurefunc(GameTooltip, "SetAction", function(_, slot)
+                QueueSlotQualityScan(slot)
             end)
         end
         -- Initial paint (login / reload): bars applied before this block ran.

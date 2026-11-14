@@ -328,8 +328,8 @@ local function BuildTotemBar()
 
     -- enabledClasses nil = disabled; table with class keys = enabled for those classes
     local ec = tb.enabledClasses
-    local _, classFile = UnitClass("player")
-    local isActive = ec and classFile and ec[classFile]
+    local _, class = UnitClass("player")
+    local isActive = ec and class and ec[class]
 
     if not isActive then
         if totemBarFrame then

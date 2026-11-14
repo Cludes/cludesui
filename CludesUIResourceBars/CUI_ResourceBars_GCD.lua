@@ -50,12 +50,12 @@ local BuildGCDBar
 -- paints empty, ElapsedTime paints full). SetValue keeps the value channel
 -- and the no-timer Lua fill path coherent.
 mod.GCDIdleFill = function(g)
-    local barFrame = gcdBarFrame and gcdBarFrame._bar
-    if not barFrame then
+    local bar = gcdBarFrame and gcdBarFrame._bar
+    if not bar then
         return
     end
     local wantFull = g.idleShowFill == true
-    if barFrame.SetTimerDuration and Enum and Enum.StatusBarTimerDirection then
+    if bar.SetTimerDuration and Enum and Enum.StatusBarTimerDirection then
         -- Fetch a FRESH object here: after a CANCELLED cast the GCD is
         -- refunded and the stored handle goes stale -- a RemainingTime
         -- re-arm on it plays out the original countdown (a slow un-fill
@@ -73,7 +73,7 @@ mod.GCDIdleFill = function(g)
             object = fresh or gcdBarFrame._gcdDurObj
         end
         if object then
-            barFrame:SetTimerDuration(
+            bar:SetTimerDuration(
                 object,
                 nil,
                 wantFull and Enum.StatusBarTimerDirection.ElapsedTime
@@ -81,7 +81,7 @@ mod.GCDIdleFill = function(g)
             )
         end
     end
-    barFrame:SetValue(wantFull and 1 or 0)
+    bar:SetValue(wantFull and 1 or 0)
 end
 
 BuildGCDBar = function()
@@ -124,20 +124,20 @@ BuildGCDBar = function()
         clipFrame:SetClipsChildren(true)
         gcdBarFrame._barClip = clipFrame
 
-        local barFrame = CreateFrame("StatusBar", "ERB_GCDBar", clipFrame)
-        barFrame:SetMinMaxValues(0, 1)
-        barFrame:SetValue(0)
-        gcdBarFrame._bar = barFrame
+        local bar = CreateFrame("StatusBar", "ERB_GCDBar", clipFrame)
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+        gcdBarFrame._bar = bar
         -- Native smoothing, applied via SetValue(progress, _castInterp).
-        barFrame._castInterp = Enum
+        bar._castInterp = Enum
             and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
 
         -- Spark (same texture/approach as the cast bar)
         local sparkFrame = CreateFrame("Frame", nil, clipFrame)
-        sparkFrame:SetAllPoints(barFrame)
+        sparkFrame:SetAllPoints(bar)
         -- One over the fill (18): Draw Above GCD Bar lifts the power border to 19.
-        sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 1)
+        sparkFrame:SetFrameLevel(bar:GetFrameLevel() + 1)
         local spark = sparkFrame:CreateTexture(nil, "OVERLAY", nil, 1)
         spark:SetTexture(SPARK_TEX)
         spark:SetBlendMode("ADD")
@@ -150,13 +150,13 @@ BuildGCDBar = function()
         -- capture allocates no closure beyond the pcall body. The object is
         -- kept on the frame: the idle render re-arms it to repaint (see
         -- ns.GCDIdleFill).
-        local function armNativeGCD(barFrame, deplete)
+        local function armNativeGCD(bar, deplete)
             local durObj = C_Spell.GetSpellCooldownDuration(CludesUI.GCD_SPELL)
             if not durObj then
                 return
             end
             gcdBarFrame._gcdDurObj = durObj
-            barFrame:SetTimerDuration(
+            bar:SetTimerDuration(
                 durObj,
                 nil,
                 deplete and Enum.StatusBarTimerDirection.RemainingTime
@@ -180,9 +180,9 @@ BuildGCDBar = function()
             -- zero Lua per frame, queue-proof (re-arms land on the same
             -- timeline, so they are idempotent), and secret-proof (the
             -- object is never read).
-            local barFrame = self._bar
-            local canNative = barFrame
-                and barFrame.SetTimerDuration
+            local bar = self._bar
+            local canNative = bar
+                and bar.SetTimerDuration
                 and Enum
                 and Enum.StatusBarTimerDirection
                 and C_Spell
@@ -222,7 +222,7 @@ BuildGCDBar = function()
                     -- the Lua fill only draws when it is not.
                     self._gcdStart = GetTime()
                     self._gcdDur = math.max(dur - elapsed, 0.05)
-                    self._nativeGCD = canNative and armNativeGCD(barFrame, gc.depleteFill) or nil
+                    self._nativeGCD = canNative and armNativeGCD(bar, gc.depleteFill) or nil
                     -- Show the bar THIS frame: waiting for the next tick (or
                     -- the central dispatcher) stacked visible latency on top
                     -- of the event edge.
@@ -242,7 +242,7 @@ BuildGCDBar = function()
                     -- window (armNative keeps the engine honest); it never
                     -- opens visibility on its own.
                     if self._gcdStart then
-                        armNativeGCD(barFrame, gc.depleteFill)
+                        armNativeGCD(bar, gc.depleteFill)
                     end
                     return
                 end
@@ -251,7 +251,7 @@ BuildGCDBar = function()
                 if not cd.isActive then
                     return
                 end
-                if armNativeGCD(barFrame, gc.depleteFill) then
+                if armNativeGCD(bar, gc.depleteFill) then
                     self._nativeGCD = true
                     self._gcdStart = GetTime()
                     self._gcdDur = 1.6
@@ -516,19 +516,19 @@ BuildGCDBar = function()
     -- border; with no border there's nothing to clip to, so skip it -- otherwise
     -- it eats the whole height of very thin bars (height 1-2 -> nothing visible).
     local clipFrame = gcdBarFrame._barClip
-    local barFrame = gcdBarFrame._bar
+    local bar = gcdBarFrame._bar
     local bdrInset = ((g.borderSize or 0) > 0 and Pix and Pix.mult) or 0
     clipFrame:ClearAllPoints()
     clipFrame:SetPoint("TOPLEFT", gcdBarFrame, "TOPLEFT", bdrInset, -bdrInset)
     clipFrame:SetPoint("BOTTOMRIGHT", gcdBarFrame, "BOTTOMRIGHT", -bdrInset, bdrInset)
     clipFrame:SetFrameLevel(gcdBarFrame:GetFrameLevel() + 1)
-    barFrame:ClearAllPoints()
-    barFrame:SetAllPoints(clipFrame)
+    bar:ClearAllPoints()
+    bar:SetAllPoints(clipFrame)
 
     -- Texture + background
     local texPath =
         CludesUI.ResolveTexturePath(_G._CURB_BarTextures, g.texture, "Interface\\Buttons\\WHITE8x8")
-    barFrame:SetStatusBarTexture(texPath)
+    bar:SetStatusBarTexture(texPath)
     gcdBarFrame._bg:SetTexture(nil)
     gcdBarFrame._bg:SetColorTexture(g.bgR, g.bgG, g.bgB, g.bgA)
     -- Textured Background.
@@ -543,16 +543,16 @@ BuildGCDBar = function()
         )
     end
 
-    ApplyBarOrientation(barFrame, ori)
+    ApplyBarOrientation(bar, ori)
     -- HORIZONTAL_LEFT = horizontal, but the fill grows right->left (reverse).
     -- ApplyBarOrientation treats any non-vertical key as normal horizontal, so
     -- flip reverse-fill here for the left variant.
     if ori == "HORIZONTAL_LEFT" then
-        barFrame:SetReverseFill(true)
+        bar:SetReverseFill(true)
     end
 
     -- Fill color / gradient
-    local fillTex = barFrame:GetStatusBarTexture()
+    local fill = bar:GetStatusBarTexture()
     local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA
     if g.classColored then
         local cc = CLASS_COLORS[cachedClass]
@@ -562,7 +562,7 @@ BuildGCDBar = function()
     end
     if g.gradientEnabled then
         ApplyBarGradient(
-            fillTex,
+            fill,
             g.gradientDir or "HORIZONTAL",
             fR,
             fG,
@@ -574,7 +574,7 @@ BuildGCDBar = function()
             g.gradientA
         )
     else
-        ApplyBarFlat(fillTex, fR, fG, fB, fA)
+        ApplyBarFlat(fill, fR, fG, fB, fA)
     end
 
     -- Leading-edge spark: anchored to the fill texture's moving edge so it tracks
@@ -585,16 +585,16 @@ BuildGCDBar = function()
             spark:ClearAllPoints()
             if ori == "VERTICAL_UP" then
                 spark:SetSize(wid, 8)
-                spark:SetPoint("CENTER", fillTex, "TOP", 0, 0)
+                spark:SetPoint("CENTER", fill, "TOP", 0, 0)
             elseif ori == "VERTICAL_DOWN" then
                 spark:SetSize(wid, 8)
-                spark:SetPoint("CENTER", fillTex, "BOTTOM", 0, 0)
+                spark:SetPoint("CENTER", fill, "BOTTOM", 0, 0)
             elseif ori == "HORIZONTAL_LEFT" then
                 spark:SetSize(8, hgt)
-                spark:SetPoint("CENTER", fillTex, "LEFT", 0, 0)
+                spark:SetPoint("CENTER", fill, "LEFT", 0, 0)
             else
                 spark:SetSize(8, hgt)
-                spark:SetPoint("CENTER", fillTex, "RIGHT", 0, 0)
+                spark:SetPoint("CENTER", fill, "RIGHT", 0, 0)
             end
             spark:Show()
         else
@@ -629,7 +629,7 @@ SetUpdateGCDBar(function(_dt)
 
     -- Frame stays shown; visibility is via alpha to avoid the Hide->Show fill
     -- flash. (Re-showing a hidden StatusBar renders its fill full for a frame.)
-    local barFrame = gcdBarFrame._bar
+    local bar = gcdBarFrame._bar
 
     if g.instanceOnly and not IsInInstance() then
         mod.GCDIdleFill(g)
@@ -696,12 +696,12 @@ SetUpdateGCDBar(function(_dt)
     local progress = elapsed / dur
     local value = g.depleteFill and (1 - progress) or progress
     if gcdBarFrame._barActive then
-        barFrame:SetValue(value, barFrame._castInterp)
+        bar:SetValue(value, bar._castInterp)
     else
         -- First frame of a fresh GCD: snap to the start value (no interpolation).
         -- Otherwise deplete mode would briefly ease UP from the empty idle state
         -- before reversing, flashing a fill at the start of every GCD.
-        barFrame:SetValue(value)
+        bar:SetValue(value)
         gcdBarFrame._barActive = true
     end
 end)

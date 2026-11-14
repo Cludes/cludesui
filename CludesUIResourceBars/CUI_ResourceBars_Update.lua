@@ -17,7 +17,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local ceil, min, upper = math.ceil, math.min, math.max
+local ceil, min, max = math.ceil, math.min, math.max
 local format = string.format
 local UnitHealth, UnitHealthMax, UnitPower = UnitHealth, UnitHealthMax, UnitPower
 local UnitPowerMax, UnitClass = UnitPowerMax, UnitClass
@@ -52,9 +52,9 @@ local mainFrame
 Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(v)
     mainFrame = v
 end
-local healthBar
+local health
 Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(v)
-    healthBar = v
+    health = v
 end
 local primaryBar
 Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(v)
@@ -117,7 +117,7 @@ CludesUI.RegisterNumberFormatCallback(function()
     Inner.UpdateHealthBar()
 end)
 local function UpdateHealthBar()
-    if not healthBar or not healthBar:IsShown() then
+    if not health or not health:IsShown() then
         return
     end
     local hp = _G._CURB_ResolveHealthCfg()
@@ -131,7 +131,7 @@ local function UpdateHealthBar()
         return
     end
 
-    healthBar:SetMinMaxValues(0, mx)
+    health:SetMinMaxValues(0, mx)
 
     local curTainted = issecretvalue and issecretvalue(current)
     -- Percent for text display. UnitHealthPercent may return a secret, but
@@ -154,7 +154,7 @@ local function UpdateHealthBar()
     if not _hpTsEnabled then
         _hpTsEntry = nil
     end
-    local ft = healthBar:GetStatusBarTexture()
+    local ft = health:GetStatusBarTexture()
     local _hpTextInstead = _hpTsEntry and _hpTsEntry.thresholdTextInstead and hp.textFormat ~= "none"
     if (_hpTsEntry or _hpBandOn) and ft and UnitHealthPercent then
         local curve
@@ -199,10 +199,10 @@ local function UpdateHealthBar()
                     _hpTsEntry.thresholdPct or hp.thresholdPct or 30
                 )
             end
-            if curve and healthBar._text then
+            if curve and health._text then
                 local success, colorResult = pcall(UnitHealthPercent, "player", false, curve)
                 if success and colorResult and colorResult.GetRGBA then
-                    healthBar._text:SetTextColor(colorResult:GetRGBA())
+                    health._text:SetTextColor(colorResult:GetRGBA())
                 end
             end
             -- Fill stays at base color.
@@ -274,7 +274,7 @@ local function UpdateHealthBar()
 
     -- Fill: the bar's Smooth Bars item decides whether the engine eases toward
     -- the new value (CreateStatusBar's SetValue wrapper), at zero per-frame Lua.
-    healthBar:SetValue(current)
+    health:SetValue(current)
 
     if hp.textFormat ~= "none" and not _G._CURB_TextHiddenByForm(hp) then
         local fmt = hp.textFormat
@@ -296,10 +296,10 @@ local function UpdateHealthBar()
         else
             txt = pctStr .. "%"
         end
-        healthBar._text:SetText(txt)
-        healthBar._text:Show()
+        health._text:SetText(txt)
+        health._text:Show()
     else
-        healthBar._text:Hide()
+        health._text:Hide()
     end
 end
 
@@ -378,7 +378,7 @@ local function UpdatePrimaryBar()
             aura = nil
         end
         _ebonMightExpiry = (aura and aura.expirationTime) or 0
-        local remaining = (_ebonMightExpiry > 0) and upper(0, _ebonMightExpiry - GetTime()) or 0
+        local remaining = (_ebonMightExpiry > 0) and max(0, _ebonMightExpiry - GetTime()) or 0
         if not mod.EMB121_Owns then
             primaryBar:SetMinMaxValues(0, EBON_MIGHT_DURATION)
             primaryBar:SetValue(remaining)
@@ -1087,15 +1087,15 @@ function mod.SpenderScan(record, oncd)
     if not entries then
         return 0
     end
-    local Stl = C_Spell
+    local S = C_Spell
     oncd = oncd or mod.STK.oncd
     for i = 1, #entries do
         local spellRef = entries[i].spellID
         if spellRef then
-            local ident = Stl.GetOverrideSpell(spellRef) or spellRef
-            if Stl.IsSpellUsable(ident) then
+            local ident = S.GetOverrideSpell(spellRef) or spellRef
+            if S.IsSpellUsable(ident) then
                 local ready
-                local ch = Stl.GetSpellCharges(ident)
+                local ch = S.GetSpellCharges(ident)
                 local mx = ch and ch.maxCharges
                 if mx and mx > 1 then
                     local num = ch.currentCharges
@@ -1108,7 +1108,7 @@ function mod.SpenderScan(record, oncd)
                 if ready == nil then
                     local oc = oncd[spellRef]
                     if oc == nil then
-                        local cd = Stl.GetSpellCooldown(ident)
+                        local cd = S.GetSpellCooldown(ident)
                         oc = cd and cd.isActive and not cd.isOnGCD
                     end
                     ready = not oc
@@ -1855,7 +1855,7 @@ local function UpdateSecondaryResource()
             else
                 _runeReady[i] = false
                 _runeRemaining[i] = (start and duration and duration > 0)
-                        and upper(0, start + duration - nowTime)
+                        and max(0, start + duration - nowTime)
                     or 999
                 cdN = cdN + 1
             end
@@ -1890,9 +1890,9 @@ local function UpdateSecondaryResource()
             for i = 1, 6 do
                 local rf = runeFrames[i]
                 if rf and rf:IsShown() then
-                    local slotIndex = slots[i]
-                    local x0 = slotIndex.x0
-                    local wid = slotIndex.x1 - slotIndex.x0
+                    local slot = slots[i]
+                    local x0 = slot.x0
+                    local wid = slot.x1 - slot.x0
                     local pipOri = sp.pipOrientation or "HORIZONTAL"
                     rf:ClearAllPoints()
                     if pipOri == "VERTICAL_UP" then
@@ -1908,7 +1908,7 @@ local function UpdateSecondaryResource()
 
                     local active = (i <= readyN)
                     if sp.useContinuousTexture then
-                        PipTextureHelpers.SetRange(rf, x0, slotIndex.x1, slots[numPips].x1, pipOri)
+                        PipTextureHelpers.SetRange(rf, x0, slot.x1, slots[numPips].x1, pipOri)
                     end
                     if active and runeUseThresh then
                         if not _tsBandOn and _tsPartialOnly and i < _tsThreshCount then
@@ -1972,9 +1972,9 @@ local function UpdateSecondaryResource()
                 local runeIdx = _runeOrder[place]
                 local rf = runeFrames[runeIdx]
                 if rf and rf:IsShown() then
-                    local slotIndex = slots[place]
-                    local x0 = slotIndex.x0
-                    local wid = slotIndex.x1 - slotIndex.x0
+                    local slot = slots[place]
+                    local x0 = slot.x0
+                    local wid = slot.x1 - slot.x0
                     local pipOri = sp.pipOrientation or "HORIZONTAL"
                     rf:ClearAllPoints()
                     if pipOri == "VERTICAL_UP" then
@@ -1989,7 +1989,7 @@ local function UpdateSecondaryResource()
                     end
 
                     if sp.useContinuousTexture then
-                        PipTextureHelpers.SetRange(rf, x0, slotIndex.x1, slots[numPips].x1, pipOri)
+                        PipTextureHelpers.SetRange(rf, x0, slot.x1, slots[numPips].x1, pipOri)
                     end
                     if _runeReady[runeIdx] then
                         -- Ready rune: full brightness + restore background, hide recharge overlay
@@ -2066,7 +2066,7 @@ local function UpdateSecondaryResource()
                         local rStart, rDur = _runeStart[runeIdx], _runeDuration[runeIdx]
                         if rStart and rDur and rDur > 0 then
                             local elapsed = nowTime - rStart
-                            frac = upper(0, min(1, elapsed / rDur))
+                            frac = max(0, min(1, elapsed / rDur))
                         end
                         rf._rechargeBar:SetValue(frac)
                         -- Recharge color: custom color when enabled, otherwise 75%
@@ -2494,7 +2494,7 @@ local function UpdateSecondaryResource()
                             barList = {}
                             secondaryBar._ipBandBars = barList
                         end
-                        local hostRegion = secondaryBar._sb or secondaryBar
+                        local host = secondaryBar._sb or secondaryBar
                         local texKey = ERB.db
                                 and ERB.db.profile
                                 and ERB.db.profile.general
@@ -2512,7 +2512,7 @@ local function UpdateSecondaryResource()
                                 isShown = isShown + 1
                                 local ob = barList[isShown]
                                 if not ob then
-                                    ob = CreateFrame("StatusBar", nil, hostRegion)
+                                    ob = CreateFrame("StatusBar", nil, host)
                                     -- Anchors are constant to the fill texture; set once.
                                     ob:SetPoint("TOPLEFT", ft, "TOPLEFT", 0, 0)
                                     ob:SetPoint("BOTTOMRIGHT", ft, "BOTTOMRIGHT", 1, 0)
@@ -2534,7 +2534,7 @@ local function UpdateSecondaryResource()
                                         mod.ERB_MaskTex(_obt, rm)
                                     end
                                 end
-                                local _lvl = hostRegion:GetFrameLevel() + isShown
+                                local _lvl = host:GetFrameLevel() + isShown
                                 if ob._lvl ~= _lvl then
                                     ob:SetFrameLevel(_lvl)
                                     ob._lvl = _lvl
@@ -2683,8 +2683,8 @@ local function UpdateSecondaryResource()
                 if pc2 then
                     r, g, b = pc2[1], pc2[2], pc2[3]
                 elseif CludesUI and CludesUI.GetResourceColor then
-                    local _, classFile = UnitClass("player")
-                    local rc = CludesUI.GetResourceColor(classFile)
+                    local _, class = UnitClass("player")
+                    local rc = CludesUI.GetResourceColor(class)
                     if rc then
                         r, g, b = rc.r, rc.g, rc.b
                     end
@@ -2758,8 +2758,8 @@ local function UpdateSecondaryResource()
                 end
             end
             for i = 1, maxC do
-                local pipTex = pips[i]
-                if pipTex and pipTex:IsShown() then
+                local pip = pips[i]
+                if pip and pip:IsShown() then
                     -- Lazily create a StatusBar overlay inside the pip
                     local texKey = ERB.db
                             and ERB.db.profile
@@ -2771,43 +2771,43 @@ local function UpdateSecondaryResource()
                         texKey,
                         "Interface\\Buttons\\WHITE8x8"
                     )
-                    if not pipTex._secretBar then
-                        local scrollBar = CreateFrame("StatusBar", nil, pipTex)
-                        scrollBar:SetAllPoints(pipTex._fill)
+                    if not pip._secretBar then
+                        local scrollBar = CreateFrame("StatusBar", nil, pip)
+                        scrollBar:SetAllPoints(pip._fill)
                         scrollBar:SetStatusBarTexture(texPath)
                         scrollBar._texPath = texPath
                         scrollBar:SetStatusBarColor(r, g, b, a)
-                        scrollBar:SetFrameLevel(pipTex:GetFrameLevel())
-                        pipTex._secretBar = scrollBar
-                        if pipTex._blizzMask then
-                            mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                        scrollBar:SetFrameLevel(pip:GetFrameLevel())
+                        pip._secretBar = scrollBar
+                        if pip._blizzMask then
+                            mod.ERB_MaskPip(pip, pip._blizzMask)
                         end
-                    elseif pipTex._secretBar._texPath ~= texPath then
+                    elseif pip._secretBar._texPath ~= texPath then
                         -- A path swap mints a brand-new inner texture and runs the
                         -- parent's pixel-snap hook: NEVER re-set the current path.
-                        pipTex._secretBar:SetStatusBarTexture(texPath)
-                        pipTex._secretBar._texPath = texPath
-                        if pipTex._blizzMask then
-                            mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                        pip._secretBar:SetStatusBarTexture(texPath)
+                        pip._secretBar._texPath = texPath
+                        if pip._blizzMask then
+                            mod.ERB_MaskPip(pip, pip._blizzMask)
                         end
                     end
-                    pipTex._secretBar:SetMinMaxValues(i - 1, i)
-                    pipTex._secretBar:SetValue(current)
-                    pipTex._secretBar:SetStatusBarColor(r, g, b, a)
-                    pipTex._secretBar:Show()
+                    pip._secretBar:SetMinMaxValues(i - 1, i)
+                    pip._secretBar:SetValue(current)
+                    pip._secretBar:SetStatusBarColor(r, g, b, a)
+                    pip._secretBar:Show()
 
                     if _tsBandOn and _bandStarts then
                         -- Multi-band overlays: one StatusBar per band, higher bands
                         -- on top -> the topmost reached band colors the whole bar.
-                        if not pipTex._bandBars then
-                            pipTex._bandBars = {}
+                        if not pip._bandBars then
+                            pip._bandBars = {}
                         end
                         for k = 1, #_tsBands do
-                            local bb = pipTex._bandBars[k]
+                            local bb = pip._bandBars[k]
                             if not bb then
-                                bb = CreateFrame("StatusBar", nil, pipTex)
-                                bb:SetAllPoints(pipTex._fill)
-                                pipTex._bandBars[k] = bb
+                                bb = CreateFrame("StatusBar", nil, pip)
+                                bb:SetAllPoints(pip._fill)
+                                pip._bandBars[k] = bb
                             end
                             -- Texture/level change on config or rebuild, not per
                             -- tick: re-apply only on a real difference, or the hot
@@ -2815,11 +2815,11 @@ local function UpdateSecondaryResource()
                             if bb._texPath ~= texPath then
                                 bb:SetStatusBarTexture(texPath)
                                 bb._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                                if pip._blizzMask then
+                                    mod.ERB_MaskPip(pip, pip._blizzMask)
                                 end
                             end
-                            local _lvl = pipTex:GetFrameLevel() + k
+                            local _lvl = pip:GetFrameLevel() + k
                             if bb._lvl ~= _lvl then
                                 bb:SetFrameLevel(_lvl)
                                 bb._lvl = _lvl
@@ -2831,83 +2831,83 @@ local function UpdateSecondaryResource()
                             bb:SetStatusBarColor(band.r or 1, band.g or 1, band.b or 1, a)
                             bb:Show()
                         end
-                        for k = #_tsBands + 1, #pipTex._bandBars do
-                            pipTex._bandBars[k]:Hide()
+                        for k = #_tsBands + 1, #pip._bandBars do
+                            pip._bandBars[k]:Hide()
                         end
                         if not _tsBandReverse then
                             -- "Up to" semantics: above the top band, revert to the base
                             -- fill color. A topmost overlay fills when cur > top band's `to`.
                             local _topTo = _tsBands[#_tsBands] and _tsBands[#_tsBands].to or 0
-                            if not pipTex._bandResetBar then
-                                local rb = CreateFrame("StatusBar", nil, pipTex)
-                                rb:SetAllPoints(pipTex._fill)
-                                pipTex._bandResetBar = rb
+                            if not pip._bandResetBar then
+                                local rb = CreateFrame("StatusBar", nil, pip)
+                                rb:SetAllPoints(pip._fill)
+                                pip._bandResetBar = rb
                             end
-                            if pipTex._bandResetBar._texPath ~= texPath then
-                                pipTex._bandResetBar:SetStatusBarTexture(texPath)
-                                pipTex._bandResetBar._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                            if pip._bandResetBar._texPath ~= texPath then
+                                pip._bandResetBar:SetStatusBarTexture(texPath)
+                                pip._bandResetBar._texPath = texPath
+                                if pip._blizzMask then
+                                    mod.ERB_MaskPip(pip, pip._blizzMask)
                                 end
                             end
-                            pipTex._bandResetBar:SetFrameLevel(pipTex:GetFrameLevel() + #_tsBands + 1)
+                            pip._bandResetBar:SetFrameLevel(pip:GetFrameLevel() + #_tsBands + 1)
                             local _rlo = (i > (_topTo + 1)) and i or (_topTo + 1)
-                            pipTex._bandResetBar:SetMinMaxValues(_rlo - 1, _rlo)
-                            pipTex._bandResetBar:SetValue(current)
-                            pipTex._bandResetBar:SetStatusBarColor(r, g, b, a)
-                            pipTex._bandResetBar:Show()
-                        elseif pipTex._bandResetBar then
+                            pip._bandResetBar:SetMinMaxValues(_rlo - 1, _rlo)
+                            pip._bandResetBar:SetValue(current)
+                            pip._bandResetBar:SetStatusBarColor(r, g, b, a)
+                            pip._bandResetBar:Show()
+                        elseif pip._bandResetBar then
                             -- "From" semantics: base fill below the first boundary is
                             -- handled by the base _secretBar; no reset overlay needed.
-                            pipTex._bandResetBar:Hide()
+                            pip._bandResetBar:Hide()
                         end
-                        if pipTex._secretThreshBar then
-                            pipTex._secretThreshBar:Hide()
+                        if pip._secretThreshBar then
+                            pip._secretThreshBar:Hide()
                         end
                     else
-                        if pipTex._bandResetBar then
-                            pipTex._bandResetBar:Hide()
+                        if pip._bandResetBar then
+                            pip._bandResetBar:Hide()
                         end
-                        if pipTex._bandBars then
-                            for k = 1, #pipTex._bandBars do
-                                pipTex._bandBars[k]:Hide()
+                        if pip._bandBars then
+                            for k = 1, #pip._bandBars do
+                                pip._bandBars[k]:Hide()
                             end
                         end
                         -- Threshold overlay (drawn on top of the base fill)
                         -- Partial-only: pips below the threshold index never recolor.
                         local showThresh = _useThresh and not (_tsPartialOnly and i < _tsThreshCount)
                         if showThresh then
-                            if not pipTex._secretThreshBar then
-                                local tb = CreateFrame("StatusBar", nil, pipTex)
-                                tb:SetAllPoints(pipTex._fill)
+                            if not pip._secretThreshBar then
+                                local tb = CreateFrame("StatusBar", nil, pip)
+                                tb:SetAllPoints(pip._fill)
                                 tb:SetStatusBarTexture(texPath)
                                 tb._texPath = texPath
-                                tb:SetFrameLevel(pipTex:GetFrameLevel() + 1)
-                                pipTex._secretThreshBar = tb
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                                tb:SetFrameLevel(pip:GetFrameLevel() + 1)
+                                pip._secretThreshBar = tb
+                                if pip._blizzMask then
+                                    mod.ERB_MaskPip(pip, pip._blizzMask)
                                 end
-                            elseif pipTex._secretThreshBar._texPath ~= texPath then
-                                pipTex._secretThreshBar:SetStatusBarTexture(texPath)
-                                pipTex._secretThreshBar._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
+                            elseif pip._secretThreshBar._texPath ~= texPath then
+                                pip._secretThreshBar:SetStatusBarTexture(texPath)
+                                pip._secretThreshBar._texPath = texPath
+                                if pip._blizzMask then
+                                    mod.ERB_MaskPip(pip, pip._blizzMask)
                                 end
                             end
                             -- Fills only when cur >= max(i, threshCount): the pip is
                             -- active AND the threshold has been reached.
                             local tlo = (i > _tsThreshCount) and i or _tsThreshCount
-                            pipTex._secretThreshBar:SetMinMaxValues(tlo - 1, tlo)
-                            pipTex._secretThreshBar:SetValue(current)
-                            pipTex._secretThreshBar:SetStatusBarColor(_tsR or 1, _tsG or 0.2, _tsB or 0.2, a)
-                            pipTex._secretThreshBar:Show()
-                        elseif pipTex._secretThreshBar then
-                            pipTex._secretThreshBar:Hide()
+                            pip._secretThreshBar:SetMinMaxValues(tlo - 1, tlo)
+                            pip._secretThreshBar:SetValue(current)
+                            pip._secretThreshBar:SetStatusBarColor(_tsR or 1, _tsG or 0.2, _tsB or 0.2, a)
+                            pip._secretThreshBar:Show()
+                        elseif pip._secretThreshBar then
+                            pip._secretThreshBar:Hide()
                         end
                     end
 
                     -- Hide the normal fill; the StatusBar replaces it
-                    pipTex._fill:Hide()
+                    pip._fill:Hide()
 
                     -- Fill Opacity in secret contexts, same look as the clean path:
                     -- region alpha on the overlay fills + bg anchored to the base
@@ -2915,38 +2915,38 @@ local function UpdateSecondaryResource()
                     -- never reading the secret value. _fillOp is nil at 100.
                     -- Factor 1 (Background on individual pips) keeps the
                     -- colour alpha each SetStatusBarColor above wrote.
-                    if pipTex._fillOp then
-                        local _fo = pipTex._fillOp < 1 and pipTex._fillOp
-                        local _sft = pipTex._secretBar:GetStatusBarTexture()
+                    if pip._fillOp then
+                        local _fo = pip._fillOp < 1 and pip._fillOp
+                        local _sft = pip._secretBar:GetStatusBarTexture()
                         if _sft then
                             if _fo then
                                 _sft:SetAlpha(_fo)
                             end
-                            if not pipTex._sbgAnchored then
-                                pipTex._sbgAnchored = true
-                                pipTex._bg:ClearAllPoints()
-                                pipTex._bg:SetPoint("TOPLEFT", _sft, "TOPRIGHT", 0, 0)
-                                pipTex._bg:SetPoint("BOTTOMRIGHT", pipTex, "BOTTOMRIGHT", 0, 0)
-                                pipTex._bg:SetAlpha(1)
+                            if not pip._sbgAnchored then
+                                pip._sbgAnchored = true
+                                pip._bg:ClearAllPoints()
+                                pip._bg:SetPoint("TOPLEFT", _sft, "TOPRIGHT", 0, 0)
+                                pip._bg:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", 0, 0)
+                                pip._bg:SetAlpha(1)
                             end
                         end
-                        local _stb = pipTex._secretThreshBar
+                        local _stb = pip._secretThreshBar
                         if _fo and _stb and _stb:IsShown() then
                             local t = _stb:GetStatusBarTexture()
                             if t then
                                 t:SetAlpha(_fo)
                             end
                         end
-                        local _srb = pipTex._bandResetBar
+                        local _srb = pip._bandResetBar
                         if _fo and _srb and _srb:IsShown() then
                             local t = _srb:GetStatusBarTexture()
                             if t then
                                 t:SetAlpha(_fo)
                             end
                         end
-                        if _fo and pipTex._bandBars then
-                            for k = 1, #pipTex._bandBars do
-                                local bb = pipTex._bandBars[k]
+                        if _fo and pip._bandBars then
+                            for k = 1, #pip._bandBars do
+                                local bb = pip._bandBars[k]
                                 if bb:IsShown() then
                                     local t = bb:GetStatusBarTexture()
                                     if t then
@@ -2958,12 +2958,12 @@ local function UpdateSecondaryResource()
                     end
                     -- Keep the native secret-value and opacity paths intact.
                     if sp.useContinuousTexture then
-                        PipTextureHelpers.DrawFill(pipTex, pipTex._secretBar)
-                        PipTextureHelpers.DrawFill(pipTex, pipTex._secretThreshBar)
-                        PipTextureHelpers.DrawFill(pipTex, pipTex._bandResetBar)
-                        if pipTex._bandBars then
-                            for k = 1, #pipTex._bandBars do
-                                PipTextureHelpers.DrawFill(pipTex, pipTex._bandBars[k])
+                        PipTextureHelpers.DrawFill(pip, pip._secretBar)
+                        PipTextureHelpers.DrawFill(pip, pip._secretThreshBar)
+                        PipTextureHelpers.DrawFill(pip, pip._bandResetBar)
+                        if pip._bandBars then
+                            for k = 1, #pip._bandBars do
+                                PipTextureHelpers.DrawFill(pip, pip._bandBars[k])
                             end
                         end
                     end
@@ -3111,7 +3111,8 @@ local function UpdateSecondaryResource()
         -- Direction: "From" (>=, default) or "Up to" (<=, thresholdReverse).
         local useThresh = _tsEntry
             and (
-                (_tsReverse and current <= _tsThreshCount) or ((not _tsReverse) and current >= _tsThreshCount)
+                (_tsReverse and current <= _tsThreshCount)
+                or ((not _tsReverse) and current >= _tsThreshCount)
             )
         local tr, tg, tb = _tsR, _tsG, _tsB
         -- Multi-band
@@ -3180,9 +3181,9 @@ local function UpdateSecondaryResource()
 
             -- Compute fill fraction for the recharging pip
             if _essenceNextTick and _essenceTickDur > 0 then
-                local remaining = upper(0, _essenceNextTick - nowTime)
+                local remaining = max(0, _essenceNextTick - nowTime)
                 frac = 1 - (remaining / _essenceTickDur)
-                frac = upper(0, min(1, frac))
+                frac = max(0, min(1, frac))
                 preciseCur = current + frac
             end
         end
@@ -3437,8 +3438,8 @@ end
 -- reveal rests at 0 on one shared curve; a fade lift rests at its floor on a
 -- curve of the bar's own, re-pointed only when that floor changes.
 local missingHideCurve
-local function MissingCurve(barFrame)
-    local floor = barFrame._missFloor
+local function MissingCurve(bar)
+    local floor = bar._missFloor
     if not floor then
         if not missingHideCurve then
             missingHideCurve = C_CurveUtil.CreateCurve()
@@ -3448,14 +3449,14 @@ local function MissingCurve(barFrame)
         end
         return missingHideCurve
     end
-    local c = barFrame._missLiftCurve
+    local c = bar._missLiftCurve
     if not c then
         c = C_CurveUtil.CreateCurve()
         c:SetType(Enum.LuaCurveType.Step)
-        barFrame._missLiftCurve = c
+        bar._missLiftCurve = c
     end
-    if barFrame._missLiftAt ~= floor then
-        barFrame._missLiftAt = floor
+    if bar._missLiftAt ~= floor then
+        bar._missLiftAt = floor
         c:ClearPoints()
         c:AddPoint(0, 1)
         c:AddPoint(1, floor)
@@ -3480,70 +3481,70 @@ end
 -- The Health or Power bar's own alpha: its normal opacity while Show When
 -- Missing reveals it (the wrapper hides or fades it at full), else the
 -- ns.ResolveBarAlpha answer.
-function mod.ERB_MissingBarAlpha(barFrame, conf)
-    if barFrame and barFrame._missLive then
+function mod.ERB_MissingBarAlpha(bar, conf)
+    if bar and bar._missLive then
         return (conf and conf.barAlpha) or 1
     end
     return mod.ResolveBarAlpha(conf)
 end
 
-function mod.ERB_MissingPaint(barFrame)
-    local curve = MissingCurve(barFrame)
-    local pt = barFrame._missPower
+function mod.ERB_MissingPaint(bar)
+    local curve = MissingCurve(bar)
+    local pt = bar._missPower
     local a
     if pt then
         a = UnitPowerPercent("player", pt, false, curve)
     else
         a = UnitHealthPercent("player", false, curve)
     end
-    barFrame._missWrap:SetAlpha(a)
+    bar._missWrap:SetAlpha(a)
 end
 
 -- SetParent resets the frame level; the strata follows the new parent (the
 -- wrapper takes the bar's own on entry, so an inherited strata is never pinned).
-local function MissingRehome(barFrame, hostFrame)
-    local level = barFrame:GetFrameLevel()
-    barFrame:SetParent(hostFrame)
-    barFrame:SetFrameLevel(level)
+local function MissingRehome(bar, hostFrame)
+    local level = bar:GetFrameLevel()
+    bar:SetParent(hostFrame)
+    bar:SetFrameLevel(level)
 end
 
 -- live: reveal active for this bar; powerType nil means the health bar. home:
 -- the parent to return to when the reveal ends (nil keeps the wrapper). park:
 -- held in the wrapper at alpha 0 instead (the druid strip while the Power Bar
 -- is revealed on energy with Show When Mana Missing off).
-function mod.ERB_MissingApply(barFrame, live, powerType, home, park, floor)
-    local wid = barFrame._missWrap
+function mod.ERB_MissingApply(bar, live, powerType, home, park, floor)
+    local wid = bar._missWrap
     if not live and not park then
-        barFrame._missLive, barFrame._missParked, barFrame._missFloor = nil, nil, nil
+        bar._missLive, bar._missParked, bar._missFloor = nil, nil, nil
         if wid then
             wid:SetAlpha(1)
         end
-        local hgt = barFrame._missHome
-        if hgt and barFrame:GetParent() ~= hgt then
-            MissingRehome(barFrame, hgt)
+        local hgt = bar._missHome
+        if hgt and bar:GetParent() ~= hgt then
+            MissingRehome(bar, hgt)
         end
         return
     end
     if not wid then
         wid = CreateFrame("Frame", nil, mainFrame)
         wid:SetAllPoints(mainFrame)
-        barFrame._missWrap = wid
+        bar._missWrap = wid
     end
-    barFrame._missHome = home
-    if barFrame:GetParent() ~= wid then
-        wid:SetFrameStrata(barFrame:GetFrameStrata())
-        MissingRehome(barFrame, wid)
+    bar._missHome = home
+    if bar:GetParent() ~= wid then
+        wid:SetFrameStrata(bar:GetFrameStrata())
+        MissingRehome(bar, wid)
     end
     if park then
-        barFrame._missLive, barFrame._missParked = nil, true
+        bar._missLive, bar._missParked = nil, true
         wid:SetAlpha(0)
         return
     end
-    barFrame._missParked = nil
-    barFrame._missLive = true
-    barFrame._missFloor = floor
-    barFrame._missPower = powerType
-    mod.ERB_MissingPaint(barFrame)
+    bar._missParked = nil
+    bar._missLive = true
+    bar._missFloor = floor
+    bar._missPower = powerType
+    mod.ERB_MissingPaint(bar)
 end
 
 -- The druid mana strip (a child of the Power Bar) on its own Show When Mana
@@ -3552,22 +3553,22 @@ end
 -- "park": held out of sight while an energy reveal shows the Power Bar (its
 -- anchor edge handed back); nil: back under the Power Bar. Out of its wrapper it
 -- no longer inherits the Power Bar's alpha, so its own is applied directly.
-function mod.ERB_MissingHost(pb, pp, modeName, floor)
-    local hgt = modeName and mod.FDM_Host() or pb._missHost
+function mod.ERB_MissingHost(pb, pp, mode, floor)
+    local hgt = mode and mod.FDM_Host() or pb._missHost
     if not hgt then
         return
     end
     pb._missHost = hgt
-    if modeName == "mana" then
+    if mode == "mana" then
         mod.ERB_MissingApply(hgt, true, PT.MANA, pb, nil, floor)
         hgt:SetAlpha(mod.ERB_MissingBarAlpha(hgt, pp))
-    elseif modeName == "park" then
+    elseif mode == "park" then
         mod.ERB_MissingApply(hgt, false, nil, pb, true)
     elseif hgt._missLive or hgt._missParked then
         mod.ERB_MissingApply(hgt, false)
         hgt:SetAlpha(1)
     end
-    mod.FDM_Parked(modeName == "park")
+    mod.FDM_Parked(mode == "park")
 end
 
 -- WoW Forever Spell Cost Prediction host (CludesUI_SpellCostPrediction.lua,
@@ -3624,7 +3625,7 @@ local function UpdateVisibility()
     end
 
     -- Health bar visibility
-    if healthBar then
+    if health then
         local hp = _G._CURB_ResolveHealthCfg()
         local avail = hp
             and hp.enabled
@@ -3640,20 +3641,20 @@ local function UpdateVisibility()
         local lift = wanted and vis == true and mod.ERB_MissingLiftFloor(hp) or nil
         -- A lifted bar's opacity follows its health: no shared-opacity group member.
         if grp then
-            mod._erbGrpH = (vis == true) and not healthBar._erbMouseTrack and not lift
+            mod._erbGrpH = (vis == true) and not health._erbMouseTrack and not lift
         end
-        if missing or lift or healthBar._missLive then
-            mod.ERB_MissingApply(healthBar, (missing or lift) and true or false, nil, nil, nil, lift)
+        if missing or lift or health._missLive then
+            mod.ERB_MissingApply(health, (missing or lift) and true or false, nil, nil, nil, lift)
         end
         if missing then
             vis = true
         end
         if vis == true then
-            healthBar:Show()
-            CludesUI.SetElementVisibility(healthBar, true)
-            healthBar:SetAlpha(mod.ERB_MissingBarAlpha(healthBar, hp))
+            health:Show()
+            CludesUI.SetElementVisibility(health, true)
+            health:SetAlpha(mod.ERB_MissingBarAlpha(health, hp))
         else
-            CludesUI.SetElementVisibility(healthBar, false)
+            CludesUI.SetElementVisibility(health, false)
         end
     end
 
@@ -3830,7 +3831,7 @@ mod.EMTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     if not (primaryBar and primaryBar:IsShown() and primaryBar:GetAlpha() > 0) then
         return
     end
-    local remaining = (_ebonMightExpiry > 0) and upper(0, _ebonMightExpiry - GetTime()) or 0
+    local remaining = (_ebonMightExpiry > 0) and max(0, _ebonMightExpiry - GetTime()) or 0
     primaryBar:SetValue(remaining)
     local pp = _G._CURB_ResolvePowerCfg()
     if pp and pp.textFormat and pp.textFormat ~= "none" then
@@ -3916,7 +3917,7 @@ end, 0.05)
 do
     local pass = CreateFrame("Frame")
     pass:Hide()
-    local hostRegion
+    local host
     local cds = {}
     local feed = false -- re-feed the widgets on the next pass
 
@@ -3924,11 +3925,11 @@ do
     -- ID (read through the current override). isOnGCD is only trustworthy while
     -- answering SPELL_UPDATE_COOLDOWN, so it is read here.
     local function Latch(entries, oncd)
-        local Stl = C_Spell
+        local S = C_Spell
         for i = 1, #entries do
             local spellRef = entries[i].spellID
             if spellRef then
-                local cd = Stl.GetSpellCooldown(Stl.GetOverrideSpell(spellRef) or spellRef)
+                local cd = S.GetSpellCooldown(S.GetOverrideSpell(spellRef) or spellRef)
                 oncd[spellRef] = (cd and cd.isActive and not cd.isOnGCD) and true or false
             end
         end
@@ -3950,19 +3951,19 @@ do
         if not entries then
             return num
         end
-        if not hostRegion then
-            hostRegion = CreateFrame("Frame")
-            hostRegion:SetSize(1, 1)
-            hostRegion:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
-            hostRegion:SetAlpha(0)
+        if not host then
+            host = CreateFrame("Frame")
+            host:SetSize(1, 1)
+            host:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+            host:SetAlpha(0)
         end
-        hostRegion:Show()
-        local Stl = C_Spell
+        host:Show()
+        local S = C_Spell
         for i = 1, #entries do
             local k = num + i
             local cd = cds[k]
             if not cd then
-                cd = CreateFrame("Cooldown", nil, hostRegion, "CooldownFrameTemplate")
+                cd = CreateFrame("Cooldown", nil, host, "CooldownFrameTemplate")
                 cd:SetAllPoints()
                 cd:SetHideCountdownNumbers(true)
                 cd:SetDrawBling(false)
@@ -3973,7 +3974,7 @@ do
             local ident = entries[i].spellID
             cd._sid = ident
             cd._oncd = oncd
-            local dur = ident and Stl.GetSpellCooldownDuration(Stl.GetOverrideSpell(ident) or ident, true)
+            local dur = ident and S.GetSpellCooldownDuration(S.GetOverrideSpell(ident) or ident, true)
             if dur then
                 cd:SetCooldownFromDurationObject(dur)
             else
@@ -4070,8 +4071,8 @@ do
         for i = 1, #cds do
             cds[i]:Clear()
         end
-        if hostRegion then
-            hostRegion:Hide()
+        if host then
+            host:Hide()
         end
     end
 end
@@ -4142,8 +4143,8 @@ end
 -- the moment no cast state remains, covering every stop path without Stop calls in each
 -- handler, at the cost of at most one no-op fire.
 do
-    local hostRegion = CreateFrame("Frame")
-    local ag = hostRegion:CreateAnimationGroup()
+    local host = CreateFrame("Frame")
+    local ag = host:CreateAnimationGroup()
     ag:SetLooping("REPEAT")
     local tick = ag:CreateAnimation("Animation")
     -- 20 Hz redraw: the eased SetValue has the engine rendering intermediate fill
@@ -4178,7 +4179,7 @@ end
 -- fill ownership changes. Hidden frame = zero idle cost. Text, stages,
 -- spark and safety stay on the 20 Hz tick.
 do
-    local min, upper = math.min, math.max
+    local min, max = math.min, math.max
     local driver = CreateFrame("Frame")
     driver:Hide()
     mod._rawFillDriver = driver
@@ -4195,12 +4196,12 @@ do
         else
             v = (dur > 0) and ((GetTime() - f._startTime) / dur) or 0
         end
-        v = min(upper(v, 0), 1)
-        local barFrame = f._bar
-        local scrollBar = barFrame._sb or barFrame
+        v = min(max(v, 0), 1)
+        local bar = f._bar
+        local scrollBar = bar._sb or bar
         scrollBar:SetValue(v)
         if f._gradientFullBar and f._gradClip then
-            f._gradClip:SetWidth(upper(0.01, barFrame:GetWidth() * v))
+            f._gradClip:SetWidth(max(0.01, bar:GetWidth() * v))
         end
     end)
 end

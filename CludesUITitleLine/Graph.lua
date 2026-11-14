@@ -14,12 +14,12 @@ local C = mod.COLORS
 local Graph = {}
 mod.Graph = Graph
 
-local Widgets, PAD = 700, 16
+local W, PAD = 700, 16
 local HEADER_H = 46
 local TILE_T, TILE_H, TILE_GAP = HEADER_H + 14, 94, 8
 local PL, PR = 62, 58 -- plot margins: value axis on the left, end labels on the right
 local PT, PH = TILE_T + TILE_H + 28, 220
-local PW = Widgets - PL - PR
+local PW = W - PL - PR
 local STRIP_T, STRIP_H = PT + PH + 34, 30
 local FOOT_T = STRIP_T + STRIP_H + 16
 local H = FOOT_T + 34
@@ -35,7 +35,7 @@ local MIN_AHEAD, MAX_AHEAD = 14, 90 -- days drawn past today
 local MEDIA = "Interface\\AddOns\\CludesUITitleLine\\Media\\"
 local SHAPE_FILL = 0.85 -- the dot and diamond leave a clear margin in their 16px textures
 
-local widget, plot, strip, hover, cross, tipText, segmented, message, group, panelFrame
+local widget, plot, strip, hover, cross, tipText, segmented, message, set, panelFrame
 local tiles = {}
 local pools = {}
 local fonts
@@ -51,9 +51,9 @@ end
 local function MakeFonts()
     fonts = {}
     local filePath, _, flags = GameFontHighlight:GetFont()
-    for name, dim in pairs({ title = 15, value = 20, body = 12, small = 11, tiny = 10 }) do
+    for name, size in pairs({ title = 15, value = 20, body = 12, small = 11, tiny = 10 }) do
         local f = CreateFont("TitleLineFont_" .. name)
-        f:SetFont(filePath, dim, flags or "")
+        f:SetFont(filePath, size, flags or "")
         fonts[name] = f
     end
 end
@@ -147,8 +147,8 @@ end
 
 -- A dot or diamond `size` across, on a ring in the surface colour so it reads
 -- over any line. The shape fills SHAPE_FILL of its texture.
-local function Marker(rings, marks, rel, posX, posY, c, dim)
-    for _, m in ipairs({ { rings, dim + 4, C.surface }, { marks, dim, c } }) do
+local function Marker(rings, marks, rel, posX, posY, c, size)
+    for _, m in ipairs({ { rings, size + 4, C.surface }, { marks, size, c } }) do
         local t = m[1]:Get()
         local s = m[2] / SHAPE_FILL
         t:SetSize(s, s)
@@ -266,8 +266,8 @@ local function Projection(pool, s, c)
     DashedPath(pool, filePath, c)
 end
 
-function mod.NiceStep(range, targetUnit)
-    local raw = range / targetUnit
+function mod.NiceStep(range, target)
+    local raw = range / target
     local mag = 10 ^ math.floor(math.log(raw) / math.log(10))
     local norm = raw / mag
     local step = norm < 1.5 and 1 or norm < 3 and 2 or norm < 7 and 5 or 10
@@ -275,10 +275,10 @@ function mod.NiceStep(range, targetUnit)
 end
 
 -- The time window and value range for this render.
-function mod.Window(context, modeName, hidden)
+function mod.Window(context, mode, hidden)
     local nowTime, regionFrame, sum = context.now, context.region, context.summary
     local x0 = regionFrame.startsAt
-    if modeName ~= "season" then
+    if mode ~= "season" then
         x0 = math.max(x0, nowTime - RECENT_DAYS * DAY)
     end
 
@@ -291,7 +291,7 @@ function mod.Window(context, modeName, hidden)
     end
     local x1 = nowTime + ahead * DAY
     -- The season view runs to the season's end.
-    if modeName == "season" and sum.endsAt and sum.endsAt > x1 then
+    if mode == "season" and sum.endsAt and sum.endsAt > x1 then
         x1 = sum.endsAt
     end
 
@@ -357,12 +357,12 @@ end
 -- The window ----------------------------------------------------------------------------
 
 local function MakeSegmented(hostFrame, options)
-    local boxFrame = CreateFrame("Frame", nil, hostFrame)
+    local box = CreateFrame("Frame", nil, hostFrame)
     local bw = 72
-    boxFrame:SetSize(#options * bw + 2, 24)
-    Hairlines(boxFrame, 0.10)
-    boxFrame.buttons = {}
-    function boxFrame:Refresh()
+    box:SetSize(#options * bw + 2, 24)
+    Hairlines(box, 0.10)
+    box.buttons = {}
+    function box:Refresh()
         for _, b in ipairs(self.buttons) do
             local enabled = CludesUITitleLineDB.view == b.value
             Color(b.bg, C.raised, enabled and 1 or 0)
@@ -371,7 +371,7 @@ local function MakeSegmented(hostFrame, options)
         end
     end
     for idx, o in ipairs(options) do
-        local b = CreateFrame("Button", nil, boxFrame)
+        local b = CreateFrame("Button", nil, box)
         b:SetSize(bw, 22)
         b:SetPoint("LEFT", 1 + (idx - 1) * bw, 0)
         b.bg = b:CreateTexture(nil, "BACKGROUND")
@@ -388,14 +388,14 @@ local function MakeSegmented(hostFrame, options)
             Graph:Render()
         end)
         b:SetScript("OnEnter", function()
-            boxFrame:Refresh()
+            box:Refresh()
         end)
         b:SetScript("OnLeave", function()
-            boxFrame:Refresh()
+            box:Refresh()
         end)
-        boxFrame.buttons[idx] = b
+        box.buttons[idx] = b
     end
-    return boxFrame
+    return box
 end
 
 local function MakeClose(hostFrame)
@@ -429,7 +429,7 @@ end
 
 local function MakeTile(idx, key)
     local total = #mod.TIERS + 1
-    local wid = (Widgets - 2 * PAD - (total - 1) * TILE_GAP) / total
+    local wid = (W - 2 * PAD - (total - 1) * TILE_GAP) / total
     local t = CreateFrame("Button", nil, widget)
     t:SetSize(wid, TILE_H)
     t:SetPoint("TOPLEFT", PAD + (idx - 1) * (wid + TILE_GAP), -TILE_T)
@@ -521,7 +521,7 @@ end
 local function Create()
     MakeFonts()
     widget = CreateFrame("Frame", "TitleLineFrame", UIParent)
-    widget:SetSize(Widgets, H)
+    widget:SetSize(W, H)
     widget:SetFrameStrata("DIALOG")
     widget:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
     widget:SetToplevel(true)
@@ -554,12 +554,12 @@ local function Create()
     Hairlines(widget, 0.10)
 
     -- Header.
-    local glyph = widget:CreateTexture(nil, "ARTWORK")
-    glyph:SetTexture(MEDIA .. "Icon", "CLAMP", "CLAMP", "LINEAR")
-    glyph:SetSize(24, 24)
-    glyph:SetPoint("TOPLEFT", PAD, -11)
+    local icon = widget:CreateTexture(nil, "ARTWORK")
+    icon:SetTexture(MEDIA .. "Icon", "CLAMP", "CLAMP", "LINEAR")
+    icon:SetSize(24, 24)
+    icon:SetPoint("TOPLEFT", PAD, -11)
     widget.title = FS(widget, "title", C.ink)
-    widget.title:SetPoint("LEFT", glyph, "RIGHT", 8, 0)
+    widget.title:SetPoint("LEFT", icon, "RIGHT", 8, 0)
     widget.title:SetText("TitleLine")
     widget.region = FS(widget, "small", C.ink2)
     widget.region:SetPoint("LEFT", widget.title, "RIGHT", 12, -1)
@@ -586,37 +586,37 @@ local function Create()
     end
 
     -- The group row: one cell per party member, shown while you are grouped.
-    group = CreateFrame("Frame", nil, widget)
-    group:SetPoint("TOPLEFT", PAD, -GROUP_T)
-    group:SetSize(Widgets - 2 * PAD, GROUP_H)
-    local labelText = FS(group, "tiny", C.muted)
+    set = CreateFrame("Frame", nil, widget)
+    set:SetPoint("TOPLEFT", PAD, -GROUP_T)
+    set:SetSize(W - 2 * PAD, GROUP_H)
+    local labelText = FS(set, "tiny", C.muted)
     labelText:SetPoint("LEFT", 0, 0)
     labelText:SetText("Group")
-    group.cells = {}
-    local cw = (Widgets - 2 * PAD - GROUP_LABEL_W + TILE_GAP) / 4
+    set.cells = {}
+    local cw = (W - 2 * PAD - GROUP_LABEL_W + TILE_GAP) / 4
     for idx = 1, 4 do
-        local cellFrame = CreateFrame("Button", nil, group)
-        cellFrame:SetSize(cw - TILE_GAP, GROUP_H)
-        cellFrame:SetPoint("LEFT", GROUP_LABEL_W + (idx - 1) * cw, 0)
-        local cbg = cellFrame:CreateTexture(nil, "BACKGROUND")
+        local cell = CreateFrame("Button", nil, set)
+        cell:SetSize(cw - TILE_GAP, GROUP_H)
+        cell:SetPoint("LEFT", GROUP_LABEL_W + (idx - 1) * cw, 0)
+        local cbg = cell:CreateTexture(nil, "BACKGROUND")
         cbg:SetAllPoints()
         Color(cbg, C.raised)
-        cellFrame.edges = Hairlines(cellFrame, 0.06)
-        cellFrame.name = FS(cellFrame, "small", C.ink)
-        cellFrame.name:SetPoint("TOPLEFT", 10, -8)
-        cellFrame.value = FS(cellFrame, "body", C.ink)
-        cellFrame.value:SetPoint("BOTTOMLEFT", 10, 7)
-        cellFrame.sub = FS(cellFrame, "tiny", C.muted)
-        cellFrame.sub:SetPoint("BOTTOMRIGHT", -10, 8)
-        cellFrame:SetScript("OnEnter", function(self)
+        cell.edges = Hairlines(cell, 0.06)
+        cell.name = FS(cell, "small", C.ink)
+        cell.name:SetPoint("TOPLEFT", 10, -8)
+        cell.value = FS(cell, "body", C.ink)
+        cell.value:SetPoint("BOTTOMLEFT", 10, 7)
+        cell.sub = FS(cell, "tiny", C.muted)
+        cell.sub:SetPoint("BOTTOMRIGHT", -10, 8)
+        cell:SetScript("OnEnter", function(self)
             SetEdges(self.edges, 0.18)
             Graph.ShowMember(self)
         end)
-        cellFrame:SetScript("OnLeave", function(self)
+        cell:SetScript("OnLeave", function(self)
             SetEdges(self.edges, 0.06)
             tipText:Hide()
         end)
-        group.cells[idx] = cellFrame
+        set.cells[idx] = cell
     end
 
     plot = CreateFrame("Frame", nil, widget)
@@ -626,15 +626,15 @@ local function Create()
     strip = CreateFrame("Frame", nil, widget)
     strip:SetPoint("TOPLEFT", PL, -STRIP_T)
     strip:SetSize(PW, STRIP_H)
-    local baseValue = strip:CreateTexture(nil, "BORDER")
-    Color(baseValue, C.axis)
-    baseValue:SetHeight(1)
-    baseValue:SetPoint("BOTTOMLEFT")
-    baseValue:SetPoint("BOTTOMRIGHT")
+    local base = strip:CreateTexture(nil, "BORDER")
+    Color(base, C.axis)
+    base:SetHeight(1)
+    base:SetPoint("BOTTOMLEFT")
+    base:SetPoint("BOTTOMRIGHT")
 
     -- Where the Keys and Guild views draw (Views.lua).
     panelFrame = CreateFrame("Frame", nil, widget)
-    panelFrame:SetSize(Widgets - 2 * PAD, STRIP_T + STRIP_H - PT)
+    panelFrame:SetSize(W - 2 * PAD, STRIP_T + STRIP_H - PT)
     panelFrame:Hide()
 
     message = FS(plot, "body", C.ink2)
@@ -651,17 +651,17 @@ local function Create()
     cross:SetWidth(1)
     cross:Hide()
 
-    local function lines(hostFrame, layer, subFrame, smooth)
+    local function lines(hostFrame, layer, sub, smooth)
         local p = Pool(function()
-            local l = hostFrame:CreateLine(nil, layer, nil, subFrame)
+            local l = hostFrame:CreateLine(nil, layer, nil, sub)
             return smooth and Smooth(l, "Line") or l
         end)
         p.smooth = smooth
         return p
     end
-    local function textures(hostFrame, layer, subFrame, file)
+    local function textures(hostFrame, layer, sub, file)
         return Pool(function()
-            local t = hostFrame:CreateTexture(nil, layer, nil, subFrame)
+            local t = hostFrame:CreateTexture(nil, layer, nil, sub)
             return file and Smooth(t, file) or t
         end)
     end
@@ -930,11 +930,11 @@ local function DrawMarkers(context, hidden, taken)
     -- Boxes (left, bottom, width, height) that a label must not cover.
     -- `taken` arrives holding the axis tags ("Projected", "Season end").
 
-    local function mark(posX, posY, c, dim, diamond)
+    local function mark(posX, posY, c, size, diamond)
         if diamond then
-            Marker(pools.diamondRings, pools.diamonds, plot, posX, posY, c, dim)
+            Marker(pools.diamondRings, pools.diamonds, plot, posX, posY, c, size)
         else
-            Marker(pools.dotRings, pools.dots, plot, posX, posY, c, dim)
+            Marker(pools.dotRings, pools.dots, plot, posX, posY, c, size)
         end
         taken[#taken + 1] = { posX - 7, posY - 7, 14, 14 }
     end
@@ -971,7 +971,7 @@ local function DrawMarkers(context, hidden, taken)
             cr.s.tier.short .. " by " .. mod.DateText(cr.s.eta)
         )
         local wid, hgt, posX, posY = fontStr:GetStringWidth() + 8, 15, cr.x, cr.y
-        local boxFrame
+        local box
         for _, b in ipairs({
             { posX - wid / 2, posY + 9, wid, hgt },
             { posX - wid / 2, posY - 9 - hgt, wid, hgt },
@@ -986,16 +986,16 @@ local function DrawMarkers(context, hidden, taken)
                 end
             end
             if clear then
-                boxFrame = b
+                box = b
                 break
             end
         end
-        boxFrame = boxFrame or { posX - wid / 2, posY + 9, wid, hgt }
-        taken[#taken + 1] = boxFrame
-        fontStr:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", boxFrame[1] + 4, boxFrame[2] + 2)
+        box = box or { posX - wid / 2, posY + 9, wid, hgt }
+        taken[#taken + 1] = box
+        fontStr:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", box[1] + 4, box[2] + 2)
         local backdrop = pools.labelBg:Get()
         backdrop:ClearAllPoints()
-        backdrop:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", boxFrame[1], boxFrame[2])
+        backdrop:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", box[1], box[2])
         backdrop:SetSize(wid, hgt)
         Color(backdrop, C.surface, 0.92)
     end
@@ -1056,7 +1056,7 @@ local function DrawNotes(context)
     local function note(s, c)
         local fontStr = Text(pools.notes, "tiny", c, "TOPLEFT", widget, "TOPLEFT", PAD, posY, s)
         fontStr:SetWordWrap(true)
-        fontStr:SetWidth(Widgets - 2 * PAD)
+        fontStr:SetWidth(W - 2 * PAD)
         fontStr:SetJustifyH("LEFT")
         posY = posY - fontStr:GetStringHeight() - 5
     end
@@ -1090,20 +1090,20 @@ local function NextLine(context, score)
 end
 
 local function DrawGroup(context)
-    for idx, cellFrame in ipairs(group.cells) do
+    for idx, cell in ipairs(set.cells) do
         local m = context.party[idx]
-        cellFrame.member = m
-        cellFrame:SetShown(m ~= nil)
+        cell.member = m
+        cell:SetShown(m ~= nil)
         if m then
             local c = mod.ClassColor(m.class)
-            cellFrame.name:SetText(m.name)
-            cellFrame.name:SetTextColor(c[1], c[2], c[3])
+            cell.name:SetText(m.name)
+            cell.name:SetTextColor(c[1], c[2], c[3])
             if m.score > 0 then
-                cellFrame.value:SetText(mod.Fmt(m.score))
-                cellFrame.sub:SetText(NextLine(context, m.score))
+                cell.value:SetText(mod.Fmt(m.score))
+                cell.sub:SetText(NextLine(context, m.score))
             else
-                cellFrame.value:SetText("-")
-                cellFrame.sub:SetText("no rating yet")
+                cell.value:SetText("-")
+                cell.sub:SetText("no rating yet")
             end
         end
     end
@@ -1190,7 +1190,7 @@ function Graph:Render()
         end
         message:SetText(context.error)
         message:Show()
-        group:Hide()
+        set:Hide()
         panelFrame:Hide()
         plot:Show()
         widget:SetHeight(H)
@@ -1204,7 +1204,7 @@ function Graph:Render()
     -- In a party, the group row opens under the tiles and the rest moves down.
     local grouped = #context.party > 0
     local shift = grouped and GROUP_SHIFT or 0
-    group:SetShown(grouped)
+    set:SetShown(grouped)
     plot:ClearAllPoints()
     plot:SetPoint("TOPLEFT", PL, -(PT + shift))
     strip:ClearAllPoints()
@@ -1380,8 +1380,8 @@ function Graph.OnHover()
 end
 
 -- A groupmate's best key and score in every dungeon, under their cell.
-function Graph.ShowMember(cellFrame)
-    local m = cellFrame.member
+function Graph.ShowMember(cell)
+    local m = cell.member
     if not m then
         return
     end
@@ -1417,7 +1417,7 @@ function Graph.ShowMember(cellFrame)
 
     tipText:SetHeight(-posY + 6)
     tipText:ClearAllPoints()
-    tipText:SetPoint("TOPLEFT", cellFrame, "BOTTOMLEFT", 0, -6)
+    tipText:SetPoint("TOPLEFT", cell, "BOTTOMLEFT", 0, -6)
     tipText:Show()
 end
 
@@ -1520,7 +1520,7 @@ mod.UI = {
     Hairlines = Hairlines,
     LevelText = LevelText,
     MakeClose = MakeClose,
-    PANEL_W = Widgets - 2 * PAD,
+    PANEL_W = W - 2 * PAD,
     PANEL_H = STRIP_T + STRIP_H - PT,
 }
 

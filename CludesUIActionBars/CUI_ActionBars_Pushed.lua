@@ -72,22 +72,22 @@ do
 
     local function _applyBorderEdges(edges, button, brdSize, cr, cg, cb)
         edges._active = true
-        local anchorFrame = button.icon or button.Icon or button
+        local anchor = button.icon or button.Icon or button
         local Pix = CludesUI.PP
         for jdx = 1, 4 do
             edges[jdx]:SetVertexColor(cr, cg, cb, 1)
         end
         edges[1]:ClearAllPoints()
-        edges[1]:SetPoint("TOPLEFT", anchorFrame)
-        edges[1]:SetPoint("TOPRIGHT", anchorFrame)
+        edges[1]:SetPoint("TOPLEFT", anchor)
+        edges[1]:SetPoint("TOPRIGHT", anchor)
         if Pix then
             Pix.Height(edges[1], brdSize)
         else
             edges[1]:SetHeight(brdSize)
         end
         edges[2]:ClearAllPoints()
-        edges[2]:SetPoint("BOTTOMLEFT", anchorFrame)
-        edges[2]:SetPoint("BOTTOMRIGHT", anchorFrame)
+        edges[2]:SetPoint("BOTTOMLEFT", anchor)
+        edges[2]:SetPoint("BOTTOMRIGHT", anchor)
         if Pix then
             Pix.Height(edges[2], brdSize)
         else
@@ -190,10 +190,10 @@ end
 -- it is set again after). Keeps the current tint. Unmemoized, like the bar
 -- border's own textured path. Callers keep it out of combat.
 mod._ixStyle = function(button, fd, s)
-    local hostRegion = fd.ixHost
+    local host = fd.ixHost
     local sz, px = ResolveBorderThickness(s)
     CludesUI.ApplyBorderStyle(
-        hostRegion,
+        host,
         sz,
         fd.ixR or 1,
         fd.ixG or 1,
@@ -209,7 +209,7 @@ mod._ixStyle = function(button, fd, s)
         nil,
         px
     )
-    local edge = CludesUI._bdBorderData[hostRegion]
+    local edge = CludesUI._bdBorderData[host]
     if edge then
         edge:SetFrameLevel(mod._eabBorderLevel(button, s.borderBehind, s.borderAboveEffects))
     end
@@ -242,19 +242,19 @@ mod._ixPaint = function(button, fd)
         end
         if not fd.ixLit then
             fd.ixLit = true
-            local baseValue = bdData[button]
-            if baseValue then
-                fd.ixBaseA = baseValue:GetAlpha()
-                baseValue:SetAlpha(0)
+            local base = bdData[button]
+            if base then
+                fd.ixBaseA = base:GetAlpha()
+                base:SetAlpha(0)
             end
             wid:Show()
         end
     elseif fd.ixLit then
         fd.ixLit = nil
         wid:Hide()
-        local baseValue = bdData[button]
-        if baseValue then
-            baseValue:SetAlpha(fd.ixBaseA or 1)
+        local base = bdData[button]
+        if base then
+            base:SetAlpha(fd.ixBaseA or 1)
         end
     end
 end
@@ -348,9 +348,9 @@ mod._ixRole = function(button, s, role, enabled)
                 local wid = CreateFrame("Frame", nil, button)
                 wid:SetAllPoints(button)
                 wid:Hide()
-                local hostRegion = CreateFrame("Frame", nil, wid)
-                hostRegion:SetAllPoints(wid)
-                fd.ixBorder, fd.ixHost = wid, hostRegion
+                local host = CreateFrame("Frame", nil, wid)
+                host:SetAllPoints(wid)
+                fd.ixBorder, fd.ixHost = wid, host
                 mod._ixEver = true
             end
             if not fd.ixStyled then
@@ -542,7 +542,7 @@ do
             end
             return binding:match("[^%-]+$")
         end
-        local function ShowPushedForSlot(slotIndex)
+        local function ShowPushedForSlot(slot)
             local prof = ABAR.db and ABAR.db.profile
             if not prof then
                 return
@@ -550,7 +550,7 @@ do
             if mod.AB_Style() == "cui" and (prof.pushedTextureType or 2) == 6 then
                 return
             end
-            local button = allButtons[slotIndex]
+            local button = allButtons[slot]
             if not button or not button.PushedTexture then
                 return
             end
@@ -577,8 +577,8 @@ do
             end
             _pollFrame:Show()
         end
-        local function HidePushedForSlot(slotIndex)
-            local button = allButtons[slotIndex]
+        local function HidePushedForSlot(slot)
+            local button = allButtons[slot]
             if not (button and _activePushed[button]) then
                 return
             end
@@ -612,8 +612,8 @@ do
                 if not page then
                     return
                 end
-                local slotIndex = (page - 1) * 12 + ident
-                ShowPushedForSlot(slotIndex)
+                local slot = (page - 1) * 12 + ident
+                ShowPushedForSlot(slot)
             end)
             if MultiActionButtonUp then
                 hooksecurefunc("MultiActionButtonUp", function(barName, ident)

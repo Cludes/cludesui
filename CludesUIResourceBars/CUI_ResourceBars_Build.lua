@@ -40,9 +40,9 @@ local mainFrame
 Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
     mainFrame = val
 end
-local healthBar
+local health
 Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    healthBar = val
+    health = val
 end
 local primaryBar
 Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
@@ -256,19 +256,19 @@ local function ApplyResourceBarTicks(
             t:SetColorTexture(tR, tG, tB, tA)
             t:ClearAllPoints()
             if vert then
-                local offset = Pix and Pix.Scale(barH * frac) or (barH * frac)
-                offset = math.max(0, math.min(offset, Pix and Pix.Scale(barH - pxW) or (barH - pxW)))
+                local off = Pix and Pix.Scale(barH * frac) or (barH * frac)
+                off = math.max(0, math.min(off, Pix and Pix.Scale(barH - pxW) or (barH - pxW)))
                 t:SetSize(barW - vI * 2, pxW)
                 if revFill then
-                    t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", vI, -offset)
+                    t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", vI, -off)
                 else
-                    t:SetPoint("BOTTOMLEFT", scrollBar, "BOTTOMLEFT", vI, offset)
+                    t:SetPoint("BOTTOMLEFT", scrollBar, "BOTTOMLEFT", vI, off)
                 end
             else
-                local offset = Pix and Pix.Scale(barW * frac) or (barW * frac)
-                offset = math.max(0, math.min(offset, Pix and Pix.Scale(barW - pxW) or (barW - pxW)))
+                local off = Pix and Pix.Scale(barW * frac) or (barW * frac)
+                off = math.max(0, math.min(off, Pix and Pix.Scale(barW - pxW) or (barW - pxW)))
                 t:SetSize(pxW, tickH)
-                t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", offset, -vI)
+                t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", off, -vI)
             end
             t:Show()
         end
@@ -361,19 +361,19 @@ end
 -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0 or
 -- under the stock styles, which shape the bars with their own masks).
 -- Health / power: the outer frame is the shape, the clipping inner bar the body.
-function mod.ERB_RoundBar(barFrame, conf)
-    if not barFrame then
+function mod.ERB_RoundBar(bar, conf)
+    if not bar then
         return
     end
     local radius = (not mod.ERB_BarsBlizz() and conf.cornerRadius) or 0
     if radius <= 0 then
-        CludesUI.RoundCorners(barFrame, 0)
+        CludesUI.RoundCorners(bar, 0)
         return
     end
-    CludesUI.RoundCorners(barFrame, radius, {
-        roots = { barFrame._sb },
-        clip = barFrame._sb,
-        border = barFrame._border and barFrame._border._frame,
+    CludesUI.RoundCorners(bar, radius, {
+        roots = { bar._sb },
+        clip = bar._sb,
+        border = bar._border and bar._border._frame,
         style = conf.borderTexture or "solid",
         corners = conf.cornerMask,
     })
@@ -384,15 +384,15 @@ end
 -- or were rounded before.
 do
     local pipsRounded = false
-    local function RoundPipList(entries, radius, look, corners)
+    local function RoundPipList(entries, radius, style, corners)
         for idx = 1, #entries do
-            local pipTex = entries[idx]
+            local pip = entries[idx]
             if radius <= 0 then
-                CludesUI.RoundCorners(pipTex, 0)
-            elseif pipTex:IsShown() then
-                CludesUI.RoundCorners(pipTex, radius, {
-                    style = look,
-                    border = pipTex._border and pipTex._border._frame,
+                CludesUI.RoundCorners(pip, 0)
+            elseif pip:IsShown() then
+                CludesUI.RoundCorners(pip, radius, {
+                    style = style,
+                    border = pip._border and pip._border._frame,
                     corners = corners,
                 })
             end
@@ -400,12 +400,12 @@ do
     end
     function mod.ERB_RoundSecondary(sp, isBarType)
         local radius = (not mod.ERB_BarsBlizz() and sp.cornerRadius) or 0
-        local look = sp.borderTexture or "solid"
+        local style = sp.borderTexture or "solid"
         local onPips = sp.borderOnPips and not isBarType
         local rowBorder = secondaryFrame._barBorder
         if radius > 0 then
             CludesUI.RoundCorners(secondaryFrame, radius, {
-                style = look,
+                style = style,
                 border = not onPips and rowBorder and rowBorder._frame or nil,
                 clip = isBarType and secondaryBar and secondaryBar._sb or nil,
                 corners = sp.cornerMask,
@@ -415,8 +415,8 @@ do
         end
         local pipRadius = onPips and radius or 0
         if pipRadius > 0 or pipsRounded then
-            RoundPipList(pips, pipRadius, look, sp.cornerMask)
-            RoundPipList(runeFrames, pipRadius, look, sp.cornerMask)
+            RoundPipList(pips, pipRadius, style, sp.cornerMask)
+            RoundPipList(runeFrames, pipRadius, style, sp.cornerMask)
             pipsRounded = pipRadius > 0
         end
     end
@@ -449,7 +449,7 @@ local function BuildBars()
 
     -- Clear animation state so DB values are always authoritative on a fresh build
     local _animClearKeys = { "scale", "ox", "oy", "w", "h" }
-    for _, _animBar in ipairs({ healthBar, primaryBar, secondaryFrame, castBarFrame }) do
+    for _, _animBar in ipairs({ health, primaryBar, secondaryFrame, castBarFrame }) do
         if _animBar then
             for _, _k in ipairs(_animClearKeys) do
                 _animBar["_barAnim_" .. _k] = nil
@@ -466,16 +466,14 @@ local function BuildBars()
     -- nearest), NOT PP.Scale (truncate) -- see the Power bar note below.
     local hpWidth = hp.width or 214
     local hpHeight = hp.height or 16
-    local _hpEs = (healthBar and healthBar:GetEffectiveScale())
-        or (UIParent and UIParent:GetEffectiveScale())
-        or 1
+    local _hpEs = (health and health:GetEffectiveScale()) or (UIParent and UIParent:GetEffectiveScale()) or 1
     if Pix and Pix.SnapForES then
         hpWidth = Pix.SnapForES(hpWidth, _hpEs)
         hpHeight = Pix.SnapForES(hpHeight, _hpEs)
     end
     do
         local hpOri = hp.orientation or g.orientation or "HORIZONTAL"
-        if not healthBar then
+        if not health then
             Inner.SetHealthBar(
                 CreateStatusBar(
                     mainFrame,
@@ -489,37 +487,37 @@ local function BuildBars()
                     hp.borderA
                 )
             )
-            healthBar:SetFrameStrata(hp.frameStrata or g.frameStrata or "MEDIUM")
-            healthBar:SetFrameLevel(10)
+            health:SetFrameStrata(hp.frameStrata or g.frameStrata or "MEDIUM")
+            health:SetFrameLevel(10)
         end
         if not hp.enabled then
             -- Disabled: keep frame positioned at zero alpha for anchors
             local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
-            healthBar:SetSize(ow, oh)
-            healthBar:Show()
-            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", healthBar) then
+            health:SetSize(ow, oh)
+            health:Show()
+            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", health) then
                 -- Override anchor owns position (zero-alpha anchor target)
             elseif hp.unlockPos and hp.unlockPos.point then
                 local rp = hp.unlockPos.relPoint or hp.unlockPos.point
-                local sx, sy = SnapXY(hp.unlockPos.x, hp.unlockPos.y, healthBar, hp.unlockPos)
-                healthBar:ClearAllPoints()
-                healthBar:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
+                local sx, sy = SnapXY(hp.unlockPos.x, hp.unlockPos.y, health, hp.unlockPos)
+                health:ClearAllPoints()
+                health:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
             end
-            CludesUI.SetElementVisibility(healthBar, false)
-            mod.HealthIndicatorsApply(healthBar, nil)
+            CludesUI.SetElementVisibility(health, false)
+            mod.HealthIndicatorsApply(health, nil)
         else
             local healthAnchorKey = NormalizeAnchorKey(hp.anchorTo)
-            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", healthBar) then
+            if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor("ERB_Health", health) then
                 -- Override anchor owns positioning; only update size
                 local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
-                healthBar:SetSize(ow, oh)
+                health:SetSize(ow, oh)
             elseif healthAnchorKey ~= "none" then
                 local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
                 local offsetX, offsetY = GetAnchorOffsets(hp)
-                healthBar:SetSize(ow, oh)
+                health:SetSize(ow, oh)
                 if
                     not ApplyBarAnchor(
-                        healthBar,
+                        health,
                         healthAnchorKey,
                         hp.anchorPosition,
                         offsetX,
@@ -528,66 +526,66 @@ local function BuildBars()
                         hp.growCentered
                     )
                 then
-                    ApplyFreeBarPosition(healthBar, hp, 0, -64, ow, oh)
+                    ApplyFreeBarPosition(health, hp, 0, -64, ow, oh)
                 end
             elseif hp.unlockPos and hp.unlockPos.point then
                 local rp = hp.unlockPos.relPoint or hp.unlockPos.point
                 local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
-                ApplyBarAnchor(healthBar, "none")
-                healthBar:SetSize(ow, oh)
+                ApplyBarAnchor(health, "none")
+                health:SetSize(ow, oh)
                 if not CludesUI._unlockActive then
-                    if not CludesUI.IsUnlockAnchored("ERB_Health") or not healthBar:GetLeft() then
-                        local sx, sy = SnapXY(hp.unlockPos.x, hp.unlockPos.y, healthBar, hp.unlockPos)
-                        healthBar:ClearAllPoints()
-                        healthBar:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
+                    if not CludesUI.IsUnlockAnchored("ERB_Health") or not health:GetLeft() then
+                        local sx, sy = SnapXY(hp.unlockPos.x, hp.unlockPos.y, health, hp.unlockPos)
+                        health:ClearAllPoints()
+                        health:SetPoint(hp.unlockPos.point, UIParent, rp, sx, sy)
                     end
                 end
             else
                 -- Clear any mouse-tracking OnUpdate from a previous anchor
-                ApplyBarAnchor(healthBar, "none")
+                ApplyBarAnchor(health, "none")
                 if CludesUI._unlockActive then
                     -- During unlock mode, only update size -- position is managed by the mover
                     local ow, oh = OrientedSize(hpWidth, hpHeight, hpOri)
-                    healthBar:SetSize(ow, oh)
+                    health:SetSize(ow, oh)
                 else
                     local function ApplyHealthBarTransform()
-                        local ox = healthBar["_barAnim_ox"] or hp.offsetX or 0
-                        local oy = healthBar["_barAnim_oy"] or hp.offsetY or -64
-                        local wid = healthBar["_barAnim_w"] or hpWidth
-                        local h2 = healthBar["_barAnim_h"] or hpHeight
+                        local ox = health["_barAnim_ox"] or hp.offsetX or 0
+                        local oy = health["_barAnim_oy"] or hp.offsetY or -64
+                        local wid = health["_barAnim_w"] or hpWidth
+                        local h2 = health["_barAnim_h"] or hpHeight
                         local ow, oh = OrientedSize(wid, h2, hpOri)
-                        healthBar:ClearAllPoints()
-                        healthBar:SetPoint("CENTER", mainFrame, "CENTER", ox, oy)
-                        healthBar:SetSize(ow, oh)
+                        health:ClearAllPoints()
+                        health:SetPoint("CENTER", mainFrame, "CENTER", ox, oy)
+                        health:SetSize(ow, oh)
                     end
-                    SmoothBarAnimate(healthBar, "ox", hp.offsetX or 0, function()
+                    SmoothBarAnimate(health, "ox", hp.offsetX or 0, function()
                         ApplyHealthBarTransform()
                     end)
-                    SmoothBarAnimate(healthBar, "oy", hp.offsetY or -64, function()
+                    SmoothBarAnimate(health, "oy", hp.offsetY or -64, function()
                         ApplyHealthBarTransform()
                     end)
-                    SmoothBarAnimate(healthBar, "w", hpWidth, function()
+                    SmoothBarAnimate(health, "w", hpWidth, function()
                         ApplyHealthBarTransform()
                     end)
-                    SmoothBarAnimate(healthBar, "h", hpHeight, function()
+                    SmoothBarAnimate(health, "h", hpHeight, function()
                         ApplyHealthBarTransform()
                     end)
                 end
             end
             if mod.ERB_BarsBlizz() then
                 -- Blizzard Style / Classic WoW UI: the stock bar frame replaces the CUI border.
-                healthBar:ApplyBorder(0, 0, 0, 0, 0)
+                health:ApplyBorder(0, 0, 0, 0, 0)
                 local bw, bh = OrientedSize(hpWidth, hpHeight, hpOri)
                 mod.ERB_ApplyBlizzBarChrome(
-                    healthBar,
-                    healthBar._sb,
+                    health,
+                    health._sb,
                     bw,
                     bh,
                     mod.IsVerticalOrientation(hpOri),
                     mod.ERB_BarFrameK(hp)
                 )
             else
-                healthBar:ApplyBorder(
+                health:ApplyBorder(
                     hp.borderSize,
                     hp.borderR,
                     hp.borderG,
@@ -608,11 +606,11 @@ local function BuildBars()
             -- Bar texture (must be applied before colors since SetStatusBarTexture resets vertex color).
             -- Health's own texture (the Texture cog) counts only while splitTex is on; nil or false
             -- matches the main row.
-            ApplyBarTexture(healthBar, (p.splitTex == true and hp.barTexture) or g.barTexture or "none")
+            ApplyBarTexture(health, (p.splitTex == true and hp.barTexture) or g.barTexture or "none")
 
             -- Colors: custom colored > class color. Gradient is additive: when enabled
             -- it fills from the resolved custom/class base to the gradient end color.
-            local hft = healthBar:GetStatusBarTexture()
+            local hft = health:GetStatusBarTexture()
             do
                 local fR, fG, fB, fA
                 if hp.customColored then
@@ -641,11 +639,11 @@ local function BuildBars()
                 else
                     ApplyBarFlat(hft, fR, fG, fB, fA)
                 end
-                healthBar._bg:SetColorTexture(hp.bgR, hp.bgG, hp.bgB, hp.bgA)
+                health._bg:SetColorTexture(hp.bgR, hp.bgG, hp.bgB, hp.bgA)
                 -- Textured Background: flat while Fill Color is below 100.
-                if g.barTextureBg or healthBar._bg._erbBgTex then
+                if g.barTextureBg or health._bg._erbBgTex then
                     mod.ERB_BgTexture(
-                        healthBar._bg,
+                        health._bg,
                         g.barTextureBg
                             and (hp.fillOpacity or 100) >= 100
                             and CludesUI.ResolveTexturePath(
@@ -661,40 +659,40 @@ local function BuildBars()
                 end
             end
 
-            healthBar._text:ClearAllPoints()
+            health._text:ClearAllPoints()
             local _hpTA = hp.textAnchor or "CENTER"
-            healthBar._text:SetPoint(_hpTA, healthBar, _hpTA, hp.textXOffset, hp.textYOffset)
-            SetRBFont(healthBar._text, GetRBFont(), hp.textSize)
+            health._text:SetPoint(_hpTA, health, _hpTA, hp.textXOffset, hp.textYOffset)
+            SetRBFont(health._text, GetRBFont(), hp.textSize)
             -- Text color: class color when textCustomColored == false, else custom (default custom)
             if hp.textCustomColored == false then
                 local tcc = CLASS_COLORS[cachedClass]
                 if tcc then
-                    healthBar._text:SetTextColor(tcc[1], tcc[2], tcc[3], 1)
+                    health._text:SetTextColor(tcc[1], tcc[2], tcc[3], 1)
                 else
-                    healthBar._text:SetTextColor(1, 1, 1, 1)
+                    health._text:SetTextColor(1, 1, 1, 1)
                 end
             else
-                healthBar._text:SetTextColor(
+                health._text:SetTextColor(
                     hp.textFillR or 1,
                     hp.textFillG or 1,
                     hp.textFillB or 1,
                     hp.textFillA or 1
                 )
             end
-            healthBar:Show()
-            healthBar:SetAlpha(mod.ERB_MissingBarAlpha(healthBar, hp))
-            ApplyBarOrientation(healthBar, hpOri)
-            mod.ApplyFillOpacity(healthBar, hpOri, hp.fillOpacity)
+            health:Show()
+            health:SetAlpha(mod.ERB_MissingBarAlpha(health, hp))
+            ApplyBarOrientation(health, hpOri)
+            mod.ApplyFillOpacity(health, hpOri, hp.fillOpacity)
             if IsSpecDisabled(hp) then
-                CludesUI.SetElementVisibility(healthBar, false)
+                CludesUI.SetElementVisibility(health, false)
             end
             -- Absorb / heal absorb / max health reduction overlays
             -- (CUI_ResourceBars_HealthIndicators.lua): settings pass only.
-            mod.HealthIndicatorsApply(healthBar, (not IsSpecDisabled(hp)) and hp or nil, hpOri)
+            mod.HealthIndicatorsApply(health, (not IsSpecDisabled(hp)) and hp or nil, hpOri)
             -- Rounded corners (CludesUI_RoundedCorners.lua), after the retexture
             -- and the overlays, so overlays built by this pass join the body:
             -- nothing at radius 0 or under the stock styles.
-            mod.ERB_RoundBar(healthBar, hp)
+            mod.ERB_RoundBar(health, hp)
         end
     end
 
@@ -831,8 +829,8 @@ local function BuildBars()
                     -- fixed (ppDirSign +1 = grow up, -1 = grow down). Derive the
                     -- shift from the ANIMATED height (h2), not the final delta, so
                     -- the fixed edge holds for the whole tween.
-                    local baseValue = ppHeight - ppExpandDelta
-                    local extra = (ppExpandDelta > 0) and (ppDirSign * (h2 - baseValue) * 0.5) or 0
+                    local base = ppHeight - ppExpandDelta
+                    local extra = (ppExpandDelta > 0) and (ppDirSign * (h2 - base) * 0.5) or 0
                     primaryBar:SetPoint("CENTER", mainFrame, "CENTER", ox, oy + extra)
                     primaryBar:SetSize(ow, oh)
                 end
@@ -1507,29 +1505,29 @@ local function BuildBars()
                 end
                 local x0 = slots[idx].x0
                 local x1 = slots[idx].x1
-                local pipTex = pips[idx]
+                local pip = pips[idx]
                 local function ApplyPipPos()
-                    local ap0 = pipTex["_barAnim_x0"] or x0
-                    local aw = pipTex["_barAnim_x1"] or (x1 - x0)
-                    local ah = pipTex["_barAnim_ph"] or pipH
-                    pipTex:ClearAllPoints()
+                    local ap0 = pip["_barAnim_x0"] or x0
+                    local aw = pip["_barAnim_x1"] or (x1 - x0)
+                    local ah = pip["_barAnim_ph"] or pipH
+                    pip:ClearAllPoints()
                     if isVertical then
                         if isReversed then
-                            pipTex:SetPoint("BOTTOM", secondaryFrame, "BOTTOM", 0, ap0)
+                            pip:SetPoint("BOTTOM", secondaryFrame, "BOTTOM", 0, ap0)
                         else
-                            pipTex:SetPoint("TOP", secondaryFrame, "TOP", 0, -ap0)
+                            pip:SetPoint("TOP", secondaryFrame, "TOP", 0, -ap0)
                         end
-                        pipTex:SetHeight(aw)
-                        pipTex:SetWidth(ah)
+                        pip:SetHeight(aw)
+                        pip:SetWidth(ah)
                     else
-                        pipTex:SetPoint("LEFT", secondaryFrame, "LEFT", ap0, 0)
-                        pipTex:SetWidth(aw)
-                        pipTex:SetHeight(ah)
+                        pip:SetPoint("LEFT", secondaryFrame, "LEFT", ap0, 0)
+                        pip:SetWidth(aw)
+                        pip:SetHeight(ah)
                     end
                 end
-                pipTex["_barAnim_x0"] = x0
-                pipTex["_barAnim_x1"] = x1 - x0
-                pipTex["_barAnim_ph"] = pipH
+                pip["_barAnim_x0"] = x0
+                pip["_barAnim_x1"] = x1 - x0
+                pip["_barAnim_ph"] = pipH
                 ApplyPipPos()
                 if sp.borderOnPips then
                     pips[idx]:ApplyBorder(
@@ -1926,7 +1924,7 @@ local function BuildBars()
     do
         local _prof = ERB.db and ERB.db.profile
         if _prof then
-            mod.ApplyHashLines(healthBar, _prof.health, function()
+            mod.ApplyHashLines(health, _prof.health, function()
                 return UnitHealthMax("player")
             end)
             mod.ApplyHashLines(primaryBar, _prof.primary, function()

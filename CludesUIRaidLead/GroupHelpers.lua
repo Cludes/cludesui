@@ -74,13 +74,13 @@ end
 --  Feast alerts
 -------------------------------------------------------------------------------
 --- Called by Comms.lua (and for our own drops) with who dropped what.
-function mod.ReceiveDrop(who, kindOf)
+function mod.ReceiveDrop(who, kind)
     local s = mod.HelperSettings()
-    if not s.drops or not DROP_TEXT[kindOf] then
+    if not s.drops or not DROP_TEXT[kind] then
         return
     end
     local name = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
-    CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kindOf]))
+    CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
     if s.dropSound then
         PlaySound(SOUNDKIT.READY_CHECK, "Master")
     end
@@ -92,13 +92,13 @@ dropEv:SetScript("OnEvent", function(_, _, _, _, spellId)
     if Secret(spellId) then
         return
     end
-    local kindOf = DROPS[spellId]
-    if not kindOf or not IsInGroup() then
+    local kind = DROPS[spellId]
+    if not kind or not IsInGroup() then
         return
     end
     -- Our message comes back to us as well, which prints our own drop.
-    if not (mod.SendDrop and mod.SendDrop(kindOf)) then
-        mod.ReceiveDrop(UnitName("player"), kindOf)
+    if not (mod.SendDrop and mod.SendDrop(kind)) then
+        mod.ReceiveDrop(UnitName("player"), kind)
     end
 end)
 

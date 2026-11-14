@@ -341,9 +341,9 @@ local function WrapURLs(textValue)
     if not textValue then
         return textValue
     end
-    local subFrame = _GetUrlSubstitution()
+    local sub = _GetUrlSubstitution()
     for _, p in ipairs(URL_PATTERNS) do
-        textValue = textValue:gsub(p, subFrame)
+        textValue = textValue:gsub(p, sub)
     end
     return textValue
 end

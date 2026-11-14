@@ -94,9 +94,9 @@ end
 -- A pin's name for its link: the first line of its tooltip, without icons
 -- or colors ("Boat to Menethil Harbor").
 local function PinLabel(tipText)
-    local lineTex = tipText:match("^[^\n]*")
-    lineTex = lineTex:gsub("|A.-|a", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-    return strtrim(lineTex)
+    local line = tipText:match("^[^\n]*")
+    line = line:gsub("|A.-|a", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    return strtrim(line)
 end
 
 -- The link C_Map.GetUserWaypointHyperlink builds, as /way prints it: x, y
@@ -104,7 +104,7 @@ end
 local hintedClick = false
 local function PrintLink(mapID, posX, posY, labelText, atlas)
     local CC = CludesUI.COLOR_CODES
-    local glyph = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
+    local icon = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
     local itemLink = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
         mapID,
         math.floor(posX * 10000 + 0.5),
@@ -116,7 +116,7 @@ local function PrintLink(mapID, posX, posY, labelText, atlas)
             .. "CludesUI:|r "
             .. itemLink
             .. " "
-            .. glyph
+            .. icon
             .. CC.WHITE
             .. labelText
             .. "|r "
@@ -215,10 +215,10 @@ end
 -- kind and name for the chat line ("Dungeon: The Deadmines"). Its chat link
 -- points at the shown map; a pin drawn from a zone onto a wider map points
 -- back at the zone (the caller sets linkMap, linkX, linkY).
-local function Place(posX, posY, atlas, dim, tipText, rotation, total, itemLink)
+local function Place(posX, posY, atlas, size, tipText, rotation, total, itemLink)
     local p = NextPin()
-    p.x, p.y, p.size = posX, posY, dim
-    p:SetSize(dim, dim)
+    p.x, p.y, p.size = posX, posY, size
+    p:SetSize(size, size)
     Anchor(p)
     if atlas:find("\\", 1, true) then
         p.tex:SetTexture(atlas)
@@ -321,9 +321,9 @@ local function TransportGroups(zone)
             end
         end
         -- Each destination on its own line, led by its transport's icon.
-        local lineTex = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[t[3]], TransportTip(t))
+        local line = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[t[3]], TransportTip(t))
         if g then
-            g.tip = g.tip .. "\n" .. lineTex
+            g.tip = g.tip .. "\n" .. line
             g.link = g.link .. ", " .. TransportTip(t)
             g.count = g.count + 1
         else
@@ -331,7 +331,7 @@ local function TransportGroups(zone)
                 x = t[1],
                 y = t[2],
                 atlas = KIND_ATLAS[t[3]],
-                tip = lineTex,
+                tip = line,
                 link = TransportTip(t),
                 count = 1,
             }

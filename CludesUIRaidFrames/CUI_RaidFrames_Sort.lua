@@ -992,20 +992,20 @@ local function ApplySortToHeaders()
                 playerGroup = nil
             end
         end
-        for group = 1, 8 do
-            local heading = separatedHdrs[group]
+        for set = 1, 8 do
+            local heading = separatedHdrs[set]
             if not heading then
                 break
             end
-            local groupList = groupLists and groupLists[group]
+            local groupList = groupLists and groupLists[set]
             if groupList then
                 applySortTo(heading, nil, "NAMELIST", "", groupList, nil)
-            elseif playerGroup and group == playerGroup then
+            elseif playerGroup and set == playerGroup then
                 -- Player's group: ordered by nameList -- clear groupFilter, nil
                 -- groupBy so the nameList order is what the header uses.
                 applySortTo(heading, nil, "NAMELIST", "", selfNameList, nil)
             else
-                applySortTo(heading, baseGroupBy, baseSortMethod, baseGroupingOrder, nil, tostring(group))
+                applySortTo(heading, baseGroupBy, baseSortMethod, baseGroupingOrder, nil, tostring(set))
             end
         end
     end

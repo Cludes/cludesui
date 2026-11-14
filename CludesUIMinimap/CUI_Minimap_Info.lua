@@ -37,8 +37,8 @@ Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(val)
     locationBg = val
 end
 
-local function ApplyMinimapFont(fontStr, dim)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, "minimap")
+local function ApplyMinimapFont(fontStr, size)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, "minimap")
 end
 
 -- Description-text colour (clock AM/PM, the "fps"/"ms" suffixes): custom fpsColor swatch or the live accent; the dynamic values stay white. Returns r, g, b, hex.
@@ -110,9 +110,9 @@ local function GetCoordsModePos(mp)
     if not mp then
         return "always", "topLeft"
     end
-    local modeName = mp.coordsMode or (mp.coordsBelow and "always") or "always"
+    local mode = mp.coordsMode or (mp.coordsBelow and "always") or "always"
     local place = mp.coordsPosition or (mp.coordsBelow and "belowMap") or "topLeft"
-    return modeName, place
+    return mode, place
 end
 
 -- Clock/location legacy fallback: pre-dropdown data carries clockInside/zoneInside
@@ -191,10 +191,10 @@ end
 -- Forever Square, past the heavy band); edge flips it so the box straddles the
 -- border (7px out on squares, 3px in on circles -- the round mask curves away
 -- from the frame edge). Above/Below Map float outside in both.
-local function ResolveElementAnchor(place, look, isCircle)
+local function ResolveElementAnchor(place, style, isCircle)
     local a = MAP_POS_ANCHORS[place] or MAP_POS_ANCHORS.top
     local posX, posY = a[3], a[4]
-    if look == "edge" and place ~= "belowMap" and place ~= "aboveMap" then
+    if style == "edge" and place ~= "belowMap" and place ~= "aboveMap" then
         if posX ~= 0 then
             posX = isCircle and (posX > 0 and 3 or -3) or (posX > 0 and -7 or 7)
         end
@@ -264,8 +264,8 @@ local function UpdateLocation()
     end
     local textValue
     if mp and mp.zoneShowSubZone then
-        local subFrame = GetSubZoneText()
-        textValue = (subFrame and subFrame ~= "") and subFrame or (GetZoneText() or "")
+        local sub = GetSubZoneText()
+        textValue = (sub and sub ~= "") and sub or (GetZoneText() or "")
     else
         textValue = GetZoneText() or ""
     end

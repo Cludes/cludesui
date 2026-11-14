@@ -157,27 +157,27 @@ do
     -- Collapse headers (Groups / Players) get a dark fill in place of the ornate bar
     -- and a gold title; result rows lose the light list stripe. Both get white hover
     -- and selection washes. Role, leader, class and newcomer glyphs stay stock.
-    local function SkinBrowseFrame(rowFrame)
-        if not rowFrame or rowFrame:IsForbidden() then
+    local function SkinBrowseFrame(row)
+        if not row or row:IsForbidden() then
             return
         end
-        local d = GetFFD(rowFrame)
+        local d = GetFFD(row)
         if d.skinned then
             return
         end
         d.skinned = true
-        local backdrop, highlight, sel = rowFrame.ResultBG, rowFrame.Highlight, rowFrame.Selected
-        if rowFrame.CategoryLabel then
+        local backdrop, highlight, sel = row.ResultBG, row.Highlight, row.Selected
+        if row.CategoryLabel then
             if backdrop then
                 backdrop:SetAlpha(0)
-                local fillTex = rowFrame:CreateTexture(nil, "BACKGROUND")
-                fillTex:SetColorTexture(0.08, 0.08, 0.08, 0.92)
-                fillTex:SetAllPoints(backdrop)
+                local fill = row:CreateTexture(nil, "BACKGROUND")
+                fill:SetColorTexture(0.08, 0.08, 0.08, 0.92)
+                fill:SetAllPoints(backdrop)
             end
             if highlight then
                 highlight:SetColorTexture(1, 1, 1, 0.05)
             end
-            Skin.Font(rowFrame.CategoryLabel, 0.95, 0.78, 0.32)
+            Skin.Font(row.CategoryLabel, 0.95, 0.78, 0.32)
             return
         end
         local a = backdrop and backdrop.GetAtlas and backdrop:GetAtlas()
@@ -190,30 +190,30 @@ do
         if sel then
             sel:SetColorTexture(1, 1, 1, 0.15)
         end
-        local regions = { rowFrame:GetRegions() }
+        local regions = { row:GetRegions() }
         for idx = 1, #regions do
             local r = regions[idx]
             if r:GetObjectType() == "FontString" then
-                FontOnce(r, ShowsWriting(rowFrame, r))
+                FontOnce(r, ShowsWriting(row, r))
             end
         end
     end
 
     -- A pooled who list row: house font, once.
-    local function SkinWhoRow(rowFrame)
-        if not rowFrame or rowFrame:IsForbidden() then
+    local function SkinWhoRow(row)
+        if not row or row:IsForbidden() then
             return
         end
-        local d = GetFFD(rowFrame)
+        local d = GetFFD(row)
         if d.skinned then
             return
         end
         d.skinned = true
-        local regions = { rowFrame:GetRegions() }
+        local regions = { row:GetRegions() }
         for idx = 1, #regions do
             local r = regions[idx]
             if r:GetObjectType() == "FontString" then
-                FontOnce(r, ShowsWriting(rowFrame, r))
+                FontOnce(r, ShowsWriting(row, r))
             end
         end
     end
@@ -228,7 +228,7 @@ do
             if not bf then
                 return
             end
-            local lineTex
+            local line
             local regions = { bf:GetRegions() }
             for idx = 1, #regions do
                 local r = regions[idx]
@@ -236,20 +236,20 @@ do
                 if
                     a
                     and a:lower():find("scrollline", 1, true)
-                    and (not lineTex or (r:GetTop() or 0) < (lineTex:GetTop() or 0))
+                    and (not line or (r:GetTop() or 0) < (line:GetTop() or 0))
                 then
-                    lineTex = r
+                    line = r
                 end
             end
-            local targetUnit = lineTex and lineTex:GetTop()
+            local target = line and line:GetTop()
             local current = scrollBar:GetBottom()
-            if not (targetUnit and current and (targetUnit - current) > 1) then
+            if not (target and current and (target - current) > 1) then
                 return
             end
             for idx = 1, scrollBar:GetNumPoints() do
                 local p, rel, rp, posX, posY = scrollBar:GetPoint(idx)
                 if p and p:find("BOTTOM", 1, true) and posY then
-                    sd.clampPt = { p, rel, rp, posX, posY + (targetUnit - current) }
+                    sd.clampPt = { p, rel, rp, posX, posY + (target - current) }
                     break
                 end
             end
@@ -306,13 +306,13 @@ do
         end
     end
     -- A pooled dungeon row, once (a pooled frame keeps its template).
-    local function SkinActivityRow(rowFrame)
-        local d = GetFFD(rowFrame)
+    local function SkinActivityRow(row)
+        local d = GetFFD(row)
         if d.checksSkinned then
             return
         end
         d.checksSkinned = true
-        SkinChecksIn(rowFrame, 0)
+        SkinChecksIn(row, 0)
     end
 
     -- 1px border hugging a tile's content (its Icon, else its largest visible art).
@@ -321,8 +321,8 @@ do
         if d.contentBorder then
             return
         end
-        local anchorFrame = button.Icon
-        if not anchorFrame then
+        local anchor = button.Icon
+        if not anchor then
             local best, bestArea
             local regions = { button:GetRegions() }
             for idx = 1, #regions do
@@ -337,14 +337,14 @@ do
                     end
                 end
             end
-            anchorFrame = best
+            anchor = best
         end
-        anchorFrame = anchorFrame or button
-        local hostRegion = CreateFrame("Frame", nil, button)
-        hostRegion:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
-        hostRegion:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", 0, 0)
-        Skin.AddBorder(hostRegion)
-        d.contentBorder = hostRegion
+        anchor = anchor or button
+        local host = CreateFrame("Frame", nil, button)
+        host:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
+        host:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 0, 0)
+        Skin.AddBorder(host)
+        d.contentBorder = host
     end
     -- Category tiles (the wide buttons only).
     local function BorderTiles(fr, depth)
@@ -392,17 +392,17 @@ do
                 local r = regions[idx]
                 local a = r.GetAtlas and r:GetAtlas()
                 if a and a:lower() == "groupfinder-roles-background" then
-                    local maskTex = roles:CreateMaskTexture()
-                    maskTex:SetTexture(
+                    local mask = roles:CreateMaskTexture()
+                    mask:SetTexture(
                         "Interface\\Buttons\\WHITE8X8",
                         "CLAMPTOBLACKADDITIVE",
                         "CLAMPTOBLACKADDITIVE"
                     )
-                    maskTex:SetPoint("TOPLEFT", r, "TOPLEFT")
-                    maskTex:SetPoint("RIGHT", r, "RIGHT")
-                    maskTex:SetPoint("BOTTOM", inset, "TOP")
-                    r:AddMaskTexture(maskTex)
-                    GetFFD(roles).mask = maskTex
+                    mask:SetPoint("TOPLEFT", r, "TOPLEFT")
+                    mask:SetPoint("RIGHT", r, "RIGHT")
+                    mask:SetPoint("BOTTOM", inset, "TOP")
+                    r:AddMaskTexture(mask)
+                    GetFFD(roles).mask = mask
                     break
                 end
             end
@@ -423,10 +423,10 @@ do
                 end
             end
         end
-        local titleText = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LFGParentFrameTitleText
-        if titleText then
-            Skin.Font(titleText)
-            Skin.White(titleText)
+        local title = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LFGParentFrameTitleText
+        if title then
+            Skin.Font(title)
+            Skin.White(title)
         end
 
         for _, num in ipairs(DROPDOWNS) do

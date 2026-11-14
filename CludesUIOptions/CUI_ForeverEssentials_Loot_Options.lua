@@ -15,10 +15,10 @@ end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
-local function HeaderBuilder(headerFrame, width)
+local function HeaderBuilder(header, width)
     local building = true
-    local view = CludesUI._LootFeed.CreateSettingsPreview(headerFrame, width, function(height)
-        if not building and headerFrame:IsVisible() and math.abs(headerFrame:GetHeight() - height) > 1 then
+    local view = CludesUI._LootFeed.CreateSettingsPreview(header, width, function(height)
+        if not building and header:IsVisible() and math.abs(header:GetHeight() - height) > 1 then
             CludesUI:SetContentHeaderHeightSilent(height)
         end
     end)
@@ -40,11 +40,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
 
     CludesUI:SetContentHeader(HeaderBuilder)
 
-    local function offset()
+    local function off()
         return not LF.Get("enabled")
     end
     local function itemsOff()
-        return offset() or not LF.Get("items")
+        return off() or not LF.Get("items")
     end
     -- Auction prices count only while the tracker or an item price shows, and
     -- only with the price addon's API at hand.
@@ -55,10 +55,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice")))
     end
     local function auctionOff()
-        return offset() or not auctionSource() or pricesUnused()
+        return off() or not auctionSource() or pricesUnused()
     end
     local function auctionTip()
-        if offset() then
+        if off() then
             return "Loot Feed"
         end
         if not auctionSource() then
@@ -66,12 +66,12 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         end
         return "This option requires Gold per Hour Tracker or Show Item Price to be enabled."
     end
-    local function look()
+    local function style()
         return LF.Get("style")
     end
     -- Loot Toast keeps its gold frame.
     local function borderOff()
-        return offset() or look() == "TOAST"
+        return off() or style() == "TOAST"
     end
     local function noBorderColor()
         return borderOff() or LF.Get("borderSize") == 0
@@ -86,7 +86,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     -- shown picks it up). Greyed out while the feed is off unless disabled is
     -- given.
     local function Bind(conf, key, apply, disabled, disabledTooltip)
-        conf.disabled, conf.disabledTooltip = disabled or offset, disabledTooltip or "Loot Feed"
+        conf.disabled, conf.disabledTooltip = disabled or off, disabledTooltip or "Loot Feed"
         conf.getValue = conf.getValue or function()
             return LF.Get(key)
         end
@@ -108,9 +108,9 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             disabledTooltip
         )
     end
-    local function Slider(key, textValue, min, upper, tooltip, apply)
+    local function Slider(key, textValue, min, max, tooltip, apply)
         return Bind(
-            { type = "slider", text = textValue, tooltip = tooltip, min = min, max = upper, step = 1 },
+            { type = "slider", text = textValue, tooltip = tooltip, min = min, max = max, step = 1 },
             key,
             apply or LF.ApplyStyle
         )
@@ -128,13 +128,13 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 setValue = function(r, g, b)
                     local c = LF.Cfg()
                     c[prefixText .. "R"], c[prefixText .. "G"], c[prefixText .. "B"] = r, g, b
-                    if prefixText == "border" and look() == "BAR" then
+                    if prefixText == "border" and style() == "BAR" then
                         c.borderTexture = LF.Get("borderTexture") or "solid"
                     end
                     LF.ApplyStyle()
                 end,
             },
-        }, { disabled = offset, disabledTooltip = "Loot Feed" })
+        }, { disabled = off, disabledTooltip = "Loot Feed" })
     end
 
     ---------------------------------------------------------------------------
@@ -144,7 +144,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     posY = posY - hgt
     CludesUI.BuildSectionUnlockJump(
         heading,
-        { key = "CUI_LootFeed", disabled = offset, disabledTooltip = "Loot Feed" }
+        { key = "CUI_LootFeed", disabled = off, disabledTooltip = "Loot Feed" }
     )
 
     _, hgt = W:DualRow(hostFrame, posY, {
@@ -152,7 +152,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         text = "Enable Loot Feed",
         tooltip = "Shows what you loot and gain as short-lived rows that fade out.",
         getValue = function()
-            return not offset()
+            return not off()
         end,
         setValue = function(val)
             LF.Cfg().enabled = val
@@ -163,7 +163,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         text = "Preview",
         buttonText = "Show Samples",
         tooltip = "Shows a sample row for every enabled source.",
-        disabled = offset,
+        disabled = off,
         disabledTooltip = "Loot Feed",
         onClick = function()
             LF.Preview()
@@ -193,10 +193,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "barWidth",
             LF.ApplyStyle,
             function()
-                return offset() or look() == "BOX" or look() == "TOAST"
+                return off() or style() == "BOX" or style() == "TOAST"
             end,
             function()
-                return offset() and "Loot Feed" or "Style"
+                return off() and "Loot Feed" or "Style"
             end
         )
     )
@@ -430,9 +430,9 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                     c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
                     local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
                     c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
-                    local dim = CludesUI.GetBorderDefaultSize(nil, val)
-                    if dim then
-                        c.borderSize = dim
+                    local size = CludesUI.GetBorderDefaultSize(nil, val)
+                    if size then
+                        c.borderSize = size
                     end
                     if c.borderSizePx then
                         c.borderSizePx = false
@@ -445,7 +445,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             nil,
             borderOff,
             function()
-                return offset() and "Loot Feed" or "Style"
+                return off() and "Loot Feed" or "Style"
             end
         ),
         CludesUI.BorderPxSliderCfg({
@@ -453,7 +453,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             tooltip = "0 hides the border.",
             disabled = borderOff,
             disabledTooltip = function()
-                return offset() and "Loot Feed" or "Style"
+                return off() and "Loot Feed" or "Style"
             end,
             getStep = function()
                 return LF.Get("borderSize")
@@ -547,15 +547,15 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                     label = "Separator",
                     tooltip = "Adds a matching divider beside the icon (Box) or the accent bar (Icon Tray).",
                     hidden = function()
-                        return look() ~= "BOX" and look() ~= "TRAY"
+                        return style() ~= "BOX" and style() ~= "TRAY"
                     end,
                     disabled = function()
                         return LF.Get("borderSize") == 0
-                            or (look() == "TRAY" and LF.Get("barWidth") == 0)
+                            or (style() == "TRAY" and LF.Get("barWidth") == 0)
                             or not CludesUI.GetBorderCompanion(LF.Get("borderTexture"), "sepV")
                     end,
                     disabledTooltip = function()
-                        if look() == "TRAY" and LF.Get("barWidth") == 0 then
+                        if style() == "TRAY" and LF.Get("barWidth") == 0 then
                             return "Accent Bar Width"
                         end
                         return "This option requires a Pixels or Pixels Textured border above size 0."
@@ -571,10 +571,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             },
         })
         Swatch(borderRow._rightRegion, "border", "Border Color", noBorderColor, function()
-            if offset() then
+            if off() then
                 return "Loot Feed"
             end
-            if look() == "TOAST" then
+            if style() == "TOAST" then
                 return "Style"
             end
             return "Border Size"
@@ -590,13 +590,13 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "Colors item rows by item quality.",
             LF.ApplyStyle,
             function()
-                if offset() or not LF.Get("items") then
+                if off() or not LF.Get("items") then
                     return true
                 end
-                return look() ~= "BAR" and look() ~= "TOAST" and LF.Get("borderSize") == 0
+                return style() ~= "BAR" and style() ~= "TOAST" and LF.Get("borderSize") == 0
             end,
             function()
-                return offset() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size"
+                return off() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size"
             end
         ),
         BLANK()

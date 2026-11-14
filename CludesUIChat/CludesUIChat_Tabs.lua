@@ -53,7 +53,7 @@ end
 
 local issecretvalue = _G.issecretvalue
 
-local function SavedDB()
+local function DB()
     return CHAT.DB()
 end
 
@@ -89,11 +89,11 @@ local function TabHeight()
     if FvTabs() then
         return FV_TAB_H
     end
-    return SavedDB().tabHeight or 24
+    return DB().tabHeight or 24
 end
 
 local function TabFontPath()
-    local conf = SavedDB()
+    local conf = DB()
     local fontKey = conf.tabFont or "__global"
     if fontKey == "__global" then
         return (CUI.GetFontPath("chat")) or STANDARD_TEXT_FONT
@@ -109,14 +109,14 @@ local function TabFontFlag()
 end
 
 -- Resolve a color table honoring the shared custom/accent/class mode keys.
-local function ResolveModeColor(modeName, stored, fallback)
-    if modeName == "accent" and CUI.GetAccentColor then
+local function ResolveModeColor(mode, stored, fallback)
+    if mode == "accent" and CUI.GetAccentColor then
         local r, g, b = CUI.GetAccentColor()
         return r, g, b, (stored and stored.a) or fallback.a or 1
     end
-    if modeName == "class" then
-        local _, classFile = UnitClass("player")
-        local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+    if mode == "class" then
+        local _, class = UnitClass("player")
+        local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         if c then
             return c.r, c.g, c.b, (stored and stored.a) or fallback.a or 1
         end
@@ -195,19 +195,19 @@ local floatGhosts = {} -- per-window-id ghosts for undocked windows
 -- Lazily fetched: nil until some addon loads the lib (LibStub registry entry
 -- is identity-stable across minor upgrades, so caching the ref is safe).
 local lcaLib
-local function TabAlerting(tabButton)
-    if tabButton.alerting then
+local function TabAlerting(tab)
+    if tab.alerting then
         return true
     end
     -- Retail since 12.1.5 and WoW Forever keep the alert state off the tab,
     -- so a tainted message filter cannot taint it, and never write
     -- tab.alerting: ChatFrameUtil.IsTabAlerting is its reader there.
     local util = ChatFrameUtil
-    if util and util.IsTabAlerting and util.IsTabAlerting(tabButton) then
+    if util and util.IsTabAlerting and util.IsTabAlerting(tab) then
         return true
     end
     lcaLib = lcaLib or (LibStub and LibStub("LibChatAnims", true))
-    return lcaLib and lcaLib:IsAlerting(tabButton) and true or false
+    return lcaLib and lcaLib:IsAlerting(tab) and true or false
 end
 local floatSeen = {} -- wiped scratch set for the float surplus sweep
 
@@ -261,7 +261,7 @@ local function BuildGhost()
     fontStr:SetWordWrap(false)
     fontStr:SetJustifyH("CENTER")
     -- A bare fontstring has NO font: SetText before a SetFont is a hard error.
-    fontStr:SetFont(TabFontPath(), SavedDB().tabFontSize or 11, TabFontFlag())
+    fontStr:SetFont(TabFontPath(), DB().tabFontSize or 11, TabFontFlag())
     g._fs = fontStr
 
     local Pix = CUI.PP
@@ -333,13 +333,13 @@ local function BuildGhost()
     return g
 end
 
-local function AcquireGhost(slotPos)
-    local g = ghosts[slotPos]
+local function AcquireGhost(index)
+    local g = ghosts[index]
     if g then
         return g
     end
     g = BuildGhost()
-    ghosts[slotPos] = g
+    ghosts[index] = g
     return g
 end
 
@@ -352,8 +352,8 @@ end
 --  secure ever reads it, re-asserted by the sweep in case a vertex-color
 --  path ever touches an art texture's alpha slot.
 -------------------------------------------------------------------------------
-local function SuppressTabRegions(tabButton)
-    local regions = { tabButton:GetRegions() }
+local function SuppressTabRegions(tab)
+    local regions = { tab:GetRegions() }
     for idx = 1, #regions do
         local regionFrame = regions[idx]
         -- GetAlpha reads secret on chat-roleset widgets in lockdown; a
@@ -373,25 +373,25 @@ end
 -- its dock state by then (Blizzard can re-dock a pooled whisper frame while
 -- chat is hidden) and skips every tab with nothing recorded.
 local stockTabRegionsOff = setmetatable({}, { __mode = "k" })
-local function StockHideTabRegions(tabButton)
-    local regions = { tabButton:GetRegions() }
+local function StockHideTabRegions(tab)
+    local regions = { tab:GetRegions() }
     for idx = 1, #regions do
         local regionFrame = regions[idx]
         local a = regionFrame and regionFrame.SetAlpha and regionFrame:GetAlpha()
         if a and not stockTabRegionsOff[regionFrame] and ((issecretvalue and issecretvalue(a)) or a ~= 0) then
             stockTabRegionsOff[regionFrame] = true
-            CFD(tabButton).stockRegionsOff = true
+            CFD(tab).stockRegionsOff = true
             regionFrame:SetAlpha(0)
         end
     end
 end
-local function StockRestoreTabRegions(tabButton)
-    local d = CFD(tabButton)
+local function StockRestoreTabRegions(tab)
+    local d = CFD(tab)
     if not d.stockRegionsOff then
         return
     end
     d.stockRegionsOff = nil
-    local regions = { tabButton:GetRegions() }
+    local regions = { tab:GetRegions() }
     for idx = 1, #regions do
         local regionFrame = regions[idx]
         if regionFrame and stockTabRegionsOff[regionFrame] then
@@ -406,7 +406,7 @@ end
 --  geometry authority.
 -------------------------------------------------------------------------------
 local function StyleGhost(g, isActive)
-    local conf = SavedDB()
+    local conf = DB()
     local status = g.state
     local fontStr = g._fs
 
@@ -513,12 +513,12 @@ local function StyleGhost(g, isActive)
     -- Active underline.
     local underline = g._underline
     if conf.activeUnderline ~= false and isActive then
-        local modeName = conf.activeUnderlineColorMode or "accent"
-        if modeName == "border" then
-            modeName = "custom"
+        local mode = conf.activeUnderlineColorMode or "accent"
+        if mode == "border" then
+            mode = "custom"
         end
         local ur, ug, ub, ua =
-            ResolveModeColor(modeName, conf.activeUnderlineColor, { r = 0.05, g = 0.82, b = 0.61, a = 1 })
+            ResolveModeColor(mode, conf.activeUnderlineColor, { r = 0.05, g = 0.82, b = 0.61, a = 1 })
         underline:SetColorTexture(ur, ug, ub, ua)
         underline:Show()
     else
@@ -543,12 +543,12 @@ local function StyleGhost(g, isActive)
     end
 
     -- Per-tab border (only when tabs are visual islands outside the panel).
-    local hostRegion = g._borderHost
+    local host = g._borderHost
     if CUI.ApplyBorderStyle then
         local showBorder = not CHAT.ExtendBgBehindTabs(conf)
         local sync = conf.syncTabBorder ~= false
         local prefixText = sync and "panelBorder" or "tabBorder"
-        local function Keys(suffix, fallback)
+        local function K(suffix, fallback)
             local val = conf[prefixText .. suffix]
             if val == nil then
                 return fallback
@@ -556,17 +556,17 @@ local function StyleGhost(g, isActive)
             return val
         end
         local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
-        local thicknessKey = Keys("Thickness", "none")
-        local dim = sizes[thicknessKey] or 1
-        local texKey = Keys("Texture", "solid")
+        local thicknessKey = K("Thickness", "none")
+        local size = sizes[thicknessKey] or 1
+        local texKey = K("Texture", "solid")
         -- Exact pixel size under the same prefix as the step (nil = the legacy
         -- step path); the hidden 0 passed below is a substitute, so no px then.
-        local px = showBorder and CUI.BorderPx(Keys("ThicknessPx", nil), dim, texKey) or nil
-        local br, bgr, bb, ba = ResolveModeColor(Keys("ColorMode", "custom"), Keys("Color", nil), {
+        local px = showBorder and CUI.BorderPx(K("ThicknessPx", nil), size, texKey) or nil
+        local br, bgr, bb, ba = ResolveModeColor(K("ColorMode", "custom"), K("Color", nil), {
             r = 1,
             g = 1,
             b = 1,
-            a = Keys("Opacity", nil) or ((Keys("ColorMode", "custom") == "custom") and 0.18 or 0.5),
+            a = K("Opacity", nil) or ((K("ColorMode", "custom") == "custom") and 0.18 or 0.5),
         })
         if conf.activeTabBorder ~= false and isActive and conf.tabBorderColorActive then
             local ac = conf.tabBorderColorActive
@@ -574,23 +574,23 @@ local function StyleGhost(g, isActive)
             ba = ac.a == nil and ba or ac.a
         end
         CUI.ApplyBorderStyle(
-            hostRegion,
-            showBorder and dim or 0,
+            host,
+            showBorder and size or 0,
             br,
             bgr,
             bb,
             ba,
             texKey,
-            Keys("OffsetX", nil),
-            Keys("OffsetY", nil),
-            Keys("ShiftX", nil),
-            Keys("ShiftY", nil),
+            K("OffsetX", nil),
+            K("OffsetY", nil),
+            K("ShiftX", nil),
+            K("ShiftY", nil),
             "chat",
             thicknessKey,
             nil,
             px
         )
-        hostRegion:SetShown(showBorder and dim > 0)
+        host:SetShown(showBorder and size > 0)
     end
 end
 
@@ -643,9 +643,9 @@ end
 
 local function RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, labelY, seen)
     local ident = castFrame:GetID()
-    local tabButton = _G[castFrame:GetName() .. "Tab"]
+    local tab = _G[castFrame:GetName() .. "Tab"]
     local d = CFD(castFrame)
-    if not (tabButton and d and d.bg) then
+    if not (tab and d and d.bg) then
         return
     end
     local g = floatGhosts[ident]
@@ -671,8 +671,8 @@ local function RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, la
     end
     st.cf, st.id, st.isTemp, st.bn = castFrame, ident, isTemp, nil
     g:ClearAllPoints()
-    g:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 0, 0)
-    g:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+    g:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
+    g:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
     g:SetHeight(height)
     if BlizzTabs() then
         -- Blizzard's own tab is the visible one here: the ghost stays only as
@@ -740,7 +740,7 @@ end
 -------------------------------------------------------------------------------
 local function RefreshNow()
     PositionStrip()
-    local conf = SavedDB()
+    local conf = DB()
     local selected = SelectedWindow()
     local height = TabHeight()
     local fontFile = TabFontPath()
@@ -804,8 +804,8 @@ local function RefreshNow()
     if type(dockList) == "table" and not BlizzTabs() then
         for idx = 1, #dockList do
             local castFrame = dockList[idx]
-            local tabButton = castFrame and _G[castFrame:GetName() .. "Tab"]
-            if tabButton then
+            local tab = castFrame and _G[castFrame:GetName() .. "Tab"]
+            if tab then
                 total = total + 1
                 local g = AcquireGhost(total)
                 local isTemp = castFrame.isTemporary and true or false
@@ -824,7 +824,7 @@ local function RefreshNow()
                 -- discriminator is the tab's REAL parent (the scroll
                 -- child), never the temporary flag.
                 local wantParent = strip
-                local isScrolling = scrollChild and tabButton:GetParent() == scrollChild
+                local isScrolling = scrollChild and tab:GetParent() == scrollChild
                 if isScrolling and EnsureDynClip() then
                     wantParent = dynClip
                 end
@@ -863,12 +863,12 @@ local function RefreshNow()
                     local onePx = (CUI.PP and CUI.PP.mult) or 1
                     g:SetPoint("TOP", band, "TOP", 0, -onePx)
                     g:SetPoint("BOTTOM", band, "BOTTOM", 0, 0)
-                    g:SetPoint("LEFT", tabButton, "LEFT", total == 1 and leftExtend or 0, 0)
-                    g:SetPoint("RIGHT", tabButton, "RIGHT", 0, 0)
+                    g:SetPoint("LEFT", tab, "LEFT", total == 1 and leftExtend or 0, 0)
+                    g:SetPoint("RIGHT", tab, "RIGHT", 0, 0)
                 else
                     -- Island tabs: bottom-aligned to the tab, our height.
-                    g:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", leftInset, 0)
-                    g:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+                    g:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", leftInset, 0)
+                    g:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
                     g:SetHeight(height)
                 end
 
@@ -910,7 +910,7 @@ local function RefreshNow()
                 -- whisper alerts died within one tab pass.
                 if isActive then
                     g:StopFlash()
-                elseif TabAlerting(tabButton) then
+                elseif TabAlerting(tab) then
                     g:StartFlash()
                 else
                     g:StopFlash()
@@ -990,22 +990,22 @@ CHAT.TabsRefreshNow = RefreshNow
 --  exact set (each docked tab + the overflow button) gets click-disabled
 --  while either mode is engaged; the sweep re-asserts on late joiners.
 -------------------------------------------------------------------------------
-local function SetTabClickable(tabButton, enabled)
-    if not tabButton.SetMouseClickEnabled then
+local function SetTabClickable(tab, enabled)
+    if not tab.SetMouseClickEnabled then
         return
     end
     -- Temporary whisper tabs are PROTECTED in lockdown; a refused write is
     -- left for a later sweep (the tracker records only what actually
     -- landed, so the next TabsSweepBlizzard still sees the drift).
     if InCombatLockdown() then
-        if not pcall(tabButton.SetMouseClickEnabled, tabButton, enabled) then
+        if not pcall(tab.SetMouseClickEnabled, tab, enabled) then
             return
         end
     else
-        tabButton:SetMouseClickEnabled(enabled)
+        tab:SetMouseClickEnabled(enabled)
     end
     if CFD then
-        CFD(tabButton).clickOff = (not enabled) or nil
+        CFD(tab).clickOff = (not enabled) or nil
     end
 end
 
@@ -1058,11 +1058,11 @@ function CHAT.TabsSweepBlizzard()
     if type(dockList) == "table" then
         for idx = 1, #dockList do
             local castFrame = dockList[idx]
-            local tabButton = castFrame and _G[castFrame:GetName() .. "Tab"]
-            if tabButton then
-                local isOff = CFD(tabButton).clickOff and true or false
+            local tab = castFrame and _G[castFrame:GetName() .. "Tab"]
+            if tab then
+                local isOff = CFD(tab).clickOff and true or false
                 if isOff ~= wantOff then
-                    SetTabClickable(tabButton, not wantOff)
+                    SetTabClickable(tab, not wantOff)
                 end
             end
         end
@@ -1080,22 +1080,22 @@ function CHAT.TabsSweepBlizzard()
     -- an art texture's alpha slot) and mirror the passthrough click-state.
     for idx = 1, 20 do
         local castFrame = _G["ChatFrame" .. idx]
-        local tabButton = castFrame and _G["ChatFrame" .. idx .. "Tab"]
-        if tabButton then
+        local tab = castFrame and _G["ChatFrame" .. idx .. "Tab"]
+        if tab then
             -- Blizzard Style reveal: any tab still holding zeroed regions,
             -- docked or not (see StockHideTabRegions).
             if blizzTabs and not wantOff then
-                StockRestoreTabRegions(tabButton)
+                StockRestoreTabRegions(tab)
             end
             if not castFrame.isDocked then
                 if not blizzTabs then
-                    SuppressTabRegions(tabButton)
-                elseif wantOff and tabButton:IsShown() then
-                    StockHideTabRegions(tabButton)
+                    SuppressTabRegions(tab)
+                elseif wantOff and tab:IsShown() then
+                    StockHideTabRegions(tab)
                 end
-                local isOff = CFD(tabButton).clickOff and true or false
+                local isOff = CFD(tab).clickOff and true or false
                 if isOff ~= wantOff then
-                    SetTabClickable(tabButton, not wantOff)
+                    SetTabClickable(tab, not wantOff)
                 end
             end
         end

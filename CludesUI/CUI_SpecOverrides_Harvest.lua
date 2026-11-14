@@ -189,9 +189,9 @@ local function PruneRedundantValues()
     local changed = false
     for idx = #storage, 1, -1 do
         local e = storage[idx]
-        local spec_def = e.values and e.values.default
-        if spec_def then
-            for fkey in pairs(spec_def) do
+        local def = e.values and e.values.default
+        if def then
+            for fkey in pairs(def) do
                 local held = false
                 for key, m in pairs(e.values) do
                     if key ~= "default" and type(m) == "table" and m[fkey] ~= nil then
@@ -201,8 +201,8 @@ local function PruneRedundantValues()
                 end
                 if not held then
                     -- An exact-size companion stays while its size key does (PxCo).
-                    local baseValue = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
-                    if baseValue and spec_def[baseValue] ~= nil and PxCo.Partner(baseValue) == fkey then
+                    local base = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
+                    if base and def[base] ~= nil and PxCo.Partner(base) == fkey then
                         held = true
                     end
                 end
@@ -214,7 +214,7 @@ local function PruneRedundantValues()
                     -- applied and GC freely; an unloaded module can't be verified and is kept.
                     local canGC = BlacklistedFKey(fkey)
                     if not canGC and FKeyLoaded(fkey) then
-                        local dv = spec_def[fkey]
+                        local dv = def[fkey]
                         if dv == NIL_SENT then
                             dv = nil
                         end
@@ -224,12 +224,12 @@ local function PruneRedundantValues()
                         end
                     end
                     if canGC then
-                        spec_def[fkey] = nil
+                        def[fkey] = nil
                         changed = true
                     end
                 end
             end
-            if not next(spec_def) then
+            if not next(def) then
                 table.remove(storage, idx)
                 changed = true
             end
@@ -247,8 +247,8 @@ end
 -- equal to the recorded default clears the members' override ONLY when this session
 -- moved it there (live differs from the session-start snapshot); merely comparing
 -- equal without having moved it retains each member's stored value instead.
-local function HarvestGroup(group)
-    if not group then
+local function HarvestGroup(set)
+    if not set then
         return
     end
     local storage = GetStore()
@@ -257,7 +257,7 @@ local function HarvestGroup(group)
         return
     end
     for idx, record in ipairs(storage) do
-        if not ConflictSpec(record, group) then
+        if not ConflictSpec(record, set) then
             local m = maps[idx]
             local preserve
             for fkey, dv in pairs(record.values.default) do
@@ -285,7 +285,7 @@ local function HarvestGroup(group)
                     m[fkey] = nil
                 end
             end
-            for _, specID in ipairs(group.specs or {}) do
+            for _, specID in ipairs(set.specs or {}) do
                 local prev = record.values[specID]
                 local result = next(m) ~= nil and DeepCopy(m) or nil
                 if preserve and prev then
@@ -319,14 +319,14 @@ function PxCo.Pair(storage, cond)
     local CO = CludesUI._CondOv
     local changed = false
     for _, record in ipairs(storage) do
-        local spec_def = record.values and record.values.default
-        if spec_def then
+        local def = record.values and record.values.default
+        if def then
             local adopt
-            for fkey in pairs(spec_def) do
+            for fkey in pairs(def) do
                 local p = PxCo.Partner(fkey)
                 if
                     p
-                    and spec_def[p] == nil
+                    and def[p] == nil
                     and FKeyLoaded(p)
                     and not EntryOwning(p)
                     and not (CO and CO.EntryOwning and CO.EntryOwning(p))
@@ -340,13 +340,13 @@ function PxCo.Pair(storage, cond)
             end
             if adopt then
                 for p, val in pairs(adopt) do
-                    spec_def[p] = val
+                    def[p] = val
                 end
                 changed = true
             end
-            for fkey in pairs(spec_def) do
+            for fkey in pairs(def) do
                 local p = PxCo.Partner(fkey)
-                local pv = p and spec_def[p]
+                local pv = p and def[p]
                 if type(pv) == "string" and pv ~= NIL_SENT then
                     for key, m in pairs(record.values) do
                         if key ~= "default" and type(m) == "table" and m[fkey] ~= nil and m[p] == nil then
@@ -379,7 +379,7 @@ local function WriteSpecValues(specID)
     local touched = nil
     for _, record in ipairs(storage) do
         local m = record.values[specID] or record.values.default
-        for fkey, spec_def in pairs(record.values.default) do
+        for fkey, def in pairs(record.values.default) do
             -- Apply-side folder blacklist: legacy entries can carry paths into
             -- hands-off addons (CDM runs its own per-spec system; a stale write
             -- re-injects frozen spell data and its unmapped folder forces a full
@@ -388,7 +388,7 @@ local function WriteSpecValues(specID)
             if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) then
                 local val = m[fkey]
                 if val == nil then
-                    val = spec_def
+                    val = def
                 end
                 if val == NIL_SENT then
                     val = nil
@@ -418,8 +418,8 @@ local function WriteSpecValues(specID)
 end
 
 -- Group variant: seeds from the group's first member spec.
-local function WriteGroupValues(group)
-    local seed = group and group.specs and group.specs[1]
+local function WriteGroupValues(set)
+    local seed = set and set.specs and set.specs[1]
     if not seed then
         return nil
     end
@@ -435,10 +435,10 @@ local function WriteDefaultValues()
     end
     local touched = nil
     for _, record in ipairs(storage) do
-        for fkey, spec_def in pairs(record.values.default) do
+        for fkey, def in pairs(record.values.default) do
             -- Same apply-side blacklist + match-ownership skip as WriteSpecValues.
             if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) then
-                local val = spec_def
+                local val = def
                 if val == NIL_SENT then
                     val = nil
                 end
@@ -962,14 +962,14 @@ function CludesUI.SpecOverrides_CapturedBy(folder, keyList)
     local C = CludesUI._CondOv
     local result, seen = {}, { spec = {}, cond = {} }
     for pass = 1, 2 do
-        local storage, kindOf
+        local storage, kind
         if pass == 1 then
-            storage, kindOf = GetStore(), "spec"
+            storage, kind = GetStore(), "spec"
         elseif C and C.GetStore then
-            storage, kindOf = C.GetStore(), "cond"
+            storage, kind = C.GetStore(), "cond"
         end
         if storage then
-            local seenKind = seen[kindOf]
+            local seenKind = seen[kind]
             for _, e in ipairs(storage) do
                 local vals = e.values
                 if type(vals) == "table" then
@@ -978,7 +978,7 @@ function CludesUI.SpecOverrides_CapturedBy(folder, keyList)
                             for key in pairs(map) do
                                 if wanted[key] then
                                     seenKind[ident] = true
-                                    result[#result + 1] = { kind = kindOf, id = ident }
+                                    result[#result + 1] = { kind = kind, id = ident }
                                     break
                                 end
                             end
@@ -1106,11 +1106,11 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(folder)
     if storage and specID then
         for _, record in ipairs(storage) do
             local m = record.values[specID] or record.values.default
-            for fkey, spec_def in pairs(record.values.default) do
+            for fkey, def in pairs(record.values.default) do
                 if not BlacklistedFKey(fkey) and not MatchOwnedFKey(fkey) and SplitFKey(fkey) == folder then
                     local val = m[fkey]
                     if val == nil then
-                        val = spec_def
+                        val = def
                     end
                     if val == NIL_SENT or type(val) ~= "table" then
                         result = result or {}
@@ -1131,14 +1131,14 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(folder)
             local groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
             for _, record in ipairs(cstore) do
                 local map = groupId and record.values[groupId] or nil
-                for fkey, spec_def in pairs(record.values.default) do
+                for fkey, def in pairs(record.values.default) do
                     if
                         not BlacklistedFKey(fkey)
                         and not MatchOwnedFKey(fkey)
                         and not EntryOwning(fkey)
                         and SplitFKey(fkey) == folder
                     then
-                        local val = spec_def
+                        local val = def
                         local fromCond = false
                         if map and map[fkey] ~= nil then
                             val = map[fkey]

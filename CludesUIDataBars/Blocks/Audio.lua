@@ -6,25 +6,25 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local type = type
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local Clamp = Clamp
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  AUDIO (interactive volume bar; channel picked in block settings)
@@ -41,8 +41,8 @@ local AUDIO_CHANNEL_ORDER = { "master", "sfx", "music", "ambience", "dialog" }
 mod.AUDIO_CHANNELS = AUDIO_CHANNELS
 mod.AUDIO_CHANNEL_ORDER = AUDIO_CHANNEL_ORDER
 
-mod.BlockFactories.audio = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = { "CVAR_UPDATE", "PLAYER_ENTERING_WORLD" }
 
@@ -215,13 +215,13 @@ mod.BlockFactories.audio = function(blockCfg, slotIndex, contentFrame, barCtx)
     end)
 
     function instance:Refresh()
-        Keys.SetBlockIcon(audioIcon, blockCfg)
+        K.SetBlockIcon(audioIcon, blockCfg)
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local iconSz = fontSize + 4
-        local barW = upper(40, floor(CONTENT_BASE * 2 + 0.5))
+        local barW = max(40, floor(CONTENT_BASE * 2 + 0.5))
         local bH = 5
 
         -- Show Icon (default ON): hidden drops the icon and its gap entirely.
@@ -254,7 +254,7 @@ mod.BlockFactories.audio = function(blockCfg, slotIndex, contentFrame, barCtx)
         local effGap = showIcon and ICON_GAP or 0
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(30, slotW - 8)
+            local innerW = max(30, slotW - 8)
             audioIcon:ClearAllPoints()
             audioIcon:SetPoint("TOP", audioButton, "TOP", 0, -4)
             volTrack:ClearAllPoints()
@@ -264,7 +264,7 @@ mod.BlockFactories.audio = function(blockCfg, slotIndex, contentFrame, barCtx)
             else
                 volTrack:SetPoint("TOP", audioButton, "TOP", 0, -6)
             end
-            contentFrame:SetSize(slotW, upper(4 + iconSz + 4 + bH + 4, 40))
+            contentFrame:SetSize(slotW, max(4 + iconSz + 4 + bH + 4, 40))
         else
             audioIcon:ClearAllPoints()
             audioIcon:SetPoint("LEFT", audioButton, "LEFT", 0, 0)
@@ -307,15 +307,15 @@ mod.BlockFactories.audio = function(blockCfg, slotIndex, contentFrame, barCtx)
     end
 
     function instance:GetAutoLength()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 40)
+            return max(contentFrame:GetHeight() or 40, 40)
         end
         local iconPart = 0
         if D().showIcon ~= false then
             iconPart = (fontSize + 4) + ICON_GAP
         end
-        return iconPart + upper(40, floor(CONTENT_BASE * 2 + 0.5))
+        return iconPart + max(40, floor(CONTENT_BASE * 2 + 0.5))
     end
 
     function instance:Destroy()

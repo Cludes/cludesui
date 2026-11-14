@@ -160,11 +160,11 @@ end
 -- petFamily: a warlock's demon family or nil. Returns the spell ID (nil for
 -- none) and the spec the answer was read for (the class's healing spec when
 -- a healer's spec was not known), which the cooldown is read for too.
-function KD.KickSpell(classFile, specID, role, talents, petFamily)
+function KD.KickSpell(class, specID, role, talents, petFamily)
     if not specID and role == "HEALER" then
-        specID = HEALING_SPEC_OF[classFile]
+        specID = HEALING_SPEC_OF[class]
     end
-    if classFile == "WARLOCK" then
+    if class == "WARLOCK" then
         if petFamily then
             local ident = DEMON_INTERRUPT[petFamily]
             if ident then
@@ -183,7 +183,7 @@ function KD.KickSpell(classFile, specID, role, talents, petFamily)
     -- the main interrupt when that spec has it, else the spec's own.
     local main, own
     for ident, key in pairs(INTERRUPTS) do
-        if key.class == classFile and key.tracked ~= false then
+        if key.class == class and key.tracked ~= false then
             local specOk = (not key.specs) or not specID or key.specs[specID]
             -- A read tree without the node: this member has no such kick.
             local hasNode = not (key.talent and talents and not talents[ident])
@@ -240,9 +240,9 @@ end
 
 -- The spell whose icon stands for a class's interrupt when the member's own is
 -- not known (the bars' default icon).
-function KD.ClassMainKick(classFile)
+function KD.ClassMainKick(class)
     for ident, key in pairs(INTERRUPTS) do
-        if key.class == classFile and key.main then
+        if key.class == class and key.main then
             return ident
         end
     end
@@ -265,11 +265,11 @@ function KD.ClassLists()
         ids[#ids + 1] = ident
     end
     table.sort(ids)
-    local function add(classFile, ident)
-        local entries = classLists[classFile]
+    local function add(class, ident)
+        local entries = classLists[class]
         if not entries then
             entries = {}
-            classLists[classFile] = entries
+            classLists[class] = entries
         end
         entries[#entries + 1] = ident
     end

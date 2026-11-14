@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local _G = _G
@@ -15,21 +15,21 @@ local InCombatLockdown = InCombatLockdown
 local C_Timer = C_Timer
 local format = string.format
 local floor = math.floor
-local upper = math.max
+local max = math.max
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local ZoneReactionColor = Keys.ZoneReactionColor
-local IconColorOf = Keys.IconColorOf
-local ParkSecureFrame = Keys.ParkSecureFrame
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local ZoneReactionColor = K.ZoneReactionColor
+local IconColorOf = K.IconColorOf
+local ParkSecureFrame = K.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  LOCATION + COORDINATES (two block types on one text renderer)
@@ -70,12 +70,12 @@ local function LocDisplayText(showSubZone)
     -- the minimap zone already falls back to the zone name where there is no
     -- subzone, which IS the subzone-only form with no extra branch.
     local zone = GetRealZoneText() or ""
-    local subFrame = GetMinimapZoneText() or ""
-    if showSubZone and subFrame ~= "" and subFrame ~= zone then
-        return zone .. ": " .. subFrame
+    local sub = GetMinimapZoneText() or ""
+    if showSubZone and sub ~= "" and sub ~= zone then
+        return zone .. ": " .. sub
     end
-    if subFrame ~= "" then
-        return subFrame
+    if sub ~= "" then
+        return sub
     end
     return zone
 end
@@ -178,8 +178,8 @@ end
 --   events        -> event list driving Refresh
 --   tickSeconds   -> dedicated ticker period, for values no event announces
 -- Tooltip and click are identical for both blocks (same place), so they are wired straight in rather than passed.
-local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+local function MakeLocationBlock(blockCfg, slot, contentFrame, barCtx, options)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = options.events
 
@@ -199,10 +199,10 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
     -- Icon is optional: blocks without opts.hasIcon are text-only.
-    local glyph
+    local icon
     if options.hasIcon then
-        glyph = widget:CreateTexture(nil, "OVERLAY")
-        glyph:SetPoint("LEFT")
+        icon = widget:CreateTexture(nil, "OVERLAY")
+        icon:SetPoint("LEFT")
     end
     local textValue = widget:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, textValue)
@@ -222,12 +222,12 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
             r, g, b = BlockColorOf(blockCfg)
         end
         textValue:SetTextColor(r, g, b, 1)
-        if glyph then
+        if icon then
             if mouseOver then
-                glyph:SetVertexColor(r, g, b, 1)
+                icon:SetVertexColor(r, g, b, 1)
             else
                 local ir, ig, ib = IconColorOf(blockCfg)
-                glyph:SetVertexColor(ir, ig, ib, 1)
+                icon:SetVertexColor(ir, ig, ib, 1)
             end
         end
     end
@@ -313,7 +313,7 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
 
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
 
@@ -327,15 +327,15 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
         ApplyColors()
 
         local iconSz = 0
-        if glyph then
-            Keys.SetBlockIcon(glyph, blockCfg)
+        if icon then
+            K.SetBlockIcon(icon, blockCfg)
         end
-        if glyph and D().showIcon ~= false then
+        if icon and D().showIcon ~= false then
             iconSz = fontSize + LOC_ICON_EXTRA
-            glyph:SetSize(iconSz, iconSz)
-            glyph:Show()
-        elseif glyph then
-            glyph:Hide()
+            icon:SetSize(iconSz, iconSz)
+            icon:Show()
+        elseif icon then
+            icon:Hide()
         end
 
         if InCombatLockdown() then
@@ -344,30 +344,30 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(36, slotW - 8)
+            local innerW = max(36, slotW - 8)
             textValue:ClearAllPoints()
             if iconSz > 0 then
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", widget, "LEFT", 0, 0)
-                textValue:SetPoint("LEFT", glyph, "RIGHT", gap, 0)
-                mod.SetWrappedText(textValue, upper(16, innerW - iconSz - gap - 2), "LEFT")
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                textValue:SetPoint("LEFT", icon, "RIGHT", gap, 0)
+                mod.SetWrappedText(textValue, max(16, innerW - iconSz - gap - 2), "LEFT")
             else
                 textValue:SetPoint("CENTER", widget, "CENTER", 0, 0)
                 mod.SetWrappedText(textValue, innerW, "CENTER")
             end
             local lineH =
-                upper(fontSize + 4, iconSz, mod.SnapToPixelGrid(textValue:GetStringHeight() or fontSize))
+                max(fontSize + 4, iconSz, mod.SnapToPixelGrid(textValue:GetStringHeight() or fontSize))
             widget:SetSize(innerW, lineH)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-            contentFrame:SetSize(slotW, upper(lineH + 8, barH))
+            contentFrame:SetSize(slotW, max(lineH + 8, barH))
         else
             mod.ResetInlineText(textValue, "LEFT")
             local iconPad = 0
             if iconSz > 0 then
                 iconPad = iconSz + gap
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
             end
             textValue:ClearAllPoints()
             textValue:SetPoint("LEFT", widget, "LEFT", iconPad, 0)
@@ -377,7 +377,7 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
             -- width, so that would shrink it further on every pass. Icon included.
             local wid = options.width and options.width()
             if wid then
-                textValue:SetWidth(upper(20, wid - iconPad - 2))
+                textValue:SetWidth(max(20, wid - iconPad - 2))
                 textValue:SetWordWrap(false)
             else
                 -- Measured only when the width is not already decided: a
@@ -456,9 +456,9 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
             return 0
         end
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()
@@ -480,12 +480,12 @@ local function MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, opti
     return instance
 end
 
-mod.BlockFactories.location = function(blockCfg, slotIndex, contentFrame, barCtx)
+mod.BlockFactories.location = function(blockCfg, slot, contentFrame, barCtx)
     local function D()
         return blockCfg.settings or {}
     end
 
-    return MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, {
+    return MakeLocationBlock(blockCfg, slot, contentFrame, barCtx, {
         -- PLAYER_REGEN_ENABLED: Refresh can only re-anchor/resize out of combat, so a mid-fight zone change leaves stale geometry until then.
         events = {
             "ZONE_CHANGED",
@@ -509,7 +509,7 @@ mod.BlockFactories.location = function(blockCfg, slotIndex, contentFrame, barCtx
     })
 end
 
-mod.BlockFactories.coords = function(blockCfg, slotIndex, contentFrame, barCtx)
+mod.BlockFactories.coords = function(blockCfg, slot, contentFrame, barCtx)
     local function D()
         return blockCfg.settings or {}
     end
@@ -521,7 +521,7 @@ mod.BlockFactories.coords = function(blockCfg, slotIndex, contentFrame, barCtx)
         return p
     end
 
-    return MakeLocationBlock(blockCfg, slotIndex, contentFrame, barCtx, {
+    return MakeLocationBlock(blockCfg, slot, contentFrame, barCtx, {
         -- PLAYER_REGEN_ENABLED: geometry, the collapse flip and the secure click button all wait for regen, so the block needs a pass there.
         events = {
             "ZONE_CHANGED_NEW_AREA",

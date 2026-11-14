@@ -88,7 +88,7 @@ local ALL_CORNERS = 15
 local GLOW_FMIN, GLOW_NA, GLOW_NB = 0.03, 32, 12
 local GLOW_LOGSTEP = math.log(2 / GLOW_FMIN) / (GLOW_NA - 1)
 local STRETCHED = Enum.UITextureSliceMode.Stretched
-local floor, min, upper, log, exp = math.floor, math.min, math.max, math.log, math.exp
+local floor, min, max, log, exp = math.floor, math.min, math.max, math.log, math.exp
 local pairs, select, pcall = pairs, select, pcall
 
 -- Media paths by number, built on first use.
@@ -144,14 +144,14 @@ local ownTex = setmetatable({}, { __mode = "k" }) -- our pieces, never masked
 local hooked = false
 
 CludesUI.ROUNDED_MAX_RADIUS = MAX_RADIUS
-function CludesUI.RoundedStyleOK(look)
-    return STYLE_OK[look or "solid"] == true
+function CludesUI.RoundedStyleOK(style)
+    return STYLE_OK[style or "solid"] == true
 end
 
 -- Options: appends the four corner toggles of a Corner Radius cog to rows.
 -- get / set read and write the round corners bits (nil reads as all).
 local CORNER_LABELS = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" }
-function CludesUI.RoundedCornerRows(rowList, get, group)
+function CludesUI.RoundedCornerRows(rowList, get, set)
     for idx = 1, 4 do
         local b = CORNERS[idx].bit
         rowList[#rowList + 1] = {
@@ -162,7 +162,7 @@ function CludesUI.RoundedCornerRows(rowList, get, group)
             end,
             set = function(val)
                 local m = get() or ALL_CORNERS
-                group(val and bit.bor(m, b) or bit.band(m, ALL_CORNERS - b))
+                set(val and bit.bor(m, b) or bit.band(m, ALL_CORNERS - b))
             end,
         }
     end
@@ -172,7 +172,7 @@ end
 -- Options: the Join toggle for a bar that can sit right above or below its
 -- partner (a detached power bar, a nameplate cast bar). applies() returns
 -- true while the toggle applies; nil = always.
-function CludesUI.RoundedJoinRow(rowList, labelText, tooltip, get, group, applies, need)
+function CludesUI.RoundedJoinRow(rowList, labelText, tooltip, get, set, applies, need)
     rowList[#rowList + 1] = {
         type = "toggle",
         label = labelText,
@@ -180,7 +180,7 @@ function CludesUI.RoundedJoinRow(rowList, labelText, tooltip, get, group, applie
         get = function()
             return get() == true
         end,
-        set = group,
+        set = set,
         disabled = applies and function()
             return not applies()
         end or nil,
@@ -361,25 +361,25 @@ local function SolidParts(st, cont)
     -- (nameplates: its strips keep whole pixels whatever the plate's scale)
     -- runs other units, so there they take a layer of their own on the border
     -- frame, at the body's scale.
-    local hostRegion = cont
+    local host = cont
     if cont.IsIgnoringParentScale and cont:IsIgnoringParentScale() then
         local hostFrame = cont:GetParent()
-        hostRegion = CreateFrame("Frame", nil, hostFrame)
-        hostRegion:SetAllPoints(cont)
-        hostRegion:EnableMouse(false)
+        host = CreateFrame("Frame", nil, hostFrame)
+        host:SetAllPoints(cont)
+        host:EnableMouse(false)
         -- Kept with its container: on a frame of the options page pool it
         -- rides that frame as the container does (CludesUI_PixelPerfect.lua),
         -- hidden at its reset and never handed out; SolidOn shows it again.
         local attach = POOL.Attach
         if attach then
-            attach(hostFrame, hostRegion)
+            attach(hostFrame, host)
         end
-        sd.layer = hostRegion
+        sd.layer = host
     end
-    local fillTex = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
-    ownTex[fillTex] = true
-    sd.fill = fillTex
-    local hole = hostRegion:CreateMaskTexture()
+    local fill = host:CreateTexture(nil, "OVERLAY", nil, 7)
+    ownTex[fill] = true
+    sd.fill = fill
+    local hole = host:CreateMaskTexture()
     hole:SetPoint("TOPLEFT", cont._left, "TOPRIGHT", 0, 0)
     hole:SetPoint("BOTTOMRIGHT", cont._right, "BOTTOMLEFT", 0, 0)
     sd.hole = hole
@@ -499,23 +499,23 @@ end
 -- size: the piece's side; inset: its outer corner in from the glow's; crop:
 -- the share of the art shown; run: where the sides start; band: the width
 -- every piece draws the glow at, centered on the outline.
-local function GlowPiece(Stl, E, half)
-    if Stl >= E then
+local function GlowPiece(S, E, half)
+    if S >= E then
         -- The band fits between the outer corner and the arc center: the
         -- nearest step's piece, sized so its outline lands on this radius
         -- round this arc center. Its band is within a few percent of the
         -- border's, and the sides take the same width, so they meet it.
-        local r = Stl - E / 2
+        local r = S - E / 2
         local num = Clamp(floor(log(E / r / GLOW_FMIN) / GLOW_LOGSTEP + 0.5) + 1, 1, GLOW_NA)
         local func = GLOW_FMIN * exp((num - 1) * GLOW_LOGSTEP)
-        local dim = r * (1 + func / 2)
-        return GLOW_CORNER[num], dim, Stl - dim, 1, Stl, func * r
+        local size = r * (1 + func / 2)
+        return GLOW_CORNER[num], size, S - size, 1, S, func * r
     end
     -- A radius under half the band: the piece spans the whole band (at most
     -- half the short side, the art cut to match), its straight parts on the
     -- sides' own line, and the sides start past it.
-    local dim = (half and half < E) and half or E
-    return GLOW_TIGHT[Clamp(floor((Stl / E - 0.5) * 2 * GLOW_NB) + 1, 1, GLOW_NB)], dim, 0, dim / E, dim, E
+    local size = (half and half < E) and half or E
+    return GLOW_TIGHT[Clamp(floor((S / E - 0.5) * 2 * GLOW_NB) + 1, 1, GLOW_NB)], size, 0, size / E, size, E
 end
 
 local function GlowOn(st, border, bd, radius)
@@ -542,18 +542,18 @@ local function GlowOn(st, border, bd, radius)
     -- S: from the glow's outer corner to the arc center, at most half the
     -- glow's short side. A square corner takes radius 0.
     local half = HalfSide(bd)
-    local Stl = E / 2 + radius
-    if half and Stl > half then
-        Stl = half
+    local S = E / 2 + radius
+    if half and S > half then
+        S = half
     end
     local corners = st.corners
     local lvl = bd:GetFrameLevel()
-    if gl.S ~= Stl or gl.E ~= E or gl.half ~= half or gl.lvl ~= lvl or gl.corners ~= corners then
-        gl.S, gl.E, gl.half, gl.lvl, gl.corners = Stl, E, half, lvl, corners
+    if gl.S ~= S or gl.E ~= E or gl.half ~= half or gl.lvl ~= lvl or gl.corners ~= corners then
+        gl.S, gl.E, gl.half, gl.lvl, gl.corners = S, E, half, lvl, corners
         f:ClearAllPoints()
         f:SetAllPoints(bd)
         f:SetFrameLevel(lvl)
-        local filePath, dim, inset, crop, run, band = GlowPiece(Stl, E, half)
+        local filePath, size, inset, crop, run, band = GlowPiece(S, E, half)
         local sPath, sSize, sInset, sCrop, sRun
         if corners ~= ALL_CORNERS then
             local sS = E / 2
@@ -569,7 +569,7 @@ local function GlowOn(st, border, bd, radius)
         end
         for idx = 1, 4 do
             local c, t = CORNERS[idx], gl.corner[idx]
-            local p, sz, ins, cr = filePath, dim, inset, crop
+            local p, sz, ins, cr = filePath, size, inset, crop
             runs[idx] = run
             if bit.band(corners, c.bit) == 0 then
                 p, sz, ins, cr = sPath, sSize, sInset, sCrop
@@ -670,7 +670,7 @@ local function Fit(st)
     -- at most (short side - 1) / 2, so the region always holds its mask.
     local half = HalfSide(rect)
     if half and half >= 1 then
-        local cap = upper(1, floor(half - 0.5))
+        local cap = max(1, floor(half - 0.5))
         if radius > cap then
             radius = cap
         end
@@ -686,7 +686,7 @@ local function Fit(st)
         if rs > 0 then
             edge = edge * cs / rs
         end
-        inner = upper(1, floor(radius - edge + 0.5))
+        inner = max(1, floor(radius - edge + 0.5))
         -- The inner rect holds the hole's and the body's masks the same way:
         -- past it their corners shrink or overlap and square their ends off,
         -- so a thin bar's body would poke out past the ring.
@@ -771,8 +771,8 @@ function CludesUI.RoundCorners(ownerFrame, radius, options)
     local st = DropStale(ownerFrame, status[ownerFrame])
     radius = min(floor(tonumber(radius) or 0), MAX_RADIUS)
     options = options or EMPTY
-    local look = options.style or "solid"
-    if radius > 0 and not STYLE_OK[look] then
+    local style = options.style or "solid"
+    if radius > 0 and not STYLE_OK[style] then
         radius = 0
     end
     local corners = options.corners and floor(tonumber(options.corners) or ALL_CORNERS) % 16 or ALL_CORNERS
@@ -794,7 +794,7 @@ function CludesUI.RoundCorners(ownerFrame, radius, options)
         hooksecurefunc(CludesUI, "SetBorderStyleColor", OnBorderColor)
     end
     st.radius, st.corners = radius, corners
-    st.glowStyle = look == "glow" or look == "shadow"
+    st.glowStyle = style == "glow" or style == "shadow"
     local rect = options.rect or ownerFrame
     if st.rect ~= rect then
         st.rect = rect
@@ -1075,20 +1075,20 @@ local function FitOutline(o, key)
     if o.r ~= r then
         -- The hole is reshaped detached (a mask carries its texture before
         -- it is added).
-        local fillTex, hole, cover = o._fill, o.hole, o.cover
+        local fill, hole, cover = o._fill, o.hole, o.cover
         if o.r then
-            RemoveMask(fillTex, hole)
+            RemoveMask(fill, hole)
             if cover then
                 RemoveMask(cover, hole)
             end
         end
         o.r = r
-        SetRounded(fillTex, r, ALL_CORNERS)
+        SetRounded(fill, r, ALL_CORNERS)
         local inner = r - wid
         hole:SetTexture(ROUNDED_INV[inner * 16 + ALL_CORNERS], "CLAMPTOWHITE", "CLAMPTOWHITE")
         hole:SetTextureSliceMargins(inner, inner, inner, inner)
         hole:SetTextureSliceMode(STRETCHED)
-        AddMask(fillTex, hole)
+        AddMask(fill, hole)
         if cover then
             AddMask(cover, hole)
         end
@@ -1276,7 +1276,7 @@ local function InnerMask(o)
         im = p:CreateMaskTexture()
         im:SetPoint("TOPLEFT", p, "TOPLEFT", 1, -1)
         im:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -1, 1)
-        SetRounded(im, upper(1, o.radius - 1), ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
+        SetRounded(im, max(1, o.radius - 1), ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
         o.innerMask = im
     end
     return im
@@ -1285,16 +1285,16 @@ end
 function CludesUI.MakeRoundedBorder(hostFrame, r, g, b, a, body, radius, clip, width)
     local o = CludesUI.MakePixelLayer(hostFrame, FitOutline)
     local layer = o._frame
-    local fillTex = layer:CreateTexture(nil, "BORDER", nil, 7)
-    fillTex:SetAllPoints(layer)
-    fillTex:SetVertexColor(r or 0, g or 0, b or 0, a or 1)
+    local fill = layer:CreateTexture(nil, "BORDER", nil, 7)
+    fill:SetAllPoints(layer)
+    fill:SetVertexColor(r or 0, g or 0, b or 0, a or 1)
     -- One unit is one pixel on the layer: width px in from every edge.
     local wid = width or 1
     o.width = wid
     local hole = layer:CreateMaskTexture()
     hole:SetPoint("TOPLEFT", layer, "TOPLEFT", wid, -wid)
     hole:SetPoint("BOTTOMRIGHT", layer, "BOTTOMRIGHT", -wid, wid)
-    o._fill, o.hole, o.SetColor, o.SetCover = fillTex, hole, OutlineSetColor, OutlineSetCover
+    o._fill, o.hole, o.SetColor, o.SetCover = fill, hole, OutlineSetColor, OutlineSetCover
     -- A clipped outline is a list or a menu: a panel.
     o.radius = radius or (clip and OUTLINE_RADIUS or CONTROL_RADIUS)
     o.autoRadius = (radius == nil and not clip) or nil
@@ -1467,10 +1467,10 @@ function CludesUI.CardSidebar(outer, backdrop)
     cap:SetPoint("TOPLEFT")
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
-    for _, sideName in ipairs({ "LEFT", "RIGHT" }) do
+    for _, side in ipairs({ "LEFT", "RIGHT" }) do
         local e = Line(0.10)
-        e:SetPoint("TOP" .. sideName)
-        e:SetPoint("BOTTOM" .. sideName)
+        e:SetPoint("TOP" .. side)
+        e:SetPoint("BOTTOM" .. side)
         e:SetWidth(1)
     end
     local bottom = Line(0.10)

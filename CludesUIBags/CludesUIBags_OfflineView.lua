@@ -115,8 +115,8 @@ local function TabKind(val)
     if one then
         key = key:sub(4)
     end
-    local kindOf, i = key:match("^(%a+):?(%d*)$")
-    return kindOf or "bank", tonumber(i), one
+    local kind, i = key:match("^(%a+):?(%d*)$")
+    return kind or "bank", tonumber(i), one
 end
 
 -- drop a pick that doesn't resolve anymore (option off, forgotten, source changed)
@@ -229,10 +229,10 @@ local function OpenPicker(val, ownerFrame)
     CUI.ShowContextMenu(ownerFrame, itemList, { below = true, fontKey = "bags" })
 end
 
-local function CreatePickerButton(val, headerFrame)
+local function CreatePickerButton(val, header)
     local forever = mod.BagsForever()
-    local scale = headerFrame:GetParent()._foreverBagFrameScale or 1
-    local btnFrame = CreateFrame("Button", nil, headerFrame)
+    local scale = header:GetParent()._foreverBagFrameScale or 1
+    local btnFrame = CreateFrame("Button", nil, header)
     btnFrame:SetSize(20 * scale, 20 * scale)
 
     local backdrop
@@ -251,33 +251,33 @@ local function CreatePickerButton(val, headerFrame)
         CUI.MakeBorder(btnFrame, 1, 1, 1, 0.15, CUI.PP)
     end
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
     if forever and C_Texture.GetAtlasInfo("socialqueuing-icon-group") then
-        glyph:SetAtlas("socialqueuing-icon-group")
-        glyph:SetDesaturated(true)
-        glyph:SetSize(15 * scale, 13 * scale)
+        icon:SetAtlas("socialqueuing-icon-group")
+        icon:SetDesaturated(true)
+        icon:SetSize(15 * scale, 13 * scale)
     else
-        glyph:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-person.png")
-        glyph:SetSize(14 * scale, 14 * scale)
+        icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-person.png")
+        icon:SetSize(14 * scale, 14 * scale)
     end
     if forever then
-        glyph:SetVertexColor(1, 0.86, 0.63)
+        icon:SetVertexColor(1, 0.86, 0.63)
     end
-    glyph:SetPoint("CENTER")
-    glyph:SetAlpha(0.8)
+    icon:SetPoint("CENTER")
+    icon:SetAlpha(0.8)
 
     btnFrame:SetScript("OnClick", function(self)
         OpenPicker(val, self)
     end)
     btnFrame:SetScript("OnEnter", function(self)
-        glyph:SetAlpha(1)
+        icon:SetAlpha(1)
         if backdrop then
             backdrop:SetColorTexture(1, 1, 1, 0.14)
         end
         CUI.ShowWidgetTooltip(self, CludesUI.L("Choose an alt"))
     end)
     btnFrame:SetScript("OnLeave", function()
-        glyph:SetAlpha(0.8)
+        icon:SetAlpha(0.8)
         if backdrop then
             backdrop:SetColorTexture(1, 1, 1, 0.06)
         end
@@ -287,13 +287,13 @@ local function CreatePickerButton(val, headerFrame)
 end
 
 -- title: the window's title font string, count: the item count next to it
-local function SyncTitle(val, titleText, count)
-    if not (titleText and count) then
+local function SyncTitle(val, title, count)
+    if not (title and count) then
         return
     end
     local enabled = Offline.Enabled()
     if enabled and not val.pick then
-        val.pick = { btn = CreatePickerButton(val, titleText:GetParent()) }
+        val.pick = { btn = CreatePickerButton(val, title:GetParent()) }
     end
     local p = val.pick
     if p then
@@ -302,39 +302,39 @@ local function SyncTitle(val, titleText, count)
     if enabled then
         local c = Offline.Char(ShownKey(val))
         local name = (c and c.name) or UnitName("player") or ""
-        local classFile = (c and c.class) or select(2, UnitClass("player"))
-        titleText:SetText(val.word(Hex(classFile) .. name .. "|r"))
+        local class = (c and c.class) or select(2, UnitClass("player"))
+        title:SetText(val.word(Hex(class) .. name .. "|r"))
     else
-        titleText:SetText(val.plain())
+        title:SetText(val.plain())
     end
-    local heading = titleText:GetParent()
+    local heading = title:GetParent()
     if heading._foreverTitleY then
         if enabled then
             p.btn:SetPoint("LEFT", heading, "TOPLEFT", 55, heading._foreverControlsY)
         end
-        titleText:SetPoint("LEFT", heading, "TOPLEFT", enabled and 83 or 55, heading._foreverTitleY)
+        title:SetPoint("LEFT", heading, "TOPLEFT", enabled and 83 or 55, heading._foreverTitleY)
         return
     end
 
     count:ClearAllPoints()
     -- the button takes the title's spot (bags shift it for the sidebar arrow), the title goes after
-    local pt, rel, relPt, posX, posY = titleText:GetPoint(1)
+    local pt, rel, relPt, posX, posY = title:GetPoint(1)
     if p and rel ~= p.btn then
         p.base = { pt, rel, relPt, posX, posY }
     end
     if not enabled then
         if p and p.base then
-            titleText:ClearAllPoints()
-            titleText:SetPoint(unpack(p.base))
+            title:ClearAllPoints()
+            title:SetPoint(unpack(p.base))
         end
-        count:SetPoint("LEFT", titleText, "RIGHT", 8, 0)
+        count:SetPoint("LEFT", title, "RIGHT", 8, 0)
         return
     end
     p.btn:ClearAllPoints()
     p.btn:SetPoint("LEFT", p.base[2], p.base[3], p.base[4], p.base[5])
-    titleText:ClearAllPoints()
-    titleText:SetPoint("LEFT", p.btn, "RIGHT", 8, 0)
-    count:SetPoint("LEFT", titleText, "RIGHT", 8, 0)
+    title:ClearAllPoints()
+    title:SetPoint("LEFT", p.btn, "RIGHT", 8, 0)
+    count:SetPoint("LEFT", title, "RIGHT", 8, 0)
 end
 
 local Place -- below
@@ -384,9 +384,9 @@ end
 
 local function PaintTabs(val)
     local r, g, b = CUI.GetAccentColor()
-    local kindOf = TabKind(val)
+    local kind = TabKind(val)
     for _, t in ipairs(val.tabs) do
-        local enabled = t.key == kindOf
+        local enabled = t.key == kind
         t.text:SetTextColor(enabled and 1 or 0.6, enabled and 1 or 0.6, enabled and 1 or 0.6)
         t.line:SetColorTexture(r, g, b, 1)
         t.line:SetShown(enabled)
@@ -407,20 +407,20 @@ local function Build(val)
     panelFrame:Hide()
     val.panel = panelFrame
 
-    local barFrame = CreateFrame("Frame", nil, panelFrame)
-    barFrame:SetPoint("TOPLEFT")
-    barFrame:SetPoint("TOPRIGHT")
-    barFrame:SetHeight(BAR_H)
-    local bbg = barFrame:CreateTexture(nil, "BACKGROUND", nil, 2)
+    local bar = CreateFrame("Frame", nil, panelFrame)
+    bar:SetPoint("TOPLEFT")
+    bar:SetPoint("TOPRIGHT")
+    bar:SetHeight(BAR_H)
+    local bbg = bar:CreateTexture(nil, "BACKGROUND", nil, 2)
     bbg:SetAllPoints()
     bbg:SetColorTexture(0, 0, 0, 0.25)
     local px = CUI.PP.mult
-    local sep = barFrame:CreateTexture(nil, "ARTWORK")
+    local sep = bar:CreateTexture(nil, "ARTWORK")
     sep:SetHeight(px)
     sep:SetPoint("BOTTOMLEFT")
     sep:SetPoint("BOTTOMRIGHT")
     sep:SetColorTexture(0.15, 0.15, 0.15, 1)
-    val.bar = barFrame
+    val.bar = bar
 
     local prev
     for _, d in ipairs({ { CludesUI.L("Bank"), "bank" }, { CludesUI.L("Warband"), "warband" } }) do
@@ -437,7 +437,7 @@ local function Build(val)
     -- gold looks like the bags footer's (SmallMoneyFrameTemplate, 11pt)
     moneyN = moneyN + 1
     local name = "CUI_OfflineMoneyFrame" .. moneyN
-    local money = CreateFrame("Frame", name, barFrame, "SmallMoneyFrameTemplate")
+    local money = CreateFrame("Frame", name, bar, "SmallMoneyFrameTemplate")
     MoneyFrame_SetType(money, "STATIC")
     for _, suffix in ipairs({ "GoldButton", "SilverButton", "CopperButton" }) do
         local btn = _G[name .. suffix]
@@ -451,7 +451,7 @@ local function Build(val)
     end
     val.money, val.moneyName = money, name
     -- hover says whose gold it is
-    local moneyHit = CreateFrame("Frame", nil, barFrame)
+    local moneyHit = CreateFrame("Frame", nil, bar)
     moneyHit:SetPoint("TOPLEFT", money, "TOPLEFT", -5, 5)
     moneyHit:SetPoint("BOTTOMRIGHT", money, "BOTTOMRIGHT", 5, -5)
     moneyHit:SetFrameLevel(money:GetFrameLevel() + 10)
@@ -470,7 +470,7 @@ local function Build(val)
         CUI.HideWidgetTooltip()
     end)
 
-    val.info = barFrame:CreateFontString(nil, "OVERLAY")
+    val.info = bar:CreateFontString(nil, "OVERLAY")
     SetFont(val.info, 11)
     val.info:SetTextColor(0.6, 0.6, 0.6)
     val.info:SetJustifyH("RIGHT")
@@ -585,8 +585,8 @@ end
 -- they come from (its revision says when they changed)
 local function Containers(val)
     local list, saved
-    local kindOf, i = TabKind(val)
-    if val.mode == "bank" and kindOf == "warband" then
+    local kind, i = TabKind(val)
+    if val.mode == "bank" and kind == "warband" then
         local wid = Offline.Warband()
         list, saved = wid.tabs, wid.time
     else
@@ -660,19 +660,19 @@ local pending, failed = {}, {}
 
 -- name, quality, icon for a saved string (pets and keystones are full links)
 local function Info(s, ident)
-    local name, _, q, _, _, _, _, _, _, glyph
+    local name, _, q, _, _, _, _, _, _, icon
     if s:sub(1, 5) == "item:" then
-        name, _, q, _, _, _, _, _, _, glyph = GetItemInfo(s)
+        name, _, q, _, _, _, _, _, _, icon = GetItemInfo(s)
     else
         name = s:match("%[(.-)%]")
-        _, _, q, _, _, _, _, _, _, glyph = GetItemInfo(ident)
+        _, _, q, _, _, _, _, _, _, icon = GetItemInfo(ident)
         local species, _, breed = s:match("|Hbattlepet:(%d+):(%d+):(%d+)")
         if species and C_PetJournal then
             local _, petIcon = C_PetJournal.GetPetInfoBySpeciesID(tonumber(species))
-            glyph, q = petIcon or glyph, tonumber(breed) or q
+            icon, q = petIcon or icon, tonumber(breed) or q
         end
     end
-    return name, q, glyph
+    return name, q, icon
 end
 
 -- every saved item as a display entry with its bags category; kept until the
@@ -720,10 +720,10 @@ local function Classified(list, bags, source)
         if type(t) == "table" then
             sum = sum + (t.size or 0)
             local inReagent = bags and place == 6 and reagent
-            for slotIndex, str in pairs(type(t.items) == "table" and t.items or {}) do
+            for slot, str in pairs(type(t.items) == "table" and t.items or {}) do
                 used = used + 1
                 local ident = Offline.ItemID(str)
-                local name, q, glyph = Info(str, ident)
+                local name, q, icon = Info(str, ident)
                 if q == nil and ident and not failed[ident] then
                     wait = true
                     if not pending[ident] then
@@ -749,9 +749,9 @@ local function Classified(list, bags, source)
                     name = name,
                     lower = name:lower(),
                     q = q or 1,
-                    icon = glyph or instIcon,
+                    icon = icon or instIcon,
                     cat = position,
-                    n = (t.counts and t.counts[slotIndex]) or 1,
+                    n = (t.counts and t.counts[slot]) or 1,
                     gear = classID == ITEM_CLASS_WEAPON or classID == ITEM_CLASS_ARMOR,
                 }
             end
@@ -803,11 +803,11 @@ local function Filter(val)
     if val.mode ~= "bags" then
         return nil
     end
-    local sel, group = mod.GetSelection()
+    local sel, set = mod.GetSelection()
     local mgr = _G.CUI_CategoryManager
-    if group and mgr then
+    if set and mgr then
         local f = {}
-        for _, mi in ipairs(mgr:GetGroupMembers(group) or {}) do
+        for _, mi in ipairs(mgr:GetGroupMembers(set) or {}) do
             f[mi] = true
         end
         return f
@@ -875,14 +875,14 @@ end
 
 -- the bar's gold: its right edge on the window's own gold readout
 local function PaintGold(val, gold)
-    local money, barFrame = val.money, val.bar
+    local money, bar = val.money, val.bar
     money:ClearAllPoints()
     local ref = val.goldRef and val.goldRef()
     local dx = -10
-    if ref and ref:IsShown() and ref:GetRight() and barFrame:GetRight() then
-        dx = ref:GetRight() - barFrame:GetRight()
+    if ref and ref:IsShown() and ref:GetRight() and bar:GetRight() then
+        dx = ref:GetRight() - bar:GetRight()
     end
-    money:SetPoint("RIGHT", barFrame, "RIGHT", dx, 0)
+    money:SetPoint("RIGHT", bar, "RIGHT", dx, 0)
     if type(gold) == "number" then
         MoneyFrame_Update(val.moneyName, gold)
         -- whole gold with separators, as the bags footer shows it
@@ -899,7 +899,7 @@ local function PaintGold(val, gold)
     if money:IsShown() then
         val.info:SetPoint("RIGHT", money, "LEFT", -14, 0)
     else
-        val.info:SetPoint("RIGHT", barFrame, "RIGHT", dx, 0)
+        val.info:SetPoint("RIGHT", bar, "RIGHT", dx, 0)
     end
 end
 
@@ -924,7 +924,7 @@ end
 -- gold and the saved time are painted on their own, outside it
 local function Signature(val, list, source, query)
     local p = BP()
-    local sel, group = mod.GetSelection()
+    local sel, set = mod.GetSelection()
     local r, g, b = CUI.GetAccentColor()
     local dis = DisabledKey()
     return strjoin(
@@ -936,7 +936,7 @@ local function Signature(val, list, source, query)
         query,
         val.viewTab,
         tostring(sel),
-        tostring(group),
+        tostring(set),
         math.floor(val.panel:GetWidth() + 0.5),
         SLOT_SIZE,
         SPACING,
@@ -1155,13 +1155,13 @@ local function Cover(val, enabled)
 end
 
 -- show the panel over a window's item area, or hide it
-Place = function(val, modeName, leftX, topY, bottom)
-    val.mode = modeName
-    Cover(val, modeName ~= nil)
+Place = function(val, mode, leftX, topY, bottom)
+    val.mode = mode
+    Cover(val, mode ~= nil)
     if val.side then
-        val.side:SetShown(modeName ~= nil)
+        val.side:SetShown(mode ~= nil)
     end
-    if not modeName then
+    if not mode then
         if val.panel then
             val.panel:Hide()
         end
@@ -1216,15 +1216,15 @@ function mod.OfflinePanel(sidebarW)
         return
     end
     SyncTitle(bagsView, heading and heading.title, heading and heading.itemCount)
-    local modeName
+    local mode
     if mod.GetSelection() == BANK_VIEW then
-        modeName = "bank"
+        mode = "bank"
     elseif AltKey(bagsView) then
-        modeName = "bags"
+        mode = "bags"
     end
     local topY = (heading and heading:GetHeight() or 35) + 1
     local bottom = CUI_Bags.Footer and CUI_Bags.Footer:GetHeight() or 30
-    Place(bagsView, modeName, sidebarW or 0, topY, bottom)
+    Place(bagsView, mode, sidebarW or 0, topY, bottom)
 end
 
 -------------------------------------------------------------------------------
@@ -1308,18 +1308,18 @@ if CUI_Bank then
     end
 
     PaintSide = function(val)
-        local sideName = val.side
+        local side = val.side
         local c = Offline.Char(ShownKey(val))
         local entries = {}
         -- same layout as the live sidebar: all (tabs nested under it) and one, per kind
         local oneFirst = mod.BankDefaultsToOne()
-        local function Add(kindOf, all, one, glyph, oneIcon, tabs, bagKey)
+        local function Add(kind, all, one, icon, oneIcon, tabs, bagKey)
             local sum = 0
             for _, t in ipairs(tabs or {}) do
                 sum = sum + Used(t)
             end
             local function All()
-                entries[#entries + 1] = { key = kindOf, name = all, icon = glyph, n = sum }
+                entries[#entries + 1] = { key = kind, name = all, icon = icon, n = sum }
                 if BP().bankHideTabsInSidebar and BP().bankCategorySidebar then
                     return
                 end
@@ -1327,17 +1327,17 @@ if CUI_Bank then
                     if type(t) == "table" then
                         local bagID = Enum.BagIndex[bagKey .. i]
                         entries[#entries + 1] = {
-                            key = kindOf .. ":" .. i,
+                            key = kind .. ":" .. i,
                             nested = true,
                             name = (t.name and t.name ~= "") and t.name or CludesUI.Lf("Tab %1$d", i),
-                            icon = mod.BankTabIcon(bagID, t.icon) or t.icon or glyph,
+                            icon = mod.BankTabIcon(bagID, t.icon) or t.icon or icon,
                             n = Used(t),
                         }
                     end
                 end
             end
             local function One()
-                entries[#entries + 1] = { key = "one" .. kindOf, name = one, icon = oneIcon, n = sum }
+                entries[#entries + 1] = { key = "one" .. kind, name = one, icon = oneIcon, n = sum }
             end
             local first = #entries + 1
             if oneFirst then
@@ -1374,48 +1374,48 @@ if CUI_Bank then
         end
 
         local collapsed = BP().bankSidebarCollapsed
-        local wid = sideName:GetWidth()
+        local wid = side:GetWidth()
         local r, g, b = CUI.GetAccentColor()
         local posY = 0
         local px = CUI.PP.mult
-        if not sideName._div then
-            sideName._div = sideName:CreateTexture(nil, "ARTWORK")
-            sideName._div:SetColorTexture(0.2, 0.2, 0.2, 1)
+        if not side._div then
+            side._div = side:CreateTexture(nil, "ARTWORK")
+            side._div:SetColorTexture(0.2, 0.2, 0.2, 1)
         end
-        sideName._div:Hide()
+        side._div:Hide()
         for i, e in ipairs(entries) do
             -- a divider like the live sidebar's
             if e.split then
                 posY = posY - 4
                 local inset = math.floor(wid * 0.08)
-                sideName._div:ClearAllPoints()
-                sideName._div:SetHeight(px)
-                sideName._div:SetPoint("TOPLEFT", sideName, "TOPLEFT", inset, posY)
-                sideName._div:SetPoint("TOPRIGHT", sideName, "TOPRIGHT", -inset, posY)
-                sideName._div:Show()
+                side._div:ClearAllPoints()
+                side._div:SetHeight(px)
+                side._div:SetPoint("TOPLEFT", side, "TOPLEFT", inset, posY)
+                side._div:SetPoint("TOPRIGHT", side, "TOPRIGHT", -inset, posY)
+                side._div:Show()
                 posY = posY - px - 4
             end
-            local rowFrame = Row(i)
-            rowFrame.key, rowFrame.name, rowFrame.n = e.key, e.name, e.n
-            rowFrame.on = e.key == val.viewTab
-            rowFrame:ClearAllPoints()
-            rowFrame:SetPoint("TOPLEFT", sideName, "TOPLEFT", 0, posY)
-            rowFrame:SetWidth(wid)
-            mod.AnchorBagSidebarIcon(rowFrame.icon, collapsed, 8 + (e.nested and 10 or 0))
-            rowFrame.icon:SetTexture(CludesUI.ClientIcon(e.icon))
-            rowFrame.icon:SetAlpha(rowFrame.on and 1 or 0.75)
-            rowFrame.label:SetShown(not collapsed)
-            rowFrame.count:SetShown(not collapsed)
-            rowFrame.label:SetText(e.name)
-            rowFrame.label:SetTextColor(1, 1, 1, rowFrame.on and 1 or 0.75)
-            rowFrame.count:SetText(e.n)
-            rowFrame.ind:SetColorTexture(r, g, b, 1)
-            rowFrame.ind:SetShown(rowFrame.on)
-            rowFrame.bg:SetColorTexture(r, g, b, rowFrame.on and 0.1 or 0)
-            if not rowFrame.on then
-                rowFrame.bg:SetColorTexture(1, 1, 1, 0)
+            local row = Row(i)
+            row.key, row.name, row.n = e.key, e.name, e.n
+            row.on = e.key == val.viewTab
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", side, "TOPLEFT", 0, posY)
+            row:SetWidth(wid)
+            mod.AnchorBagSidebarIcon(row.icon, collapsed, 8 + (e.nested and 10 or 0))
+            row.icon:SetTexture(CludesUI.ClientIcon(e.icon))
+            row.icon:SetAlpha(row.on and 1 or 0.75)
+            row.label:SetShown(not collapsed)
+            row.count:SetShown(not collapsed)
+            row.label:SetText(e.name)
+            row.label:SetTextColor(1, 1, 1, row.on and 1 or 0.75)
+            row.count:SetText(e.n)
+            row.ind:SetColorTexture(r, g, b, 1)
+            row.ind:SetShown(row.on)
+            row.bg:SetColorTexture(r, g, b, row.on and 0.1 or 0)
+            if not row.on then
+                row.bg:SetColorTexture(1, 1, 1, 0)
             end
-            rowFrame:Show()
+            row:Show()
             posY = posY - ROW_H - ROW_PAD
         end
         for i = #entries + 1, #rowList do
@@ -1451,9 +1451,9 @@ if CUI_Bank then
         local _, _, _, leftX, topY = scrollFrame:GetPoint(1)
         local _, _, _, _, bottom = scrollFrame:GetPoint(2)
         -- the list display's column bar sits above the scroll area: cover it too so it can't be clicked
-        local barFrame = mod.ListHeaderBar(CUI_Bank)
-        if barFrame and barFrame:IsShown() then
-            local _, _, _, _, barTop = barFrame:GetPoint(1)
+        local bar = mod.ListHeaderBar(CUI_Bank)
+        if bar and bar:IsShown() then
+            local _, _, _, _, barTop = bar:GetPoint(1)
             if barTop then
                 topY = barTop
             end

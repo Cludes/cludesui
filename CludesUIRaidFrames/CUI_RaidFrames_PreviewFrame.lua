@@ -50,7 +50,7 @@ Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val
     previewContainer = val
 end
 
-local function CreatePreviewFrame(slotPos, party)
+local function CreatePreviewFrame(index, party)
     local s = saved.profile
     local wid = PixelSnap(s.frameWidth or 72)
     local hgt = PixelSnap(s.frameHeight or 46)
@@ -74,44 +74,44 @@ local function CreatePreviewFrame(slotPos, party)
     end
 
     -- Health bar
-    local healthBar = CreateFrame("StatusBar", nil, f)
-    healthBar:SetFrameLevel(f:GetFrameLevel() + 2)
-    healthBar:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    healthBar:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
-    healthBar:SetHeight(healthH)
-    healthBar:SetStatusBarTexture(ResolveHealthTexture())
-    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    local health = CreateFrame("StatusBar", nil, f)
+    health:SetFrameLevel(f:GetFrameLevel() + 2)
+    health:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    health:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    health:SetHeight(healthH)
+    health:SetStatusBarTexture(ResolveHealthTexture())
+    health:GetStatusBarTexture():SetHorizTile(false)
     if Pix then
-        Pix.DisablePixelSnap(healthBar)
+        Pix.DisablePixelSnap(health)
     end
-    healthBar:SetMinMaxValues(0, 100)
-    healthBar:SetValue(100)
+    health:SetMinMaxValues(0, 100)
+    health:SetValue(100)
 
     -- Full-height anchor reference (mirrors the live buttons' d.uniformRef so
     -- Uniform Icon Anchoring previews identically; see ns.RF_AnchorHost).
     f._uniformRef = CreateFrame("Frame", nil, f)
-    f._uniformRef:SetFrameLevel(healthBar:GetFrameLevel())
-    f._uniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    f._uniformRef:SetFrameLevel(health:GetFrameLevel())
+    f._uniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
     f._uniformRef:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
-    healthBar._cuiUniformRef = f._uniformRef
-    f._uniformRef._cuiHealth = healthBar
+    health._cuiUniformRef = f._uniformRef
+    f._uniformRef._cuiHealth = health
 
     -- Absorb shield preview (dual clip-frame, matching real frames)
     -- Mask: constrains absorb rendering to health bar bounds
-    local absorbMask = healthBar:CreateMaskTexture()
-    absorbMask:SetAllPoints(healthBar)
+    local absorbMask = health:CreateMaskTexture()
+    absorbMask:SetAllPoints(health)
     absorbMask:SetTexture("Interface\\Buttons\\WHITE8X8")
 
     -- Current HP clip: bounds the backfill bar to the filled health area
-    local curClip = CreateFrame("Frame", nil, healthBar)
-    curClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    curClip:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+    local curClip = CreateFrame("Frame", nil, health)
+    curClip:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+    curClip:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
     curClip:SetClipsChildren(true)
 
     -- Missing HP clip: bounds the forward bar to the empty health area
-    local missClip = CreateFrame("Frame", nil, healthBar)
-    missClip:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
-    missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+    local missClip = CreateFrame("Frame", nil, health)
+    missClip:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
+    missClip:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     missClip:SetClipsChildren(true)
 
     -- Backfill bar: grows into filled health from the right (overshield)
@@ -133,12 +133,12 @@ local function CreatePreviewFrame(slotPos, party)
     backfillBar._modernBase = bfBase
     backfillBar:SetStatusBarColor(1, 1, 1, 0.3)
     backfillBar:SetReverseFill(true)
-    backfillBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
-    backfillBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
-    backfillBar:SetWidth(healthBar:GetWidth())
-    backfillBar:SetHeight(healthBar:GetHeight())
+    backfillBar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
+    backfillBar:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+    backfillBar:SetWidth(health:GetWidth())
+    backfillBar:SetHeight(health:GetHeight())
     -- Absorb on top of the HP cluster (above heal absorb/heal pred and max health).
-    backfillBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
+    backfillBar:SetFrameLevel(health:GetFrameLevel() + 3)
     backfillBar:SetMinMaxValues(0, 100)
     backfillBar:Hide()
 
@@ -159,26 +159,26 @@ local function CreatePreviewFrame(slotPos, party)
     fwBase:Hide()
     forwardBar._modernBase = fwBase
     forwardBar:SetStatusBarColor(1, 1, 1, 0.3)
-    forwardBar:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-    forwardBar:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-    forwardBar:SetWidth(healthBar:GetWidth())
-    forwardBar:SetHeight(healthBar:GetHeight())
+    forwardBar:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+    forwardBar:SetPoint("BOTTOMLEFT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+    forwardBar:SetWidth(health:GetWidth())
+    forwardBar:SetHeight(health:GetHeight())
     -- Match backfill (the heal prediction draws over it at this level, as live).
-    forwardBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
+    forwardBar:SetFrameLevel(health:GetFrameLevel() + 3)
     forwardBar:SetMinMaxValues(0, 100)
     forwardBar:Hide()
 
     -- "Default Blizz Frames" spark (preview): mirrors live -- a fixed 16px cast_spark
     -- glow on a non-clipping host above the shield, CENTER pinned to the forward bar's
     -- LEFT edge (the seam). Gated by the preview's plain absorb compare in the renderer.
-    local sparkHost = CreateFrame("Frame", nil, healthBar)
-    sparkHost:SetAllPoints(healthBar)
+    local sparkHost = CreateFrame("Frame", nil, health)
+    sparkHost:SetAllPoints(health)
     sparkHost:SetClipsChildren(true)
-    sparkHost:SetFrameLevel(healthBar:GetFrameLevel() + 4)
+    sparkHost:SetFrameLevel(health:GetFrameLevel() + 4)
     local gateBar = CreateFrame("StatusBar", nil, sparkHost)
     gateBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     gateBar:SetStatusBarColor(1, 1, 1, 0)
-    gateBar:SetSize(16, healthBar:GetHeight())
+    gateBar:SetSize(16, health:GetHeight())
     gateBar:SetMinMaxValues(0, 1)
     gateBar:SetValue(0)
     gateBar:SetPoint("CENTER", forwardBar, "LEFT", -1, 0)
@@ -193,7 +193,7 @@ local function CreatePreviewFrame(slotPos, party)
     local bfSpark = sparkHost:CreateTexture(nil, "OVERLAY")
     bfSpark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
     bfSpark:SetBlendMode("ADD")
-    bfSpark:SetSize(16, healthBar:GetHeight())
+    bfSpark:SetSize(16, health:GetHeight())
     bfSpark:SetPoint("CENTER", forwardBar, "LEFT", -1, 0)
     bfSpark:Hide()
     forwardBar._bfSpark = bfSpark
@@ -202,10 +202,10 @@ local function CreatePreviewFrame(slotPos, party)
     do
         -- Own clip frame (mirrors live): right/left span the full bar, overlay
         -- clips to filled health. Bounds set per healAbsorbEdgeMode in render.
-        local healClip = CreateFrame("Frame", nil, healthBar)
+        local healClip = CreateFrame("Frame", nil, health)
         healClip:SetClipsChildren(true)
-        healClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-        healClip:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        healClip:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        healClip:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
         f._healClip = healClip
         local ha = CreateFrame("StatusBar", nil, healClip)
         ha:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -216,11 +216,11 @@ local function CreatePreviewFrame(slotPos, party)
         end
         ha:SetStatusBarColor(0.8, 0.15, 0.15, 0.65)
         ha:SetReverseFill(true)
-        ha:SetPoint("TOPRIGHT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        ha:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-        ha:SetWidth(healthBar:GetWidth())
-        ha:SetHeight(healthBar:GetHeight())
-        ha:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+        ha:SetPoint("TOPRIGHT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        ha:SetPoint("BOTTOMRIGHT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        ha:SetWidth(health:GetWidth())
+        ha:SetHeight(health:GetHeight())
+        ha:SetFrameLevel(health:GetFrameLevel() + 1)
         ha:SetMinMaxValues(0, 100)
         ha._mask = absorbMask
         -- Black backing behind the heal-absorb texture (preview; mirrors live).
@@ -246,11 +246,11 @@ local function CreatePreviewFrame(slotPos, party)
         end
         hp:SetStatusBarColor(0.3, 0.8, 0.3, 0.4)
         hp:SetReverseFill(false)
-        hp:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        hp:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
-        hp:SetWidth(healthBar:GetWidth())
-        hp:SetHeight(healthBar:GetHeight())
-        hp:SetFrameLevel(healthBar:GetFrameLevel() + 3) -- over the absorb, as live
+        hp:SetPoint("TOPLEFT", health:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        hp:SetPoint("BOTTOMLEFT", health:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        hp:SetWidth(health:GetWidth())
+        hp:SetHeight(health:GetHeight())
+        hp:SetFrameLevel(health:GetFrameLevel() + 3) -- over the absorb, as live
         hp:SetMinMaxValues(0, 100)
         hp:Hide()
         f._healPredBar = hp
@@ -258,7 +258,7 @@ local function CreatePreviewFrame(slotPos, party)
 
     -- Reduced max health bar (preview): black bg + red striped overlay on right side
     do
-        local rmh = CreateFrame("StatusBar", nil, healthBar)
+        local rmh = CreateFrame("StatusBar", nil, health)
         rmh:SetStatusBarTexture(CludesUI.MAX_HEALTH_STRIPES_TEX)
         local rmhFill = rmh:GetStatusBarTexture()
         if rmhFill then
@@ -268,8 +268,8 @@ local function CreatePreviewFrame(slotPos, party)
         end
         rmh:SetStatusBarColor(0.7, 0.1, 0.1, 1)
         rmh:SetReverseFill(true)
-        rmh:SetAllPoints(healthBar)
-        rmh:SetFrameLevel(healthBar:GetFrameLevel() + 2)
+        rmh:SetAllPoints(health)
+        rmh:SetFrameLevel(health:GetFrameLevel() + 2)
         rmh:SetMinMaxValues(0, 1)
         rmh:Hide()
         -- Black background behind the stripes
@@ -296,7 +296,7 @@ local function CreatePreviewFrame(slotPos, party)
         tb:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 0)
         tb:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, 0)
         tb:SetHeight(4)
-        tb:SetFrameLevel(healthBar:GetFrameLevel() + 3)
+        tb:SetFrameLevel(health:GetFrameLevel() + 3)
         tb:SetMinMaxValues(0, 100)
         tb:Hide()
         absorbBar._topBar = tb
@@ -311,7 +311,7 @@ local function CreatePreviewFrame(slotPos, party)
         thb:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 0)
         thb:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", 0, 0)
         thb:SetHeight(4)
-        thb:SetFrameLevel(healthBar:GetFrameLevel() + 3)
+        thb:SetFrameLevel(health:GetFrameLevel() + 3)
         thb:SetMinMaxValues(0, 100)
         thb:Hide()
         absorbBar._healTopBar = thb
@@ -507,7 +507,7 @@ local function CreatePreviewFrame(slotPos, party)
 
     -- Dispel border
     local dispelBdrFrame = CreateFrame("Frame", nil, f)
-    dispelBdrFrame:SetAllPoints(healthBar)
+    dispelBdrFrame:SetAllPoints(health)
     dispelBdrFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_RAISE - 1)
     dispelBdrFrame:Hide()
     if Pix then
@@ -516,7 +516,7 @@ local function CreatePreviewFrame(slotPos, party)
 
     -- Dispel overlay (texture on health bar at ARTWORK sublevel 3: above fill
     -- and above the BM health-color overlay (sublevel 2), below absorbs/text)
-    local dispelOLTex = healthBar:CreateTexture(nil, "ARTWORK", nil, 3)
+    local dispelOLTex = health:CreateTexture(nil, "ARTWORK", nil, 3)
     dispelOLTex:SetTexture("Interface\\Buttons\\WHITE8X8")
     dispelOLTex:Hide()
 
@@ -526,7 +526,7 @@ local function CreatePreviewFrame(slotPos, party)
     local dispelIconFrame = CreateFrame("Frame", nil, f)
     dispelIconFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_MARKER - 1)
     dispelIconFrame:SetSize(16, 16)
-    dispelIconFrame:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
+    dispelIconFrame:SetPoint("CENTER", health, "CENTER", 0, 0)
     dispelIconFrame:Hide()
     local dispelIconTex = dispelIconFrame:CreateTexture(nil, "ARTWORK")
     dispelIconTex:SetAllPoints()
@@ -535,7 +535,7 @@ local function CreatePreviewFrame(slotPos, party)
     -- Marker carrier: above the frame border (incl. hover/target raise) so the
     -- leader icon and raid marker render on top of it (mirrors real frames).
     local markerCarrier = CreateFrame("Frame", nil, f)
-    markerCarrier:SetAllPoints(healthBar)
+    markerCarrier:SetAllPoints(health)
     markerCarrier:SetFrameLevel(f:GetFrameLevel() + mod.LVL_MARKER)
 
     -- Raid marker (on marker carrier, above the border)
@@ -547,7 +547,7 @@ local function CreatePreviewFrame(slotPos, party)
     -- Ready check icon (position/size re-applied in the preview indicator pass)
     local readyCheck = markerCarrier:CreateTexture(nil, "OVERLAY")
     readyCheck:SetSize(PixelSnap(s.readyCheckSize or 20), PixelSnap(s.readyCheckSize or 20))
-    readyCheck:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
+    readyCheck:SetPoint("CENTER", health, "CENTER", 0, 0)
     readyCheck:Hide()
 
     -- Combat icon (position/size/style re-applied in the preview indicator pass)
@@ -557,7 +557,7 @@ local function CreatePreviewFrame(slotPos, party)
 
     -- Text carrier: text band (above every border incl. the raise, below auras).
     local textCarrier = CreateFrame("Frame", nil, f)
-    textCarrier:SetAllPoints(healthBar)
+    textCarrier:SetAllPoints(health)
     textCarrier:SetFrameLevel(f:GetFrameLevel() + mod.LVL_TEXT)
     -- The texts are built on it by ApplyPreviewData (ns.RF_TextPreview).
     f.textCarrier = textCarrier
@@ -574,7 +574,7 @@ local function CreatePreviewFrame(slotPos, party)
     -- (mirrors the real frames): clears the general border while auras draw over
     -- it; the hover/target border raise intentionally covers it.
     local roleCarrier = CreateFrame("Frame", nil, f)
-    roleCarrier:SetAllPoints(healthBar)
+    roleCarrier:SetAllPoints(health)
     roleCarrier:SetFrameLevel(f:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
     local riSz = PixelSnap(s.roleIconSize or 14)
@@ -589,7 +589,7 @@ local function CreatePreviewFrame(slotPos, party)
     local liPos = (s.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        mod.RF_AnchorHost(healthBar, s),
+        mod.RF_AnchorHost(health, s),
         liPos,
         s.leaderIconOffsetX or 0,
         s.leaderIconOffsetY or 0
@@ -614,7 +614,7 @@ local function CreatePreviewFrame(slotPos, party)
 
     -- Store references
     f._bg = backdrop
-    f._health = healthBar
+    f._health = health
     f._absorbBar = absorbBar
     f._power = power
     f._border = bdrFrame
@@ -623,7 +623,7 @@ local function CreatePreviewFrame(slotPos, party)
     -- the Party Frames kit (host, art, portrait; stamps health._cuiKitRef
     -- here, before any refresh anchors to the host).
     if kit then
-        mod.RF_KitBuild(f, f, healthBar, power, bdrFrame)
+        mod.RF_KitBuild(f, f, health, power, bdrFrame)
     elseif mod.RF_Stock() then
         mod.RF_StockBuild(f, f, power)
     end
@@ -711,11 +711,11 @@ local function CreatePreviewFrame(slotPos, party)
     return f
 end
 
-local function GetOrCreatePreviewFrame(slotPos)
-    if not previewFrames[slotPos] then
-        previewFrames[slotPos] = CreatePreviewFrame(slotPos)
+local function GetOrCreatePreviewFrame(index)
+    if not previewFrames[index] then
+        previewFrames[index] = CreatePreviewFrame(index)
     end
-    return previewFrames[slotPos]
+    return previewFrames[index]
 end
 
 Inner.CreatePreviewFrame, Inner.GetOrCreatePreviewFrame = CreatePreviewFrame, GetOrCreatePreviewFrame

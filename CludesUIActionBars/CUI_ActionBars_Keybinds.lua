@@ -83,11 +83,11 @@ local function UpdateKeybinds()
     mod._eabBuildSkippedBars()
     -- Empower detection for one action slot, shared by the current-page
     -- and base-slot checks in pass 1.
-    local function SlotIsPH(slotIndex)
-        if not (slotIndex and HasAction(slotIndex)) then
+    local function SlotIsPH(slot)
+        if not (slot and HasAction(slot)) then
             return false
         end
-        local actionType, ident, subType = GetActionInfo(slotIndex)
+        local actionType, ident, subType = GetActionInfo(slot)
         if actionType == "flyout" then
             return true
         end
@@ -115,11 +115,11 @@ local function UpdateKeybinds()
     -- opening the popup there produces no visible menu even though the key
     -- was received. Empowers have no popup to anchor, so they're unaffected
     -- and must stay on the native command (see routing comment below).
-    local function SlotIsFlyout(slotIndex)
-        if not (slotIndex and HasAction(slotIndex)) then
+    local function SlotIsFlyout(slot)
+        if not (slot and HasAction(slot)) then
             return false
         end
-        return GetActionInfo(slotIndex) == "flyout"
+        return GetActionInfo(slot) == "flyout"
     end
     -- Pass 1: compute per-button routing signature (k1, k2, useClick, isPH)
     -- and compare against the last applied build.
@@ -180,14 +180,14 @@ local function UpdateKeybinds()
                     -- rank 1). Click routing exists ONLY where a native
                     -- command cannot express the slot: custom-paged bars
                     -- (above) and the custom bars.
-                    local slotIndex = button:GetAttribute("action")
+                    local slot = button:GetAttribute("action")
                     -- Custom bars (Bar9/Bar10) have no native binding command, so
                     -- their keys MUST click-route; SetOverrideBinding to a
                     -- non-existent command does nothing. isPH tracks empower
                     -- state separately from useClick: on a custom-paged bar
                     -- useClick is always true, but the secure empower snippet
                     -- still needs a re-trigger when press-and-hold state flips.
-                    local isPH = SlotIsPH(slotIndex)
+                    local isPH = SlotIsPH(slot)
                     -- Base-slot check: isPH no longer decides ROUTING on its
                     -- own (empowers stay native either way); it stays in the
                     -- signature so
@@ -200,13 +200,13 @@ local function UpdateKeybinds()
                     -- mount and dismount (skyriding page flips). Guarded on
                     -- the offsets table so Pet/Stance buttons (action attr
                     -- nil) never alias into MainBar slots.
-                    local isFlyout = SlotIsFlyout(slotIndex)
+                    local isFlyout = SlotIsFlyout(slot)
                     if not isPH then
-                        local offset = BAR_SLOT_OFFSETS[details.key]
-                        if offset then
-                            local baseValue = offset + idx
-                            if baseValue ~= slotIndex then
-                                isPH = SlotIsPH(baseValue)
+                        local off = BAR_SLOT_OFFSETS[details.key]
+                        if off then
+                            local base = off + idx
+                            if base ~= slot then
+                                isPH = SlotIsPH(base)
                             end
                         end
                     end

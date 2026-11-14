@@ -92,8 +92,8 @@ end
 -- settings (anything indexable), lvlPos: its level position or the client default.
 -- Shared with the Text Display tiles, so a tile shows exactly what the frames draw.
 local function Shown(t, s, lvlPos)
-    local kindOf = t.kind
-    if kindOf == "level" then
+    local kind = t.kind
+    if kind == "level" then
         if IS_POS[lvlPos] then
             return lvlPos
         end
@@ -103,10 +103,10 @@ local function Shown(t, s, lvlPos)
     if place == "none" then
         return
     end
-    if kindOf == "name" then
+    if kind == "name" then
         return place
     end
-    if kindOf == "custom" then
+    if kind == "custom" then
         -- No template, nothing to draw.
         local f = s[t.fmt]
         if type(f) == "string" and f ~= "" then
@@ -114,9 +114,9 @@ local function Shown(t, s, lvlPos)
         end
         return
     end
-    local modeName = s[t.mode]
-    if MODES[kindOf][modeName] then
-        return place, modeName
+    local mode = s[t.mode]
+    if MODES[kind][mode] then
+        return place, mode
     end
 end
 mod.RF_TextShown = Shown
@@ -128,20 +128,20 @@ local function Build(s)
     p.wantLevel = (lvlPos ~= "none") or nil
     for idx = 1, NTEXTS do
         local t = TEXTS[idx]
-        local place, modeName = Shown(t, s, lvlPos)
+        local place, mode = Shown(t, s, lvlPos)
         if place then
             local key = KEYS[idx]
-            local kindOf = t.kind
+            local kind = t.kind
             local e = {
                 i = idx,
                 k = key,
                 pos = place,
-                kind = kindOf,
-                mode = modeName,
-                prop = KIND[kindOf],
-                attach = (kindOf == "name") and p.nameAttach or nil,
+                kind = kind,
+                mode = mode,
+                prop = KIND[kind],
+                attach = (kind == "name") and p.nameAttach or nil,
             }
-            if kindOf == "custom" then
+            if kind == "custom" then
                 local cc = mod.RF_CustomCompile(s[key.CustomFormat])
                 e.reads = cc and cc.reads or nil
                 if e.reads then
@@ -152,10 +152,10 @@ local function Build(s)
                     end
                 end
             end
-            local l = p[kindOf]
+            local l = p[kind]
             if not l then
                 l = {}
-                p[kindOf] = l
+                p[kind] = l
             end
             l[#l + 1] = e
             p.all[#p.all + 1] = e
@@ -239,13 +239,13 @@ end
 -- A text's colour for its colour mode; pr, pg, pb: the unit's power colour when the
 -- caller has it. Unknown or unreadable falls back to the content's colour.
 local function TextColor(e, unitToken, s, pr, pg, pb)
-    local modeName, Prm = s[e.k.ColorMode], e.prop
-    if modeName == "accent" then
+    local mode, P = s[e.k.ColorMode], e.prop
+    if mode == "accent" then
         local r, g, b = mod.CludesUI.ResolveActiveAccent()
         if r then
             return r, g, b
         end
-    elseif modeName == "class" then
+    elseif mode == "class" then
         local _, tok = UnitClass(unitToken)
         if tok and not issecretvalue(tok) then
             local cc = mod.CludesUI.GetClassColor(tok)
@@ -253,7 +253,7 @@ local function TextColor(e, unitToken, s, pr, pg, pb)
                 return cc.r, cc.g, cc.b
             end
         end
-    elseif modeName == "power" then
+    elseif mode == "power" then
         if pr then
             return pr, pg, pb
         end
@@ -264,7 +264,7 @@ local function TextColor(e, unitToken, s, pr, pg, pb)
             return c.r, c.g, c.b
         end
     end
-    return Prm.r or 1, Prm.g or 1, Prm.b or 1
+    return P.r or 1, P.g or 1, P.b or 1
 end
 
 -- Stamped on the FontString (ours) so a repaint with the same colour sets nothing.
@@ -285,12 +285,12 @@ local function CarrierOf(d, s, e)
     if d._txFB then
         return main
     end
-    local baseValue = s.nameTextAboveIcons and true or false
+    local base = s.nameTextAboveIcons and true or false
     local val = s[e.k.Above]
     if val == nil then
-        val = baseValue
+        val = base
     end
-    if (val and true or false) == baseValue then
+    if (val and true or false) == base then
         return main
     end
     local ownerFrame = main:GetParent()
@@ -313,8 +313,8 @@ end
 -- Boss and pet frames (d._txFB) bring their own host (d._txHost) and width (d._txW),
 -- never wrap and have no Top Name Bar. Preview frames keep their bar as d._health.
 local function Place(d, s, e, fontStr)
-    local key, Prm, g, fb = e.k, e.prop, d.kitG, d._txFB
-    local healthBar = d.health or d._health
+    local key, P, g, fb = e.k, e.prop, d.kitG, d._txFB
+    local health = d.health or d._health
     local posX, posY = s[key.X] or 0, s[key.Y] or 0
     local fw = d._txW or s.frameWidth or 72
     local carrier = CarrierOf(d, s, e)
@@ -323,7 +323,7 @@ local function Place(d, s, e, fontStr)
         fontStr._cr = carrier
     end
     ApplyFont(fontStr, s[key.Size] or 10)
-    fontStr:SetWordWrap(Prm.wrap and not fb)
+    fontStr:SetWordWrap(P.wrap and not fb)
     fontStr._r = nil
     if e.kind == "name" and g then
         fontStr:SetWidth(g.name.w)
@@ -339,20 +339,13 @@ local function Place(d, s, e, fontStr)
             fontStr:Hide()
             return
         end
-        mod.AnchorRFText(
-            fontStr,
-            d._txHost or mod.RF_AnchorHost(healthBar, s),
-            e.pos,
-            posX,
-            posY,
-            fw * Prm.width
-        )
+        mod.AnchorRFText(fontStr, d._txHost or mod.RF_AnchorHost(health, s), e.pos, posX, posY, fw * P.width)
     else
-        local wid = Prm.width and (g and g.health.w or fw * Prm.width)
+        local wid = P.width and (g and g.health.w or fw * P.width)
         if not wid then
             fontStr:SetWidth(0)
         end
-        mod.AnchorRFText(fontStr, d._txHost or mod.RF_BarHost(healthBar, s), e.pos, posX, posY, wid)
+        mod.AnchorRFText(fontStr, d._txHost or mod.RF_BarHost(health, s), e.pos, posX, posY, wid)
     end
     fontStr:SetShown(e.kind ~= "pp" or d._pwtOn == true)
 end
@@ -477,26 +470,26 @@ function mod.RF_TextFull(d, s, unitToken)
     local pct = p.hp and not gone and GetSafeHealthPercent(unitToken)
     for jdx = 1, #all do
         local e = all[jdx]
-        local kindOf, fontStr = e.kind, pool[e.i]
-        if kindOf == "name" then
+        local kind, fontStr = e.kind, pool[e.i]
+        if kind == "name" then
             PaintName(fontStr, e, unitToken, s, fb)
             Tint(fontStr, e, unitToken, s)
-        elseif kindOf == "level" then
+        elseif kind == "level" then
             if not fb then
                 mod._RFLevelInto(fontStr, unitToken)
                 Tint(fontStr, e, unitToken, s)
             end
-        elseif kindOf == "custom" then
+        elseif kind == "custom" then
             PaintCustom(fontStr, e, unitToken, s, d)
             Tint(fontStr, e, unitToken, s)
-        elseif kindOf == "hp" then
+        elseif kind == "hp" then
             if gone then
                 fontStr:SetText("")
             else
                 mod.RF_HealthTextInto(fontStr, e.mode, pct, unitToken)
                 Tint(fontStr, e, unitToken, s)
             end
-        elseif kindOf == "ha" then
+        elseif kind == "ha" then
             PaintHealAbsorb(fontStr, e, unitToken, s, gone)
         end
     end
@@ -689,38 +682,38 @@ end
 --  and power type for the colours). The same layout and rules as live.
 -------------------------------------------------------------------------------
 local function PvPaint(fontStr, e, s, pv, fb)
-    local kindOf = e.kind
-    if kindOf == "name" then
+    local kind = e.kind
+    if kind == "name" then
         if e.attach and not fb then
             fontStr:SetFormattedText(e.attach[1], mod._RFPreviewLevel(), pv.name or "")
         else
             fontStr:SetText(pv.name or "")
         end
-    elseif kindOf == "level" then
+    elseif kind == "level" then
         fontStr:SetFormattedText("%d", mod._RFPreviewLevel())
-    elseif kindOf == "custom" then
+    elseif kind == "custom" then
         mod.RF_CustomTextInto(fontStr, s[e.k.CustomFormat], nil, s, pv)
     elseif pv.dead or pv.offline then
         fontStr:SetText("")
         return
-    elseif kindOf == "hp" then
+    elseif kind == "hp" then
         mod.RF_HealthTextInto(fontStr, e.mode, pv.hpPct or 100, nil, pv.hpPer or 1)
-    elseif kindOf == "pp" then
+    elseif kind == "pp" then
         mod.RF_PowerTextInto(fontStr, e.mode, pv.ppPct or 100, nil, nil, pv.ppPer or 1)
     else -- "ha"
         mod.FormatHealAbsorbInto(fontStr, pv.ha or 0, e.mode)
     end
-    local Prm = e.prop
+    local P = e.prop
     local r, g, b = mod.RF_PreviewTextColor(
         s[e.k.ColorMode],
         s[e.k.Color],
         pv.class,
-        Prm.r or 1,
-        Prm.g or 1,
-        Prm.b or 1,
+        P.r or 1,
+        P.g or 1,
+        P.b or 1,
         pv.pToken
     )
-    fontStr:SetTextColor(r, g, b, Prm.a)
+    fontStr:SetTextColor(r, g, b, P.a)
 end
 
 -- Lays out and paints every shown text of a preview frame (d: the frame or a state with
@@ -748,10 +741,10 @@ function mod.RF_TextPreviewTick(d, what)
     local all, pool, s, fb = p.all, d._tx, d._txS, d._txFB
     for jdx = 1, #all do
         local e = all[jdx]
-        local kindOf = e.kind
+        local kind = e.kind
         if
-            (kindOf == what or (kindOf == "custom" and e.reads and e.reads[what]))
-            and not (fb and FB_SKIP[kindOf])
+            (kind == what or (kind == "custom" and e.reads and e.reads[what]))
+            and not (fb and FB_SKIP[kind])
         then
             PvPaint(pool[e.i], e, s, pv, fb)
         end

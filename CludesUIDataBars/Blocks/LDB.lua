@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -14,19 +14,19 @@ local InCombatLockdown = InCombatLockdown
 local type = type
 local pcall = pcall
 local floor = math.floor
-local upper = math.max
+local max = math.max
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  BROKER PLUGIN (LibDataBroker) -- one block type for every data source
@@ -104,8 +104,8 @@ local function LDBDisplayText(object)
     return nil
 end
 
-mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
@@ -128,7 +128,7 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
     btnFrame:EnableMouse(true)
     btnFrame:RegisterForClicks("AnyUp")
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
     local textValue = btnFrame:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, textValue)
 
@@ -195,7 +195,7 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
         local s = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
         Bind()
@@ -254,19 +254,19 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
         local texture = object and object.icon
         if s.showIcon ~= false and texture then
             iconSz = fontSize + 2
-            glyph:SetTexture(texture)
+            icon:SetTexture(texture)
             local c = object.iconCoords
             if type(c) == "table" and #c == 4 then
-                glyph:SetTexCoord(c[1], c[2], c[3], c[4])
+                icon:SetTexCoord(c[1], c[2], c[3], c[4])
             else
-                glyph:SetTexCoord(0, 1, 0, 1)
+                icon:SetTexCoord(0, 1, 0, 1)
             end
-            glyph:SetSize(iconSz, iconSz)
+            icon:SetSize(iconSz, iconSz)
             local ir, ig, ib = IconTint(object)
-            glyph:SetVertexColor(ir, ig, ib, 1)
-            glyph:Show()
+            icon:SetVertexColor(ir, ig, ib, 1)
+            icon:Show()
         else
-            glyph:Hide()
+            icon:Hide()
         end
 
         -- Only steal the wheel for a plugin that asked for it.
@@ -286,23 +286,23 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             local totalH = 8
             if iconSz > 0 then
-                glyph:ClearAllPoints()
-                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                icon:ClearAllPoints()
+                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
             mod.SetWrappedText(textValue, innerW, "CENTER")
             textValue:SetText(str)
             textValue:ClearAllPoints()
             if iconSz > 0 then
-                textValue:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+                textValue:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
                 textValue:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
             totalH = totalH + mod.SnapToPixelGrid(textValue:GetStringHeight() or fontSize) + 4
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -311,8 +311,8 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
             local iconPad = 0
             if iconSz > 0 then
                 iconPad = iconSz + gap
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
             textValue:ClearAllPoints()
             textValue:SetPoint("LEFT", btnFrame, "LEFT", iconPad, 0)
@@ -321,7 +321,7 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
                 -- Max Width: the block holds this width whatever the plugin
                 -- publishes, and longer strings clip. The setting that stops a
                 -- chatty broker from shoving its neighbours on every update.
-                textValue:SetWidth(upper(20, wid - iconPad - 2))
+                textValue:SetWidth(max(20, wid - iconPad - 2))
                 textValue:SetWordWrap(false)
             else
                 wid = iconPad + mod.SnapToPixelGrid(textValue:GetStringWidth() or 40) + 2
@@ -491,9 +491,9 @@ mod.BlockFactories.ldb = function(blockCfg, slotIndex, contentFrame, barCtx)
             return 0
         end
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

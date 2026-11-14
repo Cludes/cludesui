@@ -22,14 +22,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local ADDON_NAME, mod = ...
 
 -- Helpers shared by every block file.
-local Keys = {}
-mod.BlockKit = Keys
+local K = {}
+mod.BlockKit = K
 
 -- Max-level check with layered fallbacks, matching the Action Bars XP bar's:
 -- the Is* helpers are nil-guarded, so client API churn can silently disable
 -- them -- a plain numeric compare against the expansion max level backstops
 -- the check.
-function Keys.AtMaxLevel()
+function K.AtMaxLevel()
     local level = UnitLevel("player") or 0
     if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then
         return true
@@ -190,8 +190,8 @@ local function BlockColorOf(b)
         return mod.BlockTextDynamic(b.type)
     end
     if b.useClassColor then
-        local _, classFile = UnitClass("player")
-        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local _, class = UnitClass("player")
+        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         if cc then
             return cc.r, cc.g, cc.b
         end
@@ -257,7 +257,7 @@ local ILVL_BANDS = {
 }
 -- Equipped item level, written by the ilvl block's Refresh; read by the band
 -- tint below (and its swatch preview) exactly like K.lastDurabilityPct.
-Keys.lastAvgIlvl = nil
+K.lastAvgIlvl = nil
 
 -- Themed per-block icon defaults (Icon Color row's "Default" swatch): spec ->
 -- live class color; professions -> live accent (matches their skill-bar fill,
@@ -313,45 +313,45 @@ function mod.BlockHasIconStyle(bType)
 end
 
 -- Crops a stock item/spell icon (Interface\Icons, fileID) off its baked-in border.
-function Keys.CropStockIcon(glyph)
-    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+function K.CropStockIcon(icon)
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 end
 
 -- Paints a block icon in its selected style. key defaults to the block type.
 -- Cheap to call from Refresh: the texture is only set when it changes.
-function Keys.SetBlockIcon(glyph, blockCfg, key)
+function K.SetBlockIcon(icon, blockCfg, key)
     local art = ICON_ART[key or blockCfg.type]
     local s = blockCfg.settings
     local texture = art.wow and s and s.iconStyle == "wow" and art.wow
     local wanted = texture or art.custom
-    if glyph._edbIconTex == wanted then
+    if icon._edbIconTex == wanted then
         return
     end
-    glyph._edbIconTex = wanted
+    icon._edbIconTex = wanted
     if texture then
-        glyph:SetTexture(texture)
+        icon:SetTexture(texture)
         local crop = type(texture) == "number" or texture:find("^Interface\\Icons\\")
         if crop then
-            Keys.CropStockIcon(glyph)
+            K.CropStockIcon(icon)
         else
-            glyph:SetTexCoord(0, 1, 0, 1)
+            icon:SetTexCoord(0, 1, 0, 1)
         end
     else
-        glyph:SetTexture(art.custom)
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexture(art.custom)
+        icon:SetTexCoord(0, 1, 0, 1)
     end
 end
 
 -- Lowest equipped-durability percent, written by the durability block's sampler; read by the dynamic tint below (and its swatch preview).
-Keys.lastDurabilityPct = nil
+K.lastDurabilityPct = nil
 function mod.BlockIconDefault(bType, prefs)
     -- Stock art carries its own colors; durability keeps its low-durability tint.
     if prefs and prefs.iconStyle == "wow" and bType ~= "durability" and mod.BlockHasIconStyle(bType) then
         return 1, 1, 1
     end
     if bType == "spec" then
-        local _, classFile = UnitClass("player")
-        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local _, class = UnitClass("player")
+        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         if cc then
             return cc.r, cc.g, cc.b
         end
@@ -362,7 +362,7 @@ function mod.BlockIconDefault(bType, prefs)
     end
     if bType == "durability" then
         -- White(100%) fades to soft red(1,.35,.35) over 20..100; <=20% is fully red.
-        local pct = Keys.lastDurabilityPct or 100
+        local pct = K.lastDurabilityPct or 100
         local t = (pct - 20) * (100 / 80)
         if t < 0 then
             t = 0
@@ -389,7 +389,7 @@ local TEXT_DYNAMIC = {
     -- Item level "Band": the crest color of the upgrade track the equipped
     -- gear sits in. Below the lowest track it stays white.
     ilvl = function()
-        local lvl = Keys.lastAvgIlvl
+        local lvl = K.lastAvgIlvl
         if not lvl then
             return 1, 1, 1
         end
@@ -418,8 +418,8 @@ local function IconColorOf(b)
         return mod.BlockIconDefault(b.type, b.settings)
     end
     if b.useIconClassColor then
-        local _, classFile = UnitClass("player")
-        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local _, class = UnitClass("player")
+        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         if cc then
             return cc.r, cc.g, cc.b
         end
@@ -450,18 +450,18 @@ local function ParkSecureFrame(f, key)
     end
 end
 
-Keys.ICON_GAP = ICON_GAP
-Keys.CONTENT_BASE = CONTENT_BASE
-Keys.CRESTS = CRESTS
-Keys.InstKey = InstKey
-Keys.MakeEventFrame = MakeEventFrame
-Keys.RegisterInstEvents = RegisterInstEvents
-Keys.UnregisterInstEvents = UnregisterInstEvents
-Keys.HBudget = HBudget
-Keys.VSlotW = VSlotW
-Keys.MaybeRelayout = MaybeRelayout
-Keys.AttachTextOffset = AttachTextOffset
-Keys.BlockColorOf = BlockColorOf
-Keys.ZoneReactionColor = ZoneReactionColor
-Keys.IconColorOf = IconColorOf
-Keys.ParkSecureFrame = ParkSecureFrame
+K.ICON_GAP = ICON_GAP
+K.CONTENT_BASE = CONTENT_BASE
+K.CRESTS = CRESTS
+K.InstKey = InstKey
+K.MakeEventFrame = MakeEventFrame
+K.RegisterInstEvents = RegisterInstEvents
+K.UnregisterInstEvents = UnregisterInstEvents
+K.HBudget = HBudget
+K.VSlotW = VSlotW
+K.MaybeRelayout = MaybeRelayout
+K.AttachTextOffset = AttachTextOffset
+K.BlockColorOf = BlockColorOf
+K.ZoneReactionColor = ZoneReactionColor
+K.IconColorOf = IconColorOf
+K.ParkSecureFrame = ParkSecureFrame

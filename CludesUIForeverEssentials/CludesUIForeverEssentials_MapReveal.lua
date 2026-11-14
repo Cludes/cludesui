@@ -70,8 +70,8 @@ local function Refresh()
         end
     end
 
-    local column = F.Get("color")
-    local cr, cg, cb, ca = column.r, column.g, column.b, column.a or 1
+    local col = F.Get("color")
+    local cr, cg, cb, ca = col.r, col.g, col.b, col.a or 1
     for idx = 1, #overlays do
         local o = overlays[idx]
         if not explored[o[5]] then

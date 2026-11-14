@@ -144,8 +144,8 @@ local function EnsureMigrated()
     -- The retired dispellable-location split becomes a Dispellable icons tile at the old anchor, riding the
     -- "typed" dispel flavor (it covered exactly the TYPED debuffs, 1:1 parity).
     if preset ~= "none" and (p.dispellableDebuffLocation or "same") ~= "same" then
-        local dim = p.dispellableDebuffSize
-        if not dim or dim <= 0 then dim = p.debuffSize or 18 end
+        local size = p.dispellableDebuffSize
+        if not size or size <= 0 then size = p.debuffSize or 18 end
         dm.dispelMode = "typed"
         dm.tiles = { {
             id = 1, enabled = true, type = "icons",
@@ -154,7 +154,7 @@ local function EnsureMigrated()
             growDirection = p.dispellableDebuffGrowDirection or "CENTER",
             offsetX = p.dispellableDebuffOffsetX or 0,
             offsetY = p.dispellableDebuffOffsetY or 0,
-            size = dim,
+            size = size,
             spacing = p.debuffSpacing or 1,
             cap = p.debuffCap or 3,
         } }
@@ -269,17 +269,17 @@ end
 
 -- Dispel types: a positive set intersects the include set (a debuff has one
 -- type), a negative set joins the exclude set.
-local function MatchTypes(m, group, place)
+local function MatchTypes(m, set, place)
     if not place then
         m.exc = m.exc or {}
-        for T in pairs(group) do m.exc[T] = true end
+        for T in pairs(set) do m.exc[T] = true end
     elseif m.inc then
         for T in pairs(m.inc) do
-            if not group[T] then m.inc[T] = nil end
+            if not set[T] then m.inc[T] = nil end
         end
     else
         m.inc = {}
-        for T in pairs(group) do m.inc[T] = true end
+        for T in pairs(set) do m.inc[T] = true end
     end
 end
 
@@ -812,15 +812,15 @@ end
 -- Maximum footprint of a flow display: n cells of `cell` px with `spacing`
 -- between them, wrapped every `per` cells (per < 2 = one unbounded line),
 -- lines stacked across; `vertical` flips the line axis (columns). Width, height.
-local function TipFootprint(num, cellFrame, spacing, per, vertical)
+local function TipFootprint(num, cell, spacing, per, vertical)
     if not num or num < 1 then return 0, 0 end
     local lineCells, lines = num, 1
     if per and per >= 2 then
         if num > per then lineCells = per end
         lines = math.ceil(num / per)
     end
-    local along = lineCells * cellFrame + (lineCells - 1) * spacing
-    local across = lines * cellFrame + (lines - 1) * spacing
+    local along = lineCells * cell + (lineCells - 1) * spacing
+    local across = lines * cell + (lines - 1) * spacing
     if vertical then return across, along end
     return along, across
 end
@@ -904,11 +904,11 @@ local function Round2(val) return math.floor(val * 100 + 0.5) / 100 end
 -- footprint lies on the unit. Both frames are ours and share one scale. Before
 -- either has a readable position the footprint is placed unclipped; every
 -- pass measures again.
-local function EaterRect(hostRegion, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+local function EaterRect(host, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
     local px, py = PointShare(anchorPoint)
     local x0, y0 = Round2(offX - px * wid), Round2(offY - py * hgt)
     local pl, pb = pinHost:GetLeft(), pinHost:GetBottom()
-    local highlight, hb, hr, ht = hostRegion:GetLeft(), hostRegion:GetBottom(), hostRegion:GetRight(), hostRegion:GetTop()
+    local highlight, hb, hr, ht = host:GetLeft(), host:GetBottom(), host:GetRight(), host:GetTop()
     if not (pl and pb and highlight and hb and hr and ht)
         or CludesUI.IsSecret(pl) or CludesUI.IsSecret(highlight) then
         return x0, y0, wid, hgt
@@ -927,9 +927,9 @@ local function EaterRect(hostRegion, pinHost, anchorPoint, corner, offX, offY, w
     return x0 - highlight, y0 - hb, x1 - x0, y1 - y0, true
 end
 
-local function EnsureEater(d, slotIndex, hostRegion, boxHolder, isActive, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+local function EnsureEater(d, slot, host, boxHolder, isActive, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
     local map = d.tipModEaters
-    local e = map and map[slotIndex]
+    local e = map and map[slot]
     if not isActive or not pinHost then
         if e and e._cuiActive then
             if InCombatLockdown() then d.rfcBmPending = true; return end
@@ -945,13 +945,13 @@ local function EnsureEater(d, slotIndex, hostRegion, boxHolder, isActive, pinHos
     -- settings-sized). Offsets that place icons outside the frame do not
     -- take the eater with them: EaterRect keeps it on the button, and those
     -- icons answer hover as in plain Shown.
-    local maxW, maxH = hostRegion:GetSize()
+    local maxW, maxH = host:GetSize()
     local pw, ph = pinHost:GetSize()
     if pw and pw > 0 and pw < maxW then maxW = pw end
     if ph and ph > 0 and ph < maxH then maxH = ph end
     if wid > maxW then wid = maxW end
     if hgt > maxH then hgt = maxH end
-    local ex, ey, ew, eh, hostRel = EaterRect(hostRegion, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+    local ex, ey, ew, eh, hostRel = EaterRect(host, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
     if not ex then
         -- No part of the footprint lies on the unit: nothing to gate here.
         if e and e._cuiActive then
@@ -976,7 +976,7 @@ local function EnsureEater(d, slotIndex, hostRegion, boxHolder, isActive, pinHos
         -- the parent (useparent-unit) for the action path; the header's enter
         -- wrap also stamps a real "unit" for the engine's mouseover.
         tipEaterCount = tipEaterCount + 1
-        e = CreateFrame("Button", "CUIRFTipEater" .. tipEaterCount, hostRegion, "SecureUnitButtonTemplate")
+        e = CreateFrame("Button", "CUIRFTipEater" .. tipEaterCount, host, "SecureUnitButtonTemplate")
         e:RegisterForClicks("AnyUp")
         e:SetAttribute("useparent-unit", true)
         e:SetAttribute("cui_tipeater", true)
@@ -992,7 +992,7 @@ local function EnsureEater(d, slotIndex, hostRegion, boxHolder, isActive, pinHos
         e:HookScript("OnLeave", ForwardLeave)
         e._cuiD = d
         if not map then map = {}; d.tipModEaters = map end
-        map[slotIndex] = e
+        map[slot] = e
         tipModEaters[e] = true
         if mod.CC_RegisterTipEater then mod.CC_RegisterTipEater(e) end
     end
@@ -1006,7 +1006,7 @@ local function EnsureEater(d, slotIndex, hostRegion, boxHolder, isActive, pinHos
         e._cuiHost, e._cuiW, e._cuiH = pinHost, ew, eh
         e:ClearAllPoints()
         if hostRel then
-            e:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", ex, ey)
+            e:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", ex, ey)
         else
             e:SetPoint("BOTTOMLEFT", pinHost, corner, ex, ey)
         end
@@ -1030,17 +1030,17 @@ function mod.DM_TipModEnsure(btnFrame, d, s)
     -- eaters on the flip, so there is nothing per button to do -- zero cost.
     if not tipModArmed then return end
     local baseMode = s and s.debuffHideTooltips
-    local healthBar = d.rfcHealth
-    local pinHost = healthBar and ((mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, s)) or healthBar)
+    local health = d.rfcHealth
+    local pinHost = health and ((mod.RF_AnchorHost and mod.RF_AnchorHost(health, s)) or health)
     local geo = d.dmTipGeo
     if d.rfcDebuffs then
         local isActive = baseMode == "modifier"
         local anchorPoint, corner, offX, offY, wid, hgt
         if isActive and pinHost and mod.RFC_DebuffPin then
-            local dim, spacing, per, vertical
-            anchorPoint, corner, offX, offY, dim, spacing, per, vertical = mod.RFC_DebuffPin(s)
+            local size, spacing, per, vertical
+            anchorPoint, corner, offX, offY, size, spacing, per, vertical = mod.RFC_DebuffPin(s)
             local g = geo and geo.base
-            wid, hgt = TipFootprint((g and g.n) or (s.debuffCap or 3), (g and g.cell) or dim,
+            wid, hgt = TipFootprint((g and g.n) or (s.debuffCap or 3), (g and g.cell) or size,
                 spacing, per, vertical)
         end
         EnsureEater(d, "base", btnFrame, d.rfcDebuffs, isActive and anchorPoint ~= nil,
@@ -1079,8 +1079,8 @@ function mod.DM_TipModEnsure(btnFrame, d, s)
     -- Tile eaters this pass did not reach (tile deleted, disabled for this spec, or its id now another type) park.
     local map = d.tipModEaters
     if map then
-        for slotIndex, e in pairs(map) do
-            if slotIndex ~= "base" and e._cuiActive and e._cuiPass ~= tipPass then
+        for slot, e in pairs(map) do
+            if slot ~= "base" and e._cuiActive and e._cuiPass ~= tipPass then
                 if InCombatLockdown() then d.rfcBmPending = true else ParkEater(e) end
             end
         end
@@ -1339,7 +1339,7 @@ local function BuildRecords(s, dm)
     -- (nonplayer via the complementary TRUE).
     local neg = bv.neg
     local function NegHas(category) return neg ~= nil and neg[category] == true end
-    local subFrame = allOn and {
+    local sub = allOn and {
         boss = NegHas("boss"), role = NegHas("role"),
         priority = NegHas("priority"), raid = NegHas("raid"),
         raidcombat = NegHas("raidcombat"), dispel = NegHas("dispel"),
@@ -1469,19 +1469,19 @@ local function BuildRecords(s, dm)
     if allOn or durAlone then
         local toks = { "HARMFUL" }
         Neg(toks, true,
-            ((subFrame and subFrame.dispel) or claims.dispel or fxCats.dispel or NegHas("dispel")) and true or false,
-            ((subFrame and subFrame.raid) or claims.raid or fxCats.raid or NegHas("raid")) and true or false)
-        if (subFrame and subFrame.raidcombat) or claims.raidcombat or fxCats.raidcombat or NegHas("raidcombat") then toks[#toks + 1] = "!RAID_IN_COMBAT" end
+            ((sub and sub.dispel) or claims.dispel or fxCats.dispel or NegHas("dispel")) and true or false,
+            ((sub and sub.raid) or claims.raid or fxCats.raid or NegHas("raid")) and true or false)
+        if (sub and sub.raidcombat) or claims.raidcombat or fxCats.raidcombat or NegHas("raidcombat") then toks[#toks + 1] = "!RAID_IN_COMBAT" end
         if castActive then toks[#toks + 1] = "!PLAYER" end
         local castFrame = Cand(false)
         -- Subtracted boolean categories (see `sub`); fx-routed keeps its forced base record (effect wins over
         -- subtraction). Under durAlone (add mode) Cand's own hide-lane branch already applied these.
-        if subFrame then
-            if subFrame.boss then castFrame.isBossAura = false end
-            if subFrame.role then castFrame.isRoleAura = false end
-            if subFrame.priority then castFrame.isPriorityAura = false end
-            if subFrame.nonplayer then castFrame.isFromPlayerOrPlayerPet = npHideVal end
-            if subFrame.canapply then castFrame.canApplyAura = false end
+        if sub then
+            if sub.boss then castFrame.isBossAura = false end
+            if sub.role then castFrame.isRoleAura = false end
+            if sub.priority then castFrame.isPriorityAura = false end
+            if sub.nonplayer then castFrame.isFromPlayerOrPlayerPet = npHideVal end
+            if sub.canapply then castFrame.canApplyAura = false end
         end
         recs[#recs + 1] = { key = "all", tokens = toks, cand = castFrame }
     end
@@ -1741,12 +1741,12 @@ local function BuildRecords(s, dm)
     -- shows in this indicator (accepted, like a broad base).
     if claimsAll then
         local castFrame = Cand(false)
-        if subFrame then
-            if subFrame.boss then castFrame.isBossAura = false end
-            if subFrame.role then castFrame.isRoleAura = false end
-            if subFrame.priority then castFrame.isPriorityAura = false end
-            if subFrame.nonplayer then castFrame.isFromPlayerOrPlayerPet = npHideVal end
-            if subFrame.canapply then castFrame.canApplyAura = false end
+        if sub then
+            if sub.boss then castFrame.isBossAura = false end
+            if sub.role then castFrame.isRoleAura = false end
+            if sub.priority then castFrame.isPriorityAura = false end
+            if sub.nonplayer then castFrame.isFromPlayerOrPlayerPet = npHideVal end
+            if sub.canapply then castFrame.canApplyAura = false end
         end
         recs[#recs + 1] = { key = "all", tokens = BoolTokens(),
             cand = castFrame, tile = claimsAll }
@@ -2001,14 +2001,14 @@ local function BuildRecords(s, dm)
     if matchSets then
         local settled = {}
         for k = 1, #matchSets do
-            local group = matchSets[k]
-            settled[group.tile] = true
+            local set = matchSets[k]
+            settled[set.tile] = true
             local result = {}
             for i = 1, #recs do
                 local r = recs[i]
                 local parts
                 if not r.deadOnly and not (r.tile and settled[r.tile]) then
-                    parts = Carve(r, group.atoms, dm)
+                    parts = Carve(r, set.atoms, dm)
                 end
                 if parts then
                     for p = 1, #parts do
@@ -2215,20 +2215,20 @@ end
 local MATCH_FX_SET = { match = true }
 local function EffectCatSet(t)
     if TileMatchOn(t) then return MATCH_FX_SET end
-    local group
+    local set
     if t.claim then
         for category, on in pairs(t.claim) do
             if on then
-                group = group or {}
-                group[category] = true
+                set = set or {}
+                set[category] = true
             end
         end
     end
     if TileCatchAllOn(t) then
-        group = group or {}
-        group.all = true
+        set = set or {}
+        set.all = true
     end
-    return group
+    return set
 end
 
 -------------------------------------------------------------------------------
@@ -2259,13 +2259,13 @@ local TILE_GLOW_NEED = { ants = true }
 -- Creation-window builder: one kind-specific visual set per effect slot, parked hidden until the applier arms it.
 -- Runs in extraInit inside a CreateFrameBatch: an error here kills the whole slot declaration, hence the pcall-degraded engine binding.
 -- owner: the tile container, which keys its Health Bar Color overlays in the bar's tint registry (the stale sweep drops only its own).
-local function FxCreateVisuals(btnFrame, dropdown, kindOf, hostBtn, healthBar, ownerFrame)
+local function FxCreateVisuals(btnFrame, dropdown, kind, hostBtn, health, ownerFrame)
     if not dropdown then return end
-    if kindOf == "glow" then
+    if kind == "glow" then
         local g = CreateFrame("Frame", nil, btnFrame)
         -- The Party Frames kit glows round the visible party frame; the
         -- level band stays the unit button's.
-        g:SetAllPoints((healthBar and healthBar._cuiKitRef) or hostBtn)
+        g:SetAllPoints((health and health._cuiKitRef) or hostBtn)
         g:SetFrameLevel((hostBtn:GetFrameLevel() or 1) + 15)
         g:EnableMouse(false)
         g:Hide()
@@ -2277,32 +2277,32 @@ local function FxCreateVisuals(btnFrame, dropdown, kindOf, hostBtn, healthBar, o
         if CludesUI.Glows.BindEngineHost(g, btnFrame, dropdown) then
             CludesUI.AuraKit.EnsureKickIcon(btnFrame, dropdown)
         end
-    elseif kindOf == "healthcolor" then
+    elseif kind == "healthcolor" then
         -- BM healthcolor parity via an owned wrapper: level-tied WITH (not above) the health frame so the tint
         -- sorts against health's ARTWORK sublevels (above fill=0, below heal absorb/prediction=+1, shields=+3);
         -- anchored to the current-health area (the fill texture, or the rest of the bar under Inverted Fill) so it
         -- covers only current health. Wrapper is ours, so the level tie stays legal.
         local f = CreateFrame("Frame", nil, btnFrame)
-        mod.RF_AnchorCurHealth(f, healthBar, healthBar.GetStatusBarTexture and healthBar:GetStatusBarTexture())
-        f:SetFrameLevel(healthBar:GetFrameLevel())
+        mod.RF_AnchorCurHealth(f, health, health.GetStatusBarTexture and health:GetStatusBarTexture())
+        f:SetFrameLevel(health:GetFrameLevel())
         local texture = f:CreateTexture(nil, "ARTWORK", nil, 2)
         texture:SetAllPoints(f)
         f:Hide()
         dropdown.dmFxHcFrame = f
         dropdown.dmFxHc = texture
-        mod.RF_RegisterBarTint(healthBar, texture, f, ownerFrame)
-    elseif kindOf == "square" then
+        mod.RF_RegisterBarTint(health, texture, f, ownerFrame)
+    elseif kind == "square" then
         local f = CreateFrame("Frame", nil, btnFrame)
-        f:SetPoint("CENTER", healthBar, "CENTER")
+        f:SetPoint("CENTER", health, "CENTER")
         f:SetSize(10, 10)
         local texture = f:CreateTexture(nil, "ARTWORK", nil, 1)
         texture:SetAllPoints(f)
         f:Hide()
         dropdown.dmFxGeoF = f
         dropdown.dmFxSq = texture
-    elseif kindOf == "bar" then
+    elseif kind == "bar" then
         local scrollBar = CreateFrame("StatusBar", nil, btnFrame)
-        scrollBar:SetPoint("CENTER", healthBar, "CENTER")
+        scrollBar:SetPoint("CENTER", health, "CENTER")
         scrollBar:SetSize(10, 10)
         scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
         scrollBar:SetMinMaxValues(0, 1)
@@ -2323,15 +2323,15 @@ local FX_GLOW_SPEC = {}
 local function FxApplyInner(btnFrame, dropdown, refs, fx)
     if fx.kind == "glow" then
         local Glows = CludesUI.Glows
-        local hostRegion = dropdown.dmFxGlow
-        if not hostRegion then return end -- created in extraInit
+        local host = dropdown.dmFxGlow
+        if not host then return end -- created in extraInit
         -- A bound host's button refuses our calls while auras are restricted (outside its creation window):
         -- re-run this style at the lift instead of letting the pcall below drop the change.
-        if Glows.IsEngineHostBound(hostRegion) and not CludesUI.AuraKit.CanTouchButton(btnFrame) then
+        if Glows.IsEngineHostBound(host) and not CludesUI.AuraKit.CanTouchButton(btnFrame) then
             CludesUI.AuraKit.DeferRestyle(dropdown.styleKey)
             return
         end
-        hostRegion:Show()
+        host:Show()
         -- Tile color mode: nil has always meant default here (proc gold).
         local specInfo = FX_GLOW_SPEC
         specInfo.style = fx.glowType or 1
@@ -2346,7 +2346,7 @@ local function FxApplyInner(btnFrame, dropdown, refs, fx)
         if gw < 1 then gw = 24 end
         if gh < 1 then gh = gw end
         -- Engine host: C-side styles only (driver-ticked glows freeze on the forbidden slot subtree).
-        Glows.StartSpecGlow(hostRegion, specInfo, gw, gh, "engine")
+        Glows.StartSpecGlow(host, specInfo, gw, gh, "engine")
 
     elseif fx.kind == "healthcolor" then
         local f = dropdown.dmFxHcFrame
@@ -2393,7 +2393,7 @@ local function FxApplyInner(btnFrame, dropdown, refs, fx)
             tostring(fx.offX), tostring(fx.offY), tostring(fx.orient),
             tostring(fx.fullW), tostring(fx.fullH), tostring(fx.lvl) }, ",")
         if dropdown.dmFxGeo ~= sig then
-            local healthBar = refs.health
+            local health = refs.health
             gf:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
             gf:ClearAllPoints()
             local fullW, fullH
@@ -2404,25 +2404,25 @@ local function FxApplyInner(btnFrame, dropdown, refs, fx)
             end
             local place = fx.corner or "BOTTOM"
             if fullW and fullH then
-                gf:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-                gf:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+                gf:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+                gf:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
             elseif fullW then
                 local vEdge = (place:find("BOTTOM", 1, true) and "BOTTOM")
                     or (place:find("TOP", 1, true) and "TOP") or ""
                 local oy = fx.offY or 0
-                gf:SetPoint(vEdge .. "LEFT", healthBar, vEdge .. "LEFT", 0, oy)
-                gf:SetPoint(vEdge .. "RIGHT", healthBar, vEdge .. "RIGHT", 0, oy)
+                gf:SetPoint(vEdge .. "LEFT", health, vEdge .. "LEFT", 0, oy)
+                gf:SetPoint(vEdge .. "RIGHT", health, vEdge .. "RIGHT", 0, oy)
                 gf:SetHeight(isVert and wid or hgt)
             elseif fullH then
                 local hEdge = (place:find("RIGHT", 1, true) and "RIGHT")
                     or (place:find("LEFT", 1, true) and "LEFT") or ""
                 local ox = fx.offX or 0
-                gf:SetPoint("TOP" .. hEdge, healthBar, "TOP" .. hEdge, ox, 0)
-                gf:SetPoint("BOTTOM" .. hEdge, healthBar, "BOTTOM" .. hEdge, ox, 0)
+                gf:SetPoint("TOP" .. hEdge, health, "TOP" .. hEdge, ox, 0)
+                gf:SetPoint("BOTTOM" .. hEdge, health, "BOTTOM" .. hEdge, ox, 0)
                 gf:SetWidth(isVert and hgt or wid)
             else
                 if isVert then gf:SetSize(hgt, wid) else gf:SetSize(wid, hgt) end
-                gf:SetPoint(place, healthBar, place, fx.offX or 0, fx.offY or 0)
+                gf:SetPoint(place, health, place, fx.offX or 0, fx.offY or 0)
             end
             -- Frame Level band relative to the unit button (our frame; the read is legal in the creation window).
             gf:SetFrameLevel((refs.host:GetFrameLevel() or 1) + (fx.lvl or 7))
@@ -2439,9 +2439,9 @@ local function FxApplyInner(btnFrame, dropdown, refs, fx)
     end
 end
 
-local function FxApply(btnFrame, dropdown, look)
+local function FxApply(btnFrame, dropdown, style)
     local refs = fxRefs[btnFrame]
-    local fx = look.fx
+    local fx = style.fx
     if not (refs and fx) then return end
 
     -- Per-filter gating: an effect tile declares one slot per EVER-checked category
@@ -2465,8 +2465,8 @@ end
 -- Icon-tile flow anchoring: corner-pinned chain, CENTER growth centers the
 -- row on the anchor point's X (based on the defensives-row math, with tile
 -- settings and the vertical seat kept flush with the anchored edge).
-local function AnchorTileContainer(boxHolder, healthBar, s, t, d)
-    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, s) or healthBar
+local function AnchorTileContainer(boxHolder, health, s, t, d)
+    health = mod.RF_AnchorHost and mod.RF_AnchorHost(health, s) or health
     -- Pin shared with the tooltip-modifier eater (TilePin): point = corner for
     -- directional growth, the flush edge midpoint for CENTER growth.
     local anchorPoint, corner, offX, offY = TilePin(t, s, d)
@@ -2489,12 +2489,12 @@ local function AnchorTileContainer(boxHolder, healthBar, s, t, d)
         -- vertical component sits flush with the anchored edge exactly like
         -- the directional branch below. (A full CENTER pin -- the raw
         -- defensives-row math -- straddled top/bottom edges by half an icon.)
-        boxHolder:SetPoint(anchorPoint, healthBar, corner, offX, offY)
+        boxHolder:SetPoint(anchorPoint, health, corner, offX, offY)
         local gV = (per >= 2 and wrapUp) and "UP" or "DOWN"
         AK.SetContainerAnchor(boxHolder, (gV == "UP") and "BOTTOMLEFT" or "TOPLEFT")
         AK.SetContainerGrowth(boxHolder, FlowDir("RIGHT"), FlowDir(gV))
     else
-        boxHolder:SetPoint(corner, healthBar, corner, offX, offY)
+        boxHolder:SetPoint(corner, health, corner, offX, offY)
         local gV = (grow == "UP" or grow == "DOWN") and grow or "DOWN"
         local gH = (grow == "LEFT" or grow == "RIGHT") and grow or "RIGHT"
         if per >= 2 then
@@ -2511,15 +2511,15 @@ local function AnchorTileContainer(boxHolder, healthBar, s, t, d)
         AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
     end
 
-    local dim = EffectiveIconSize(d, t.size or 18)
+    local size = EffectiveIconSize(d, t.size or 18)
     local spacing = t.spacing or 1
     local vertical = (grow == "UP" or grow == "DOWN")
     if per >= 2 then
         AK.SetContainerAxis(boxHolder, vertical)
-        AK.SetContainerRowWidth(boxHolder, per * dim + (per - 1) * spacing + 0.4)
+        AK.SetContainerRowWidth(boxHolder, per * size + (per - 1) * spacing + 0.4)
     else
         AK.SetContainerAxis(boxHolder, false)
-        AK.SetContainerRowWidth(boxHolder, vertical and (dim + 0.4) or nil)
+        AK.SetContainerRowWidth(boxHolder, vertical and (size + 0.4) or nil)
     end
 end
 
@@ -2649,23 +2649,23 @@ end
 -- on size/base-style changes, group variant swaps only at the sized/unsized edge (GroupKey "|sz"). "cc" builds the
 -- CC-glow flavor so sized crowd control keeps its glow; registry entries let the containers file refresh these on its own rebuilds (DM_RefreshSizedStyles).
 local dmSizeFP = {}
-local function EnsureBaseSizeStyle(d, s, category, dim)
+local function EnsureBaseSizeStyle(d, s, category, size)
     local cls = ClassToken(d)
     local key = "rf:dmsz:" .. cls .. ":" .. tostring(category)
     local st = dmSizeFP[key]
     if not st then st = { cls = cls, cat = category }; dmSizeFP[key] = st end
-    st.rawSize = dim
-    dim = EffectiveIconSizeForClass(dim, cls)
+    st.rawSize = size
+    size = EffectiveIconSizeForClass(size, cls)
     local font = (CludesUI.GetFontPath("raidFrames")) or ""
     local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "")
-        .. "|" .. tostring(dim)
+        .. "|" .. tostring(size)
     if st.style ~= val and mod.RFC_BuildDebuffStyle then
         st.style = val
         local sty
         if category == "cc" and mod.RFC_BuildDebuffCCStyle then
-            sty = mod.RFC_BuildDebuffCCStyle(s, dim)
+            sty = mod.RFC_BuildDebuffCCStyle(s, size)
         else
-            sty = mod.RFC_BuildDebuffStyle(s, dim)
+            sty = mod.RFC_BuildDebuffStyle(s, size)
         end
         AK.styles[key] = sty
         AK.RestyleSoon(key)
@@ -2683,16 +2683,16 @@ function mod.DM_RefreshSizedStyles(baseStyleKey, s)
     local font = (CludesUI.GetFontPath("raidFrames")) or ""
     for key, st in pairs(dmSizeFP) do
         if st.cls == cls and st.style and st.rawSize then
-            local dim = EffectiveIconSizeForClass(st.rawSize, cls)
+            local size = EffectiveIconSizeForClass(st.rawSize, cls)
             local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "")
-                .. "|" .. tostring(dim)
+                .. "|" .. tostring(size)
             if st.style ~= val and mod.RFC_BuildDebuffStyle then
                 st.style = val
                 local sty
                 if st.cat == "cc" and mod.RFC_BuildDebuffCCStyle then
-                    sty = mod.RFC_BuildDebuffCCStyle(s, dim)
+                    sty = mod.RFC_BuildDebuffCCStyle(s, size)
                 else
-                    sty = mod.RFC_BuildDebuffStyle(s, dim)
+                    sty = mod.RFC_BuildDebuffStyle(s, size)
                 end
                 AK.styles[key] = sty
                 AK.RestyleSoon(key)
@@ -2708,8 +2708,8 @@ function mod.DM_RefreshSizedStyles(baseStyleKey, s)
             if st.grid and st.cls == cls then
                 local t = byId[st.tid]
                 if t then
-                    local dim = EffectiveIconSizeForClass(st.szOv or t.size or 18, cls)
-                    RefreshTileGridStyle(key, st, s, t, dim, font)
+                    local size = EffectiveIconSizeForClass(st.szOv or t.size or 18, cls)
+                    RefreshTileGridStyle(key, st, s, t, size, font)
                 end
             end
         end
@@ -2791,9 +2791,9 @@ local function EnsureTileContainer(d, t)
         if d.dmTiles[tileId] then return end
         if not mod.DM_Active() then return end
         local btnFrame = d.dmHost
-        local healthBar = d.rfcHealth
+        local health = d.rfcHealth
         local unitToken = d.rfcUnit
-        if not (btnFrame and healthBar) then return end
+        if not (btnFrame and health) then return end
         -- Re-resolve from the ACTIVE union: a tile that left it between
         -- queue and run (delete, spec swap, per-spec disable) builds nothing.
         local act = mod.DM_ActiveTiles()
@@ -2821,7 +2821,7 @@ local function EnsureTileContainer(d, t)
         local dm2 = DM() or {}
         local styleKey = EnsureTileStyle(d, s2, t2)
         local boxHolder = AK.CreateContainerShell(btnFrame, {
-            point = { "CENTER", healthBar, "CENTER" },
+            point = { "CENTER", health, "CENTER" },
         })
         -- Level bands: grid and bar tiles render in the aura band (button + LVL_AURA = 13, above borders/text like
         -- legacy aura icons). Healthcolor slots re-tie to the health frame in the applier and glow hosts level
@@ -2836,8 +2836,8 @@ local function EnsureTileContainer(d, t)
         boxHolder._dmDecl = tDecl
         if t2.type ~= "icons" and t2.type ~= "square" then
             -- One slot PER checked filter category; later checks add slots on the live lane, gate silences unchecked ones.
-            local hostRegion = btnFrame
-            local hp = healthBar
+            local host = btnFrame
+            local hp = health
             local tileKind = t2.type
             local cs = EffectCatSet(t2)
             if cs then
@@ -2849,15 +2849,15 @@ local function EnsureTileContainer(d, t)
                         filter = filter,
                         candidateFilters = cand,
                         style = styleKey,
-                        extraInit = function(slotButton, d2, look)
+                        extraInit = function(slotButton, d2, style)
                             -- Stamp category (applier filter gate) + refs (weak map, NEVER frame properties) +
                             -- create/arm visuals: the only window subtree calls are legal (earlier applyExtra call with refs nil bailed).
                             if d2 then d2.dmCat = catKey end
-                            fxRefs[slotButton] = { host = hostRegion, health = hp }
+                            fxRefs[slotButton] = { host = host, health = hp }
                             slotButton:SetPoint("CENTER", hp, "CENTER")
                             slotButton:SetMouseMotionEnabled(false)
-                            FxCreateVisuals(slotButton, d2, tileKind, hostRegion, hp, boxHolder)
-                            if look then FxApply(slotButton, d2, look) end
+                            FxCreateVisuals(slotButton, d2, tileKind, host, hp, boxHolder)
+                            if style then FxApply(slotButton, d2, style) end
                         end,
                     })
                     tDecl["fx_" .. catKey] = AK.Filter(unpack(filter))
@@ -2887,9 +2887,9 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
     if not (AK and declared) then return end
 
     local cap = s.debuffCap or 3
-    local dim = mod.RFC_DebuffSize(s)
+    local size = mod.RFC_DebuffSize(s)
     local layout = {
-        elementWidth = dim, elementHeight = dim,
+        elementWidth = size, elementHeight = size,
         elementSpacing = s.debuffSpacing or 1, lineSpacing = s.debuffSpacing or 1,
     }
     -- Tooltip-modifier eaters: every footprint sum, stash and ensure below
@@ -2965,7 +2965,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
     -- parking (it flips live without a re-apply), plus the cc group's
     -- live count (0 while claimed, hidden or supplanted), and the largest
     -- cell (sized records).
-    local tipN, tipCell = ccParkCount or 0, dim
+    local tipN, tipCell = ccParkCount or 0, size
 
     -- Base records.
     local leadLayout
@@ -2992,7 +2992,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
                 -- The CC row's record form keeps the row's lead (flow order 0 sorts
                 -- before every registered group).
                 leadLayout = leadLayout or {
-                    elementWidth = dim, elementHeight = dim,
+                    elementWidth = size, elementHeight = size,
                     elementSpacing = s.debuffSpacing or 1, lineSpacing = s.debuffSpacing or 1,
                     layoutIndex = 0,
                 }
@@ -3077,10 +3077,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
                                 elementSpacing = groupSpacing, lineSpacing = groupSpacing,
                                 layoutIndex = (r.ccLead and not r.fxSize) and 0 or nil,
                             },
-                            extraInit = function(btn2, d2, look)
+                            extraInit = function(btn2, d2, style)
                                 if d2 then d2.dmCat = catKey end
-                                if look and mod.RFC_ApplyDmFx then
-                                    mod.RFC_ApplyDmFx(btn2, d2, look)
+                                if style and mod.RFC_ApplyDmFx then
+                                    mod.RFC_ApplyDmFx(btn2, d2, style)
                                 end
                             end,
                         })
@@ -3171,11 +3171,11 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
                                             if act[ti2].id == tileId then t2 = act[ti2] break end
                                         end
                                     end
-                                    local hostRegion = d.dmHost
+                                    local host = d.dmHost
                                     local hp = d.rfcHealth
                                     -- Effect slots only ever go on an effect container of the tile's current type; a flip
                                     -- to a grid tile (its icons container restored meanwhile) was configured by that apply.
-                                    if not (t2 and hostRegion and hp and tc2._dmType == t2.type) then return end
+                                    if not (t2 and host and hp and tc2._dmType == t2.type) then return end
                                     if t2.type == "icons" or t2.type == "square" then return end
                                     local styleKey2 = EnsureTileStyle(d, s2, t2)
                                     local tileKind = t2.type
@@ -3190,13 +3190,13 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
                                                 filter = filter,
                                                 candidateFilters = cand,
                                                 style = styleKey2,
-                                                extraInit = function(slotButton, d2, look)
+                                                extraInit = function(slotButton, d2, style)
                                                     if d2 then d2.dmCat = catKey end
-                                                    fxRefs[slotButton] = { host = hostRegion, health = hp }
+                                                    fxRefs[slotButton] = { host = host, health = hp }
                                                     slotButton:SetPoint("CENTER", hp, "CENTER")
                                                     slotButton:SetMouseMotionEnabled(false)
-                                                    FxCreateVisuals(slotButton, d2, tileKind, hostRegion, hp, tc2)
-                                                    if look then FxApply(slotButton, d2, look) end
+                                                    FxCreateVisuals(slotButton, d2, tileKind, host, hp, tc2)
+                                                    if style then FxApply(slotButton, d2, style) end
                                                 end,
                                             })
                                             decl2[skey] = AK.Filter(unpack(filter))
@@ -3307,11 +3307,11 @@ function mod.DM_ApplyDebuffConfig(boxHolder, d, s, styleKey)
                                                         elementWidth = groupSize, elementHeight = groupSize,
                                                         elementSpacing = groupSpacing, lineSpacing = groupSpacing,
                                                     },
-                                                    extraInit = function(btn2, d2, look)
+                                                    extraInit = function(btn2, d2, style)
                                                         if d2 then d2.dmCat = catKey end
                                                         -- Arm ICON EFFECTS in the creation window (see the base-record site).
-                                                        if look and mod.RFC_ApplyDmFx then
-                                                            mod.RFC_ApplyDmFx(btn2, d2, look)
+                                                        if style and mod.RFC_ApplyDmFx then
+                                                            mod.RFC_ApplyDmFx(btn2, d2, style)
                                                         end
                                                     end,
                                                 })
@@ -3543,9 +3543,9 @@ function mod.DM_BucketHasData(ident, st)
     -- a disable of an All Specs tile counts. Scans dm.tiles in place and
     -- never creates it.
     local dm = DM()
-    local baseValue = dm and dm.tiles
-    for i = 1, (baseValue and #baseValue or 0) do
-        if dis[baseValue[i].id] then return true end
+    local base = dm and dm.tiles
+    for i = 1, (base and #base or 0) do
+        if dis[base[i].id] then return true end
     end
     return false
 end
@@ -3636,15 +3636,15 @@ local function UnionFor(dm, spellRef)
     -- Read dm.tiles WITHOUT materializing it (DM_Tiles creates the array;
     -- this runs on the runtime config path and must not write an empty
     -- table into every tile-less profile's SavedVariables).
-    local baseValue = dm.tiles
-    if baseValue then HealTiles(baseValue) end
+    local base = dm.tiles
+    if base then HealTiles(base) end
     local result = {}
     local st = dm.specTiles
     local con = st and spellRef and st["spec" .. spellRef] or nil
     local dis = con and con.inhDis or nil
-    if baseValue then
-        for i = 1, #baseValue do
-            local t = baseValue[i]
+    if base then
+        for i = 1, #base do
+            local t = base[i]
             if not (dis and dis[t.id]) then result[#result + 1] = t end
         end
     end
@@ -3782,11 +3782,11 @@ function mod.DM_AddTile(tileType, bucketKey)
     end
     -- The edited bucket owns the new tile; ids come from the ONE shared
     -- counter above regardless of bucket.
-    local targetUnit = dm.tiles
+    local target = dm.tiles
     if bucketKey and bucketKey ~= "allspecs" then
-        targetUnit = SpecBucket(dm, bucketKey, true).tiles
+        target = SpecBucket(dm, bucketKey, true).tiles
     end
-    targetUnit[#targetUnit + 1] = t
+    target[#target + 1] = t
     return t
 end
 

@@ -88,13 +88,13 @@ local function BuildPreviewRoles()
     mod._pvNames[1] = nil -- slot 1 = the player's real name
     for i = 2, 20 do
         local e = mod._PV_ROSTER[i - 1]
-        local role, classFile = e.role, e.class
+        local role, class = e.role, e.class
         local reroll = previewRoles._hpalPick[i - 1]
         if reroll then
-            role, classFile = "DAMAGER", reroll
+            role, class = "DAMAGER", reroll
         end
         previewRoles[i] = role
-        previewClassTokens[i] = classFile
+        previewClassTokens[i] = class
         mod._pvNames[i] = e.name
     end
 
@@ -114,12 +114,12 @@ local function BuildPreviewRoles()
 
     if sortMode == "ROLE" or showSelfFirst or prioritizeClass then
         for g = 0, 3 do
-            local baseValue = g * 5
+            local base = g * 5
             -- Build sortable list for this group
-            local group = {}
+            local set = {}
             for u = 1, 5 do
-                local position = baseValue + u
-                group[u] = {
+                local position = base + u
+                set[u] = {
                     role = previewRoles[position],
                     classToken = previewClassTokens[position],
                     name = mod._pvNames and mod._pvNames[position],
@@ -141,7 +141,7 @@ local function BuildPreviewRoles()
                 for pri, c in ipairs(saved.profile.classOrder or mod._GetDefaultClassOrder()) do
                     classPri[c] = pri
                 end
-                table.sort(group, function(a, b)
+                table.sort(set, function(a, b)
                     if sortByRole then
                         local ra, rb = rolePri[a.role] or 99, rolePri[b.role] or 99
                         if ra ~= rb then
@@ -168,49 +168,49 @@ local function BuildPreviewRoles()
                 -- Stable sort by role priority
                 local tmpGroup = {}
                 for pri, role in ipairs(roleOrder) do
-                    for _, record in ipairs(group) do
+                    for _, record in ipairs(set) do
                         if record.role == role then
                             tmpGroup[#tmpGroup + 1] = record
                         end
                     end
                 end
                 -- Any roles not in roleOrder (shouldn't happen, but safe)
-                for _, record in ipairs(group) do
+                for _, record in ipairs(set) do
                     if not rolePriority[record.role] then
                         tmpGroup[#tmpGroup + 1] = record
                     end
                 end
-                group = tmpGroup
+                set = tmpGroup
             end
 
             if showSelfFirst then
                 local playerPos
-                for i, record in ipairs(group) do
+                for i, record in ipairs(set) do
                     if record.isPlayer then
                         playerPos = i
                         break
                     end
                 end
                 if playerPos then
-                    if selfLast and playerPos < #group then
-                        local playerEntry = table.remove(group, playerPos)
-                        group[#group + 1] = playerEntry
+                    if selfLast and playerPos < #set then
+                        local playerEntry = table.remove(set, playerPos)
+                        set[#set + 1] = playerEntry
                     elseif not selfLast and playerPos > 1 then
-                        local playerEntry = table.remove(group, playerPos)
-                        tinsert(group, 1, playerEntry)
+                        local playerEntry = table.remove(set, playerPos)
+                        tinsert(set, 1, playerEntry)
                     end
                 end
             end
 
             -- Write back sorted data
             for u = 1, 5 do
-                local position = baseValue + u
-                previewRoles[position] = group[u].role
-                previewClassTokens[position] = group[u].classToken
+                local position = base + u
+                previewRoles[position] = set[u].role
+                previewClassTokens[position] = set[u].classToken
                 if mod._pvNames then
-                    mod._pvNames[position] = group[u].name
+                    mod._pvNames[position] = set[u].name
                 end
-                if group[u].isPlayer then
+                if set[u].isPlayer then
                     previewRoles._playerSlot = position
                 end
             end

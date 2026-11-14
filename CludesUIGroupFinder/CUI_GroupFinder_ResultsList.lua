@@ -31,7 +31,7 @@ local function Skinned()
 end
 
 -- display settings, in the profile (CludesUIGroupFinder.lua)
-local function SavedDB()
+local function DB()
     return mod.OwnListDB()
 end
 -- bumped by every display change: the rows lay out again
@@ -40,15 +40,15 @@ function mod.OwnListOn()
     return mod.Enabled()
 end
 function mod.OwnListRowHeight()
-    return tonumber(SavedDB().rowHeight) or 50
+    return tonumber(DB().rowHeight) or 50
 end
 -- text sizes
 local SIZE_DEFAULTS = { titleSize = 12, nameSize = 10, lineSize = 10, scoreSize = 10 }
 function mod.OwnListSize(k)
-    return tonumber(SavedDB()[k]) or SIZE_DEFAULTS[k]
+    return tonumber(DB()[k]) or SIZE_DEFAULTS[k]
 end
 function mod.SetOwnListSize(k, val)
-    SavedDB()[k] = val
+    DB()[k] = val
     styleGen = styleGen + 1
     if mod.OwnListRefresh then
         mod.OwnListRefresh()
@@ -69,7 +69,7 @@ local DISPLAY_DEFAULTS = {
     lineDeclined = false,
 }
 function mod.OwnListGet(k)
-    local val = SavedDB()[k]
+    local val = DB()[k]
     if val == nil then
         return DISPLAY_DEFAULTS[k]
     end
@@ -92,7 +92,7 @@ function mod.OwnListBorderColor()
     return 1, 1, 1
 end
 function mod.SetOwnListValue(k, val)
-    SavedDB()[k] = val
+    DB()[k] = val
     styleGen = styleGen + 1
     if mod.OwnListRefresh then
         mod.OwnListRefresh()
@@ -106,12 +106,12 @@ CUI._ShellLooks.lfg = function()
     if not mod.Enabled() then
         return nil
     end
-    local d = SavedDB()
+    local d = DB()
     return d.windowBgColor, d.windowBgOpacity
 end
 -- no list rebuild, the color picker fires every frame while dragging
 function mod.SetWindowLook(k, val)
-    SavedDB()[k] = val
+    DB()[k] = val
     if CUI._WSkinRefreshStyles then
         CUI._WSkinRefreshStyles()
     end
@@ -213,9 +213,9 @@ local function SignUpState(ident)
         return false, LFG_LIST_APP_CURRENTLY_APPLYING
     end
     local _, act = C_LFGList.GetNumApplications()
-    local upper = MAX_LFG_LIST_APPLICATIONS or 5
-    if type(act) == "number" and act >= upper then
-        return false, LFG_LIST_HIT_MAX_APPLICATIONS and string.format(LFG_LIST_HIT_MAX_APPLICATIONS, upper)
+    local max = MAX_LFG_LIST_APPLICATIONS or 5
+    if type(act) == "number" and act >= max then
+        return false, LFG_LIST_HIT_MAX_APPLICATIONS and string.format(LFG_LIST_HIT_MAX_APPLICATIONS, max)
     end
     if GetNumGroupMembers(LE_PARTY_CATEGORY_HOME) > (MAX_PARTY_MEMBERS or 4) + 1 then
         return false, LFG_LIST_MAX_MEMBERS
@@ -425,8 +425,8 @@ end
 -- blizzard's menu under blizzard's tag, so other add-ons' entries (raider.io's
 -- copy link and so on) still show. the owner is our row, which has resultID
 -- like blizzard's does
-local function TaggedMenu(anchorFrame, ident, details, leader)
-    MenuUtil.CreateContextMenu(anchorFrame, function(_, root)
+local function TaggedMenu(anchor, ident, details, leader)
+    MenuUtil.CreateContextMenu(anchor, function(_, root)
         root:SetTag("MENU_LFG_FRAME_SEARCH_ENTRY")
         -- a hidden flag is never tested: the title shows the name, as the row does
         local censored = details.censored
@@ -460,7 +460,7 @@ local function TaggedMenu(anchorFrame, ident, details, leader)
     end)
 end
 
-function mod.OwnListMenu(anchorFrame, ident)
+function mod.OwnListMenu(anchor, ident)
     local details = C_LFGList.GetSearchResultInfo(ident)
     if not Readable(details) then
         return
@@ -469,7 +469,7 @@ function mod.OwnListMenu(anchorFrame, ident)
     if Secret(leader) then
         leader = nil
     end
-    TaggedMenu(anchorFrame, ident, details, leader)
+    TaggedMenu(anchor, ident, details, leader)
 end
 
 -------------------------------------------------------------------------------
@@ -576,12 +576,12 @@ mod.STATUS_LINES = {
     lineDeclined = LINE_DECLINED,
 }
 -- a status's color: the user's, else its own
-local function StatusColor(lineTex)
-    local c = mod.OwnListGet(lineTex[5])
+local function StatusColor(line)
+    local c = mod.OwnListGet(line[5])
     if type(c) == "table" then
         return c.r or 1, c.g or 1, c.b or 1
     end
-    return lineTex[2], lineTex[3], lineTex[4]
+    return line[2], line[3], line[4]
 end
 local LINE_OF = {
     [STATUS.declined_delisted] = LINE_DELISTED,
@@ -774,13 +774,13 @@ local function MakeRow(i, hostFrame)
     r.rr = {}
     for k = 1, 4 do
         local backdrop = r:CreateTexture(nil, "ARTWORK", nil, 1)
-        local maskTex = r:CreateMaskTexture()
-        maskTex:SetTexture(
+        local mask = r:CreateMaskTexture()
+        mask:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
-        maskTex:SetAllPoints(backdrop)
+        mask:SetAllPoints(backdrop)
         local t = r:CreateTexture(nil, "ARTWORK", nil, 3)
         t:SetPoint("CENTER", backdrop)
         local c = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -803,7 +803,7 @@ local function MakeRow(i, hostFrame)
         c:Hide()
         ring:Hide()
         edge:Hide()
-        r.rr[k] = { bg = backdrop, mask = maskTex, icon = t, count = c, ring = ring, edge = edge }
+        r.rr[k] = { bg = backdrop, mask = mask, icon = t, count = c, ring = ring, edge = edge }
     end
     -- row art
     r.art = r:CreateTexture(nil, "BACKGROUND", nil, 7)
@@ -1076,16 +1076,16 @@ local function LineThree(r, ident, details, source)
     if (r.lines or 0) < 3 then
         return
     end
-    local look = ""
+    local style = ""
     local ps = details.generalPlaystyle
     local gc = GFNS.Cfg and GFNS.Cfg()
     if not (gc and gc.extraShowPlaystyle == false) and type(ps) == "number" and not Secret(ps) then
-        look = _G["GROUP_FINDER_GENERAL_PLAYSTYLE" .. ps] or ""
+        style = _G["GROUP_FINDER_GENERAL_PLAYSTYLE" .. ps] or ""
     end
     local tag, tr, tg, tb, flag
     tag, tr, tg, tb, flag = source.region(ident)
-    if look ~= "" then
-        r.style:SetText(look)
+    if style ~= "" then
+        r.style:SetText(style)
         Put(r, r.style)
     end
     if tag then
@@ -1222,11 +1222,11 @@ local function Fill(r, ident, source)
         r.status:SetText("")
     end
     -- status effect: an underline, or the whole row tinted
-    local lineTex = st and LINE_OF[st]
-    local enabled = lineTex and mod.OwnListGet(lineTex[1]) ~= false or false
+    local line = st and LINE_OF[st]
+    local enabled = line and mod.OwnListGet(line[1]) ~= false or false
     local rowFx = enabled and mod.OwnListGet("statusStyle") == "row" or false
     if enabled then
-        local lr, lg, lb = StatusColor(lineTex)
+        local lr, lg, lb = StatusColor(line)
         -- solid, so it reads the same over any window background (the preview's is darker)
         if rowFx then
             r.stat:SetColorTexture(lr * 0.15 + 0.045, lg * 0.15 + 0.045, lb * 0.15 + 0.045, 1)
@@ -1282,11 +1282,11 @@ local function Fill(r, ident, source)
     end
     table.sort(members, ByRole)
     local cap = ai and ai.maxNumPlayers or 5
-    local modeName = MemberMode(ai, cap)
+    local mode = MemberMode(ai, cap)
     -- open roles for the empty slots
     local needs = r.needs
     wipe(needs)
-    if mod.OwnListGet("missingIcons") ~= "none" and modeName == "icons" and cap == 5 then
+    if mod.OwnListGet("missingIcons") ~= "none" and mode == "icons" and cap == 5 then
         local counts = source.counts(ident)
         if Readable(counts) then
             for i = 1, #RR_ROLES do
@@ -1333,12 +1333,12 @@ local function Fill(r, ident, source)
         end
         t:SetTexCoord(0, 1, 0, 1)
         t:SetDesaturated(false)
-        if modeName ~= "icons" then
+        if mode ~= "icons" then
             t:Hide()
         elseif m then
-            local glyph = specOn and m.spec and mod.GFSpecIcon and mod.GFSpecIcon(m.cls, m.spec)
-            if glyph then
-                t:SetTexture(glyph)
+            local icon = specOn and m.spec and mod.GFSpecIcon and mod.GFSpecIcon(m.cls, m.spec)
+            if icon then
+                t:SetTexture(icon)
                 t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             elseif square then
                 -- square: class color tile
@@ -1352,7 +1352,7 @@ local function Fill(r, ident, source)
                 -- the game's class circle
                 t:SetAtlas("groupfinder-icon-class-color-" .. m.cls)
             end
-            if not glyph and NEED_ATLAS[m.role] then
+            if not icon and NEED_ATLAS[m.role] then
                 role:SetAtlas(NEED_ATLAS[m.role])
                 role:Show()
             end
@@ -1364,7 +1364,7 @@ local function Fill(r, ident, source)
                     end
                     bf:Show()
                 end
-            elseif glyph then
+            elseif icon then
                 -- round spec icon + ring
                 t:AddMaskTexture(r.masks[k])
                 t._masked = true
@@ -1409,7 +1409,7 @@ local function Fill(r, ident, source)
         end
     end
     -- raid role counts, rating to their left
-    local counts = modeName == "counts" and source.counts(ident)
+    local counts = mode == "counts" and source.counts(ident)
     if not Readable(counts) then
         counts = nil
     end
@@ -1459,7 +1459,7 @@ local function Fill(r, ident, source)
         end
     end
     -- player count: a grey circle with a person, the number above, like the role counts
-    local players = modeName == "players" and n
+    local players = mode == "players" and n
     local pc = r.rr[4]
     if type(players) == "number" and not Secret(players) then
         pc.bg:SetColorTexture(PLAYERS_COLOR[1], PLAYERS_COLOR[2], PLAYERS_COLOR[3], 1)
@@ -1764,15 +1764,15 @@ local function PvFit()
     local f, view = pv.frame, pv.view
     local heading = f:GetParent()
     local hgt = mod.OwnListRowHeight()
-    local modeName = pv.mode or "groups"
-    pv.title:SetText(PV_TITLES[modeName])
+    local mode = pv.mode or "groups"
+    pv.title:SetText(PV_TITLES[mode])
     -- applicants: the applicant list draws its samples in the same window
-    local apps = modeName ~= "groups" and mod.ApplicantPreviewPaint ~= nil
+    local apps = mode ~= "groups" and mod.ApplicantPreviewPaint ~= nil
     view:SetShown(not apps)
     pv.appHost:SetShown(apps)
     pv.appHost:SetSize(PV_W, PV_VIEW_H)
     if mod.ApplicantPreviewPaint then
-        mod.ApplicantPreviewPaint(pv.appHost, apps and modeName or nil, PV_W, PV_VIEW_H)
+        mod.ApplicantPreviewPaint(pv.appHost, apps and mode or nil, PV_W, PV_VIEW_H)
     end
     -- a fixed width: the list's own only settles once group finder opens
     local rw = PV_W
@@ -1911,9 +1911,9 @@ function mod.OwnListPreviewTip(r)
         tipText:AddLine(string.format(LFG_LIST_TOOLTIP_LEADER or "Leader: %s", leader))
     end
     local score = details.leaderOverallDungeonScore
-    local column = C_ChallengeMode.GetDungeonScoreRarityColor
+    local col = C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-    local scoreText = column and column:WrapTextInColorCode(score) or tostring(score)
+    local scoreText = col and col:WrapTextInColorCode(score) or tostring(score)
     tipText:AddLine(string.format(DUNGEON_SCORE_LEADER or "Leader's Mythic+ Rating: %s", scoreText))
     tipText:AddLine(string.format(LFG_LIST_TOOLTIP_AGE or "Created %s ago", SecondsToTime(PV[ident].age)))
     tipText:AddLine(" ")
@@ -1961,9 +1961,9 @@ function mod.OwnListPreviewBuild(heading, hdrW)
         backdrop:SetColorTexture(0.05, 0.05, 0.05, 0.9)
         CUI.MakeBorder(f, 0.2, 0.2, 0.2, 1, CUI.PanelPP)
         -- a title like the raid frames' overlay preview
-        local titleText = CUI.MakeFont(f, 13, nil, 1, 1, 1, 0.9)
-        titleText:SetPoint("TOP", f, "TOP", 0, -7)
-        pv.title = titleText
+        local title = CUI.MakeFont(f, 13, nil, 1, 1, 1, 0.9)
+        title:SetPoint("TOP", f, "TOP", 0, -7)
+        pv.title = title
         -- the rows' window: what doesn't fit is cut off
         local view = CreateFrame("Frame", nil, f)
         view:SetPoint("TOPLEFT", f, "TOPLEFT", PV_PAD, -(PV_PAD + PV_TITLE))
@@ -2291,10 +2291,10 @@ local function Build()
         signBtn:SetText(SIGN_UP or "Sign Up")
         signBtn:SetMotionScriptsWhileDisabled(true)
         local skin = CUI._ModuleNS and CUI._ModuleNS.CludesUIBlizzardSkin
-        local Stl = skin and skin.WSkin
+        local S = skin and skin.WSkin
         -- stock keeps the template's art
-        if not stock and Stl and Stl.Button then
-            Stl.Button(signBtn)
+        if not stock and S and S.Button then
+            S.Button(signBtn)
         elseif not stock then
             local backdrop = signBtn:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
@@ -2476,13 +2476,13 @@ end
 
 -- settings reset
 function mod.ResetOwnList()
-    wipe(SavedDB())
+    wipe(DB())
     styleGen = styleGen + 1
     mod.OwnListRefresh()
 end
 
 function mod.SetOwnListRowHeight(val)
-    SavedDB().rowHeight = val
+    DB().rowHeight = val
     mod.OwnListPreviewPaint()
     if isActive then
         Paint()

@@ -86,17 +86,17 @@ end
 
 -- The rows are recycled by the scroll box: the frames alive now, then every
 -- initialisation from here on (the event hands owner, frame, elementData).
-local function HookRows(boxFrame)
-    if not boxFrame or GetFFD(boxFrame).hooked then
+local function HookRows(box)
+    if not box or GetFFD(box).hooked then
         return
     end
-    GetFFD(boxFrame).hooked = true
+    GetFFD(box).hooked = true
     if ScrollUtil and ScrollUtil.AddInitializedFrameCallback then
-        ScrollUtil.AddInitializedFrameCallback(boxFrame, function(_, widget)
+        ScrollUtil.AddInitializedFrameCallback(box, function(_, widget)
             SkinListRow(widget)
         end, nil, false)
-        if boxFrame.ForEachFrame then
-            boxFrame:ForEachFrame(function(widget)
+        if box.ForEachFrame then
+            box:ForEachFrame(function(widget)
                 SkinListRow(widget)
             end)
         end
@@ -134,10 +134,10 @@ local function SkinFriends()
     if f.Inset then
         Skin.Inset(f.Inset)
     end
-    local titleText = _G.FriendsFrameTitleText or (f.TitleContainer and f.TitleContainer.TitleText)
-    if titleText then
-        Skin.Font(titleText)
-        Skin.White(titleText)
+    local title = _G.FriendsFrameTitleText or (f.TitleContainer and f.TitleContainer.TitleText)
+    if title then
+        Skin.Font(title)
+        Skin.White(title)
     end
 
     -- Contacts / ignore tab row across the top, the Battle.net strip and the

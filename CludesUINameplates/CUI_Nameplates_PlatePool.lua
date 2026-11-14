@@ -376,10 +376,10 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         sz = tbsz
                     end
                 end
-                local column = hb._bdColor
+                local col = hb._bdColor
                 local r, g, b, a = 0, 0, 0, 1
-                if column then
-                    r, g, b, a = column[1], column[2], column[3], column[4] or 1
+                if col then
+                    r, g, b, a = col[1], col[2], col[3], col[4] or 1
                 end
                 -- Threat Colors "Border" tint on the health border: _bdColor keeps only the
                 -- last CLEAN colour (PP leaves a secret off-tank fold out of it), so the
@@ -675,10 +675,10 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 ownerFrame.castTimer:SetText("")
             end
         else
-            local min, upper = ownerFrame.cast:GetMinMaxValues()
+            local min, max = ownerFrame.cast:GetMinMaxValues()
             local val = ownerFrame.cast:GetValue()
-            if upper and upper > 0 then
-                local remaining = upper - val
+            if max and max > 0 then
+                local remaining = max - val
                 if remaining < 0 then
                     remaining = 0
                 end
@@ -748,11 +748,11 @@ do
             -- Hold acquires until end so each one actually creates a new pool frame.
             local held = {}
             local made = 0
-            local targetUnit = 20
+            local target = 20
             local ticker
             ticker = C_Timer.NewTicker(0.1, function()
                 made = made + 1
-                if made > targetUnit then
+                if made > target then
                     for idx = 1, #held do
                         frameCache:Release(held[idx])
                     end
@@ -984,9 +984,9 @@ function mod._ApplyHitboxOverlay(backing)
         local shade = backing.hitboxOverlay
         if not shade then
             shade = CreateFrame("Frame", nil, np)
-            local fillTex = shade:CreateTexture(nil, "BACKGROUND")
-            fillTex:SetAllPoints()
-            fillTex:SetColorTexture(0.298, 0.788, 0.941, 0.18)
+            local fill = shade:CreateTexture(nil, "BACKGROUND")
+            fill:SetAllPoints()
+            fill:SetColorTexture(0.298, 0.788, 0.941, 0.18)
             local function Edge()
                 local t = shade:CreateTexture(nil, "BORDER")
                 t:SetColorTexture(0.298, 0.788, 0.941, 0.85)

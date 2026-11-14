@@ -66,8 +66,8 @@ function Kit.AccentText(fontStr, alpha)
     fontStr._kitAccent = true
 end
 
-function Kit.Font(fontStr, dim, key, flags)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, key, flags)
+function Kit.Font(fontStr, size, key, flags)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, key, flags)
 end
 
 local function Border(widget, r, g, b, a)
@@ -119,7 +119,7 @@ end
 --- A movable window. opts: key (font), strata, special (false: Escape does
 --- not close it), onClose. Fields: title, close, header (the line under the
 --- title bar).
-function Kit.Window(name, wid, hgt, titleText, options)
+function Kit.Window(name, wid, hgt, title, options)
     options = options or {}
     local window = CreateFrame("Frame", name, UIParent)
     window:SetSize(wid, hgt)
@@ -135,7 +135,7 @@ function Kit.Window(name, wid, hgt, titleText, options)
     window.title = window:CreateFontString(nil, "OVERLAY")
     Kit.Font(window.title, 15, options.key)
     window.title:SetPoint("TOPLEFT", 10, -8)
-    window.title:SetText(titleText or "")
+    window.title:SetText(title or "")
     window.header = window:CreateTexture(nil, "ARTWORK")
     window.header:SetHeight(1)
     window.header:SetPoint("TOPLEFT", 1, -28)
@@ -407,9 +407,9 @@ function Node:CreateDivider()
 end
 function Node:CreateButton(textValue, func)
     local childFrame = NewNode()
-    local itemInfo = { text = textValue, noLoc = true, onClick = func }
-    itemInfo._node = childFrame
-    table.insert(self.items, itemInfo)
+    local item = { text = textValue, noLoc = true, onClick = func }
+    item._node = childFrame
+    table.insert(self.items, item)
     return childFrame
 end
 function Node:CreateRadio(textValue, isOn, func)
@@ -422,16 +422,16 @@ Node.CreateCheckbox = Node.CreateRadio
 
 local function Items(node)
     local result = {}
-    for _, itemInfo in ipairs(node.items) do
-        if type(itemInfo) == "table" and itemInfo._node then
-            local kids = Items(itemInfo._node)
-            local copy = { text = itemInfo.text, noLoc = true, onClick = itemInfo.onClick }
+    for _, item in ipairs(node.items) do
+        if type(item) == "table" and item._node then
+            local kids = Items(item._node)
+            local copy = { text = item.text, noLoc = true, onClick = item.onClick }
             if #kids > 0 then
                 copy.children, copy.onClick = kids, nil
             end
             result[#result + 1] = copy
         else
-            result[#result + 1] = itemInfo
+            result[#result + 1] = item
         end
     end
     if result[#result] == "---" then

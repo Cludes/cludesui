@@ -109,10 +109,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     -- The cog being built: module, page, section, row label and popup title.
     function CogDot.Key(rgn, options)
-        local rowFrame = rgn:GetParent()
-        local contentFrame = rowFrame and rowFrame:GetParent()
+        local row = rgn:GetParent()
+        local contentFrame = row and row:GetParent()
         local sec = contentFrame and contentFrame._currentSection
-        local conf, titleText = rgn._cfg, options.title
+        local conf, title = rgn._cfg, options.title
         local labelText = conf and conf.text or rgn._labelText
         return (CludesUI._buildingModule or CludesUI:GetActiveModule() or "")
             .. "\31"
@@ -122,7 +122,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             .. "\31"
             .. (type(labelText) == "string" and labelText or "")
             .. "\31"
-            .. (type(titleText) == "string" and titleText or "")
+            .. (type(title) == "string" and title or "")
     end
 
     function CogDot.Id(s)
@@ -144,29 +144,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     -- The opened cogs as a set, read from the saved string once a session.
     function CogDot.Seen()
-        local group = CogDot.set
-        if group then
-            return group
+        local set = CogDot.set
+        if set then
+            return set
         end
-        group = {}
+        set = {}
         local str = CludesUIDB and CludesUIDB.cogSeen
         if type(str) == "string" then
             for idx = 1, #str - 4, 5 do
-                group[str:sub(idx, idx + 4)] = true
+                set[str:sub(idx, idx + 4)] = true
             end
         end
-        CogDot.set = group
-        return group
+        CogDot.set = set
+        return set
     end
 
     -- A cog opened for the first time: its id joins the saved string, and every
     -- built cog with that id (the same row on another unit or bar) loses its dot.
     function CogDot.Mark(ident)
-        local group = CogDot.Seen()
-        if group[ident] then
+        local set = CogDot.Seen()
+        if set[ident] then
             return
         end
-        group[ident] = true
+        set[ident] = true
         if CludesUIDB then
             local str = CludesUIDB.cogSeen
             CludesUIDB.cogSeen = (type(str) == "string" and str or "") .. ident
@@ -393,8 +393,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not cog then
             return
         end
-        local ident, offset = cog._cuiCogId, cog._cuiCogOff
-        if offset and offset() then
+        local ident, off = cog._cuiCogId, cog._cuiCogOff
+        if off and off() then
             -- The edit turned its own cog off: the one that turns it back on
             -- brings the dot up again, with its pulse.
             CogDot.up[ident] = nil
@@ -492,19 +492,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             button:SetScript("OnHide", CogHidden)
         end
 
-        local blockData
+        local block
         if options.disabled then
-            blockData = CreateFrame("Frame", nil, button)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(button:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            block = CreateFrame("Frame", nil, button)
+            block:SetAllPoints()
+            block:SetFrameLevel(button:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 local tipText = tipSrc and ResolveDisabledTip(tipSrc)
                 if tipText then
                     ShowWidgetTooltip(button, tipText)
                 end
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 HideWidgetTooltip()
             end)
         end
@@ -512,7 +512,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- the moment of the event can disagree with the hit test on an edge);
         -- a refresh pass asks the rect.
         local function State(hover)
-            local offset = options.disabled and options.disabled()
+            local off = options.disabled and options.disabled()
             local popFrame = type(show) == "table" and show._popupFrame
             local open = (options.isOpen and options.isOpen(button))
                 or (popFrame and popFrame:IsShown() and popFrame._owner == button)
@@ -530,16 +530,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- panel session, until the cog is first opened, never while the cog or
             -- the setting it sits on is disabled.
             if paint then
-                paint(button, offset, hot)
+                paint(button, off, hot)
             else
-                button:SetAlpha(offset and 0.3 or 1)
-                local a = offset and 0.5 or (hot and 0.75 or 0.55)
+                button:SetAlpha(off and 0.3 or 1)
+                local a = off and 0.5 or (hot and 0.75 or 0.55)
                 L[1]:SetAlpha(a)
                 L[2]:SetAlpha(a)
                 L[3]:SetAlpha(a)
                 local dot = CogDot.edited[ident] == true
                     and not (
-                        offset
+                        off
                         or CogDot.Seen()[ident]
                         or (hostCfg and hostCfg.disabled and hostCfg.disabled())
                     )
@@ -548,8 +548,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     button._cuiCogPulse:Stop()
                 end
             end
-            if blockData then
-                blockData:SetShown(offset and true or false)
+            if block then
+                block:SetShown(off and true or false)
             end
         end
         button._cuiCogState = State
@@ -612,9 +612,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         options = options or {}
         local button = CreateFrame("Button", nil, rgn)
         Pix.Size(button, options.width or 110, options.height or 24)
-        local anchorFrame = (options.chain ~= false and rgn._lastInline) or rgn._control
-        if anchorFrame then
-            Pix.Point(button, "RIGHT", anchorFrame, "LEFT", -(options.gap or 8), 0)
+        local anchor = (options.chain ~= false and rgn._lastInline) or rgn._control
+        if anchor then
+            Pix.Point(button, "RIGHT", anchor, "LEFT", -(options.gap or 8), 0)
         else
             Pix.Point(button, "RIGHT", rgn, "RIGHT", -20, 0)
         end
@@ -663,14 +663,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             button:SetMotionScriptsWhileDisabled(true)
             local shownOff
             local function State()
-                local offset = disabled() and true or false
-                if offset == shownOff then
+                local off = disabled() and true or false
+                if off == shownOff then
                     return
                 end
                 local flipped = shownOff ~= nil
-                shownOff = offset
-                button:SetEnabled(not offset)
-                button:SetAlpha(offset and 0.35 or 1)
+                shownOff = off
+                button:SetEnabled(not off)
+                button:SetAlpha(off and 0.35 or 1)
                 -- A flip while it holds the mouse repaints and re-explains for the
                 -- new state (a menu open over it keeps the focus instead).
                 if flipped and GetMouseFoci()[1] == button then
@@ -718,8 +718,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- button; nil during the search prebuild.
     -- The glyph in the accent: 70% at rest, full while hovered, 20% while
     -- disabled (owner 2026-10-23).
-    local function UnlockJumpPaint(button, offset, hot)
-        button:SetAlpha(offset and 0.2 or (hot and 1 or 0.7))
+    local function UnlockJumpPaint(button, off, hot)
+        button:SetAlpha(off and 0.2 or (hot and 1 or 0.7))
         local r, g, b = CludesUI.GetAccentColor()
         button._icon:SetVertexColor(r, g, b)
     end
@@ -754,10 +754,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         })
         -- The glyph's art is square (30x30), so the cog icon's own fill of the
         -- button is its fit; drawn unsnapped, since it lands between texel sizes.
-        local glyph = button._icon
-        if glyph.SetSnapToPixelGrid then
-            glyph:SetSnapToPixelGrid(false)
-            glyph:SetTexelSnappingBias(0)
+        local icon = button._icon
+        if icon.SetSnapToPixelGrid then
+            icon:SetSnapToPixelGrid(false)
+            icon:SetTexelSnappingBias(0)
         end
         return button
     end
@@ -779,7 +779,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not labelText then
             return
         end
-        local dim = options.size or 20
+        local size = options.size or 20
         local button = CludesUI.BuildUnlockJump(heading, {
             key = options.key,
             tooltip = options.tooltip,
@@ -787,7 +787,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             disabledTooltip = options.disabledTooltip,
             rawTooltip = options.rawTooltip,
             requireState = options.requireState,
-            size = dim,
+            size = size,
             chain = false,
             anchorTo = labelText,
             relPoint = "RIGHT",
@@ -945,9 +945,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Disabled while locked, still hovered to explain the lock.
             button:SetMotionScriptsWhileDisabled(true)
             local function SyncLock()
-                local offset = locked() and true or false
-                arrow:SetShown(not offset)
-                button:SetEnabled(not offset)
+                local off = locked() and true or false
+                arrow:SetShown(not off)
+                button:SetEnabled(not off)
             end
             SyncLock()
             RegisterWidgetRefresh(SyncLock)
@@ -1346,12 +1346,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --  Returns: row, height (same as W:DualRow)
     -------------------------------------------------------------------------------
     local function BuildCursorAnchorRow(options)
-        local Widgets = options.W
+        local W = options.W
         local hostFrame = options.parent
         local getData = options.getData
         local onApply = options.onApply
 
-        local rowFrame, hgt = Widgets:DualRow(hostFrame, options.y, {
+        local row, hgt = W:DualRow(hostFrame, options.y, {
             type = "toggle",
             text = "Anchor to Cursor",
             disabled = options.disabledFn,
@@ -1401,12 +1401,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- "(Applies on Window Close)" subtitle
         do
-            local suffix = rowFrame._leftRegion:CreateFontString(nil, "OVERLAY")
+            local suffix = row._leftRegion:CreateFontString(nil, "OVERLAY")
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             suffix:SetText(CludesUI.L("(Applies on Window Close)"))
             local anchorLabel
-            local regions = { rowFrame._leftRegion:GetRegions() }
+            local regions = { row._leftRegion:GetRegions() }
             for idx = 1, #regions do
                 local reg = regions[idx]
                 if reg and reg.GetText and CludesUI.EnKey(reg:GetText()) == "Anchor to Cursor" then
@@ -1417,12 +1417,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if anchorLabel then
                 suffix:SetPoint("LEFT", anchorLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", rowFrame._leftRegion, "LEFT", 120, 0)
+                suffix:SetPoint("LEFT", row._leftRegion, "LEFT", 120, 0)
             end
         end
 
         -- Inline cog: X + Y offsets
-        BuildInlineCog(rowFrame._rightRegion, {
+        BuildInlineCog(row._rightRegion, {
             title = "Cursor Offset",
             rows = {
                 {
@@ -1456,7 +1456,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             },
         })
 
-        return rowFrame, hgt
+        return row, hgt
     end
     CludesUI.BuildCursorAnchorRow = BuildCursorAnchorRow
 end -- end deferred init

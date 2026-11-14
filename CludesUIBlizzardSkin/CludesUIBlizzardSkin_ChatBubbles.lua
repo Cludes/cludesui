@@ -411,15 +411,15 @@ end
 -- a file and leaves the FontString with NO font at all, so the NEXT SetText would raise
 -- "Font not set" in Claim, unguarded, from an event handler: Friz stands in then (same
 -- guard shape as CludesUIQoL_MovementAlert.lua).
-local function BubbleFont(fontStr, filePath, dim, flag)
+local function BubbleFont(fontStr, filePath, size, flag)
     local shadow = (flag == "")
-    if CUI.GetFontFamily(filePath, dim, flag, shadow) then
-        CUI.SetFontFamily(fontStr, filePath, dim, flag, shadow)
+    if CUI.GetFontFamily(filePath, size, flag, shadow) then
+        CUI.SetFontFamily(fontStr, filePath, size, flag, shadow)
         return
     end
     CUI.PrimeFontShadow(fontStr, shadow)
-    if not fontStr:SetFont(filePath, dim, flag) then
-        fontStr:SetFont("Fonts\\FRIZQT__.TTF", dim, flag)
+    if not fontStr:SetFont(filePath, size, flag) then
+        fontStr:SetFont("Fonts\\FRIZQT__.TTF", size, flag)
     end
 end
 
@@ -505,10 +505,10 @@ local function Layout(f, conf)
     local bc = conf.borderColor or d.borderColor
     local br, backdrop, bb = (bc and bc.r) or 0, (bc and bc.g) or 0, (bc and bc.b) or 0
     local ba = (bc and bc.a) or 1
-    local dim = conf.borderSize or d.borderSize or 0
-    if dim > 0 then
-        Pix.CreateBorder(f, br, backdrop, bb, ba, dim, "OVERLAY", 7)
-        Pix.UpdateBorder(f, dim, br, backdrop, bb, ba)
+    local size = conf.borderSize or d.borderSize or 0
+    if size > 0 then
+        Pix.CreateBorder(f, br, backdrop, bb, ba, size, "OVERLAY", 7)
+        Pix.UpdateBorder(f, size, br, backdrop, bb, ba)
         Pix.ShowBorder(f)
     else
         Pix.HideBorder(f)
@@ -566,16 +566,14 @@ local function Layout(f, conf)
     if nameW > wid then
         wid = nameW
     end
-    local anchorFrame = conf.nameAnchor or d.nameAnchor
-    local bottom = anchorFrame:find("BOTTOM") ~= nil
-    local nx = anchorFrame:find("LEFT") and padding or (anchorFrame:find("RIGHT") and -padding or 0)
+    local anchor = conf.nameAnchor or d.nameAnchor
+    local bottom = anchor:find("BOTTOM") ~= nil
+    local nx = anchor:find("LEFT") and padding or (anchor:find("RIGHT") and -padding or 0)
     local ny = bottom and padding or -padding
     f.name:SetWidth(nameW)
-    f.name:SetJustifyH(
-        anchorFrame:find("LEFT") and "LEFT" or (anchorFrame:find("RIGHT") and "RIGHT" or "CENTER")
-    )
+    f.name:SetJustifyH(anchor:find("LEFT") and "LEFT" or (anchor:find("RIGHT") and "RIGHT" or "CENTER"))
     f.name:ClearAllPoints()
-    Pix.Point(f.name, anchorFrame, f, anchorFrame, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
+    Pix.Point(f.name, anchor, f, anchor, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
     f.text:ClearAllPoints()
     f.text:SetPoint("CENTER", f, "CENTER", 0, bottom and nameH / 2 or -nameH / 2)
     Pix.Size(f, wid + padding * 2, hgt + nameH + padding * 2)
@@ -602,9 +600,9 @@ end
 -- in Claim's case, blank Blizzard's chrome behind it. Both callers hand the bubble back instead.
 local function Anchor(f, conf)
     local d = DEFAULTS
-    local offset = conf.offsetY or d.offsetY or 0
+    local off = conf.offsetY or d.offsetY or 0
     f:ClearAllPoints()
-    _anchorFrame, _anchorTo, _anchorOff = f, childOf[f.outer] or f.outer, offset
+    _anchorFrame, _anchorTo, _anchorOff = f, childOf[f.outer] or f.outer, off
     local success = pcall(RawAnchor)
     _anchorFrame, _anchorTo = nil, nil
     return success
@@ -638,7 +636,7 @@ local function MatchRecent(textValue, at, conf)
     return nil
 end
 
-local function Draw(outer, childFrame, fontStr, textValue, lineTex)
+local function Draw(outer, childFrame, fontStr, textValue, line)
     local conf = Cfg()
     if not conf then
         return
@@ -652,7 +650,7 @@ local function Draw(outer, childFrame, fontStr, textValue, lineTex)
     f.outer = outer
     ours[outer] = f
     f.blizzR, f.blizzG, f.blizzB = BlizzTextColor(fontStr)
-    f.speaker, f.channel = lineTex.speaker, lineTex.channel
+    f.speaker, f.channel = line.speaker, line.channel
     f.text:SetText(textValue)
     -- Shown at alpha 0 BEFORE Layout, never after: font geometry on a HIDDEN frame is wrong
     -- (the shared tooltip measures the same way for the same reason), and a wrapped line
@@ -695,20 +693,20 @@ local function TryClaim(outer)
     end
     local conf = Cfg()
     local position = MatchRecent(textValue, shownAt[outer] or 0, conf)
-    local lineTex
+    local line
     if position then
-        lineTex = table.remove(recent, position)
+        line = table.remove(recent, position)
         -- Blizzard's own text, not the chat event's: the client has already formatted it, and
         -- it is what a re-show of this bubble is compared against.
-        lineTex.text = textValue
-        bound[outer] = lineTex
+        line.text = textValue
+        bound[outer] = line
     else
-        lineTex = bound[outer]
-        if not (lineTex and SafeEq(textValue, lineTex.text)) or conf[lineTex.channel] ~= true then
+        line = bound[outer]
+        if not (line and SafeEq(textValue, line.text)) or conf[line.channel] ~= true then
             return false
         end
     end
-    Draw(outer, childFrame, fontStr, textValue, lineTex)
+    Draw(outer, childFrame, fontStr, textValue, line)
     return true
 end
 
@@ -893,9 +891,9 @@ end
 -- target is the value this switch has to sit at while we hold it, or nil for "we do not need
 -- it", which hands it back. A value rather than a flag, because hiding bubbles inside an
 -- instance means forcing one OFF and not only on.
-local function ApplyCVar(name, targetUnit, saved, held)
+local function ApplyCVar(name, target, saved, held)
     local current = C_CVar.GetCVar(name)
-    if targetUnit then
+    if target then
         -- Snapshot at the moment we take the CVar over, not once per install: while we were
         -- leaving this channel alone the player may well have changed it themselves, and that
         -- is the value they must get back.
@@ -903,8 +901,8 @@ local function ApplyCVar(name, targetUnit, saved, held)
             saved[name] = current
             held[name] = true
         end
-        if current ~= targetUnit then
-            CludesUI.HoldCVar(name, targetUnit, "CludesUIBlizzardSkin")
+        if current ~= target then
+            CludesUI.HoldCVar(name, target, "CludesUIBlizzardSkin")
         end
     elseif held[name] then
         held[name] = nil
@@ -1070,14 +1068,14 @@ local function OnEvent(_, evt, ...)
     if #recent >= RECENT_MAX then
         table.remove(recent, 1)
     end
-    local lineTex = { text = textValue, speaker = speaker, channel = channel, at = GetTime() }
-    recent[#recent + 1] = lineTex
+    local line = { text = textValue, speaker = speaker, channel = channel, at = GetTime() }
+    recent[#recent + 1] = line
     -- Claimed right here when the engine built the bubble before dispatching this event,
     -- including the first message of a session, before any frame of theirs is hooked.
     ClaimListed()
     -- Still unmatched: the bubble may land a frame later, or only once its speaker is on
     -- screen, where the OnShow hook finds the line.
-    if recent[#recent] == lineTex then
+    if recent[#recent] == line then
         ScheduleRetry()
     end
 end

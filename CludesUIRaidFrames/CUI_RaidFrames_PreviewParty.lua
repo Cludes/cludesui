@@ -121,9 +121,9 @@ local function BuildPartyPreviewRoles()
     end -- self ordering active either way
     local prioritizeClass = saved.profile.partyPrioritizeClass
     if sortMode == "ROLE" or showSelfFirst or prioritizeClass then
-        local group = {}
+        local set = {}
         for u = 1, 5 do
-            group[u] = {
+            set[u] = {
                 role = mod._partyPvRoles[u],
                 classToken = mod._partyPvCT[u],
                 isPlayer = (u == 1),
@@ -150,7 +150,7 @@ local function BuildPartyPreviewRoles()
                     classPri[c] = i
                 end
             end
-            table.sort(group, function(a, b)
+            table.sort(set, function(a, b)
                 if sortByRole then
                     local ra, rb = rolePri[a.role] or 99, rolePri[b.role] or 99
                     if ra ~= rb then
@@ -168,26 +168,26 @@ local function BuildPartyPreviewRoles()
         end
         if showSelfFirst then
             local playerPos
-            for i, record in ipairs(group) do
+            for i, record in ipairs(set) do
                 if record.isPlayer then
                     playerPos = i
                     break
                 end
             end
             if playerPos then
-                if selfLast and playerPos < #group then
-                    local playerEntry = table.remove(group, playerPos)
-                    group[#group + 1] = playerEntry
+                if selfLast and playerPos < #set then
+                    local playerEntry = table.remove(set, playerPos)
+                    set[#set + 1] = playerEntry
                 elseif not selfLast and playerPos > 1 then
-                    local playerEntry = table.remove(group, playerPos)
-                    tinsert(group, 1, playerEntry)
+                    local playerEntry = table.remove(set, playerPos)
+                    tinsert(set, 1, playerEntry)
                 end
             end
         end
         for u = 1, 5 do
-            mod._partyPvRoles[u] = group[u].role
-            mod._partyPvCT[u] = group[u].classToken
-            if group[u].isPlayer then
+            mod._partyPvRoles[u] = set[u].role
+            mod._partyPvCT[u] = set[u].classToken
+            if set[u].isPlayer then
                 mod._partyPvRoles._playerSlot = u
             end
         end
@@ -272,17 +272,17 @@ local function InitPartyPreviewHealthValues()
     mod.partyPvReducedMaxHealth[rmhSlot] = 0.10 + math.random() * 0.15
 end
 
-local function GetOrCreatePartyPvFrame(slotPos)
-    if mod._partyPvFrames[slotPos] then
-        return mod._partyPvFrames[slotPos]
+local function GetOrCreatePartyPvFrame(index)
+    if mod._partyPvFrames[index] then
+        return mod._partyPvFrames[index]
     end
-    local f = CreatePreviewFrame(slotPos, true)
+    local f = CreatePreviewFrame(index, true)
     f._isParty = true
     -- Reparent from raid preview container to party overlay container
     if mod._partyOC then
         f:SetParent(mod._partyOC)
     end
-    mod._partyPvFrames[slotPos] = f
+    mod._partyPvFrames[index] = f
     return f
 end
 
@@ -290,7 +290,7 @@ end
 -- The raid values ApplyPartyPreviewData overwrites for one call, kept to put back.
 local savedHealth, savedPower = {}, {}
 
-local function ApplyPartyPreviewData(f, slotPos)
+local function ApplyPartyPreviewData(f, index)
     local s = saved.profile
     -- Use party proxy so ApplyPreviewData reads party-specific settings
     mod._previewSettingsOverride = mod._scaledPartyProxy
@@ -320,7 +320,7 @@ local function ApplyPartyPreviewData(f, slotPos)
     mod.previewHealPredValues = mod.partyPvHealPredValues
     mod.previewReducedMaxHealth = mod.partyPvReducedMaxHealth
 
-    ApplyPreviewData(f, slotPos, mod._partyPvRoles, mod._partyPvCT)
+    ApplyPreviewData(f, index, mod._partyPvRoles, mod._partyPvCT)
 
     -- Re-apply BM indicators with the party proxy so Auto Resize scales the
     -- preview indicators/auras live. CreatePreviewFrame applies them only once
@@ -352,9 +352,9 @@ local function ApplyPartyPreviewData(f, slotPos)
         -- (Greyed only while the preview actually shows that slot offline.)
         mod.RF_KitPreviewPortrait(
             f,
-            mod._partyPvCT[slotPos],
-            slotPos == (roles._playerSlot or 1),
-            mod._indicatorsVisible ~= false and slotPos == roles._offlineSlot
+            mod._partyPvCT[index],
+            index == (roles._playerSlot or 1),
+            mod._indicatorsVisible ~= false and index == roles._offlineSlot
         )
     elseif mod.RF_PtPreview then
         -- Party portrait: the frame takes the box width, the bars move beside
@@ -363,9 +363,9 @@ local function ApplyPartyPreviewData(f, slotPos)
         mod.RF_PtPreview(
             f,
             mod._scaledPartyProxy,
-            mod._partyPvCT[slotPos],
-            slotPos == (roles._playerSlot or 1),
-            mod._indicatorsVisible ~= false and slotPos == roles._offlineSlot
+            mod._partyPvCT[index],
+            index == (roles._playerSlot or 1),
+            mod._indicatorsVisible ~= false and index == roles._offlineSlot
         )
     end
 end
@@ -409,7 +409,7 @@ local function RefreshPartyPreview()
     local wid, hgt, spacing = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
     -- Party target frames along the stack open the frames' pitch, as on the real frames.
     local pitch = spacing + mod.PT_AlongPitch(s, s.partyShowTargets == true)
-    local modeName = saved.profile.previewMode or "overlay"
+    local mode = saved.profile.previewMode or "overlay"
 
     BuildPartyPreviewRoles()
 
@@ -421,7 +421,7 @@ local function RefreshPartyPreview()
     local playerSlot = mod._partyPvRoles._playerSlot or 1
     local shownCount = hideSelf and 4 or 5
 
-    local isOverlay = (modeName == "overlay")
+    local isOverlay = (mode == "overlay")
     local anchorPad = isOverlay and 10 or 0
     local topExtra = isOverlay and 25 or 0 -- top space for the centered "Preview" title
     local unitGrowth = mod._PartyGrowth(s)
@@ -471,7 +471,7 @@ local function RefreshPartyPreview()
         end
     end
 
-    local slotIndex = 0 -- running layout position; skips the hidden player frame
+    local slot = 0 -- running layout position; skips the hidden player frame
     local lastF -- the last frame along the growth
     for i = 1, 5 do
         local f = GetOrCreatePartyPvFrame(i)
@@ -485,7 +485,7 @@ local function RefreshPartyPreview()
             f:SetFrameStrata(isOverlay and "FULLSCREEN_DIALOG" or "HIGH")
             f:ClearAllPoints()
             if isVert then
-                local yOff = slotIndex * (hgt + pitch)
+                local yOff = slot * (hgt + pitch)
                 if unitGrowth == "DOWN" then
                     f:SetPoint(
                         "TOPLEFT",
@@ -507,7 +507,7 @@ local function RefreshPartyPreview()
                     )
                 end
             else
-                local xOff = slotIndex * (wid + pitch)
+                local xOff = slot * (wid + pitch)
                 if unitGrowth == "LEFT" then
                     xOff = -xOff
                 end
@@ -531,7 +531,7 @@ local function RefreshPartyPreview()
             end
             ApplyPartyPreviewData(f, i)
             f:Show()
-            slotIndex = slotIndex + 1
+            slot = slot + 1
         end
     end
 
@@ -576,7 +576,7 @@ local function RefreshPartyPreview()
     -- Growth keeps the stack bounded by the container instead of growing past
     -- it. A plain TOPLEFT anchor misaligned the flipped preview by a full
     -- stack height/width versus the edit-mode location.
-    if modeName == "real" and mod._partyContainerFrame then
+    if mode == "real" and mod._partyContainerFrame then
         local place = s.partyUnlockPos
         -- Editing an override with a custom unlock mode: anchor the preview at the
         -- LAYER's recorded party-container position (a lightweight proxy frame stands
@@ -684,8 +684,8 @@ local function ShowPartyPreview()
         RefreshPartyPreview()
         return
     end
-    local modeName = saved.profile.previewMode or "overlay"
-    if modeName == "none" then
+    local mode = saved.profile.previewMode or "overlay"
+    if mode == "none" then
         return
     end
 
@@ -694,7 +694,7 @@ local function ShowPartyPreview()
     -- Never reparent secure-header containers (the restore would be blocked in
     -- combat and strand the frames for the whole pull).
     mod._SetRealFramesPreviewHidden(true)
-    if modeName == "overlay" then
+    if mode == "overlay" then
         GetOrCreatePartyOverlayContainer()
     end
     InitPartyPreviewHealthValues()

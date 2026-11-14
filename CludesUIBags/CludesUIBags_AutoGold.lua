@@ -51,12 +51,12 @@ local function Coins(copper)
 end
 
 local function Balance()
-    local targetUnit = AutoGold.Target()
-    if not targetUnit then
+    local target = AutoGold.Target()
+    if not target then
         return
     end
     local bankType = Enum.BankType.Account
-    local diff = GetMoney() - targetUnit * COPPER_PER_GOLD
+    local diff = GetMoney() - target * COPPER_PER_GOLD
     if diff > 0 then
         if C_Bank.CanDepositMoney(bankType) then
             C_Bank.DepositMoney(bankType, diff)

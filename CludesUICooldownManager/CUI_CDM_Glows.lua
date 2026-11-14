@@ -339,11 +339,11 @@ function mod.RefreshGlowCombatGate()
     end
 end
 
-StartNativeGlow = function(overlayFrame, look, cr, cg, cb, options)
+StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
     if not overlayFrame then
         return
     end
-    local styleIdx = tonumber(look) or 1
+    local styleIdx = tonumber(style) or 1
     if styleIdx < 1 or styleIdx > #GLOW_STYLES then
         styleIdx = 1
     end
@@ -373,26 +373,26 @@ StartNativeGlow = function(overlayFrame, look, cr, cg, cb, options)
     -- the sweep never reads one, and an options page can hand a preview
     -- overlay out again for other uses, which a record keyed by it outlives.
     if mod._cdmGlowGateEverOn and not overlayFrame._cuiGlowPreview then
-        local recd = mod._cdmGlowRec[overlayFrame]
-        if not recd then
-            recd = {}
-            mod._cdmGlowRec[overlayFrame] = recd
+        local rec = mod._cdmGlowRec[overlayFrame]
+        if not rec then
+            rec = {}
+            mod._cdmGlowRec[overlayFrame] = rec
         end
         local ownerFC = hostFrame and _ecmeFC[hostFrame]
-        recd.style, recd.r, recd.g, recd.b, recd.opts = styleIdx, cr, cg, cb, options
-        recd.owner, recd.sid = hostFrame, ownerFC and ownerFC.spellID or nil
-        recd.active = true
+        rec.style, rec.r, rec.g, rec.b, rec.opts = styleIdx, cr, cg, cb, options
+        rec.owner, rec.sid = hostFrame, ownerFC and ownerFC.spellID or nil
+        rec.active = true
         -- Suppressed overlays keep _glowActive = true: the buff ticker's
         -- active-glow integrity pass and the preset cd-state re-assert restart
         -- any glow whose overlay reads dark, so the truth would churn every
         -- tick for exactly the users who asked for less work out of combat.
         if mod._cdmGlowOOCGate and not _inCombat then
-            recd.suppressed = true
+            rec.suppressed = true
             overlayFrame._glowActive = true
             overlayFrame:SetAlpha(0)
             return
         end
-        recd.suppressed = false
+        rec.suppressed = false
     end
 
     if not hostFrame then
@@ -416,8 +416,8 @@ StartNativeGlow = function(overlayFrame, look, cr, cg, cb, options)
 
     if record.shapeGlow then
         -- CDM-specific: read shape mask/border from the icon frame
-        local glyph = hostFrame
-        local ifc2 = _ecmeFC[glyph]
+        local icon = hostFrame
+        local ifc2 = _ecmeFC[icon]
         local shape = (ifc2 and ifc2.shapeApplied) and (ifc2 and ifc2.shapeName) or nil
         local shapeMask = ifc2 and ifc2.shapeMask
         -- No custom shape (none/cropped) = sharp-cornered square: use the square glow texture so
@@ -578,10 +578,10 @@ StopNativeGlow = function(overlayFrame)
     _G_Glows.StopAllGlows(overlayFrame)
     overlayFrame._glowActive = false
     overlayFrame:SetAlpha(0)
-    local recd = mod._cdmGlowRec[overlayFrame]
-    if recd then
-        recd.active = false
-        recd.suppressed = false
+    local rec = mod._cdmGlowRec[overlayFrame]
+    if rec then
+        rec.active = false
+        rec.suppressed = false
     end
     -- No Hide() -- just alpha 0. Same reason as above.
 end
@@ -602,11 +602,11 @@ mod.StopNativeGlow = StopNativeGlow
 -- (fd._cdGlowOwed) so the edge that ends that glow lights this one at once
 -- (ns.CdGlowKick). Returns the overlay lit. alpha is the Blackout fill
 -- opacity (nil = opaque); the other styles take no opts at all.
-function mod.StartCdGlow(fd, look, cr, cg, cb, alpha)
+function mod.StartCdGlow(fd, style, cr, cg, cb, alpha)
     if not fd then
         return
     end
-    local e = mod.GLOW_STYLES[look]
+    local e = mod.GLOW_STYLES[style]
     local busy = fd._activeGlowOn or fd.procGlowActive or fd._faActiveGlow
     local overlayFrame, other, options
     if e and e.solidFill then
@@ -615,12 +615,12 @@ function mod.StartCdGlow(fd, look, cr, cg, cb, alpha)
         -- DecorateFrame keeps its level through re-layouts.
         local bo = fd.blackoutOverlay
         if not bo and fd.glowOverlay then
-            local glyph = fd.glowOverlay:GetParent()
-            bo = CreateFrame("Frame", nil, glyph)
-            bo:SetAllPoints(glyph)
+            local icon = fd.glowOverlay:GetParent()
+            bo = CreateFrame("Frame", nil, icon)
+            bo:SetAllPoints(icon)
             bo:SetAlpha(0)
             bo:EnableMouse(false)
-            bo:SetFrameLevel(glyph:GetFrameLevel() + 12)
+            bo:SetFrameLevel(icon:GetFrameLevel() + 12)
             fd.blackoutOverlay = bo
         end
         -- A fresh table per start: StartNativeGlow keeps opts by reference in
@@ -640,7 +640,7 @@ function mod.StartCdGlow(fd, look, cr, cg, cb, alpha)
         StopNativeGlow(other)
     end
     if overlayFrame then
-        StartNativeGlow(overlayFrame, look, cr, cg, cb, options)
+        StartNativeGlow(overlayFrame, style, cr, cg, cb, options)
     end
     return overlayFrame
 end
@@ -687,16 +687,16 @@ function mod.CDMGlowCombatSync()
         mod._cdmGlowSyncScratch = queue
     end
     local num = 0
-    for overlayFrame, recd in pairs(mod._cdmGlowRec) do
-        if recd.active and not overlayFrame._cuiGlowPreview then
+    for overlayFrame, rec in pairs(mod._cdmGlowRec) do
+        if rec.active and not overlayFrame._cuiGlowPreview then
             if not show then
-                if not recd.suppressed then
+                if not rec.suppressed then
                     _G_Glows.StopAllGlows(overlayFrame)
                     overlayFrame:SetAlpha(0)
-                    recd.suppressed = true
+                    rec.suppressed = true
                     -- _glowActive deliberately stays true (see StartNativeGlow).
                 end
-            elseif recd.suppressed then
+            elseif rec.suppressed then
                 num = num + 1
                 queue[num] = overlayFrame
             end
@@ -705,21 +705,21 @@ function mod.CDMGlowCombatSync()
     for i = 1, num do
         local overlayFrame = queue[i]
         queue[i] = nil
-        local recd = mod._cdmGlowRec[overlayFrame]
-        if recd and recd.suppressed then
-            local fc = recd.owner and _ecmeFC[recd.owner]
-            if recd.sid and fc and fc.spellID ~= recd.sid then
+        local rec = mod._cdmGlowRec[overlayFrame]
+        if rec and rec.suppressed then
+            local fc = rec.owner and _ecmeFC[rec.owner]
+            if rec.sid and fc and fc.spellID ~= rec.sid then
                 -- Pooled onto a different spell while suppressed: drop the
                 -- request instead of lighting the new spell in the old style.
                 -- Only the active-state integrity pass and the preset cd-state
                 -- re-assert read _glowActive, so clearing it wakes those two;
                 -- every other owner keeps its own memo and re-decides on its
                 -- own next edge.
-                recd.active = false
-                recd.suppressed = false
+                rec.active = false
+                rec.suppressed = false
                 overlayFrame._glowActive = false
             else
-                StartNativeGlow(overlayFrame, recd.style, recd.r, recd.g, recd.b, recd.opts)
+                StartNativeGlow(overlayFrame, rec.style, rec.r, rec.g, rec.b, rec.opts)
             end
         end
     end
@@ -833,33 +833,33 @@ local function FindOurIconForBlizzChild(barId, blizzChild)
     if not icons then
         return nil
     end
-    for _, glyph in ipairs(icons) do
-        local iifc = _ecmeFC[glyph]
+    for _, icon in ipairs(icons) do
+        local iifc = _ecmeFC[icon]
         local bc = iifc and iifc.blizzChild
-        if glyph == blizzChild or bc == blizzChild then
-            return glyph
+        if icon == blizzChild or bc == blizzChild then
+            return icon
         end
     end
     -- Fallback: match by spellID (covers override spells like HST -> Storm Stream)
     local alertSid, alertBase = ResolveBlizzChildSpellID(blizzChild)
     if alertSid then
-        for _, glyph in ipairs(icons) do
-            local ifc = _ecmeFC[glyph]
+        for _, icon in ipairs(icons) do
+            local ifc = _ecmeFC[icon]
             local isid = ifc and ifc.spellID
             -- Second compare: the alert child's cooldownInfo carries its BASE id, so an icon
             -- assigned the base of a transformed spell matches on a plain field compare -- no per-icon API translation.
             if isid == alertSid or (alertBase and isid == alertBase) then
-                return glyph
+                return icon
             end
         end
         -- Override mapping (base <-> override). Last resort: only reachable when the icon's assigned id and the alert's base id differ yet still override-resolve to the alert spell.
-        for _, glyph in ipairs(icons) do
-            local ifc = _ecmeFC[glyph]
+        for _, icon in ipairs(icons) do
+            local ifc = _ecmeFC[icon]
             local iconSid = ifc and ifc.spellID
             if iconSid and C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                 local ovr = C_SpellBook.FindSpellOverrideByID(iconSid)
                 if ovr and ovr == alertSid then
-                    return glyph
+                    return icon
                 end
             end
         end
@@ -928,12 +928,12 @@ end
 mod.ResolveGlowColor = ResolveGlowColor
 
 -- Show proc glow on one of our icons. Uses per-spell settings if available.
-local function ShowProcGlow(glyph, cr, cg, cb)
-    if not glyph then
+local function ShowProcGlow(icon, cr, cg, cb)
+    if not icon then
         return
     end
-    local fd = _getFD(glyph)
-    local glow = fd and fd.glowOverlay or glyph._glowOverlay
+    local fd = _getFD(icon)
+    local glow = fd and fd.glowOverlay or icon._glowOverlay
     if not glow then
         return
     end
@@ -941,11 +941,11 @@ local function ShowProcGlow(glyph, cr, cg, cb)
         return
     end
 
-    local fc = _ecmeFC[glyph]
+    local fc = _ecmeFC[icon]
     -- Force Shape Glow (style 2) for custom-shaped icons (any but none/cropped)
     local shapeName = (fc and fc.shapeApplied) and fc.shapeName or nil
     local isCustomShape = shapeName and shapeName ~= "none" and shapeName ~= "cropped"
-    local look = isCustomShape and 2 or PROC_GLOW_STYLE
+    local style = isCustomShape and 2 or PROC_GLOW_STYLE
     local spellRef = fc and fc.spellID
     if spellRef then
         local bk = fc and fc.barKey
@@ -955,7 +955,7 @@ local function ShowProcGlow(glyph, cr, cg, cb)
         -- base-spell setting resolves on its talent "proc into a second ability"
         -- override form (e.g. Reap -> base 344862). assignedSpells-only matching misses
         -- this on default Essential/Utility bars, whose assignedSpells list is empty.
-        local ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(glyph, spellRef, sd, bk)
+        local ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(icon, spellRef, sd, bk)
         if ss then
             -- Custom shapes are locked to Shape Glow: ignore the per-spell glow
             -- type (incl. "None"). The per-spell glow COLOR below still applies.
@@ -964,7 +964,7 @@ local function ShowProcGlow(glyph, cr, cg, cb)
                     return
                 end -- proc glow disabled
                 if ss.procGlow and ss.procGlow > 0 then
-                    look = ss.procGlow
+                    style = ss.procGlow
                 end
             end
             -- Unified glow color takes priority over per-type settings
@@ -1008,18 +1008,18 @@ local function ShowProcGlow(glyph, cr, cg, cb)
             fd._cdStateGlowOn = false
         end
     end
-    StartNativeGlow(glow, look, cr, cg, cb)
+    StartNativeGlow(glow, style, cr, cg, cb)
     if fd then
         fd.procGlowActive = true
     end
 end
 
-local function StopProcGlow(glyph)
-    local fd = glyph and _getFD(glyph)
-    if not glyph or not (fd and fd.procGlowActive) then
+local function StopProcGlow(icon)
+    local fd = icon and _getFD(icon)
+    if not icon or not (fd and fd.procGlowActive) then
         return
     end
-    local glow = fd and fd.glowOverlay or glyph._glowOverlay
+    local glow = fd and fd.glowOverlay or icon._glowOverlay
     StopNativeGlow(glow)
     if fd then
         fd.procGlowActive = false
@@ -1031,7 +1031,7 @@ local function StopProcGlow(glyph)
     -- that actually ran a CD-state glow path carry them, so pure proc-glow users never wake
     -- the flush frame.
     if fd._cdGlowOwed then
-        mod.CdGlowKick(glyph)
+        mod.CdGlowKick(icon)
     elseif fd._cdGlowBoundSid and mod.QueueCDGlowResourceCheck then
         mod.QueueCDGlowResourceCheck()
     end

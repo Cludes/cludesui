@@ -94,9 +94,9 @@ local function EMChatSettingRow(sys, settingID)
         return nil
     end
     for idx = 1, #st do
-        local rowFrame = st[idx]
-        if type(rowFrame) == "table" and rowFrame.setting == settingID then
-            return rowFrame
+        local row = st[idx]
+        if type(row) == "table" and row.setting == settingID then
+            return row
         end
     end
 end
@@ -162,8 +162,8 @@ end
 -- enforcement stands down.
 local function EMChatSizeDelta()
     local conf = CHAT.DB()
-    local dim = conf and conf.chatSize
-    if not (dim and dim.w and dim.h) then
+    local size = conf and conf.chatSize
+    if not (size and size.w and size.h) then
         return false
     end
     -- Belt: after a store write this session, keep the anchor enforcement
@@ -183,7 +183,7 @@ local function EMChatSizeDelta()
     if not wid then
         return true
     end
-    return abs(wid - dim.w) > 1 or abs(hgt - dim.h) > 1
+    return abs(wid - size.w) > 1 or abs(hgt - size.h) > 1
 end
 
 -- Where each of UIParent's nine points sits in a rect: its share of the
@@ -232,14 +232,14 @@ local function ChatAnchorTarget(conf, cf1)
         -- the rect carries, the saved size once there is one, so both edges
         -- land on pixels; an edge offset snaps to whole pixels.
         local f = POINT_FRAC[place.point]
-        local dim = conf.chatSize
+        local size = conf.chatSize
         if f and f[1] == 0.5 then
-            px = PPa.SnapCenterForDim(px, dim and dim.w or cf1:GetWidth() or 0, es)
+            px = PPa.SnapCenterForDim(px, size and size.w or cf1:GetWidth() or 0, es)
         else
             px = PPa.SnapForES(px, es)
         end
         if f and f[2] == 0.5 then
-            py = PPa.SnapCenterForDim(py, dim and dim.h or cf1:GetHeight() or 0, es)
+            py = PPa.SnapCenterForDim(py, size and size.h or cf1:GetHeight() or 0, es)
         else
             py = PPa.SnapForES(py, es)
         end
@@ -295,16 +295,16 @@ end
 -- One size row (added when the entry lacks it), noted for Uninstall CUI
 -- first. pairID: the dimension's other row, which goes back with it.
 local function EMChatSetRow(layout, sys, ident, value, pairID)
-    local rowFrame = EMChatSettingRow(sys, ident)
-    if not rowFrame then
+    local row = EMChatSettingRow(sys, ident)
+    if not row then
         if type(sys.settings) ~= "table" then
             sys.settings = {}
         end
         sys.settings[#sys.settings + 1] = { setting = ident, value = value }
         return
     end
-    CludesUI.NoteEditModeSetting(layout, sys, ident, rowFrame.value, value, nil, pairID)
-    rowFrame.value = value
+    CludesUI.NoteEditModeSetting(layout, sys, ident, row.value, value, nil, pairID)
+    row.value = value
 end
 
 -- Writes emAnchor and, with w, the size into sys (chat's entry of layout),
@@ -358,10 +358,10 @@ function mod.EMChatSync()
     if not sys then
         return
     end
-    local dim = conf.chatSize
+    local size = conf.chatSize
     local wid, hgt
-    if dim and dim.w and dim.h then
-        wid, hgt = dim.w, dim.h
+    if size and size.w and size.h then
+        wid, hgt = size.w, size.h
     end
     if EMChatAnchorAgrees(sys) and EMChatSizeAgrees(sys, setEnum, wid, hgt) then
         return
@@ -403,12 +403,12 @@ function mod.EMChatResetStore()
     if not (sys and mgr and mgr.GetDefaultSystemAnchorInfo and mgr.GetDefaultSettingForSystem) then
         return
     end
-    local okA, spec_def = pcall(mgr.GetDefaultSystemAnchorInfo, mgr, sysChat)
-    if not (okA and type(spec_def) == "table") then
+    local okA, def = pcall(mgr.GetDefaultSystemAnchorInfo, mgr, sysChat)
+    if not (okA and type(def) == "table") then
         return
     end
-    CludesUI.NoteEditModeAnchor(record, sys, spec_def)
-    sys.anchorInfo = spec_def
+    CludesUI.NoteEditModeAnchor(record, sys, def)
+    sys.anchorInfo = def
     sys.anchorInfo2 = nil
     sys.isInDefaultPosition = true
     local wH, wT = setEnum.WidthHundreds, setEnum.WidthTensAndOnes
@@ -554,8 +554,8 @@ local function ApplyChatPosition()
     -- disagrees with the saved size (pre-migration, fresh imports, presets);
     -- once the store carries it, Blizzard's own apply owns the size and this
     -- stands down.
-    local dim = conf.chatSize
-    local sizeLane = dim and dim.w and dim.h and EMChatSizeDelta()
+    local size = conf.chatSize
+    local sizeLane = size and size.w and size.h and EMChatSizeDelta()
     local anchorPoint, relPoint, px, py = ChatAnchorTarget(conf, cf1)
     if not anchorPoint then
         return
@@ -568,8 +568,8 @@ local function ApplyChatPosition()
         -- size for a tick, and the canonicalize below would read the corner
         -- of THAT rect -- landing the chat half the size delta away from
         -- where it was dropped.
-        SetChatTarget(1, "TOPLEFT", relPoint, px - frac[1] * dim.w, py + (1 - frac[2]) * dim.h)
-        SetChatTarget(2, "BOTTOMRIGHT", relPoint, px + (1 - frac[1]) * dim.w, py - frac[2] * dim.h)
+        SetChatTarget(1, "TOPLEFT", relPoint, px - frac[1] * size.w, py + (1 - frac[2]) * size.h)
+        SetChatTarget(2, "BOTTOMRIGHT", relPoint, px + (1 - frac[1]) * size.w, py - frac[2] * size.h)
         n = 2
     else
         SetChatTarget(1, anchorPoint, relPoint, px, py)
@@ -581,7 +581,7 @@ local function ApplyChatPosition()
         -- an unlock mode nudge saves whichever anchor GetPoint lists first.
         local opp = sizeLane and SIZE_CORNER[anchorPoint]
         if opp then
-            SetChatTarget(2, opp[1], relPoint, px + opp[2] * dim.w, py + opp[3] * dim.h)
+            SetChatTarget(2, opp[1], relPoint, px + opp[2] * size.w, py + opp[3] * size.h)
             n = 2
         end
     end
@@ -671,12 +671,12 @@ CanonicalizeChatPosition = function()
     end
     -- The frame's point at its spot, measured from the same point of the
     -- screen (BOTTOMLEFT: the rect's own left and bottom).
-    local targetUnit = ChatScreenChoice(cfg2) or "BOTTOMLEFT"
-    local f = POINT_FRAC[targetUnit]
+    local target = ChatScreenChoice(cfg2) or "BOTTOMLEFT"
+    local f = POINT_FRAC[target]
     local sw, sh = ChatScreenSize(cf1)
     cfg2.chatPosition = {
-        point = targetUnit,
-        relPoint = targetUnit,
+        point = target,
+        relPoint = target,
         x = l + f[1] * (r - l - sw),
         y = b + f[2] * (t - b - sh),
     }
@@ -1155,8 +1155,8 @@ mod._BuildMainChatResizeGrip = BuildMainChatResizeGrip
 -- Idempotent -- a frame already carrying two points is left alone.
 local function KeepMainChatSizeCorner()
     local conf = CHAT.DB()
-    local dim = conf and conf.chatSize
-    if not (dim and dim.w and dim.h) then
+    local size = conf and conf.chatSize
+    if not (size and size.w and size.h) then
         return
     end
     local cf1 = _G.ChatFrame1
@@ -1175,7 +1175,7 @@ local function KeepMainChatSizeCorner()
         return
     end
     relPoint = relPoint or anchorPoint
-    local wid, hgt = dim.w, dim.h
+    local wid, hgt = size.w, size.h
     local opp = SIZE_CORNER[anchorPoint]
     local frac = POINT_FRAC[anchorPoint]
     if opp then

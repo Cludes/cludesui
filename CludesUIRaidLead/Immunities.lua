@@ -45,23 +45,23 @@ local function SpellSet()
     return set
 end
 
-local anchorFrame, boxHolder, rejected
+local anchor, boxHolder, rejected
 
 local function ApplyPosition()
-    if not anchorFrame or InCombatLockdown() then
+    if not anchor or InCombatLockdown() then
         return
     end
     local p = mod.ImmunitySettings().pos
-    anchorFrame:ClearAllPoints()
+    anchor:ClearAllPoints()
     if p then
-        anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
+        anchor:SetPoint("CENTER", UIParent, "CENTER", 0, -120)
     end
 end
 
 local function Build()
-    if anchorFrame or rejected or InCombatLockdown() then
+    if anchor or rejected or InCombatLockdown() then
         return
     end
     if C_AddOns and not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
@@ -71,10 +71,10 @@ local function Build()
         return
     end
     local s = mod.ImmunitySettings()
-    anchorFrame = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
-    anchorFrame:SetSize(s.size * 3 + 8, s.size)
+    anchor = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
+    anchor:SetSize(s.size * 3 + 8, s.size)
     ApplyPosition()
-    local success, c = pcall(CreateFrame, "AuraContainer", nil, anchorFrame, "CustomAuraContainerTemplate")
+    local success, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
     if not success or not c then
         rejected = true
         return
@@ -84,19 +84,19 @@ local function Build()
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
     c:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Right, AnchorUtil.FlowDirection.Down)
     c:SetFlowLayoutPadding(0, 0, 0, 0)
-    c:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
+    c:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
     local added, err = pcall(c.AddAuraGroup, c, "immunities", "HELPFUL", {
         maxFrameCount = 3,
         sortMethod = AuraContainerSortMethod.Default,
         sortDirection = AuraContainerSortDirection.Normal,
         candidateFilters = { includeSpellIDs = SpellSet() },
         initializeFrame = function(button)
-            local glyph = button:CreateTexture(nil, "ARTWORK")
-            glyph:SetAllPoints()
-            glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            button:SetIcon(glyph)
+            local icon = button:CreateTexture(nil, "ARTWORK")
+            icon:SetAllPoints()
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            button:SetIcon(icon)
             local cd = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
-            cd:SetAllPoints(glyph)
+            cd:SetAllPoints(icon)
             cd:SetReverse(true)
             button:SetDurationCooldown(cd)
         end,
@@ -130,7 +130,7 @@ function mod.RefreshImmunities()
     boxHolder:SetEnabled(s.enabled)
     if not InCombatLockdown() then
         boxHolder:SetShown(s.enabled)
-        anchorFrame:SetSize(s.size * 3 + 8, s.size)
+        anchor:SetSize(s.size * 3 + 8, s.size)
     end
 end
 
@@ -143,7 +143,7 @@ ev:SetScript("OnEvent", function()
         return
     end
     Build()
-    if registered or not anchorFrame or not CludesUI.RegisterUnlockElements then
+    if registered or not anchor or not CludesUI.RegisterUnlockElements then
         return
     end
     registered = true
@@ -159,7 +159,7 @@ ev:SetScript("OnEvent", function()
                 return not mod.ImmunitySettings().enabled
             end,
             getFrame = function()
-                return anchorFrame
+                return anchor
             end,
             getSize = function()
                 local s = mod.ImmunitySettings()

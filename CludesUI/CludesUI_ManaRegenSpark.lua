@@ -90,9 +90,9 @@ end
 -- inputs are the bar's orientation and reverse fill (the overlay's fill
 -- texture is set once, at build); while they hold, the anchors stand.
 local function Layout(hgt)
-    local barFrame = hgt.bar
-    local vert = barFrame:GetOrientation() == "VERTICAL"
-    local rev = barFrame:GetReverseFill() and true or false
+    local bar = hgt.bar
+    local vert = bar:GetOrientation() == "VERTICAL"
+    local rev = bar:GetReverseFill() and true or false
     if hgt.vert == vert and hgt.rev == rev then
         return
     end
@@ -224,16 +224,16 @@ end
 
 -- Hooked once on each host bar (our own StatusBars). A bar that is not
 -- attached returns at once; a shown bar joins the running sweep.
-local function OnHostShow(barFrame)
-    local hgt = built[barFrame]
+local function OnHostShow(bar)
+    local hgt = built[bar]
     if hosts[hgt.key] == hgt then
         Listen()
         Arm(hgt)
     end
 end
 
-local function OnHostHide(barFrame)
-    local hgt = built[barFrame]
+local function OnHostHide(bar)
+    local hgt = built[bar]
     if hosts[hgt.key] == hgt then
         Listen()
     end
@@ -244,13 +244,13 @@ CludesUI.ManaRegenSpark = MRS
 
 -- The host's option is on and its bar can draw; ticks = Regen Ticks mode.
 -- Lays the spark out on every call, so hosts call it on every rebuild.
-function MRS.Attach(key, barFrame, ticks)
+function MRS.Attach(key, bar, ticks)
     ticks = ticks and true or false
-    local hgt = built[barFrame]
+    local hgt = built[bar]
     if not hgt then
-        local o = CreateFrame("StatusBar", nil, barFrame)
-        o:SetAllPoints(barFrame)
-        o:SetFrameLevel(barFrame:GetFrameLevel() + 2)
+        local o = CreateFrame("StatusBar", nil, bar)
+        o:SetAllPoints(bar)
+        o:SetFrameLevel(bar:GetFrameLevel() + 2)
         o:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         o:GetStatusBarTexture():SetAlpha(0)
         o:SetMinMaxValues(0, 1)
@@ -259,10 +259,10 @@ function MRS.Attach(key, barFrame, ticks)
         local s = o:CreateTexture(nil, "OVERLAY", nil, 1)
         s:SetTexture(SPARK_TEX)
         s:SetBlendMode("ADD")
-        hgt = { bar = barFrame, overlay = o, spark = s }
-        built[barFrame] = hgt
-        barFrame:HookScript("OnShow", OnHostShow)
-        barFrame:HookScript("OnHide", OnHostHide)
+        hgt = { bar = bar, overlay = o, spark = s }
+        built[bar] = hgt
+        bar:HookScript("OnShow", OnHostShow)
+        bar:HookScript("OnHide", OnHostHide)
     end
     Layout(hgt)
     local old = hosts[key]

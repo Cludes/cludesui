@@ -187,7 +187,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return row
     end
 
-    local function BuildMultiApplyDropdown(anchorFrame, opts, flashTargets)
+    local function BuildMultiApplyDropdown(anchor, opts, flashTargets)
         -- Close any existing dropdown first
         if _activeMultiApplyDropdown then
             _activeMultiApplyDropdown:Hide()
@@ -319,14 +319,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             ma.menu, ma.applyRow, ma.applyBg, ma.applyBrd, ma.applyLbl, ma.blocker =
                 menu, applyRow, applyBg, applyBrd, applyLbl, blocker
         end
-        ma.anchor, ma.padCP = anchorFrame, padCP
+        ma.anchor, ma.padCP = anchor, padCP
         local applyRow, applyBg, applyBrd, applyLbl = ma.applyRow, ma.applyBg, ma.applyBrd, ma.applyLbl
         local DB_BG = CludesUI.DARK_BG
         local blocker = ma.blocker
 
         PP.Size(menu, menuW, menuH)
         menu:ClearAllPoints()
-        menu:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -2)
+        menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
         local ppScale = CludesUI.GetPopupScale() or 1
         menu:SetScale(ppScale)
         ma.resetApplyHover()

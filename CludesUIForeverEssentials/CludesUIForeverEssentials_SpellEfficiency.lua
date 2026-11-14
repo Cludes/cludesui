@@ -169,13 +169,13 @@ local function TalentEffects(spellId, school)
     return direct, periodic, cost
 end
 
-local function Shows(kindOf)
+local function Shows(kind)
     local show = Get("show")
     if show == "heal" then
-        return kindOf == HEAL
+        return kind == HEAL
     end
     if show == "damage" then
-        return kindOf ~= HEAL
+        return kind ~= HEAL
     end
     return true
 end
@@ -187,15 +187,15 @@ local function Number(value, whole)
     return ("%." .. math.max(0, math.min(2, Get("decimals"))) .. "f"):format(value)
 end
 
-local function Piece(textValue, which, kindOf, value, area)
+local function Piece(textValue, which, kind, value, area)
     local number = Number(value, which == PER_SECOND)
     local piece
     if Get("style") == "short" then
-        piece = ("%s %s"):format(SHORT_LABELS[kindOf][which], number)
+        piece = ("%s %s"):format(SHORT_LABELS[kind][which], number)
     elseif textValue then
         piece = LONG_NEXT[which]:format(number)
     else
-        piece = LONG_FIRST[which]:format(number, KIND_WORDS[kindOf])
+        piece = LONG_FIRST[which]:format(number, KIND_WORDS[kind])
     end
     if area then
         piece = piece .. " / target"
@@ -206,8 +206,8 @@ local function Piece(textValue, which, kindOf, value, area)
     return textValue .. SEPARATOR .. piece
 end
 
-local function Rate(kindOf, amount, mana, seconds)
-    local p = { kind = kindOf, amount = amount, perMana = amount / mana }
+local function Rate(kind, amount, mana, seconds)
+    local p = { kind = kind, amount = amount, perMana = amount / mana }
     if seconds and seconds > 0 then
         p.perSecond, p.perManaSecond = amount / seconds, p.perMana / seconds
     end
@@ -281,14 +281,14 @@ local function CastMs(spellId)
     return ms
 end
 
-local function Bonus(e, kindOf)
+local function Bonus(e, kind)
     if not Get("bonus") then
         return 0
     end
     if StatsSecret() then
         return nil
     end
-    local b = kindOf == HEAL and GetSpellBonusHealing() or GetSpellBonusDamage(e[SCHOOL])
+    local b = kind == HEAL and GetSpellBonusHealing() or GetSpellBonusDamage(e[SCHOOL])
     if not Readable(b) or type(b) ~= "number" then
         return nil
     end
@@ -312,9 +312,9 @@ function module.SpellEfficiencyOf(spellId)
     mana = mana * costMod
     local result = { mana = mana, castMs = castMs, area = e[AREA] == 1, level = e[LEVEL], count = 0 }
     for at = PART_START, #e, PART_SIZE do
-        local kindOf = e[at + KIND]
-        if Shows(kindOf) then
-            local bonus = Bonus(e, kindOf)
+        local kind = e[at + KIND]
+        if Shows(kind) then
+            local bonus = Bonus(e, kind)
             if not bonus then
                 break
             end
@@ -323,7 +323,7 @@ function module.SpellEfficiencyOf(spellId)
                 local seconds = castMs > 0 and castMs / 1000
                     or (e[at + SECONDS] > 0 and e[at + SECONDS] or nil)
                 result.count = result.count + 1
-                result[result.count] = Rate(kindOf, amount, mana, seconds)
+                result[result.count] = Rate(kind, amount, mana, seconds)
             end
         end
     end
@@ -398,8 +398,8 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if not action then
             return
         end
-        local kindOf, ident, subType = GetActionInfo(action)
-        if kindOf ~= "macro" or not (Readable(ident) and type(ident) == "number") then
+        local kind, ident, subType = GetActionInfo(action)
+        if kind ~= "macro" or not (Readable(ident) and type(ident) == "number") then
             return
         end
         local spellId = subType == "spell" and ident or GetMacroSpell(ident)

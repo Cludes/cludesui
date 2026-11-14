@@ -77,8 +77,8 @@ local visit -- { map, name, start, entry, deaths, xp, items, copy }
 local lastXP, lastMax
 
 local function InGroupInstance()
-    local inside, kindOf = IsInInstance()
-    return inside and (kindOf == "party" or kindOf == "raid")
+    local inside, kind = IsInInstance()
+    return inside and (kind == "party" or kind == "raid")
 end
 
 -- The copy (zone UID) a creature GUID names: Creature-0-server-instance-zoneUID-id-spawn.
@@ -87,8 +87,8 @@ local function CopyFrom(unitToken)
     if not unitGuid or Secret(unitGuid) then
         return nil
     end
-    local kindOf, _, _, _, zoneUID = strsplit("-", unitGuid)
-    if kindOf == "Creature" or kindOf == "Vehicle" or kindOf == "GameObject" then
+    local kind, _, _, _, zoneUID = strsplit("-", unitGuid)
+    if kind == "Creature" or kind == "Vehicle" or kind == "GameObject" then
         return zoneUID ~= "0" and zoneUID or nil
     end
 end
@@ -172,18 +172,14 @@ local function EndVisit()
     local unitGuid = UnitGUID("player")
     local runs = Store().runs
     runs[unitGuid] = runs[unitGuid] or {}
-    table.insert(
-        runs[unitGuid],
-        1,
-        {
-            name = val.name,
-            start = val.start,
-            seconds = seconds,
-            deaths = val.deaths,
-            xp = val.xp,
-            items = val.items,
-        }
-    )
+    table.insert(runs[unitGuid], 1, {
+        name = val.name,
+        start = val.start,
+        seconds = seconds,
+        deaths = val.deaths,
+        xp = val.xp,
+        items = val.items,
+    })
     while #runs[unitGuid] > KEEP_RUNS do
         table.remove(runs[unitGuid])
     end
@@ -245,16 +241,15 @@ local function PaintHud()
     local cap = Get("cap")
     local colour = num >= cap and "|cffff6040"
         or (num >= cap - 2 and "|cffffb040" or CludesUI.Kit.AccentHex())
-    local lineTex = ("%sInstances %d/%d|r"):format(colour, num, cap)
+    local line = ("%sInstances %d/%d|r"):format(colour, num, cap)
     if frees and num > 0 then
-        lineTex = lineTex .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60))
+        line = line .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60))
     end
     if visit then
         local s = time() - visit.start
-        lineTex = lineTex
-            .. ("\n%s  |cff9aa6b2%d:%02d|r"):format(visit.name or "", math.floor(s / 60), s % 60)
+        line = line .. ("\n%s  |cff9aa6b2%d:%02d|r"):format(visit.name or "", math.floor(s / 60), s % 60)
     end
-    hudText:SetText(lineTex)
+    hudText:SetText(line)
 end
 
 -- Coming back to life outside ends a run left open while a ghost.
@@ -287,7 +282,7 @@ ev:SetScript("OnEvent", function(_, evt, a1, a2)
     elseif evt == "PLAYER_DEAD" then
         visit.deaths = visit.deaths + 1
     elseif evt == "PLAYER_XP_UPDATE" then
-        local xp, upper = UnitXP("player"), UnitXPMax("player")
+        local xp, max = UnitXP("player"), UnitXPMax("player")
         if lastXP then
             local d = xp - lastXP
             if d < 0 then
@@ -297,7 +292,7 @@ ev:SetScript("OnEvent", function(_, evt, a1, a2)
                 visit.xp = visit.xp + d
             end
         end
-        lastXP, lastMax = xp, upper
+        lastXP, lastMax = xp, max
     elseif evt == "CHAT_MSG_LOOT" and type(a1) == "string" and not Secret(a1) then
         local mine = (LOOT_SELF and a1:sub(1, #LOOT_SELF) == LOOT_SELF)
             or (LOOT_SELF_MULTI and a1:sub(1, #LOOT_SELF_MULTI) == LOOT_SELF_MULTI)

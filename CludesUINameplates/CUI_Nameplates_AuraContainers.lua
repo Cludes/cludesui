@@ -107,25 +107,25 @@ local function CropCoords(cropped, zoom)
     return { z, 1 - z, z, 1 - z }
 end
 
-local function NPSize(kindOf)
-    if kindOf == "debuffs" then
+local function NPSize(kind)
+    if kind == "debuffs" then
         return (mod.GetDebuffIconSize and mod.GetDebuffIconSize()) or 26
     end
-    if kindOf == "buffs" then
+    if kind == "buffs" then
         return (mod.GetBuffIconSize and mod.GetBuffIconSize()) or 24
     end
     return (mod.GetCCIconSize and mod.GetCCIconSize()) or 24
 end
 
-local function NPHeight(kindOf, dim)
-    local cropped = mod.GetAuraCrop and mod.GetAuraCrop(kindOf == "cc" and "ccs" or kindOf)
+local function NPHeight(kind, size)
+    local cropped = mod.GetAuraCrop and mod.GetAuraCrop(kind == "cc" and "ccs" or kind)
     if cropped and mod.GetAuraCropHeight then
         -- Second return is GetAuraCrop's value itself (the height factor,
         -- truthy) so CropCoords can derive matching texcoords; truth-testing
         -- callers behave exactly as with the old literal `true`.
-        return mod.GetAuraCropHeight(cropped, dim), cropped
+        return mod.GetAuraCropHeight(cropped, size), cropped
     end
-    return dim, false
+    return size, false
 end
 
 -- Legacy settings resolution for aura text -- the EXACT fallback chains
@@ -180,9 +180,9 @@ local TEXT_POS = {
 }
 
 -- Text pass shared by the three styles; anchors/sizes carried per style.
-local function ApplyNPText(btnFrame, d, look)
+local function ApplyNPText(btnFrame, d, style)
     if btnFrame.SetMouseMotionEnabled then
-        local motion = not look.noTooltips
+        local motion = not style.noTooltips
         if d.npMotion ~= motion then
             d.npMotion = motion
             btnFrame:SetMouseMotionEnabled(motion)
@@ -190,52 +190,56 @@ local function ApplyNPText(btnFrame, d, look)
     end
     local filePath = (CludesUI.GetFontPath("nameplates")) or "Fonts\\FRIZQT__.TTF"
     if d.duration then
-        local fontKey = filePath .. "|" .. (look.durSize or 11)
+        local fontKey = filePath .. "|" .. (style.durSize or 11)
         if d.npDurFont ~= fontKey then
             d.npDurFont = fontKey
-            CludesUI.ApplyIconTextFont(d.duration, filePath, look.durSize or 11, "nameplates")
+            CludesUI.ApplyIconTextFont(d.duration, filePath, style.durSize or 11, "nameplates")
         end
-        local c = look.durColor
+        local c = style.durColor
         d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
-        local m = TEXT_POS[look.durPos] or TEXT_POS.topleft
+        local m = TEXT_POS[style.durPos] or TEXT_POS.topleft
         -- Anchor change-guarded (stamp AFTER the calls): SetPoint with the
         -- button as the relative frame is policed by the 12.1 button access
         -- restriction while auras are secret; unchanged anchors must make
         -- zero button-involving calls so restyles stay live in-instance.
-        local aKey = m.point .. "|" .. (m.nx + (look.durOffX or 0)) .. "|" .. (m.ny + (look.durOffY or 0))
+        local aKey = m.point .. "|" .. (m.nx + (style.durOffX or 0)) .. "|" .. (m.ny + (style.durOffY or 0))
         if d.npDurAnchor ~= aKey then
             d.duration:ClearAllPoints()
             d.duration:SetPoint(
                 m.point,
                 btnFrame,
                 m.point,
-                m.nx + (look.durOffX or 0),
-                m.ny + (look.durOffY or 0)
+                m.nx + (style.durOffX or 0),
+                m.ny + (style.durOffY or 0)
             )
             d.npDurAnchor = aKey
         end
         d.duration:SetJustifyH(m.justify)
-        d.duration:SetShown(not look.hideDurationText)
+        d.duration:SetShown(not style.hideDurationText)
     end
     if d.stack then
-        d.stack:SetShown(look.showStacks ~= false)
-        local fontKey = filePath .. "|" .. (look.stackSize or 11)
+        d.stack:SetShown(style.showStacks ~= false)
+        local fontKey = filePath .. "|" .. (style.stackSize or 11)
         if d.npStackFont ~= fontKey then
             d.npStackFont = fontKey
-            CludesUI.ApplyIconTextFont(d.stack, filePath, look.stackSize or 11, "nameplates")
+            CludesUI.ApplyIconTextFont(d.stack, filePath, style.stackSize or 11, "nameplates")
         end
-        local sc = look.stackColor
+        local sc = style.stackColor
         d.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
-        local m = TEXT_POS[look.stackPos] or TEXT_POS.bottomright
-        local sKey = m.point .. "|" .. (m.nx + (look.stackOffX or 0)) .. "|" .. (m.ny + (look.stackOffY or 0))
+        local m = TEXT_POS[style.stackPos] or TEXT_POS.bottomright
+        local sKey = m.point
+            .. "|"
+            .. (m.nx + (style.stackOffX or 0))
+            .. "|"
+            .. (m.ny + (style.stackOffY or 0))
         if d.npStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
             d.stack:SetPoint(
                 m.point,
                 btnFrame,
                 m.point,
-                m.nx + (look.stackOffX or 0),
-                m.ny + (look.stackOffY or 0)
+                m.nx + (style.stackOffX or 0),
+                m.ny + (style.stackOffY or 0)
             )
             d.npStackAnchor = sKey
         end
@@ -355,25 +359,25 @@ end
 -- holds just the static border, and a later style makes its own. Made only on
 -- buttons that can ever show an aura (NPGlowable).
 local function NPGlowHost(btnFrame, d, key)
-    local hostRegion = d[key]
-    if hostRegion then
-        return hostRegion
+    local host = d[key]
+    if host then
+        return host
     end
-    hostRegion = CreateFrame("Frame", nil, btnFrame)
-    hostRegion:SetAllPoints(btnFrame)
+    host = CreateFrame("Frame", nil, btnFrame)
+    host:SetAllPoints(btnFrame)
     if d.stackCarrier then
-        hostRegion:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
+        host:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
     else
-        hostRegion:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
+        host:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
     end
-    hostRegion:EnableMouse(false)
-    d[key] = hostRegion
+    host:EnableMouse(false)
+    d[key] = host
     -- NPB.bound: some button plays a glow itself, so a pooled bundle's
     -- buttons are worth releasing (NPB.ReleaseGlowButtons).
-    if CludesUI.Glows.BindEngineHost(hostRegion, btnFrame, d) then
+    if CludesUI.Glows.BindEngineHost(host, btnFrame, d) then
         NPB.bound = true
     end
-    return hostRegion
+    return host
 end
 
 -- Whether a button gets a glow at all: only the buttons that can ever show an
@@ -390,10 +394,10 @@ end
 -- Draws spec on the glow host, sized to the icon (the height follows cropped
 -- icons); unchanged, StartSpecGlow returns at once. Callers pass only glowable
 -- buttons; a bound host's button decides when the animations play.
-local function NPStartGlow(hostRegion, specInfo, look)
-    hostRegion:SetAlpha(1)
-    local sz = look.width or 24
-    CludesUI.Glows.StartSpecGlow(hostRegion, specInfo, sz, look.height or sz, "engine")
+local function NPStartGlow(host, specInfo, style)
+    host:SetAlpha(1)
+    local sz = style.width or 24
+    CludesUI.Glows.StartSpecGlow(host, specInfo, sz, style.height or sz, "engine")
 end
 
 -- Dispel Glow on the buff row: every buff in the glow group is dispellable (the
@@ -401,16 +405,16 @@ end
 -- readback of per-aura state. purgeSpec is the dispel glow's full spec
 -- (ns.GetDispelGlowSpec), built once per style pass. The static Blizzard
 -- Border and Blizzard Pandemic Border render through the same call.
-local function ApplyNPBuffExtra(btnFrame, d, look)
-    ApplyNPText(btnFrame, d, look)
-    if look.purgeGlow and look.purgeSpec and NPGlowable(btnFrame) then
-        NPStartGlow(NPGlowHost(btnFrame, d, "npGlowHost"), look.purgeSpec, look)
+local function ApplyNPBuffExtra(btnFrame, d, style)
+    ApplyNPText(btnFrame, d, style)
+    if style.purgeGlow and style.purgeSpec and NPGlowable(btnFrame) then
+        NPStartGlow(NPGlowHost(btnFrame, d, "npGlowHost"), style.purgeSpec, style)
     elseif d.npGlowHost then
-        local hostRegion = d.npGlowHost
-        if hostRegion._cuiGlowActive then
-            CludesUI.Glows.StopGlow(hostRegion)
+        local host = d.npGlowHost
+        if host._cuiGlowActive then
+            CludesUI.Glows.StopGlow(host)
         end
-        hostRegion:SetAlpha(0)
+        host:SetAlpha(0)
     end
 end
 
@@ -422,25 +426,25 @@ end
 -- cleared, so the button no longer checks the window. Blizzard's aura code
 -- runs in its own environment (no global mixin to test), so the button's own
 -- method is the one capability check.
-local function ApplyNPDebuffExtra(btnFrame, d, look)
-    ApplyNPText(btnFrame, d, look)
-    local hostRegion = d.npPanHost
-    if look.pandemicGlow and look.pandemicSpec and btnFrame.AddPandemicRegion and NPGlowable(btnFrame) then
-        hostRegion = NPGlowHost(btnFrame, d, "npPanHost")
+local function ApplyNPDebuffExtra(btnFrame, d, style)
+    ApplyNPText(btnFrame, d, style)
+    local host = d.npPanHost
+    if style.pandemicGlow and style.pandemicSpec and btnFrame.AddPandemicRegion and NPGlowable(btnFrame) then
+        host = NPGlowHost(btnFrame, d, "npPanHost")
         if not d.npPanRegion then
-            btnFrame:AddPandemicRegion(hostRegion)
+            btnFrame:AddPandemicRegion(host)
             d.npPanRegion = true
         end
-        NPStartGlow(hostRegion, look.pandemicSpec, look)
-    elseif hostRegion then
+        NPStartGlow(host, style.pandemicSpec, style)
+    elseif host then
         if d.npPanRegion then
             btnFrame:ClearPandemicRegions()
             d.npPanRegion = nil
         end
-        if hostRegion._cuiGlowActive then
-            CludesUI.Glows.StopGlow(hostRegion)
+        if host._cuiGlowActive then
+            CludesUI.Glows.StopGlow(host)
         end
-        hostRegion:SetAlpha(0)
+        host:SetAlpha(0)
     end
 end
 
@@ -458,11 +462,11 @@ end
 local function NPCustomIconBorder()
     local tex = PVal("customBorderTexture")
     local sz = PVal("customBorderSize") or 1
-    local column = PVal("customBorderColor")
+    local col = PVal("customBorderColor")
     local t = {
-        column.r,
-        column.g,
-        column.b,
+        col.r,
+        col.g,
+        col.b,
         PVal("customBorderAlpha") or 1,
         size = sz,
         edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex),
@@ -475,13 +479,13 @@ local function NPCustomIconBorder()
     return t
 end
 
-local function BuildNPStyle(kindOf, variant)
-    local dim = NPSize(kindOf)
-    local height, cropped = NPHeight(kindOf, dim)
+local function BuildNPStyle(kind, variant)
+    local size = NPSize(kind)
+    local height, cropped = NPHeight(kind, size)
     -- User text settings, resolved through the legacy fallback chains, so
     -- every Duration/Stacks option (size, color, position, X/Y) renders
     -- exactly like the 12.0 aura pools.
-    local kindKey = (kindOf == "debuffs" and "debuff") or (kindOf == "buffs" and "buff") or "cc"
+    local kindKey = (kind == "debuffs" and "debuff") or (kind == "buffs" and "buff") or "cc"
     local dur = AuraDurCfg(kindKey)
     local stk = StackCfg()
     -- Stock styles: the whole icon (zoom 0), no CUI border (GetIconBorderEnabled
@@ -492,14 +496,14 @@ local function BuildNPStyle(kindOf, variant)
     -- blizzBorder). Text, stacks, sizes and the dispel glow all stay the user's.
     local blizz = mod.NP_Blizz()
     local classic = blizz and mod.NP_Classic()
-    local harmfulClassic = (classic and kindOf ~= "buffs") or nil
-    local look = {
-        width = dim,
+    local harmfulClassic = (classic and kind ~= "buffs") or nil
+    local style = {
+        width = size,
         height = height,
         texCoord = CropCoords(cropped, blizz and 0 or nil),
         -- Off: the plain 1px black edge (plain lane); a per-kind Hide
         -- Border still wins over the custom border.
-        border = (not mod.GetIconBorderEnabled or mod.GetIconBorderEnabled(kindOf))
+        border = (not mod.GetIconBorderEnabled or mod.GetIconBorderEnabled(kind))
                 and (NPIconCustomBorderOn() and NPCustomIconBorder() or { 0, 0, 0, 1, size = 1 })
             or false,
         blizzRoundArt = (blizz and not classic) or nil,
@@ -522,7 +526,7 @@ local function BuildNPStyle(kindOf, variant)
         hideDurationText = (dur.pos == "none"),
         -- CC icons never render stacks (legacy parity); the shared Aura
         -- Stacks position "None" hides them everywhere else.
-        showStacks = (kindOf ~= "cc") and (stk.pos ~= "none"),
+        showStacks = (kind ~= "cc") and (stk.pos ~= "none"),
         stackSize = stk.size,
         stackColor = stk.color,
         stackPos = stk.pos,
@@ -534,18 +538,18 @@ local function BuildNPStyle(kindOf, variant)
     -- npnb remainder: identical text styling, NEVER the glow. Per-aura
     -- dispel type is unreadable under 12.1 secrecy, so the type is a
     -- property of the GROUP and resolves once, here, at style-build time.
-    if kindOf == "buffs" and variant ~= "plain" then
+    if kind == "buffs" and variant ~= "plain" then
         local glow, dispelType = NPB.GroupGlow(variant == 2 and 2 or 1)
-        look.purgeGlow = glow
-        look.purgeSpec = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType) or nil
-        look.applyExtra = ApplyNPBuffExtra
-    elseif kindOf == "debuffs" then
+        style.purgeGlow = glow
+        style.purgeSpec = mod.GetDispelGlowSpec and mod.GetDispelGlowSpec(dispelType) or nil
+        style.applyExtra = ApplyNPBuffExtra
+    elseif kind == "debuffs" then
         -- Your debuffs only: the pandemic window is the time a recast keeps.
-        look.pandemicGlow = mod.GetPandemicGlow()
-        look.pandemicSpec = look.pandemicGlow and mod.GetPandemicGlowSpec() or nil
-        look.applyExtra = ApplyNPDebuffExtra
+        style.pandemicGlow = mod.GetPandemicGlow()
+        style.pandemicSpec = style.pandemicGlow and mod.GetPandemicGlowSpec() or nil
+        style.applyExtra = ApplyNPDebuffExtra
     end
-    return look
+    return style
 end
 
 ------------------------------------------------------------------------------
@@ -615,13 +619,13 @@ end
 -- frames. Show All writes go through ns.NPF_Root().debuffs.all -- only
 -- the debuffs kind has that mode, so the view pins all = false for
 -- dcc/cc.
-function mod.NPF_Config(kindOf)
+function mod.NPF_Config(kind)
     local t = mod.NPF_Root()
-    local val = t and NPF_VIEW[kindOf]
+    local val = t and NPF_VIEW[kind]
     if not val then
         return nil
     end
-    val.all = (kindOf == "debuffs") and (t.debuffs and t.debuffs.all == true) or false
+    val.all = (kind == "debuffs") and (t.debuffs and t.debuffs.all == true) or false
     return val
 end
 
@@ -737,12 +741,12 @@ end
 -- keeps its exclusions) and the cc slot's own. spellID excludes are
 -- identity-legal on hostile units (harmful-on-attackable passes the
 -- gate), so these are real engine filters, not Lua scans.
-function mod.NPF_Exclude(sideName)
+function mod.NPF_Exclude(side)
     local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (sideName == "cc") and "ccExclude" or "exclude"
+    local key = (side == "cc") and "ccExclude" or "exclude"
     if not t[key] then
         t[key] = {}
     end
@@ -756,12 +760,12 @@ end
 -- entries flagged Only My Casts; NPF_ApplyContainer) and are excluded from
 -- every other group's candidates on that container, so a spell that also matches the
 -- slot's composition (or Show All) can never double-render.
-function mod.NPF_Include(sideName)
+function mod.NPF_Include(side)
     local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (sideName == "cc") and "ccInclude" or "include"
+    local key = (side == "cc") and "ccInclude" or "include"
     if not t[key] then
         t[key] = {}
     end
@@ -772,12 +776,12 @@ end
 -- SIBLING map keyed by spell id, not a fourth tri-state value -- every
 -- `v == true` reader of the include list stays valid, and the flag
 -- survives disable/re-enable cycles.
-function mod.NPF_IncludeAny(sideName)
+function mod.NPF_IncludeAny(side)
     local t = mod.NPF_Root()
     if not t then
         return nil
     end
-    local key = (sideName == "cc") and "ccIncludeAnyCaster" or "includeAnyCaster"
+    local key = (side == "cc") and "ccIncludeAnyCaster" or "includeAnyCaster"
     if not t[key] then
         t[key] = {}
     end
@@ -814,12 +818,12 @@ end
 -- opt-outs feed the npinc group, everything else (the default) feeds
 -- npincmine (its filter string carries the PLAYER token -- the caster
 -- restriction lives in the token vocabulary, not in candidate booleans).
-local function NPF_ActiveIncludes(sideName)
-    local inc = mod.NPF_Include(sideName)
+local function NPF_ActiveIncludes(side)
+    local inc = mod.NPF_Include(side)
     if not inc then
         return nil, nil
     end
-    local anym = mod.NPF_IncludeAny(sideName)
+    local anym = mod.NPF_IncludeAny(side)
     local m, mm
     for ident, val in pairs(inc) do
         if val then
@@ -841,7 +845,7 @@ end
 -- Exclude entries are tri-state now (true = active, false = kept but
 -- disabled via the popup checkbox, nil = deleted): the engine map gets an
 -- ACTIVE-ONLY copy -- a false value must not reach the C validator.
-local function NPF_Cand(extra, sideName)
+local function NPF_Cand(extra, side)
     local cand = {}
     if extra then
         for k, val in pairs(extra) do
@@ -849,7 +853,7 @@ local function NPF_Cand(extra, sideName)
         end
     end
     local m
-    local ex = mod.NPF_Exclude(sideName)
+    local ex = mod.NPF_Exclude(side)
     if ex then
         for ident, val in pairs(ex) do
             if val then
@@ -861,7 +865,7 @@ local function NPF_Cand(extra, sideName)
     -- Active INCLUDES are excluded here too: the npinc/npincmine groups own
     -- their display (active in every mode), so every category / Show All
     -- group must not render its own copy.
-    local incm, incmm = NPF_ActiveIncludes(sideName)
+    local incm, incmm = NPF_ActiveIncludes(side)
     if incm then
         m = m or {}
         for ident in pairs(incm) do
@@ -877,13 +881,13 @@ local function NPF_Cand(extra, sideName)
     -- Show-once exceptions render through their own single-frame groups
     -- (debuff side only, while the option is on), so no other group may
     -- render a copy. Option off = the id is an ordinary debuff again.
-    if sideName ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+    if side ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
         for ident in pairs(NPF_ONCE_DEBUFFS) do
             m = m or {}
             m[ident] = true
         end
     end
-    if sideName ~= "cc" and NPF_SunderOn() then
+    if side ~= "cc" and NPF_SunderOn() then
         for ident in pairs(NPF_SUNDER_IDS) do
             m = m or {}
             m[ident] = true
@@ -920,7 +924,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     local f = conf.f or {}
     -- List side: the cc container has its own lists; the debuff
     -- container (kinds debuffs/dcc) shares the debuff-side pair.
-    local sideName = (kindKey == "cc") and "cc" or "debuff"
+    local side = (kindKey == "cc") and "cc" or "debuff"
     local declared = boxHolder._npfGroups
     if not declared then
         declared = {}
@@ -935,16 +939,16 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     if not conf.all then
         local recs = NPF_Records(conf)
         for i = 1, #recs do
-            local recd = recs[i]
-            if not (kindKey == "cc" and recd.cat == "cc") then
-                local gkey = NPF_GKey(recd.cat, conf)
+            local rec = recs[i]
+            if not (kindKey == "cc" and rec.cat == "cc") then
+                local gkey = NPF_GKey(rec.cat, conf)
                 wanted[gkey] = true
                 if not declared[gkey] then
                     AK.AddGroupToContainer(boxHolder, {
                         key = gkey,
-                        filter = recd.tokens,
+                        filter = rec.tokens,
                         maxFrameCount = cap,
-                        candidateFilters = NPF_Cand(recd.cand, sideName),
+                        candidateFilters = NPF_Cand(rec.cand, side),
                         sortMethod = SORT_IMPORTANT,
                         style = styleKey,
                         layout = {
@@ -958,7 +962,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
                     declaredNew = true
                 else
                     CludesUI.AuraKit.SetGroupCap(boxHolder, gkey, cap)
-                    boxHolder:SetAuraGroupCandidateFilters(gkey, NPF_Cand(recd.cand, sideName))
+                    boxHolder:SetAuraGroupCandidateFilters(gkey, NPF_Cand(rec.cand, side))
                 end
             end
         end
@@ -971,8 +975,8 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     -- is simply not wanted (an existing one parks to 0 in the loop below; a
     -- never-declared one costs nothing). Every other debuff-side group
     -- excludes these ids while on (NPF_Cand), so this group is the sole renderer.
-    if sideName ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
-        local ex = mod.NPF_Exclude(sideName)
+    if side ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+        local ex = mod.NPF_Exclude(side)
         for ident in pairs(NPF_ONCE_DEBUFFS) do
             if not (ex and ex[ident]) then
                 local gkey = "nponce:" .. ident
@@ -1002,8 +1006,8 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     end
     -- Sunder Armor (Forever warriors, opt-in): any caster, one icon. Ids the
     -- user already lists in Tracked Auras keep going through those lists.
-    if sideName ~= "cc" and NPF_SunderOn() then
-        local ex, inc = mod.NPF_Exclude(sideName), mod.NPF_Include(sideName)
+    if side ~= "cc" and NPF_SunderOn() then
+        local ex, inc = mod.NPF_Exclude(side), mod.NPF_Include(side)
         local ids
         for ident in pairs(NPF_SUNDER_IDS) do
             if not (ex and ex[ident]) and not (inc and inc[ident]) then
@@ -1049,7 +1053,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     end
     -- Blacklist on the np group too (both containers; the debuff cfg pass
     -- also re-drives this -- same values, dirty-mark cheap).
-    boxHolder:SetAuraGroupCandidateFilters("np", NPF_Cand(nil, sideName))
+    boxHolder:SetAuraGroupCandidateFilters("np", NPF_Cand(nil, side))
     CludesUI.AuraKit.SetGroupCap(boxHolder, "np", npOn and cap or 0)
     -- Include list (Tracked Auras popup): the side's own groups on this
     -- container. They stay ACTIVE in every mode, Show All included -- the
@@ -1060,7 +1064,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     -- whether any entry is active. Two groups because caster scope lives
     -- in the filter STRING (fixed at declaration): npinc = any caster,
     -- npincmine = PLAYER token for entries flagged Only My Casts.
-    local incm, incmm = NPF_ActiveIncludes(sideName)
+    local incm, incmm = NPF_ActiveIncludes(side)
     if incm and not declared.npinc then
         AK.AddGroupToContainer(boxHolder, {
             key = "npinc",
@@ -1134,13 +1138,13 @@ end
 
 -- Builds one bundle container from a pre-born shell when available (group add + finish
 -- are combat-legal -- probe T1/T1b), else creates fresh (OOC only; the callers guard).
-local function BundleContainer(b, kindOf, groupSpec)
+local function BundleContainer(b, kind, groupSpec)
     -- Single spec (has .key) or an ARRAY of specs (the buffs container's
     -- glow/plain group pair).
     local specs = groupSpec[1] and groupSpec or { groupSpec }
-    local shell = b.shells and b.shells[kindOf]
+    local shell = b.shells and b.shells[kind]
     if shell then
-        b.shells[kindOf] = nil
+        b.shells[kind] = nil
         for i = 1, #specs do
             AK.AddGroupToContainer(shell, specs[i])
         end
@@ -1199,10 +1203,10 @@ end
 -- Important or Only Dispellable with "Dispellable By Me" on (retail only;
 -- Show All never reads it).
 local function BuffDispelByMe()
-    local modeName = BuffMode()
+    local mode = BuffMode()
     return not CludesUI.IS_FOREVER
         and RAID_DISPELLABLE ~= nil
-        and modeName ~= "showall"
+        and mode ~= "showall"
         and PVal("npEnemyBuffDispelByMe") == true
 end
 
@@ -1223,12 +1227,12 @@ end
 -- without the DISPELLABLE token, where no complement can be expressed).
 -- Important narrows the remainder to IMPORTANT; Show All keeps all of it.
 local function BuffFilterPlain()
-    local modeName = BuffMode()
-    if modeName == "dispellable" or not DISPELLABLE then
+    local mode = BuffMode()
+    if mode == "dispellable" or not DISPELLABLE then
         return nil
     end
     local t = { "HELPFUL", "INCLUDE_NAME_PLATE_ONLY" }
-    if modeName == "important" and IMPORTANT then
+    if mode == "important" and IMPORTANT then
         t[#t + 1] = IMPORTANT
     end
     -- The same token the glow group uses, so the two stay exact complements.
@@ -1280,9 +1284,9 @@ function NPB.GlowSpec(position)
         -- Purge glow: built on first paint so a button born while the glow
         -- is already on does not wait for the next style pass.
         extraInit = function(btn, dropdown)
-            local look = AK.styles[styleKey]
-            if look and look.purgeGlow then
-                ApplyNPBuffExtra(btn, dropdown, look)
+            local style = AK.styles[styleKey]
+            if style and style.purgeGlow then
+                ApplyNPBuffExtra(btn, dropdown, style)
             end
         end,
         layout = { elementWidth = 24, elementHeight = 24, elementSpacing = 4, lineSpacing = 4 },
@@ -1445,7 +1449,7 @@ local function TopAnchorFor(backing)
     return backing.health, true -- health-anchored: add class power push
 end
 
-local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
+local function AnchorNPContainer(boxHolder, kind, backing, slotVal)
     if not boxHolder then
         return
     end
@@ -1454,25 +1458,25 @@ local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
         boxHolder:SetShown(false)
         return
     end
-    boxHolder:SetShown(kindOf ~= "buffs" or boxHolder._npcAttackable ~= false)
+    boxHolder:SetShown(kind ~= "buffs" or boxHolder._npcAttackable ~= false)
 
-    local dim = NPSize(kindOf)
-    local height = NPHeight(kindOf, dim)
-    local spacing = (mod.GetAuraSpacing and mod.GetAuraSpacing(kindOf == "cc" and "ccs" or kindOf)) or 4
+    local size = NPSize(kind)
+    local height = NPHeight(kind, size)
+    local spacing = (mod.GetAuraSpacing and mod.GetAuraSpacing(kind == "cc" and "ccs" or kind)) or 4
     local xOff, yOff = 0, 0
     if mod.GetAuraSlotOffsets then
         xOff, yOff = mod.GetAuraSlotOffsets(
-            kindOf == "debuffs" and "debuffSlot" or kindOf == "buffs" and "buffSlot" or "ccSlot"
+            kind == "debuffs" and "debuffSlot" or kind == "buffs" and "buffSlot" or "ccSlot"
         )
     end
 
     local anchorPoint, gH, gV, rowWidth
     if slotVal == "top" then
-        local anchorFrame, healthAnchored = TopAnchorFor(backing)
+        local anchor, healthAnchored = TopAnchorFor(backing)
         local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
         local cpPush = (healthAnchored and mod.NP_ClassPowerTopPush) and mod.NP_ClassPowerTopPush(backing)
             or 0
-        boxHolder:SetPoint("BOTTOM", anchorFrame, "TOP", xOff, debuffY + cpPush + yOff)
+        boxHolder:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
         anchorPoint, gH, gV = "BOTTOMLEFT", "RIGHT", "UP"
     elseif slotVal == "bottom" then
         boxHolder:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
@@ -1513,7 +1517,7 @@ local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
         if growth == "up" then
             gH = (slotVal == "topleft") and "RIGHT" or "LEFT"
             gV = "UP"
-            rowWidth = dim + 0.4
+            rowWidth = size + 0.4
         else
             gH = (growth == "left") and "LEFT" or "RIGHT"
             gV = "UP"
@@ -1526,7 +1530,7 @@ local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
     -- Active cast lockout: the lockout icon holds the CC row's first position, so the
     -- CC container chains off its far edge instead of the health anchor (top/bottom
     -- rows trade their centering for the lockout's few seconds -- accepted).
-    if kindOf == "cc" then
+    if kind == "cc" then
         local lk = backing.npcLockout
         if lk and lk:IsShown() then
             boxHolder:ClearAllPoints()
@@ -1535,8 +1539,8 @@ local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
             elseif slotVal == "topleft" or slotVal == "topright" then
                 local growth = PVal(slotVal .. "SlotGrowth") or (slotVal == "topleft" and "left" or "right")
                 if growth == "up" then
-                    local sideName = (slotVal == "topleft") and "LEFT" or "RIGHT"
-                    boxHolder:SetPoint("BOTTOM" .. sideName, lk, "TOP" .. sideName, 0, spacing)
+                    local side = (slotVal == "topleft") and "LEFT" or "RIGHT"
+                    boxHolder:SetPoint("BOTTOM" .. side, lk, "TOP" .. side, 0, spacing)
                 elseif growth == "left" then
                     boxHolder:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
                 else
@@ -1561,7 +1565,7 @@ local function AnchorNPContainer(boxHolder, kindOf, backing, slotVal)
         AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
         AK.SetContainerRowWidth(boxHolder, rowWidth)
         local gLayout = {
-            elementWidth = dim,
+            elementWidth = size,
             elementHeight = height,
             elementSpacing = spacing,
             lineSpacing = spacing,
@@ -1599,11 +1603,11 @@ local function PositionLockout(backing, f, slotVal)
     f:ClearAllPoints()
     local xOff, yOff = mod.GetAuraSlotOffsets("ccSlot")
     if slotVal == "top" then
-        local anchorFrame, healthAnchored = TopAnchorFor(backing)
+        local anchor, healthAnchored = TopAnchorFor(backing)
         local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
         local cpPush = (healthAnchored and mod.NP_ClassPowerTopPush) and mod.NP_ClassPowerTopPush(backing)
             or 0
-        f:SetPoint("BOTTOM", anchorFrame, "TOP", xOff, debuffY + cpPush + yOff)
+        f:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
     elseif slotVal == "bottom" then
         f:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
     elseif slotVal == "left" or slotVal == "right" then
@@ -1738,13 +1742,13 @@ local function ChainMembers(place)
     local m = Chain.m
     local num = 0
     local ds, bs, cs = mod.GetAuraSlots()
-    local raid, classFile = mod.GetRaidMarkerPos(), mod.GetClassificationSlot()
+    local raid, class = mod.GetRaidMarkerPos(), mod.GetClassificationSlot()
     if
         PVal("classificationHideRare")
         and not mod.NP_QuestIconOn()
         and PVal("classificationIncludeFaction") ~= true
     then
-        classFile = "none"
+        class = "none"
     end
     local fac = (PVal("classificationIncludeFaction") ~= true) and mod.NP_GetFactionSlot() or "none"
     local qtext = mod.NP_GetQuestTextSlot()
@@ -1761,7 +1765,7 @@ local function ChainMembers(place)
         elseif ident == "raid" then
             at = raid
         elseif ident == "class" then
-            at = classFile
+            at = class
         elseif ident == "qtext" then
             at = qtext
         else
@@ -1950,8 +1954,8 @@ local function ChainPlaceAfter(backing, place, i, jdx, prev, s, dir, sp)
     local dy = Chain.base[i] - Chain.base[jdx]
     lead:ClearAllPoints()
     if dir == "up" then
-        local sideName = (place == "topleft") and "LEFT" or "RIGHT"
-        ChainPoint(lead, raw, "BOTTOM" .. sideName, prev, "TOP" .. sideName, 0, s)
+        local side = (place == "topleft") and "LEFT" or "RIGHT"
+        ChainPoint(lead, raw, "BOTTOM" .. side, prev, "TOP" .. side, 0, s)
     elseif place == "bottom" then
         if dir == "left" then
             ChainPoint(lead, raw, "TOPRIGHT", prev, "TOPLEFT", -s, 0)
@@ -1966,8 +1970,8 @@ local function ChainPlaceAfter(backing, place, i, jdx, prev, s, dir, sp)
     if Chain.row[i] and c ~= lead then
         c:ClearAllPoints()
         if dir == "up" then
-            local sideName = (place == "topleft") and "LEFT" or "RIGHT"
-            c:SetPoint("BOTTOM" .. sideName, lead, "TOP" .. sideName, 0, sp)
+            local side = (place == "topleft") and "LEFT" or "RIGHT"
+            c:SetPoint("BOTTOM" .. side, lead, "TOP" .. side, 0, sp)
         elseif dir == "left" then
             c:SetPoint("BOTTOMRIGHT", lead, "BOTTOMLEFT", -sp, 0)
         else
@@ -2049,7 +2053,7 @@ local function NPLockoutBorder(f)
         local tex = PVal("customBorderTexture")
         local sz = PVal("customBorderSize") or 1
         local px = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex)
-        local column = PVal("customBorderColor")
+        local col = PVal("customBorderColor")
         local a = PVal("customBorderAlpha") or 1
         local ox, oy = PVal("customBorderOffset"), PVal("customBorderOffsetY")
         local sx, sy = PVal("customBorderShiftX"), PVal("customBorderShiftY")
@@ -2061,9 +2065,9 @@ local function NPLockoutBorder(f)
             or cb._sTex ~= tex
             or cb._sSz ~= sz
             or cb._sPx ~= px
-            or cb._sR ~= column.r
-            or cb._sG ~= column.g
-            or cb._sB ~= column.b
+            or cb._sR ~= col.r
+            or cb._sG ~= col.g
+            or cb._sB ~= col.b
             or cb._sA ~= a
             or cb._sOX ~= ox
             or cb._sOY ~= oy
@@ -2074,9 +2078,9 @@ local function NPLockoutBorder(f)
             CludesUI.ApplyBorderStyle(
                 cb,
                 sz,
-                column.r,
-                column.g,
-                column.b,
+                col.r,
+                col.g,
+                col.b,
                 a,
                 tex,
                 ox,
@@ -2093,7 +2097,7 @@ local function NPLockoutBorder(f)
                 Pix.CreateBorder(cb, nil, nil, nil, nil, nil, nil, nil, true)
             end
             cb._sTex, cb._sSz, cb._sPx = tex, sz, px
-            cb._sR, cb._sG, cb._sB, cb._sA = column.r, column.g, column.b, a
+            cb._sR, cb._sG, cb._sB, cb._sA = col.r, col.g, col.b, a
             cb._sOX, cb._sOY, cb._sSX, cb._sSY = ox, oy, sx, sy
         end
         if not f._npCBInset0 then
@@ -2155,9 +2159,9 @@ function mod.NPC_UpdateLockout(backing)
             NPLockoutBorder(f)
             backing.npcLockout = f
         end
-        local dim = NPSize("cc")
-        local height, cropped = NPHeight("cc", dim)
-        f:SetSize(dim, height)
+        local size = NPSize("cc")
+        local height, cropped = NPHeight("cc", size)
+        f:SetSize(size, height)
         local blizz = mod.NP_Blizz()
         local tc = CropCoords(cropped, blizz and 0 or nil)
         f.icon:SetTexture(lockout.icon)
@@ -2168,10 +2172,10 @@ function mod.NPC_UpdateLockout(backing)
         if blizz then
             if mod.NP_Classic() then
                 if mod.NP_ApplyClassicIconArt then
-                    mod.NP_ApplyClassicIconArt(f, dim, height)
+                    mod.NP_ApplyClassicIconArt(f, size, height)
                 end
             elseif mod.NP_ApplyBlizzIconArt then
-                mod.NP_ApplyBlizzIconArt(f, f.icon, dim, height)
+                mod.NP_ApplyBlizzIconArt(f, f.icon, size, height)
             end
         end
         PositionLockout(backing, f, cs)
@@ -2199,9 +2203,9 @@ end
 -- A row counts only while shown and last placed in this very slot: the buff row hides itself
 -- for units you cannot attack but keeps its stale layout, and AnchorNPContainer's
 -- _npcSlotVal stamp lags a slot change until the plate is placed again.
-local function IsSideRow(b, kindOf, slotVal, sideName)
-    local c = b.containers[kindOf]
-    return slotVal == sideName and c ~= nil and c:IsShown() and c._npcSlotVal == sideName
+local function IsSideRow(b, kind, slotVal, side)
+    local c = b.containers[kind]
+    return slotVal == side and c ~= nil and c:IsShown() and c._npcSlotVal == side
 end
 
 -- This plate's aura row on `side` ("left"/"right"): the first shown row in that slot
@@ -2209,9 +2213,9 @@ end
 -- that chains two or more elements answers with the outermost shown one instead (an icon
 -- too: its bottom over the bar's bottom and its size), the outermost that meets the span
 -- a0..a1 over the bar's bottom when one is given (the target arrows' own).
-function mod.NPC_SideRow(backing, sideName, a0, a1)
-    if not Chain.busy and mod.NP_CoreChained(sideName) then
-        local k = ChainShown(backing, sideName, #Chain.m)
+function mod.NPC_SideRow(backing, side, a0, a1)
+    if not Chain.busy and mod.NP_CoreChained(side) then
+        local k = ChainShown(backing, side, #Chain.m)
         for i = k, 1, -1 do
             local ident = Chain.id[i]
             local posY = Chain.base[i]
@@ -2227,29 +2231,28 @@ function mod.NPC_SideRow(backing, sideName, a0, a1)
         return nil
     end
     local ds, bs, cs = mod.GetAuraSlots()
-    local kindOf, key
-    if IsSideRow(b, "debuffs", ds, sideName) then
-        kindOf, key = "debuffs", "debuffSlot"
-    elseif IsSideRow(b, "buffs", bs, sideName) then
-        kindOf, key = "buffs", "buffSlot"
-    elseif IsSideRow(b, "cc", cs, sideName) then
-        kindOf, key = "cc", "ccSlot"
+    local kind, key
+    if IsSideRow(b, "debuffs", ds, side) then
+        kind, key = "debuffs", "debuffSlot"
+    elseif IsSideRow(b, "buffs", bs, side) then
+        kind, key = "buffs", "buffSlot"
+    elseif IsSideRow(b, "cc", cs, side) then
+        kind, key = "cc", "ccSlot"
     else
         return nil
     end
     local _, posY = mod.GetAuraSlotOffsets(key)
-    return b.containers[kindOf], posY or 0, (NPHeight(kindOf, NPSize(kindOf)))
+    return b.containers[kind], posY or 0, (NPHeight(kind, NPSize(kind)))
 end
 
 -- Whether the full-size spell icon's push on a side row moved since AnchorNPContainer last
 -- placed it (container._npcPush).
-local function SidePushMoved(c, kindOf, key, backing, sideName)
+local function SidePushMoved(c, kind, key, backing, side)
     if not c then
         return false
     end
     local _, yOff = mod.GetAuraSlotOffsets(key)
-    return mod.NP_FullIconPush(backing, sideName, yOff, yOff + (NPHeight(kindOf, NPSize(kindOf))))
-        ~= c._npcPush
+    return mod.NP_FullIconPush(backing, side, yOff, yOff + (NPHeight(kind, NPSize(kind)))) ~= c._npcPush
 end
 
 -- The full-size spell icon shows only during a cast, and a side row it meets steps out past it
@@ -2261,16 +2264,16 @@ function mod.NPC_PlaceSideRows(backing)
     if not b then
         return
     end
-    local sideName = mod.GetCastIconOnRight() and "right" or "left"
+    local side = mod.GetCastIconOnRight() and "right" or "left"
     local ds, bs, cs = mod.GetAuraSlots()
     local c = b.containers
-    if ds == sideName and SidePushMoved(c.debuffs, "debuffs", "debuffSlot", backing, sideName) then
+    if ds == side and SidePushMoved(c.debuffs, "debuffs", "debuffSlot", backing, side) then
         AnchorNPContainer(c.debuffs, "debuffs", backing, ds)
     end
-    if bs == sideName and SidePushMoved(c.buffs, "buffs", "buffSlot", backing, sideName) then
+    if bs == side and SidePushMoved(c.buffs, "buffs", "buffSlot", backing, side) then
         AnchorNPContainer(c.buffs, "buffs", backing, bs)
     end
-    if cs == sideName and SidePushMoved(c.cc, "cc", "ccSlot", backing, sideName) then
+    if cs == side and SidePushMoved(c.cc, "cc", "ccSlot", backing, side) then
         local lk = backing.npcLockout
         if lk and lk:IsShown() then
             PositionLockout(backing, lk, cs)
@@ -2444,16 +2447,16 @@ local npFP = {}
 
 local PURGE_FP_SPEC = {}
 local PAN_FP_SPEC = {}
-local function StyleFPFor(kindOf, position)
-    local dim = NPSize(kindOf)
-    local height = NPHeight(kindOf, dim)
+local function StyleFPFor(kind, position)
+    local size = NPSize(kind)
+    local height = NPHeight(kind, size)
     -- Text settings feed BuildNPStyle, so every input must flip this
     -- fingerprint or a live change never restyles the engine buttons.
-    local kindKey = (kindOf == "debuffs" and "debuff") or (kindOf == "buffs" and "buff") or "cc"
+    local kindKey = (kind == "debuffs" and "debuff") or (kind == "buffs" and "buff") or "cc"
     local dur = AuraDurCfg(kindKey)
     local stk = StackCfg()
     local purge = "-"
-    if kindOf == "buffs" and mod.GetDispelGlow then
+    if kind == "buffs" and mod.GetDispelGlow then
         -- Capability and the per-type color toggle both feed BuildNPStyle,
         -- so they have to reach this fingerprint or a talent swap / toggle
         -- never restyles the engine buttons.
@@ -2479,7 +2482,7 @@ local function StyleFPFor(kindOf, position)
     end
     -- Pandemic Glow (debuffs): every input of BuildNPStyle's pandemic fields,
     -- a constant "-" while off so a glow edit never restyles default users.
-    if kindOf == "debuffs" and mod.GetPandemicGlow() then
+    if kind == "debuffs" and mod.GetPandemicGlow() then
         local sp = mod.GetPandemicGlowSpec(PAN_FP_SPEC)
         purge = FP(
             "pan",
@@ -2505,14 +2508,14 @@ local function StyleFPFor(kindOf, position)
     -- in as exact strings, not FP's two-decimal numbers.
     local cbFP = "-"
     if NPIconCustomBorderOn() then
-        local column = PVal("customBorderColor")
+        local col = PVal("customBorderColor")
         cbFP = FP(
             PVal("customBorderTexture"),
             PVal("customBorderSize"),
             tostring(PVal("customBorderSizePx")),
-            tostring(column.r),
-            tostring(column.g),
-            tostring(column.b),
+            tostring(col.r),
+            tostring(col.g),
+            tostring(col.b),
             tostring(PVal("customBorderAlpha")),
             PVal("customBorderOffset"),
             PVal("customBorderOffsetY"),
@@ -2521,8 +2524,8 @@ local function StyleFPFor(kindOf, position)
         )
     end
     return FP(
-        kindOf,
-        dim,
+        kind,
+        size,
         height,
         durFP,
         stkFP,
@@ -2531,7 +2534,7 @@ local function StyleFPFor(kindOf, position)
         -- NOT `fn(kind) or true`: the getter legitimately returns false, and
         -- `false or true` would pin this fingerprint input to a constant so
         -- the toggle never restyles (the ternary-falsy trap).
-        (not mod.GetIconBorderEnabled) or mod.GetIconBorderEnabled(kindOf),
+        (not mod.GetIconBorderEnabled) or mod.GetIconBorderEnabled(kind),
         cbFP,
         PVal("showAuraTooltips") == true
     )
@@ -2670,8 +2673,8 @@ local function QueueBundleEnsure(b)
         local ds, bs, cs = mod.GetAuraSlots()
         -- Combat-legal since 68914: AddBundle* consume a pre-born shell when
         -- one exists and create fresh otherwise, in any combat state.
-        local function ensure(kindOf, slotIndex, add)
-            if not (slotIndex and slotIndex ~= "none") or b.containers[kindOf] then
+        local function ensure(kind, slot, add)
+            if not (slot and slot ~= "none") or b.containers[kind] then
                 return
             end
             add(b)
@@ -2695,7 +2698,7 @@ end
 -- NPC_ReloadAll. Any other state clears it, so later colour edits never reload.
 function NPB.SnapClassColor()
     local PB = CludesUI.Glows.PANDEMIC_BORDER
-    local classFile = (
+    local class = (
         PurgeGlowActive()
         and PVal("dispelGlowColorMode") == "class"
         and mod.GetDispelGlowStyle() ~= PB
@@ -2705,7 +2708,7 @@ function NPB.SnapClassColor()
             and PVal("pandemicGlowMode") == "class"
             and mod.GetPandemicGlowStyle() ~= PB
         )
-    if classFile then
+    if class then
         NPB.ccR, NPB.ccG, NPB.ccB = CludesUI.Glows.ResolveColor("class")
     else
         NPB.ccR = nil
@@ -2753,9 +2756,9 @@ function mod.NPC_ReloadAll()
     if npFP.style ~= val then
         npFP.style = val
         for i = 1, #KINDS do
-            local kindOf = KINDS[i]
-            AK.styles["np:" .. kindOf] = BuildNPStyle(kindOf)
-            AK.RestyleSoon("np:" .. kindOf)
+            local kind = KINDS[i]
+            AK.styles["np:" .. kind] = BuildNPStyle(kind)
+            AK.RestyleSoon("np:" .. kind)
         end
         -- The buffs row's style twins restyle in lockstep: the non-Magic
         -- glow half and the plain (non-glow) remainder.

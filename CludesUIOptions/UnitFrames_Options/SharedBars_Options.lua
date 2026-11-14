@@ -32,7 +32,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     local saved, healthTextOrder, healthTextOrderPlayer, healthTextOrderTargetFocus =
         environ.db, environ.healthTextOrder, environ.healthTextOrderPlayer, environ.healthTextOrderTargetFocus
     local healthTextValues, optionState = environ.healthTextValues, environ.optState
-    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     local SVal = context.SVal
     local _, hgt
 
@@ -40,7 +40,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     --  HEALTH BAR
     -------------------------------------------------------------------
     local sharedBarsHeader
-    sharedBarsHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    sharedBarsHeader, hgt = W:SectionHeader(hostFrame, "HEALTH BAR", posY)
     posY = posY - hgt
 
     -- Row 1: Bar Height + Bar Width
@@ -49,7 +49,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     local ufwDis, ufwTip, ufwRaw = CludesUI.MatchGuard(optionState.selectedUnit, "Width")
     -- Vertical Fill wants tall, narrow bars: the Vertical Fill toggle rebuilds the page.
     local vertFill = SVal("healthVerticalFill", false) == true
-    sharedSizeRow, hgt = Widgets:DualRow(
+    sharedSizeRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -90,7 +90,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     -- (this row is the preview's health-bar click target while the size row hides).
     local sharedScaleRow
     if CludesUI.BlizzStyle.Get("unitframes") then
-        sharedScaleRow, hgt = Widgets:DualRow(
+        sharedScaleRow, hgt = W:DualRow(
             hostFrame,
             posY,
             {
@@ -255,7 +255,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
 
     -- Row 2: Bar Color (multiSwatch) + Bar Background (slider + inline swatch)
     local sharedHealthColorRow
-    sharedHealthColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedHealthColorRow, hgt = W:DualRow(hostFrame, posY, {
         type = "multiSwatch",
         text = "Fill Color",
         swatches = {
@@ -757,9 +757,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
         -- than rebuilding the page, so without this the swatches keep showing
         -- the previous unit's colors.
         local function UpdateDynSwatchVis()
-            local modeName = SVal("healthColorMode", "none")
-            local isDynamic = modeName == "customDynamic"
-            local isReactive = modeName == "classReactive"
+            local mode = SVal("healthColorMode", "none")
+            local isDynamic = mode == "customDynamic"
+            local isReactive = mode == "classReactive"
             for idx, sw in ipairs(dynSwatches) do
                 if dynUpdaters[idx] then
                     dynUpdaters[idx]()
@@ -784,7 +784,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
 
     -- Row 3: Smooth Health Bars + Bar Opacity
     local sharedOpacityRow
-    sharedOpacityRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedOpacityRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Health Bars",
         getValue = function()
@@ -864,7 +864,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     -- the preview level text's click target (stashed on the page: the
     -- targets table at the end reads it).
     if CludesUI.BlizzStyle.Get("unitframes") then
-        hostFrame._ufLevelRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        hostFrame._ufLevelRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Level",
             tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
@@ -1265,8 +1265,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     leftRgn,
                     leftRgn:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -1676,8 +1676,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     rightRgn,
                     rightRgn:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -2084,8 +2084,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     ctrRgn,
                     ctrRgn:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -2484,8 +2484,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     etrRgn,
                     etrRgn:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -2560,7 +2560,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
         end,
     }
     local sharedTextRow, sharedCenterTextRow
-    posY, sharedTextRow = mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, {
+    posY, sharedTextRow = mod.UFO_BuildTextSlots(W, hostFrame, posY, {
         slots = textSlots,
         values = healthTextValues,
         contentOrder = textSlots[1].cfg.order,
@@ -2575,7 +2575,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     })
     sharedCenterTextRow = sharedTextRow
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, sharedBarsHeader, sharedScaleRow, sharedSizeRow, sharedTextRow, sharedCenterTextRow
@@ -2587,7 +2587,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
     local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, optionState =
         environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
-    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
     local _, hgt
 
@@ -2595,7 +2595,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     --  POWER BAR
     -------------------------------------------------------------------
     local sharedPowerHeader
-    sharedPowerHeader, hgt = Widgets:SectionHeader(hostFrame, "POWER BAR", posY)
+    sharedPowerHeader, hgt = W:SectionHeader(hostFrame, "POWER BAR", posY)
     posY = posY - hgt
 
     local ppPosValues = {
@@ -2671,7 +2671,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         }
     end
     local sharedPowerRow1
-    sharedPowerRow1, hgt = Widgets:DualRow(
+    sharedPowerRow1, hgt = W:DualRow(
         hostFrame,
         posY,
         powerLeftCfg,
@@ -2936,7 +2936,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             SetPowerTextFormat("custom")
         end)
     end)
-    sharedPowerRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedPowerRow2, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Power Text",
         values = ppTextFmtValues,
@@ -3090,7 +3090,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
 
     -- Row 3: Bar Color (multiSwatch) + Bar Background (slider + inline swatch)
     local sharedPowerRow3
-    sharedPowerRow3, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedPowerRow3, hgt = W:DualRow(hostFrame, posY, {
         type = "multiSwatch",
         text = "Fill Color",
         swatches = {
@@ -3494,7 +3494,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
 
     -- Row 4: Text Position + Text Color
     local sharedPowerRow4
-    sharedPowerRow4, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedPowerRow4, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Text Position",
         values = ppTextValues,
@@ -3726,7 +3726,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     -- Row 5: Power Border Style (+ cog) | Power Border Size (+ inline swatches)
     local pbTexValues, pbTexOrder = CludesUI.GetBorderTextureDropdown()
     local sharedPowerBorderRow
-    sharedPowerBorderRow, hgt = Widgets:DualRow(
+    sharedPowerBorderRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -3853,7 +3853,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 end,
                 apply = ReloadAndUpdate,
             })
-            _, hgt = Widgets:DualRow(
+            _, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
@@ -3976,7 +3976,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     -- color and the preview read its color rule.
     if optionState.selectedUnit == "player" and CludesUI.SpellCostPrediction then
         local costRow
-        costRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        costRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Spell Cost Prediction",
             tooltip = "While you cast, shows on the bar the mana the spell will cost.",
@@ -4070,7 +4070,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         local _, playerClass = UnitClass("player")
         if playerClass == "DRUID" then
             local powerTypeRow
-            powerTypeRow, hgt = Widgets:DualRow(
+            powerTypeRow, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 -- Mana + Form Power: Mana plus foreverFormBar (a second bar
@@ -4121,10 +4121,10 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 mod.UF_ForeverFormBarRelayout()
             end
             -- A Form Power Text setting; unset follows the power bar's.
-            local function FormVal(key, baseValue, spec_def)
+            local function FormVal(key, base, def)
                 local val = SVal(key, nil)
                 if val == nil then
-                    val = SVal(baseValue, spec_def)
+                    val = SVal(base, def)
                 end
                 return val
             end
@@ -4171,7 +4171,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             -- only with Mana + Form Power (Power Type rebuilds the page).
             if not NoFormBar() then
                 local formTextRow
-                formTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
+                formTextRow, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Form Power Text",
                     values = ppFmtValues,
@@ -4342,7 +4342,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 end
             end
         elseif CludesUI.ManaRegenSpark then
-            _, hgt = Widgets:DualRow(hostFrame, posY, sparkCfg, CludesUI.BlankRowCfg())
+            _, hgt = W:DualRow(hostFrame, posY, sparkCfg, CludesUI.BlankRowCfg())
             posY = posY - hgt
         end
     end
@@ -4395,7 +4395,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             FillPowerTypeValues(labelSpec)
 
             local sharedPowerRow5
-            sharedPowerRow5, hgt = Widgets:DualRow(hostFrame, posY, {
+            sharedPowerRow5, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Power Type",
                 tooltip = classAlts.tip,
@@ -4474,7 +4474,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         end
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, sharedPowerHeader, sharedPowerRow1, sharedPowerRow2
@@ -4488,24 +4488,24 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.classPowerPosOrder, environ.classPowerPosValues
     local classPowerStyleOrder, classPowerStyleValues, optionState =
         environ.classPowerStyleOrder, environ.classPowerStyleValues, environ.optState
-    local Widgets, SApplySupport, SGetSupported, SSetSupported =
+    local W, SApplySupport, SGetSupported, SSetSupported =
         context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
     local SValSupported = context.SValSupported
     local _, hgt
-    local rowFrame
+    local row
 
     -- CLASS RESOURCE section: only shown in multi-edit or when player is selected
     local _showClassRes = optionState.selectedUnit == "player"
     -- Declared outside the gate: returned for the click mapping.
     local sharedClassResHeader, sharedClassResRow
     if _showClassRes then
-        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
 
         -------------------------------------------------------------------
         --  CLASS RESOURCE
         -------------------------------------------------------------------
-        sharedClassResHeader, hgt = Widgets:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
+        sharedClassResHeader, hgt = W:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
         posY = posY - hgt
 
         -- The class resource style that builds: WoW Forever outside its own
@@ -4521,7 +4521,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
         end
 
         -- Row 1: Enable Class Resource + Class Colors (with inline swatch)
-        sharedClassResRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedClassResRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Enable Class Resource",
             values = classPowerStyleValues,
@@ -4812,7 +4812,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
         -- (the dropdown's DependentSetValue forces the rebuild on flips).
         if SCPStyle() ~= "none" then
             -- Row 2: Position (with cog for x/y) + Size
-            rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+            row, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Position",
                 values = classPowerPosValues,
@@ -4857,11 +4857,11 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 end,
             })
             posY = posY - hgt
-            SApplySupport(rowFrame._leftRegion, "classPowerPosition")
-            SApplySupport(rowFrame._rightRegion, "classPowerSize")
+            SApplySupport(row._leftRegion, "classPowerPosition")
+            SApplySupport(row._rightRegion, "classPowerSize")
             -- Cog on Position for X/Y
             if not CludesUI._prebuilding then
-                local posRgn = rowFrame._leftRegion
+                local posRgn = row._leftRegion
                 CludesUI.BuildInlineCog(posRgn, {
                     disabled = function()
                         return SCPStyle() ~= "modern" or SValSupported("classPowerPosition", "top") == "above"
@@ -4914,7 +4914,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
             end
             -- Sync icons: Class Resource Position (left) and Size (right)
             if not CludesUI._prebuilding then
-                local rgn = rowFrame._leftRegion
+                local rgn = row._leftRegion
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Class Resource Position to all Frames",
@@ -4956,7 +4956,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 })
             end
             if not CludesUI._prebuilding then
-                local rgn = rowFrame._rightRegion
+                local rgn = row._rightRegion
                 CludesUI.BuildSyncIcon({
                     region = rgn,
                     tooltip = "Apply Class Resource Size to all Frames",
@@ -5000,7 +5000,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
 
             -- Row 3: Bar Spacing + Background Color (with alpha)
             local sharedClassResRow3
-            sharedClassResRow3, hgt = Widgets:DualRow(hostFrame, posY, {
+            sharedClassResRow3, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 pixel = true,
                 text = "Bar Spacing",
@@ -5159,7 +5159,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 and CludesUI.BlizzStyle.Forever("unitframes")
                 and mod.UF_ComboClass()
             then
-                _, hgt = Widgets:DualRow(hostFrame, posY, {
+                _, hgt = W:DualRow(hostFrame, posY, {
                     type = "dropdown",
                     text = "Combo Points",
                     tooltip = "Choose where your combo points show.",
@@ -5195,7 +5195,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
         end -- close Class Resource hidden-while-None gate
     end -- _showClassRes
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, sharedClassResHeader, sharedClassResRow
@@ -5207,7 +5207,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         environ.GROUP_UNIT_ORDER, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS
     local UNIT_DB_MAP, UpdatePreview, saved, optionState =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db, environ.optState
-    local Widgets, SApplySupport, SGetSupported, SSetSupported =
+    local W, SApplySupport, SGetSupported, SSetSupported =
         context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
     local SValSupported = context.SValSupported
     local _, hgt
@@ -5224,7 +5224,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         or optionState.selectedUnit == "focus"
     )
     if _supportsAbsorbs then
-        sharedAbsorbsHeader, hgt = Widgets:SectionHeader(hostFrame, "ABSORBS AND HEALS", posY)
+        sharedAbsorbsHeader, hgt = W:SectionHeader(hostFrame, "ABSORBS AND HEALS", posY)
         posY = posY - hgt
 
         -- Names and orders live on ns (CUI_UnitFrames_Absorb.lua, shared with the
@@ -5374,7 +5374,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         end
 
         -- Row 1: Absorb Style (+ placement cog + color swatch) | Absorb Opacity
-        absorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        absorbRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Absorb Style",
             values = absorbStyleValues,
@@ -5645,7 +5645,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         end
 
         -- Row 2: Heal Absorb Style (+ placement cog + color swatch) | Heal Absorb Opacity
-        healAbsorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        healAbsorbRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Heal Absorb Style",
             values = absorbStyleValues,
@@ -5815,9 +5815,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             swatchBlock:Hide()
             local function UpdateHealAbsorbSwatchVis()
                 local st = SValSupported("healAbsorbStyle", "clean")
-                local offset = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
-                colorSwatch:SetAlpha(offset and 0.3 or 1)
-                if offset then
+                local off = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+                colorSwatch:SetAlpha(off and 0.3 or 1)
+                if off then
                     swatchBlock:Show()
                 else
                     swatchBlock:Hide()
@@ -5868,7 +5868,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
 
         -- Row 3: Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
         local absorbBarRow
-        absorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        absorbBarRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Absorb Bar",
             values = {
@@ -5932,7 +5932,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
 
         -- Row 4: Heal Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
         local healAbsorbBarRow
-        healAbsorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        healAbsorbBarRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Heal Absorb Bar",
             values = {
@@ -6017,7 +6017,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- Max Health Style (+ eyeball, backing cog, swatch) | Max Health Opacity: Raid Frames
         -- parity; the overlay is always on the bar's far end. Boss frames use Target's.
         local maxHealthRow
-        maxHealthRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        maxHealthRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Max Health Style",
             values = absorbStyleValues,
@@ -6127,9 +6127,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
                 local st = SValSupported("maxHealthStyle", "none")
-                local offset = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
-                colorSwatch:SetAlpha(offset and 0.3 or 1)
-                swatchBlock:SetShown(offset)
+                local off = (st == "none" or st == "largeOutlinedStripes" or st == "largeOutlinedStripesR")
+                colorSwatch:SetAlpha(off and 0.3 or 1)
+                swatchBlock:SetShown(off)
             end
             RegisterWidgetRefresh(UpdateMaxHealthSwatchVis)
             UpdateMaxHealthSwatchVis()
@@ -6137,7 +6137,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
 
         -- Row 5: Heal Prediction (+ your / others' color swatches) | Prediction Opacity
         local healPredRow
-        healPredRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        healPredRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Heal Prediction",
             tooltip = "Shows incoming heals past the health bar: yours, then other players'.",
@@ -6264,7 +6264,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             end,
         }
         local overhealRow
-        overhealRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        overhealRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Overheal",
             min = 0,
@@ -6302,7 +6302,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         SApplySupport(overhealRow._leftRegion, "healPredOverheal")
         SApplySupport(overhealRow._rightRegion, "healPredTexture")
 
-        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
     end -- _supportsAbsorbs
 

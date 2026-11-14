@@ -85,9 +85,9 @@ function Update()
     local best, bestValue, missing = nil, 0, false
     for _, btnFrame in ipairs(rewards.RewardButtons) do
         if btnFrame:IsShown() and btnFrame.type == "choice" and btnFrame.objectType == "item" then
-            local itemInfo, total = ChoiceItem(btnFrame)
-            if itemInfo then
-                local sellPrice = select(11, C_Item.GetItemInfo(itemInfo))
+            local item, total = ChoiceItem(btnFrame)
+            if item then
+                local sellPrice = select(11, C_Item.GetItemInfo(item))
                 if not sellPrice then
                     missing = true
                 elseif sellPrice * total > bestValue then

@@ -20,13 +20,13 @@ end -- module disabled: no options page
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function SavedDB()
+local function DB()
     local func = _G._CUI_MovementAlert_DB
     return func and func() or nil
 end
 
 local function MA()
-    local d = SavedDB()
+    local d = DB()
     return d and d.profile and d.profile.movementAlert
 end
 
@@ -333,20 +333,20 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
         labelFS:SetTextColor(0.7, 0.7, 0.7, 1)
         labelFS:SetText(CludesUI.L("Custom Alert Text (empty = ability name)"))
 
-        local boxFrame = CreateFrame("EditBox", nil, dialog)
-        boxFrame:SetSize(212, 28)
-        boxFrame:SetPoint("TOPLEFT", labelFS, "BOTTOMLEFT", 0, -4)
-        boxFrame:SetAutoFocus(false)
-        boxFrame:SetMaxLetters(40)
-        boxFrame:SetFont(FONT, 13, "")
-        boxFrame:SetTextColor(1, 1, 1, 0.9)
-        boxFrame:SetJustifyH("LEFT")
-        boxFrame:SetTextInsets(6, 6, 0, 0)
-        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("EditBox", nil, dialog)
+        box:SetSize(212, 28)
+        box:SetPoint("TOPLEFT", labelFS, "BOTTOMLEFT", 0, -4)
+        box:SetAutoFocus(false)
+        box:SetMaxLetters(40)
+        box:SetFont(FONT, 13, "")
+        box:SetTextColor(1, 1, 1, 0.9)
+        box:SetJustifyH("LEFT")
+        box:SetTextInsets(6, 6, 0, 0)
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-        CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.12, boxBg)
-        dialog._box = boxFrame
+        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
+        dialog._box = box
 
         local ar, ag, ab = CludesUI.GetAccentColor()
         local saveBtn = CreateFrame("Button", nil, dialog)
@@ -369,8 +369,8 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
             end
         end
         saveBtn:SetScript("OnClick", Commit)
-        boxFrame:SetScript("OnEnterPressed", Commit)
-        boxFrame:SetScript("OnEscapePressed", function()
+        box:SetScript("OnEnterPressed", Commit)
+        box:SetScript("OnEscapePressed", function()
             dimmer:Hide()
         end)
 
@@ -814,8 +814,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             leftRgn,
             leftRgn:GetFrameLevel() + 5,
             function()
-                local _, classFile = UnitClass("player")
-                local cc = classFile and CludesUI.GetClassColor(classFile)
+                local _, class = UnitClass("player")
+                local cc = class and CludesUI.GetClassColor(class)
                 if cc then
                     return cc.r, cc.g, cc.b
                 end
@@ -880,10 +880,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateDmSwatches()
-            local offset = DMSwatchesDisabled()
+            local off = DMSwatchesDisabled()
             local isClass = ma.textColorUseClass == true
-            dmSwatch:SetAlpha((offset or isClass) and 0.3 or 1)
-            dmClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
+            dmSwatch:SetAlpha((off or isClass) and 0.3 or 1)
+            dmClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
         end
         CludesUI.RegisterWidgetRefresh(function()
             dmUpdateSwatch()
@@ -1033,7 +1033,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     for i = 1, #preset.ids do
                         cellIds[i] = preset.ids[i]
                     end
-                    local itemInfo = {
+                    local item = {
                         label = details.name,
                         classToken = preset.class,
                         spellId = primary,
@@ -1053,8 +1053,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             end
                         end,
                     }
-                    byClassName[dupKey] = itemInfo
-                    itemList[#itemList + 1] = itemInfo
+                    byClassName[dupKey] = item
+                    itemList[#itemList + 1] = item
                 end
             end
         end
@@ -1112,24 +1112,24 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 Pix.Point(div, "BOTTOM", rowFrame, "BOTTOMLEFT", xPos, 0)
             end
 
-            for column = 0, GRID_COLS - 1 do
-                local position = row * GRID_COLS + column + 1
-                local itemInfo = itemList[position]
-                if not itemInfo then
+            for col = 0, GRID_COLS - 1 do
+                local position = row * GRID_COLS + col + 1
+                local item = itemList[position]
+                if not item then
                     break
                 end
 
-                local cellFrame = CreateFrame("Frame", nil, rowFrame)
-                cellFrame:SetSize(colW, GRID_ROW_H)
-                cellFrame:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", column * colW, 0)
+                local cell = CreateFrame("Frame", nil, rowFrame)
+                cell:SetSize(colW, GRID_ROW_H)
+                cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", col * colW, 0)
 
-                if itemInfo.addButton then
+                if item.addButton then
                     -- Keybind-button style (dropdown-look bg/border with the
                     -- hover brighten), centered in its grid slot.
-                    local addBtn = CreateFrame("Button", nil, cellFrame)
+                    local addBtn = CreateFrame("Button", nil, cell)
                     Pix.Size(addBtn, 126, 29)
-                    addBtn:SetPoint("CENTER", cellFrame, "CENTER", 0, 0)
-                    addBtn:SetFrameLevel(cellFrame:GetFrameLevel() + 2)
+                    addBtn:SetPoint("CENTER", cell, "CENTER", 0, 0)
+                    addBtn:SetFrameLevel(cell:GetFrameLevel() + 2)
                     local addBg = CludesUI.SolidTex(
                         addBtn,
                         "BACKGROUND",
@@ -1176,44 +1176,44 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end)
                 else
                     local cr, cg, cb = 1, 1, 1
-                    if itemInfo.classToken then
-                        local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[itemInfo.classToken]
+                    if item.classToken then
+                        local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
                         if cc then
                             cr, cg, cb = cc.r, cc.g, cc.b
                         end
                     end
 
-                    local labelText = CludesUI.MakeFont(cellFrame, 13, nil, cr, cg, cb)
-                    labelText:SetPoint("LEFT", cellFrame, "LEFT", GRID_SIDE_PAD, 0)
+                    local labelText = CludesUI.MakeFont(cell, 13, nil, cr, cg, cb)
+                    labelText:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
                     labelText:SetWidth(colW - GRID_SIDE_PAD * 2 - GRID_BOX_SZ - 6)
                     labelText:SetJustifyH("LEFT")
                     labelText:SetMaxLines(2)
-                    labelText:SetText(itemInfo.label)
+                    labelText:SetText(item.label)
 
-                    local boxFrame = CreateFrame("Frame", nil, cellFrame)
-                    boxFrame:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
-                    boxFrame:SetPoint("RIGHT", cellFrame, "RIGHT", -GRID_SIDE_PAD, 0)
-                    local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+                    local box = CreateFrame("Frame", nil, cell)
+                    box:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
+                    box:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
+                    local boxBg = box:CreateTexture(nil, "BACKGROUND")
                     boxBg:SetAllPoints()
                     boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
                     if boxBg.SetSnapToPixelGrid then
                         boxBg:SetSnapToPixelGrid(false)
                         boxBg:SetTexelSnappingBias(0)
                     end
-                    local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.224, 0.215, 0.207, 0.6, boxBg)
-                    local check = boxFrame:CreateTexture(nil, "ARTWORK")
-                    check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
-                    check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
+                    local boxBrd = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
+                    local check = box:CreateTexture(nil, "ARTWORK")
+                    check:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+                    check:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
                     check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                    CludesUI.RoundBody(boxFrame, check, 1)
+                    CludesUI.RoundBody(box, check, 1)
                     if check.SetSnapToPixelGrid then
                         check:SetSnapToPixelGrid(false)
                         check:SetTexelSnappingBias(0)
                     end
 
-                    local button = CreateFrame("Button", nil, cellFrame)
-                    button:SetAllPoints(cellFrame)
-                    button:SetFrameLevel(cellFrame:GetFrameLevel() + 2)
+                    local button = CreateFrame("Button", nil, cell)
+                    button:SetAllPoints(cell)
+                    button:SetFrameLevel(cell:GetFrameLevel() + 2)
                     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
                     -- A cell is disabled while its class is unchecked in the
@@ -1225,15 +1225,15 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         if not ec then
                             return true
                         end
-                        if itemInfo.classToken then
-                            return not ec[itemInfo.classToken]
+                        if item.classToken then
+                            return not ec[item.classToken]
                         end
                         return false
                     end
 
                     local function ApplyVisual()
                         local dis = CellDisabled()
-                        local on = itemInfo.getVal()
+                        local on = item.getVal()
                         if on then
                             check:Show()
                             boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.15)
@@ -1243,10 +1243,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         end
                         if dis then
                             labelText:SetAlpha(0.3)
-                            boxFrame:SetAlpha(0.4)
+                            box:SetAlpha(0.4)
                         else
                             labelText:SetAlpha(on and 1 or 0.5)
-                            boxFrame:SetAlpha(1)
+                            box:SetAlpha(1)
                         end
                     end
                     ApplyVisual()
@@ -1256,43 +1256,36 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             return
                         end
                         if mouseButton == "RightButton" then
-                            local shade = ma.spellOverrides[itemInfo.spellId]
-                            ShowCustomTextPopup(
-                                itemInfo.label,
-                                shade and shade.customText or "",
-                                function(txt)
-                                    for i = 1, #itemInfo.ids do
-                                        local ident = itemInfo.ids[i]
-                                        ma.spellOverrides[ident] = ma.spellOverrides[ident] or {}
-                                        ma.spellOverrides[ident].customText = (txt ~= "") and txt or nil
-                                    end
-                                    if CludesUI._CacheMovementSpells then
-                                        CludesUI._CacheMovementSpells()
-                                    end
-                                    Refresh()
+                            local shade = ma.spellOverrides[item.spellId]
+                            ShowCustomTextPopup(item.label, shade and shade.customText or "", function(txt)
+                                for i = 1, #item.ids do
+                                    local ident = item.ids[i]
+                                    ma.spellOverrides[ident] = ma.spellOverrides[ident] or {}
+                                    ma.spellOverrides[ident].customText = (txt ~= "") and txt or nil
                                 end
-                            )
+                                if CludesUI._CacheMovementSpells then
+                                    CludesUI._CacheMovementSpells()
+                                end
+                                Refresh()
+                            end)
                             return
                         end
-                        itemInfo.setVal(not itemInfo.getVal())
+                        item.setVal(not item.getVal())
                         ApplyVisual()
                         GridChanged()
                     end)
                     button:SetScript("OnEnter", function()
                         if CellDisabled() then
                             CludesUI.ShowWidgetTooltip(
-                                cellFrame,
+                                cell,
                                 CludesUI.DisabledTooltip("Enable this class above")
                             )
                             return
                         end
-                        if not itemInfo.getVal() then
+                        if not item.getVal() then
                             labelText:SetAlpha(0.8)
                         end
-                        CludesUI.ShowWidgetTooltip(
-                            cellFrame,
-                            CludesUI.L("Right-Click to set custom alert text.")
-                        )
+                        CludesUI.ShowWidgetTooltip(cell, CludesUI.L("Right-Click to set custom alert text."))
                     end)
                     button:SetScript("OnLeave", function()
                         ApplyVisual()
@@ -1301,10 +1294,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
 
                     CludesUI.RegisterWidgetRefresh(ApplyVisual)
 
-                    if itemInfo.custom then
-                        local delBtn = CreateFrame("Button", nil, cellFrame)
+                    if item.custom then
+                        local delBtn = CreateFrame("Button", nil, cell)
                         delBtn:SetSize(12, 12)
-                        delBtn:SetPoint("TOPRIGHT", cellFrame, "TOPRIGHT", -4, -4)
+                        delBtn:SetPoint("TOPRIGHT", cell, "TOPRIGHT", -4, -4)
                         delBtn:SetFrameLevel(button:GetFrameLevel() + 2)
                         local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                         delIcon:SetAllPoints()
@@ -1317,7 +1310,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             delIcon:SetAlpha(0.4)
                         end)
                         delBtn:SetScript("OnClick", function()
-                            ma.spellOverrides[itemInfo.spellId] = nil
+                            ma.spellOverrides[item.spellId] = nil
                             GridChanged()
                             CludesUI:RefreshPage(true)
                         end)

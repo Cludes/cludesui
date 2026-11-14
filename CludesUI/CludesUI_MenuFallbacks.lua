@@ -83,13 +83,13 @@ end
 
 -- family: a text that shows other players' writing (house and owner names)
 -- takes the font as a font family, which draws the scripts the font lacks.
-local function MakeText(hostFrame, dim, r, g, b, family)
+local function MakeText(hostFrame, size, r, g, b, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     if family then
-        CludesUI.SetFontFamily(fontStr, T.fontPath, dim, T.fontFlag or "", T.fontShadow)
+        CludesUI.SetFontFamily(fontStr, T.fontPath, size, T.fontFlag or "", T.fontShadow)
     else
         CludesUI.PrimeFontShadow(fontStr, T.fontShadow)
-        fontStr:SetFont(T.fontPath, dim, T.fontFlag or "")
+        fontStr:SetFont(T.fontPath, size, T.fontFlag or "")
     end
     fontStr:SetTextColor(r or 1, g or 1, b or 1, 1)
     return fontStr
@@ -115,8 +115,8 @@ local function MakeButton(hostFrame, name, labelText, wid, hgt, secure)
     if secure then
         b:SetAttribute("useOnKeyDown", false)
     end
-    local fillTex = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
-    fillTex:SetAllPoints(b)
+    local fill = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
+    fill:SetAllPoints(b)
     AddBorder(b)
     local hover = SolidTex(b, "HIGHLIGHT", 1, 1, 1, 0.1)
     hover:SetAllPoints(b)
@@ -234,7 +234,7 @@ local ROW_GAP = 4
 local FRAME_W = 440
 local HEADER_H = 32
 
-local listFrame, rowList, statusText, titleText
+local listFrame, rowList, statusText, title
 local pendingHouses -- last received house list, re-applied after combat
 local listEv = CreateFrame("Frame")
 
@@ -257,24 +257,24 @@ local function BuildList()
 
     -- Header band (inset fill) with the title and the close glyph, like a
     -- skinned window's title bar.
-    local headerFrame = CreateFrame("Frame", nil, f)
-    headerFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    headerFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
-    headerFrame:SetHeight(HEADER_H)
-    local hbg = SolidTex(headerFrame, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
-    hbg:SetAllPoints(headerFrame)
-    local hline = SolidTex(headerFrame, "BORDER", T.brdR, T.brdG, T.brdB, T.brdA)
-    hline:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
-    hline:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
+    local header = CreateFrame("Frame", nil, f)
+    header:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    header:SetHeight(HEADER_H)
+    local hbg = SolidTex(header, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
+    hbg:SetAllPoints(header)
+    local hline = SolidTex(header, "BORDER", T.brdR, T.brdG, T.brdB, T.brdA)
+    hline:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
+    hline:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
     hline:SetHeight(1)
 
-    titleText = MakeText(headerFrame, 14, nil, nil, nil, true)
-    titleText:SetPoint("LEFT", headerFrame, "LEFT", 12, 0)
-    titleText:SetPoint("RIGHT", headerFrame, "RIGHT", -34, 0)
-    titleText:SetJustifyH("LEFT")
+    title = MakeText(header, 14, nil, nil, nil, true)
+    title:SetPoint("LEFT", header, "LEFT", 12, 0)
+    title:SetPoint("RIGHT", header, "RIGHT", -34, 0)
+    title:SetJustifyH("LEFT")
 
-    local close = MakeCloseButton(headerFrame)
-    close:SetPoint("RIGHT", headerFrame, "RIGHT", -6, 0)
+    local close = MakeCloseButton(header)
+    close:SetPoint("RIGHT", header, "RIGHT", -6, 0)
     close:SetScript("OnClick", function()
         f:Hide()
     end)
@@ -286,31 +286,31 @@ local function BuildList()
 
     rowList = {}
     for idx = 1, MAX_ROWS do
-        local rowFrame = CreateFrame("Frame", nil, f)
-        rowFrame:SetHeight(ROW_H)
+        local row = CreateFrame("Frame", nil, f)
+        row:SetHeight(ROW_H)
         local posY = -(HEADER_H + 10 + (idx - 1) * (ROW_H + ROW_GAP))
-        rowFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 8, posY)
-        rowFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, posY)
-        Panel(rowFrame, true)
+        row:SetPoint("TOPLEFT", f, "TOPLEFT", 8, posY)
+        row:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, posY)
+        Panel(row, true)
 
-        rowFrame.name = MakeText(rowFrame, 13, nil, nil, nil, true)
-        rowFrame.name:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", 10, -7)
-        rowFrame.name:SetPoint("RIGHT", rowFrame, "RIGHT", -100, 0)
-        rowFrame.name:SetJustifyH("LEFT")
+        row.name = MakeText(row, 13, nil, nil, nil, true)
+        row.name:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -7)
+        row.name:SetPoint("RIGHT", row, "RIGHT", -100, 0)
+        row.name:SetJustifyH("LEFT")
 
-        rowFrame.info = MakeText(rowFrame, 11, 0.65, 0.65, 0.65, true)
-        rowFrame.info:SetPoint("BOTTOMLEFT", rowFrame, "BOTTOMLEFT", 10, 7)
-        rowFrame.info:SetPoint("RIGHT", rowFrame, "RIGHT", -100, 0)
-        rowFrame.info:SetJustifyH("LEFT")
+        row.info = MakeText(row, 11, 0.65, 0.65, 0.65, true)
+        row.info:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 10, 7)
+        row.info:SetPoint("RIGHT", row, "RIGHT", -100, 0)
+        row.info:SetJustifyH("LEFT")
 
         -- The teleport: a stock secure action, attributes = plain strings.
-        local visit = MakeButton(rowFrame, "CludesUI_HouseVisit" .. idx, CludesUI.L("Visit"), 80, 24, true)
-        visit:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 0)
+        local visit = MakeButton(row, "CludesUI_HouseVisit" .. idx, CludesUI.L("Visit"), 80, 24, true)
+        visit:SetPoint("RIGHT", row, "RIGHT", -8, 0)
         visit:SetAttribute("type", "visithouse")
-        rowFrame.visit = visit
+        row.visit = visit
 
-        rowFrame:Hide()
-        rowList[idx] = rowFrame
+        row:Hide()
+        rowList[idx] = row
     end
 
     if CludesUI.RegisterEscapeClose then
@@ -343,8 +343,8 @@ local function ApplyHouses(houses)
     statusText:Hide()
     for idx = 1, math.min(#houses, MAX_ROWS) do
         local hgt = houses[idx]
-        local rowFrame = rowList[idx]
-        rowFrame.name:SetText(hgt.houseName or CludesUI.L("House"))
+        local row = rowList[idx]
+        row.name:SetText(hgt.houseName or CludesUI.L("House"))
         local where = hgt.neighborhoodName or ""
         if hgt.plotID then
             where = where
@@ -354,15 +354,15 @@ local function ApplyHouses(houses)
         if hgt.ownerName and hgt.ownerName ~= "" then
             where = where .. (where ~= "" and "  -  " or "") .. hgt.ownerName
         end
-        rowFrame.info:SetText(where)
-        local val = rowFrame.visit
+        row.info:SetText(where)
+        local val = row.visit
         val:SetAttribute("house-neighborhood-guid", hgt.neighborhoodGUID)
         val:SetAttribute("house-guid", hgt.houseGUID)
         val:SetAttribute("house-plot-id", hgt.plotID and tostring(hgt.plotID) or nil)
         local success = hgt.neighborhoodGUID and hgt.houseGUID and hgt.plotID
         val:SetAlpha(success and 1 or 0.3)
         val:EnableMouse(success and true or false)
-        rowFrame:Show()
+        row:Show()
     end
 end
 
@@ -423,7 +423,7 @@ function OpenHousesFor(contextData)
     end
 
     pendingHouses = nil
-    titleText:SetText(string.format(VIEW_HOUSES_TITLE or "%s's Houses", name))
+    title:SetText(string.format(VIEW_HOUSES_TITLE or "%s's Houses", name))
     ClearRows()
     statusText:SetText(CludesUI.L("Loading houses..."))
     statusText:Show()

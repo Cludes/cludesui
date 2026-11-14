@@ -18,7 +18,7 @@ local CASTER = { spell = 1, sta = 0.05, armor = 0.005 }
 local HEALER = { heal = 1, sta = 0.05, armor = 0.005 }
 local TANK = { sta = 1, def = 1.5, armor = 0.06, dodge = 10, threat = 6 }
 
-local function Spec(classFile, key, name, role, own)
+local function Spec(class, key, name, role, own)
     local weights = {}
     for stat, worth in pairs(role) do
         weights[stat] = worth
@@ -26,7 +26,7 @@ local function Spec(classFile, key, name, role, own)
     for stat, worth in pairs(own or NONE) do
         weights[stat] = worth
     end
-    return { class = classFile, key = key, name = name, weights = weights }
+    return { class = class, key = key, name = name, weights = weights }
 end
 
 module.StatWeightDefaultsUpdated = "5 Oct 2026"

@@ -167,14 +167,14 @@ local function PaintJunkState(button, details, markerJunk)
             coin = button:CreateTexture(nil, "OVERLAY", nil, 6)
             coin:SetTexture(mod.JUNK_COIN)
             coin:SetTexCoord(0.12, 0.88, 0.12, 0.88)
-            local maskTex = button:CreateMaskTexture()
-            maskTex:SetTexture(
+            local mask = button:CreateMaskTexture()
+            mask:SetTexture(
                 "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE"
             )
-            maskTex:SetAllPoints(coin)
-            coin:AddMaskTexture(maskTex)
+            mask:SetAllPoints(coin)
+            coin:AddMaskTexture(mask)
             coin:SetSize(12, 12)
             coin:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", -3, -3)
             button._junkCoin = coin
@@ -193,13 +193,13 @@ end
 -------------------------------------------------------------------------------
 --  RenderButton
 -------------------------------------------------------------------------------
-local function RenderButton(button, payload, _, column, rowFrame, startX, currentY, _, interactiveEmpties)
+local function RenderButton(button, payload, _, col, row, startX, currentY, _, interactiveEmpties)
     local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetPoint(
         "TOPLEFT",
-        startX + (column * (SLOT_SIZE + SPACING)),
-        currentY - (rowFrame * (SLOT_SIZE + SPACING))
+        startX + (col * (SLOT_SIZE + SPACING)),
+        currentY - (row * (SLOT_SIZE + SPACING))
     )
     hostFrame:Show()
     button:Show()
@@ -507,9 +507,9 @@ local function RenderButton(button, payload, _, column, rowFrame, startX, curren
             dimFrame:SetAllPoints()
             -- Above the text overlay (+3); ns.PinItemButton moves it with the button
             dimFrame:SetFrameLevel(button:GetFrameLevel() + 6)
-            local dim = dimFrame:CreateTexture(nil, "OVERLAY")
-            dim:SetAllPoints()
-            dim:SetColorTexture(0, 0, 0, 0.75)
+            local size = dimFrame:CreateTexture(nil, "OVERLAY")
+            size:SetAllPoints()
+            size:SetColorTexture(0, 0, 0, 0.75)
             dimFrame:Hide()
             button._warbankDim = dimFrame
         end
@@ -695,12 +695,12 @@ function mod.RenderGridView(
             pad:SetParent(childFrame)
             pad:ClearAllPoints()
             local totalIdx = itemCount + p
-            local column = (totalIdx - 1) % columns
-            local rowFrame = math.floor((totalIdx - 1) / columns)
+            local col = (totalIdx - 1) % columns
+            local row = math.floor((totalIdx - 1) / columns)
             pad:SetPoint(
                 "TOPLEFT",
-                startX + (column * (SLOT_SIZE + SPACING)),
-                curY - (rowFrame * (SLOT_SIZE + SPACING))
+                startX + (col * (SLOT_SIZE + SPACING)),
+                curY - (row * (SLOT_SIZE + SPACING))
             )
             mod.PaintSlotBackground(pad._bg, 0.35)
             pad:Show()
@@ -714,9 +714,9 @@ function mod.RenderGridView(
             local button = GetOrCreateSlot(slotIdx)
             if button then -- nil during combat (avoids minting tainted secure buttons)
                 button:GetParent():SetParent(childFrame)
-                local column = (jdx - 1) % columns
-                local rowFrame = math.floor((jdx - 1) / columns)
-                RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
+                local col = (jdx - 1) % columns
+                local row = math.floor((jdx - 1) / columns)
+                RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
             end
         end
         local remainder = num % columns
@@ -752,17 +752,17 @@ function mod.RenderGridView(
 
             -- Prepare the headers first so their text widths can reserve enough
             -- horizontal space before the buckets are packed into rows.
-            for slotPos, bucket in ipairs(buckets) do
+            for index, bucket in ipairs(buckets) do
                 subHeaderIdx = subHeaderIdx + 1
-                local headerFrame = GetOrCreateExpSubHeader(subHeaderIdx)
-                headerFrame:SetParent(childFrame)
-                headerFrame._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
-                SetBagFont(headerFrame._label, math.max(8, catTitleSize - 2))
+                local header = GetOrCreateExpSubHeader(subHeaderIdx)
+                header:SetParent(childFrame)
+                header._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
+                SetBagFont(header._label, math.max(8, catTitleSize - 2))
 
-                local itemCount = #bucket.items + ((slotPos == assignBucket) and 1 or 0)
+                local itemCount = #bucket.items + ((index == assignBucket) and 1 or 0)
                 local span = math.min(columns, itemCount)
                 local bucketWidth = span * stride - SPACING
-                bucket._compactHeader = headerFrame
+                bucket._compactHeader = header
                 bucket._compactItemCount = itemCount
                 bucket._compactSpan = span
                 bucket._compactRows = math.ceil(itemCount / span)
@@ -770,13 +770,13 @@ function mod.RenderGridView(
 
                 if itemCount <= columns then
                     categoryGap =
-                        math.max(categoryGap, (headerFrame._label:GetStringWidth() or 0) + 6 - bucketWidth)
+                        math.max(categoryGap, (header._label:GetStringWidth() or 0) + 6 - bucketWidth)
                 end
             end
 
             local function RenderPadsAt(itemTop, usedWidth)
                 local padCount = math.floor((usableWidth - usedWidth + epsilon) / stride)
-                for slotPos = 1, padCount do
+                for index = 1, padCount do
                     _emptyPadIdx = _emptyPadIdx + 1
                     local pad = GetOrCreateEmptyPad(_emptyPadIdx)
                     pad:SetParent(childFrame)
@@ -785,7 +785,7 @@ function mod.RenderGridView(
                         "TOPLEFT",
                         childFrame,
                         "TOPLEFT",
-                        startX + usedWidth + SPACING + (slotPos - 1) * stride,
+                        startX + usedWidth + SPACING + (index - 1) * stride,
                         itemTop
                     )
                     mod.PaintSlotBackground(pad._bg, 0.35)
@@ -797,7 +797,7 @@ function mod.RenderGridView(
             local usedWidth = 0
             local rowItemRows = 0
 
-            for slotPos, bucket in ipairs(buckets) do
+            for index, bucket in ipairs(buckets) do
                 local span = bucket._compactSpan
                 local itemRows = bucket._compactRows
                 local bucketWidth = bucket._compactWidth
@@ -813,25 +813,25 @@ function mod.RenderGridView(
                     startOffset = 0
                 end
 
-                local headerFrame = bucket._compactHeader
-                headerFrame:ClearAllPoints()
-                headerFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX + startOffset, rowTop)
-                headerFrame:SetWidth(math.max(1, bucketWidth))
-                headerFrame:Show()
+                local header = bucket._compactHeader
+                header:ClearAllPoints()
+                header:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX + startOffset, rowTop)
+                header:SetWidth(math.max(1, bucketWidth))
+                header:Show()
 
                 for itemIndex, payload in ipairs(bucket.items) do
                     slotIdx = slotIdx + 1
                     local button = GetOrCreateSlot(slotIdx)
                     if button then
                         button:GetParent():SetParent(childFrame)
-                        local column = (itemIndex - 1) % span
-                        local rowFrame = math.floor((itemIndex - 1) / span)
+                        local col = (itemIndex - 1) % span
+                        local row = math.floor((itemIndex - 1) / span)
                         RenderButton(
                             button,
                             payload,
                             slotIdx,
-                            column,
-                            rowFrame,
+                            col,
+                            row,
                             startX + startOffset,
                             rowTop - headerGap,
                             columns
@@ -839,20 +839,20 @@ function mod.RenderGridView(
                     end
                 end
 
-                if slotPos == assignBucket then
+                if index == assignBucket then
                     slotIdx = slotIdx + 1
                     local assignSlot = GetOrCreateSlot(slotIdx)
                     if assignSlot then
                         assignSlot:GetParent():SetParent(childFrame)
                         local itemIndex = #bucket.items + 1
-                        local column = (itemIndex - 1) % span
-                        local rowFrame = math.floor((itemIndex - 1) / span)
+                        local col = (itemIndex - 1) % span
+                        local row = math.floor((itemIndex - 1) / span)
                         RenderButton(
                             assignSlot,
                             { bag = 0, slot = 0 },
                             slotIdx,
-                            column,
-                            rowFrame,
+                            col,
+                            row,
                             startX + startOffset,
                             rowTop - headerGap,
                             columns
@@ -902,14 +902,14 @@ function mod.RenderGridView(
             for _, bucket in ipairs(buckets) do
                 if #bucket.items > 0 then
                     subHeaderIdx = subHeaderIdx + 1
-                    local headerFrame = GetOrCreateExpSubHeader(subHeaderIdx)
-                    headerFrame:SetParent(childFrame)
-                    headerFrame:ClearAllPoints()
-                    headerFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
-                    headerFrame:SetWidth(gridW)
-                    headerFrame._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
-                    SetBagFont(headerFrame._label, math.max(8, catTitleSize - 2))
-                    headerFrame:Show()
+                    local header = GetOrCreateExpSubHeader(subHeaderIdx)
+                    header:SetParent(childFrame)
+                    header:ClearAllPoints()
+                    header:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX, curY)
+                    header:SetWidth(gridW)
+                    header._label:SetText(bucket.label .. " (" .. #bucket.items .. ")")
+                    SetBagFont(header._label, math.max(8, catTitleSize - 2))
+                    header:Show()
                     curY = curY - 18
                     RenderItemBlock(bucket.items)
 
@@ -997,9 +997,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local column = (jdx - 1) % columns
-                        local rowFrame = math.floor((jdx - 1) / columns)
-                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
+                        local col = (jdx - 1) % columns
+                        local row = math.floor((jdx - 1) / columns)
+                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
                     end
                 end
                 local pinItemCount = #pinItems
@@ -1009,18 +1009,9 @@ function mod.RenderGridView(
                     local pinSlot = GetOrCreateSlot(slotIdx)
                     if pinSlot then -- nil during combat (avoids minting tainted secure buttons)
                         pinSlot:GetParent():SetParent(childFrame)
-                        local column = (pinIdx - 1) % columns
-                        local rowFrame = math.floor((pinIdx - 1) / columns)
-                        RenderButton(
-                            pinSlot,
-                            { bag = 0, slot = 0 },
-                            slotIdx,
-                            column,
-                            rowFrame,
-                            startX,
-                            curY,
-                            columns
-                        )
+                        local col = (pinIdx - 1) % columns
+                        local row = math.floor((pinIdx - 1) / columns)
+                        RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
                         local shade = GetOrCreatePinOverlay()
                         shade:SetParent(childFrame)
                         shade:ClearAllPoints()
@@ -1104,9 +1095,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local column = (jdx - 1) % columns
-                        local rowFrame = math.floor((jdx - 1) / columns)
-                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
+                        local col = (jdx - 1) % columns
+                        local row = math.floor((jdx - 1) / columns)
+                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
                     end
                 end
                 local recItemCount = #recentItems
@@ -1148,9 +1139,9 @@ function mod.RenderGridView(
                 local button = GetOrCreateSlot(slotIdx)
                 if button then -- nil during combat (avoids minting tainted secure buttons)
                     button:GetParent():SetParent(childFrame)
-                    local column = (i - 1) % columns
-                    local rowFrame = math.floor((i - 1) / columns)
-                    RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns, true)
+                    local col = (i - 1) % columns
+                    local row = math.floor((i - 1) / columns)
+                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns, true)
                 end
             end
             local rowList = math.ceil(#slotList / columns)
@@ -1262,9 +1253,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local column = (i - 1) % columns
-                        local rowFrame = math.floor((i - 1) / columns)
-                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns, true)
+                        local col = (i - 1) % columns
+                        local row = math.floor((i - 1) / columns)
+                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns, true)
                     end
                 end
                 local reagRows = math.ceil(#reagentSlotList / columns)
@@ -1338,12 +1329,12 @@ function mod.RenderGridView(
                     local aCat = CUI_CategoryManager:GetCategories()[assignCatIdx]
                     assignKey = aCat and aCat._defaultName
                 end
-                local kindOf = (showPinAdd and "pinned")
+                local kind = (showPinAdd and "pinned")
                     or (alwaysShow and "recent")
                     or (useSlotNest and "slot")
                     or (useExpNest and "exp")
                     or "flat"
-                mod.CompactBagsSection(labelText, sectionItems, kindOf, assignKey)
+                mod.CompactBagsSection(labelText, sectionItems, kind, assignKey)
                 return
             end
 
@@ -1443,12 +1434,12 @@ function mod.RenderGridView(
                                     local aSlot = GetOrCreateSlot(slotIdx)
                                     if aSlot then
                                         aSlot:GetParent():SetParent(childFrame)
-                                        local column = remainder
+                                        local col = remainder
                                         RenderButton(
                                             aSlot,
                                             { bag = 0, slot = 0 },
                                             slotIdx,
-                                            column,
+                                            col,
                                             0,
                                             startX,
                                             curY,
@@ -1477,9 +1468,9 @@ function mod.RenderGridView(
                 local button = GetOrCreateSlot(slotIdx)
                 if button then
                     button:GetParent():SetParent(childFrame)
-                    local column = (jdx - 1) % columns
-                    local rowFrame = math.floor((jdx - 1) / columns)
-                    RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
+                    local col = (jdx - 1) % columns
+                    local row = math.floor((jdx - 1) / columns)
+                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
                 end
             end
 
@@ -1490,18 +1481,9 @@ function mod.RenderGridView(
                 local pinSlot = GetOrCreateSlot(slotIdx)
                 if pinSlot then
                     pinSlot:GetParent():SetParent(childFrame)
-                    local column = (pinIdx - 1) % columns
-                    local rowFrame = math.floor((pinIdx - 1) / columns)
-                    RenderButton(
-                        pinSlot,
-                        { bag = 0, slot = 0 },
-                        slotIdx,
-                        column,
-                        rowFrame,
-                        startX,
-                        curY,
-                        columns
-                    )
+                    local col = (pinIdx - 1) % columns
+                    local row = math.floor((pinIdx - 1) / columns)
+                    RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
                     local shade = GetOrCreatePinOverlay()
                     shade:SetParent(childFrame)
                     shade:ClearAllPoints()
@@ -1526,18 +1508,9 @@ function mod.RenderGridView(
                     local aSlot = GetOrCreateSlot(slotIdx)
                     if aSlot then
                         aSlot:GetParent():SetParent(childFrame)
-                        local column = (aIdx - 1) % columns
-                        local rowFrame = math.floor((aIdx - 1) / columns)
-                        RenderButton(
-                            aSlot,
-                            { bag = 0, slot = 0 },
-                            slotIdx,
-                            column,
-                            rowFrame,
-                            startX,
-                            curY,
-                            columns
-                        )
+                        local col = (aIdx - 1) % columns
+                        local row = math.floor((aIdx - 1) / columns)
+                        RenderButton(aSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
                         local aOv = GetOrCreateAssignOverlay()
                         aOv._assignCatKey = aCat._defaultName
                         aOv:SetParent(childFrame)
@@ -1768,18 +1741,9 @@ function mod.RenderGridView(
                                 local button = GetOrCreateSlot(slotIdx)
                                 if button then
                                     button:GetParent():SetParent(childFrame)
-                                    local column = (jdx - 1) % columns
-                                    local rowFrame = math.floor((jdx - 1) / columns)
-                                    RenderButton(
-                                        button,
-                                        payload,
-                                        slotIdx,
-                                        column,
-                                        rowFrame,
-                                        startX,
-                                        curY,
-                                        columns
-                                    )
+                                    local col = (jdx - 1) % columns
+                                    local row = math.floor((jdx - 1) / columns)
+                                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
                                 end
                             end
 
@@ -1791,14 +1755,14 @@ function mod.RenderGridView(
                                 local aSlot = GetOrCreateSlot(slotIdx)
                                 if aSlot then -- nil during combat (avoids minting tainted secure buttons)
                                     aSlot:GetParent():SetParent(childFrame)
-                                    local column = (aIdx - 1) % columns
-                                    local rowFrame = math.floor((aIdx - 1) / columns)
+                                    local col = (aIdx - 1) % columns
+                                    local row = math.floor((aIdx - 1) / columns)
                                     RenderButton(
                                         aSlot,
                                         { bag = 0, slot = 0 },
                                         slotIdx,
-                                        column,
-                                        rowFrame,
+                                        col,
+                                        row,
                                         startX,
                                         curY,
                                         columns
@@ -2023,9 +1987,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then
                         button:GetParent():SetParent(childFrame)
-                        local column = (i - 1) % columns
-                        local rowFrame = math.floor((i - 1) / columns)
-                        RenderButton(button, payload, slotIdx, column, rowFrame, startX, curY, columns)
+                        local col = (i - 1) % columns
+                        local row = math.floor((i - 1) / columns)
+                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
                     end
                 end
 

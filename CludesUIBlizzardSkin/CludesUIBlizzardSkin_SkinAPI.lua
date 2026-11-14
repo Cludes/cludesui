@@ -50,8 +50,8 @@ end
 --  reshuffle, and every primitive is already idempotent (FFD-guarded) and
 --  taint-safe, so re-calls from the dev's own refresh hooks are near-free.
 -------------------------------------------------------------------------------
-local baseValue = {}
-baseValue.apiVersion = 4 -- 2: SetTabSelection, 3: EditBox opts, 4: ItemButton
+local base = {}
+base.apiVersion = 4 -- 2: SetTabSelection, 3: EditBox opts, 4: ItemButton
 
 local PASS = {
     -- Containers / chrome
@@ -80,7 +80,7 @@ local PASS = {
     "ApplyBarFill",
 }
 for _, fname in ipairs(PASS) do
-    baseValue[fname] = function(...)
+    base[fname] = function(...)
         local func = Skin[fname]
         if func then
             return func(...)
@@ -90,18 +90,18 @@ end
 
 -- Resolved third-party theme: "cui" or "modern" (never "off"; if skinning
 -- were off the callback would not have fired at all).
-function baseValue.GetStyle()
+function base.GetStyle()
     return (CUI.GetThirdPartySkinStyle and CUI.GetThirdPartySkinStyle()) or "cui"
 end
 
 -- Live accent color (r, g, b). Prefer OnLooksChanged over caching this.
-function baseValue.GetAccentColor()
+function base.GetAccentColor()
     local c = CUI.CLUDES_GREEN or {}
     return c.r or 0.298, c.g or 0.788, c.b or 0.941
 end
 
 -- House panel fill (r, g, b, a) for custom elements that should match.
-function baseValue.GetPanelColor()
+function base.GetPanelColor()
     local T = Skin.Theme
     if not T.bgR then
         Skin.ResolveTheme()
@@ -110,7 +110,7 @@ function baseValue.GetPanelColor()
 end
 
 -- The user's UI font: path, outline flag ("" when none).
-function baseValue.GetFont()
+function base.GetFont()
     local T = Skin.Theme
     if not T.fontPath then
         Skin.ResolveTheme()
@@ -121,7 +121,7 @@ end
 -- Fires when suite-wide looks change live (accent color, bar fill, Modern
 -- backdrop color, window styles). Shell/primitive visuals refresh on their
 -- own; this is only for custom elements colored via the getters above.
-function baseValue.OnLooksChanged(func)
+function base.OnLooksChanged(func)
     if type(func) == "function" then
         Skin.OnLooksChanged(func)
     end
@@ -131,7 +131,7 @@ end
 -- dev never sees style plumbing, and IsEnabled reflects their own toggles.
 local function MakeFacade(name)
     local winKey = "tp:" .. name
-    local Stl = {
+    local S = {
         Shell = function(widget, options)
             return Skin.Shell(winKey, widget, options)
         end,
@@ -139,7 +139,7 @@ local function MakeFacade(name)
             return MasterOn() and AddonOn(name)
         end,
     }
-    return setmetatable(Stl, { __index = baseValue })
+    return setmetatable(S, { __index = base })
 end
 
 -------------------------------------------------------------------------------

@@ -38,8 +38,8 @@ function CUI_Bags:FitHeaderText()
     if not (heading and edge) then
         return
     end
-    local titleText, count = heading.title, heading.itemCount
-    local tl, el = titleText:GetLeft(), edge:GetLeft()
+    local title, count = heading.title, heading.itemCount
+    local tl, el = title:GetLeft(), edge:GetLeft()
     if not (tl and el) then
         return
     end
@@ -48,13 +48,13 @@ function CUI_Bags:FitHeaderText()
         heading.slotLines[2]:Hide()
     end
     local room = el - 12 - tl
-    local tw = titleText:GetUnboundedStringWidth()
+    local tw = title:GetUnboundedStringWidth()
     if tw > room then
-        titleText:SetWidth(math.max(room, 1))
+        title:SetWidth(math.max(room, 1))
         count:SetAlpha(0)
         return
     end
-    titleText:SetWidth(tw + 1)
+    title:SetWidth(tw + 1)
     local countRoom = room - tw - 8
     local first, second = (count:GetText() or ""):match("^([^\n]+)\n(.+)$")
     if first then
@@ -62,23 +62,23 @@ function CUI_Bags:FitHeaderText()
         if not heading.slotLines then
             heading.slotLines = {}
             for i = 1, 2 do
-                local lineTex = heading:CreateFontString(nil, "OVERLAY")
-                SetBagFont(lineTex, 11)
-                lineTex:SetWordWrap(false)
-                lineTex:SetJustifyH("LEFT")
-                heading.slotLines[i] = lineTex
+                local line = heading:CreateFontString(nil, "OVERLAY")
+                SetBagFont(line, 11)
+                line:SetWordWrap(false)
+                line:SetJustifyH("LEFT")
+                heading.slotLines[i] = line
             end
         end
-        local _, dim = count:GetFont()
+        local _, size = count:GetFont()
         local r, g, b = count:GetTextColor()
         for i = 1, 2 do
-            local lineTex = heading.slotLines[i]
-            lineTex:SetFont(count:GetFont())
-            lineTex:SetTextColor(r, g, b, 1)
-            lineTex:SetPoint("LEFT", titleText, "RIGHT", 8, i == 1 and dim / 2 or -dim / 2)
-            lineTex:SetText(i == 1 and first or second)
-            lineTex:SetWidth(math.max(math.min(lineTex:GetUnboundedStringWidth() + 1, countRoom), 1))
-            lineTex:SetShown(countRoom >= 16)
+            local line = heading.slotLines[i]
+            line:SetFont(count:GetFont())
+            line:SetTextColor(r, g, b, 1)
+            line:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
+            line:SetText(i == 1 and first or second)
+            line:SetWidth(math.max(math.min(line:GetUnboundedStringWidth() + 1, countRoom), 1))
+            line:SetShown(countRoom >= 16)
         end
         count:SetAlpha(0)
         return
@@ -92,48 +92,48 @@ local function CreateHeader()
         return
     end
     local forever = mod.BagsForever()
-    local headerFrame = CreateFrame("Frame", nil, CUI_Bags)
-    headerFrame:SetPoint("TOPLEFT", 1, -1)
-    headerFrame:SetPoint("TOPRIGHT", -1, -1)
+    local header = CreateFrame("Frame", nil, CUI_Bags)
+    header:SetPoint("TOPLEFT", 1, -1)
+    header:SetPoint("TOPRIGHT", -1, -1)
     if forever then
-        mod.LayoutForeverBagHeader(headerFrame)
+        mod.LayoutForeverBagHeader(header)
     else
-        headerFrame:SetHeight(HEADER_H)
+        header:SetHeight(HEADER_H)
     end
-    headerFrame.bg = headerFrame:CreateTexture(nil, "BACKGROUND")
-    headerFrame.bg:SetAllPoints()
-    headerFrame.bg:SetColorTexture(0, 0, 0, 0.5)
+    header.bg = header:CreateTexture(nil, "BACKGROUND")
+    header.bg:SetAllPoints()
+    header.bg:SetColorTexture(0, 0, 0, 0.5)
 
-    headerFrame.title = headerFrame:CreateFontString(nil, "OVERLAY")
-    SetBagFont(headerFrame.title, 13)
-    headerFrame.title:SetPoint("LEFT", headerFrame, "LEFT", 8, 0)
-    headerFrame.title:SetText(CludesUI.L("Inventory"))
-    headerFrame.title:SetTextColor(1, 1, 1)
+    header.title = header:CreateFontString(nil, "OVERLAY")
+    SetBagFont(header.title, 13)
+    header.title:SetPoint("LEFT", header, "LEFT", 8, 0)
+    header.title:SetText(CludesUI.L("Inventory"))
+    header.title:SetTextColor(1, 1, 1)
 
     -- Item count (updated by RefreshInventory)
-    headerFrame.itemCount = headerFrame:CreateFontString(nil, "OVERLAY")
-    SetBagFont(headerFrame.itemCount, 11)
-    headerFrame.itemCount:SetPoint("LEFT", headerFrame.title, "RIGHT", 8, 0)
-    headerFrame.itemCount:SetTextColor(0.6, 0.6, 0.6)
+    header.itemCount = header:CreateFontString(nil, "OVERLAY")
+    SetBagFont(header.itemCount, 11)
+    header.itemCount:SetPoint("LEFT", header.title, "RIGHT", 8, 0)
+    header.itemCount:SetTextColor(0.6, 0.6, 0.6)
 
     -- Title and count stop short of the header icons (CUI_Bags:FitHeaderText),
     -- refitted whenever either text, the title's spot or the header width changes.
-    headerFrame.title:SetWordWrap(false)
-    headerFrame.title:SetJustifyH("LEFT")
-    headerFrame.itemCount:SetWordWrap(false)
-    headerFrame.itemCount:SetJustifyH("LEFT")
+    header.title:SetWordWrap(false)
+    header.title:SetJustifyH("LEFT")
+    header.itemCount:SetWordWrap(false)
+    header.itemCount:SetJustifyH("LEFT")
     if not forever then
         local function Fit()
             CUI_Bags:FitHeaderText()
         end
-        hooksecurefunc(headerFrame.title, "SetText", Fit)
-        hooksecurefunc(headerFrame.title, "SetPoint", Fit)
-        hooksecurefunc(headerFrame.itemCount, "SetText", Fit)
-        headerFrame:HookScript("OnSizeChanged", Fit)
-        headerFrame:HookScript("OnShow", Fit)
+        hooksecurefunc(header.title, "SetText", Fit)
+        hooksecurefunc(header.title, "SetPoint", Fit)
+        hooksecurefunc(header.itemCount, "SetText", Fit)
+        header:HookScript("OnSizeChanged", Fit)
+        header:HookScript("OnShow", Fit)
     end
 
-    local search = CreateFrame("EditBox", "CUI_BagSearchBox", headerFrame)
+    local search = CreateFrame("EditBox", "CUI_BagSearchBox", header)
     search:SetSize(160, 22)
     search:SetPoint("RIGHT", -35, 0)
     search:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
@@ -153,7 +153,7 @@ local function CreateHeader()
     placeholder:SetTextColor(0.4, 0.4, 0.4)
     CUI_Bags._searchBox = search
 
-    local sort = CreateFrame("Button", nil, headerFrame)
+    local sort = CreateFrame("Button", nil, header)
     sort:SetSize(24, 24)
     sort:SetPoint("RIGHT", search, "LEFT", -13, 0)
     sort.icon = sort:CreateTexture(nil, "OVERLAY")
@@ -162,11 +162,11 @@ local function CreateHeader()
     sort.icon:SetAlpha(0.9)
 
     if forever then
-        headerFrame.bg:Hide()
-        mod.AddForeverBagPortrait(headerFrame, "Interface\\Icons\\Inv_misc_bag_08")
-        mod.SkinForeverBagTitle(headerFrame.title, headerFrame.itemCount)
+        header.bg:Hide()
+        mod.AddForeverBagPortrait(header, "Interface\\Icons\\Inv_misc_bag_08")
+        mod.SkinForeverBagTitle(header.title, header.itemCount)
         sort:ClearAllPoints()
-        sort:SetPoint("RIGHT", headerFrame, "TOPRIGHT", -9, headerFrame._foreverToolsY)
+        sort:SetPoint("RIGHT", header, "TOPRIGHT", -9, header._foreverToolsY)
     end
 
     sort:SetScript("OnEnter", function(self)
@@ -317,8 +317,8 @@ local function CreateHeader()
                 local special = mod.SpecialBags()
                 for bag = 0, 5 do
                     local numSlots = C_Container.GetContainerNumSlots(bag)
-                    for slotIndex = 1, numSlots do
-                        local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                    for slot = 1, numSlots do
+                        local details = C_Container.GetContainerItemInfo(bag, slot)
                         if details and details.itemID and details.stackCount then
                             local maxStack = maxStackByID[details.itemID]
                             if not maxStack then
@@ -341,7 +341,7 @@ local function CreateHeader()
                                 end
                                 stacks[key][#stacks[key] + 1] = {
                                     bag = bag,
-                                    slot = slotIndex,
+                                    slot = slot,
                                     count = details.stackCount,
                                 }
                             end
@@ -361,12 +361,12 @@ local function CreateHeader()
                         table.sort(partials, ByCount)
                         local lo, hi = 1, num
                         while lo < hi do
-                            local source, targetUnit = partials[lo], partials[hi]
+                            local source, target = partials[lo], partials[hi]
                             local srcLoc = ItemLocation:CreateFromBagAndSlot(source.bag, source.slot)
-                            local dstLoc = ItemLocation:CreateFromBagAndSlot(targetUnit.bag, targetUnit.slot)
+                            local dstLoc = ItemLocation:CreateFromBagAndSlot(target.bag, target.slot)
                             if not C_Item.IsLocked(srcLoc) and not C_Item.IsLocked(dstLoc) then
                                 C_Container.PickupContainerItem(source.bag, source.slot)
-                                C_Container.PickupContainerItem(targetUnit.bag, targetUnit.slot)
+                                C_Container.PickupContainerItem(target.bag, target.slot)
                                 ClearCursor()
                                 merged = true
                             end
@@ -433,20 +433,20 @@ local function CreateHeader()
             local special = mod.SpecialBags()
             for bag = bagMin, bagMax do
                 local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
-                for slotIndex = 1, numSlots do
+                for slot = 1, numSlots do
                     sum = sum + 1
                     sBag[sum] = bag
-                    sSlot[sum] = slotIndex
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                    sSlot[sum] = slot
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
                     if details then
-                        local link = C_Container.GetContainerItemLink(bag, slotIndex)
+                        local link = C_Container.GetContainerItemLink(bag, slot)
                         local key = link .. "\0" .. (details.stackCount or 0)
                         sKey[sum] = key
                         sID[sum] = details.itemID
                         itemList[#itemList + 1] = {
                             pos = sum,
                             bag = bag,
-                            slot = slotIndex,
+                            slot = slot,
                             info = details,
                             itemLink = link,
                             key = key,
@@ -504,15 +504,15 @@ local function CreateHeader()
             -- Sorted item i targets slot i; Sort to Bottom offsets so the block lands in the LAST
             -- #items slots (free slots float up either way). The walk must move toward the free slots
             -- (forward for top, backward for bottom), or a displaced item lands in an already-visited slot -- costing a retry per move, risking the 15-retry cap.
-            local offset, first, last, step = 0, 1, #itemList, 1
+            local off, first, last, step = 0, 1, #itemList, 1
             if BP().bagSortToBottom then
-                offset = sum - #itemList
+                off = sum - #itemList
                 first, last, step = #itemList, 1, -1
             end
 
             local moves = {}
             for i = first, last, step do
-                local t = i + offset
+                local t = i + off
                 local s = whereIs[i]
                 if s ~= t then
                     local displaced = atPos[t]
@@ -643,12 +643,12 @@ local function CreateHeader()
         local tempItems = {}
         for bag = 0, 5 do
             local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slotIndex = 1, numSlots do
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            for slot = 1, numSlots do
+                local details = C_Container.GetContainerItemInfo(bag, slot)
                 if details then
-                    local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
+                    local itemLink = C_Container.GetContainerItemLink(bag, slot)
                     tempItems[#tempItems + 1] =
-                        { bag = bag, slot = slotIndex, info = details, itemLink = itemLink }
+                        { bag = bag, slot = slot, info = details, itemLink = itemLink }
                 end
             end
         end
@@ -789,7 +789,7 @@ local function CreateHeader()
     CUI_Bags._sortBtn = sort
     ApplySortEnabled() -- a /reload mid-combat builds the button locked
 
-    local bagsBtn = CreateFrame("Button", nil, headerFrame)
+    local bagsBtn = CreateFrame("Button", nil, header)
     bagsBtn:SetSize(24, 24)
     bagsBtn.icon = bagsBtn:CreateTexture(nil, "ARTWORK")
     bagsBtn.icon:SetAllPoints()
@@ -852,7 +852,7 @@ local function CreateHeader()
         searchChanged(userInput)
     end)
 
-    local close = CreateFrame("Button", nil, headerFrame)
+    local close = CreateFrame("Button", nil, header)
     close:SetSize(12, 12)
     close:SetPoint("RIGHT", -9, 0)
     close.icon = close:CreateTexture(nil, "OVERLAY")
@@ -891,14 +891,14 @@ local function CreateHeader()
     if not forever then
         local Pix = CUI and CUI.PP
         local px = (Pix and Pix.mult) or 1
-        local hdrSep = headerFrame:CreateTexture(nil, "ARTWORK")
+        local hdrSep = header:CreateTexture(nil, "ARTWORK")
         hdrSep:SetHeight(px)
-        hdrSep:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
-        hdrSep:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
+        hdrSep:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
+        hdrSep:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
         hdrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
     end
 
-    CUI_Bags.Header = headerFrame
+    CUI_Bags.Header = header
     CUI_Bags._bagsBtn = bagsBtn
 end
 

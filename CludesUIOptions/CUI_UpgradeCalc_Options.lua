@@ -56,15 +56,15 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         local BTN_H = 38
         local GAP = 40
         local ROW_H = BTN_H + 20
-        local rowFrame = CreateFrame("Frame", nil, hostFrame)
+        local row = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
-        Pix.Size(rowFrame, totalW, ROW_H)
-        Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+        Pix.Size(row, totalW, ROW_H)
+        Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
 
-        local openBtn = CreateFrame("Button", nil, rowFrame)
+        local openBtn = CreateFrame("Button", nil, row)
         Pix.Size(openBtn, BTN_W, BTN_H)
-        Pix.Point(openBtn, "RIGHT", rowFrame, "CENTER", -(GAP / 2), 0)
-        openBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
+        Pix.Point(openBtn, "RIGHT", row, "CENTER", -(GAP / 2), 0)
+        openBtn:SetFrameLevel(row:GetFrameLevel() + 1)
         CludesUI.MakeStyledButton(openBtn, "Open Calculator", 14, CludesUI.WB_COLOURS, function()
             local widget = _G["CUIUpgCalcFrame"]
             if widget then
@@ -76,10 +76,10 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             end
         end)
 
-        local clearBtn = CreateFrame("Button", nil, rowFrame)
+        local clearBtn = CreateFrame("Button", nil, row)
         Pix.Size(clearBtn, BTN_W, BTN_H)
-        Pix.Point(clearBtn, "LEFT", rowFrame, "CENTER", GAP / 2, 0)
-        clearBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
+        Pix.Point(clearBtn, "LEFT", row, "CENTER", GAP / 2, 0)
+        clearBtn:SetFrameLevel(row:GetFrameLevel() + 1)
         CludesUI.MakeStyledButton(clearBtn, "Clear Upgrade Cache", 14, CludesUI.WB_COLOURS, function()
             if CUIUpgCalc and CUIUpgCalc.ClearCache then
                 CUIUpgCalc:ClearCache()

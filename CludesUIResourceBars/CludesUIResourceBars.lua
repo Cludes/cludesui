@@ -73,8 +73,8 @@ local GetShapeshiftFormID = GetShapeshiftFormID
 local function GetRBFont()
     return CludesUI.GetFontPath("resourceBars")
 end
-local function SetRBFont(fontStr, font, dim)
-    CludesUI.ApplyModuleFont(fontStr, font, dim, "resourceBars")
+local function SetRBFont(fontStr, font, size)
+    CludesUI.ApplyModuleFont(fontStr, font, size, "resourceBars")
 end
 -- Shared with CUI_ResourceBars_SwingTimer.lua (same font lane as the cast bar text).
 mod.GetRBFont = GetRBFont
@@ -112,21 +112,21 @@ end
 -- local. side "left"|"right"|"center"; pushed = duration shares
 -- this side; reserve = duration's reserved width (used only when pushed).
 -- Returns: point (anchor), xOff (base, before user X offset), justify
-function mod.GetCastTextAnchor(sideName, pushed, reserve)
-    if sideName == "center" then
+function mod.GetCastTextAnchor(side, pushed, reserve)
+    if side == "center" then
         return "CENTER", 0, "CENTER"
-    elseif sideName == "left" then
-        local baseValue = 4
+    elseif side == "left" then
+        local base = 4
         if pushed then
-            baseValue = baseValue + reserve
+            base = base + reserve
         end
-        return "LEFT", baseValue, "LEFT"
+        return "LEFT", base, "LEFT"
     else -- "right"
-        local baseValue = -4
+        local base = -4
         if pushed then
-            baseValue = baseValue - reserve
+            base = base - reserve
         end
-        return "RIGHT", baseValue, "RIGHT"
+        return "RIGHT", base, "RIGHT"
     end
 end
 
@@ -259,11 +259,11 @@ end
 -- Class/power colors route through CludesUI.GetClassColor/GetPowerColor so
 -- General Options overrides apply. Metatable converts {r=,g=,b=} to {r,g,b} arrays.
 local CLASS_COLORS = setmetatable({}, {
-    __index = function(_, classFile)
+    __index = function(_, class)
         if not CludesUI or not CludesUI.GetClassColor then
             return nil
         end
-        local c = CludesUI.GetClassColor(classFile)
+        local c = CludesUI.GetClassColor(class)
         if c then
             return { c.r, c.g, c.b }
         end
@@ -329,8 +329,8 @@ local POWER_COLORS = setmetatable({}, {
             end
         end
         if CludesUI.GetClassColor then
-            local _, classFile = UnitClass("player")
-            local cc = classFile and CludesUI.GetClassColor(classFile)
+            local _, class = UnitClass("player")
+            local cc = class and CludesUI.GetClassColor(class)
             if cc then
                 local val = { cc.r, cc.g, cc.b }
                 rawset(t, powerKey, val)
@@ -391,8 +391,8 @@ function mod.GetBlizzardPowerAtlas(powerKey)
     end
     -- Try Midnight family first (e.g. "Unit_Druid_AstralPower_Fill"), then classless
     -- and legacy HUD spellings; each candidate is validated, so a miss falls back.
-    local _, classFile = UnitClass("player")
-    local classToken = classFile and mod._crAtlasClass[classFile]
+    local _, class = UnitClass("player")
+    local classToken = class and mod._crAtlasClass[class]
     local candidates = {}
     if classToken then
         candidates[#candidates + 1] = "Unit_" .. classToken .. "_" .. suffix .. "_Fill"
@@ -450,7 +450,7 @@ local function GetPrimaryPowerType()
             return live
         end
     end
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local specInfo = GetSpecialization()
     local form = GetShapeshiftFormID()
     -- powerTypeOverride is keyed by SPEC ID, never by the GetSpecialization()
@@ -461,7 +461,7 @@ local function GetPrimaryPowerType()
     local ovSpec = _G._CURB_ResolveSpecIDCached and _G._CURB_ResolveSpecIDCached() or nil
 
     -- Druid form handling
-    if classFile == "DRUID" then
+    if class == "DRUID" then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = pp and pp.powerTypeOverride
         local o = ovSpec and shade and shade[ovSpec]
@@ -483,21 +483,21 @@ local function GetPrimaryPowerType()
         return PT.MANA
     end
 
-    if classFile == "SHAMAN" and specInfo == 1 then
+    if class == "SHAMAN" and specInfo == 1 then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = pp and pp.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
             return PT.MAELSTROM
         end -- Elemental alt: Maelstrom
     end
-    if classFile == "PRIEST" and specInfo == 3 then
+    if class == "PRIEST" and specInfo == 3 then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = pp and pp.powerTypeOverride
         if ovSpec and shade and shade[ovSpec] then
             return PT.INSANITY
         end -- Shadow alt: Insanity
     end
-    if classFile == "HUNTER" then
+    if class == "HUNTER" then
         -- BM/MM show Focus as the class resource bar, not power; Survival keeps
         -- it as power. Override: hunterFocusAsPower.
         if specInfo == 1 or specInfo == 2 then
@@ -508,7 +508,7 @@ local function GetPrimaryPowerType()
             return nil
         end
     end
-    if classFile == "MONK" then
+    if class == "MONK" then
         if specInfo == 1 then
             return PT.ENERGY
         end -- Brewmaster
@@ -519,10 +519,10 @@ local function GetPrimaryPowerType()
             return PT.ENERGY
         end -- Windwalker
     end
-    if classFile == "DEMONHUNTER" then
+    if class == "DEMONHUNTER" then
         return PT.FURY
     end
-    if classFile == "EVOKER" and specInfo == 3 then
+    if class == "EVOKER" and specInfo == 3 then
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = pp and pp.powerTypeOverride
         -- Inverted against the others: Augmentation's DEFAULT is Ebon Might and
@@ -533,7 +533,7 @@ local function GetPrimaryPowerType()
         return PT.MANA
     end
 
-    return PRIMARY_CLASS_MAP[classFile] or PT.MANA
+    return PRIMARY_CLASS_MAP[class] or PT.MANA
 end
 
 -- Ebon Might (Augmentation Evoker) -- aura-based countdown on the power bar
@@ -580,9 +580,9 @@ function IP.push(step, r, g, b, a)
 end
 
 local function GetIcicleCount()
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local specInfo = GetSpecialization()
-    if classFile ~= "MAGE" or specInfo ~= 3 then
+    if class ~= "MAGE" or specInfo ~= 3 then
         return 0
     end
 
@@ -641,23 +641,23 @@ local function IronfurBaseDuration()
 end
 
 local function GetSecondaryResource()
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local specInfo = GetSpecialization()
     local form = GetShapeshiftFormID()
     -- WoW Forever: combo points are the only class resource there (Rogue, and
     -- Druid in Cat Form); every other class has none.
-    if CludesUI.IS_FOREVER == true and classFile ~= "ROGUE" and not (classFile == "DRUID" and form == 1) then
+    if CludesUI.IS_FOREVER == true and class ~= "ROGUE" and not (class == "DRUID" and form == 1) then
         return nil
     end
 
-    if classFile == "PALADIN" then
+    if class == "PALADIN" then
         local mx = UnitPowerMax("player", PT.HOLY_POWER)
         return {
             power = PT.HOLY_POWER,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
-    elseif classFile == "ROGUE" then
+    elseif class == "ROGUE" then
         local mx = UnitPowerMax("player", PT.COMBO)
         -- onTarget: WoW Forever keeps combo points on the target, so the count is
         -- read with GetComboPoints and repainted on a target swap.
@@ -668,7 +668,7 @@ local function GetSecondaryResource()
             onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
         }
     elseif
-        classFile == "DRUID"
+        class == "DRUID"
         and specInfo == 3
         and form == 5
         and ERB.db
@@ -681,7 +681,7 @@ local function GetSecondaryResource()
         -- max is a normalized fraction (0..1).
         mod._internals.SetIronfurBaseDur(IronfurBaseDuration())
         return { power = "IRONFUR_BAR", max = 1, type = "bar" }
-    elseif classFile == "DRUID" and form == 1 then
+    elseif class == "DRUID" and form == 1 then
         local mx = UnitPowerMax("player", PT.COMBO)
         return {
             power = PT.COMBO,
@@ -689,7 +689,7 @@ local function GetSecondaryResource()
             type = "points",
             onTarget = (CludesUI.IS_FOREVER == true and GetComboPoints ~= nil) or nil,
         }
-    elseif classFile == "DRUID" and specInfo == 1 then
+    elseif class == "DRUID" and specInfo == 1 then
         -- Balance: Astral Power as a class resource bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", PT.LUNAR_POWER)
         if issecretvalue and issecretvalue(mx) then
@@ -699,18 +699,18 @@ local function GetSecondaryResource()
             mx = 100
         end
         return { power = "LUNAR_POWER_BAR", max = mx, type = "bar" }
-    elseif classFile == "DRUID" and specInfo == 3 then
+    elseif class == "DRUID" and specInfo == 3 then
         -- Guardian, Ironfur bar disabled: no class resource (form==1 branch
         -- above already handled the cat-form combo swap).
         return nil
-    elseif classFile == "MONK" and (specInfo == 3) then
+    elseif class == "MONK" and (specInfo == 3) then
         local mx = UnitPowerMax("player", PT.CHI)
         return {
             power = PT.CHI,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
-    elseif classFile == "MONK" and (specInfo == 1) then
+    elseif class == "MONK" and (specInfo == 1) then
         -- Brewmaster: stagger as a bar (max = player max health)
         local mx = UnitHealthMax("player") or 1
         if issecretvalue and issecretvalue(mx) then
@@ -720,7 +720,7 @@ local function GetSecondaryResource()
             mx = 1
         end
         return { power = "BREWMASTER_STAGGER", max = mx, type = "bar" }
-    elseif classFile == "WARLOCK" then
+    elseif class == "WARLOCK" then
         local mx = UnitPowerMax("player", PT.SOUL_SHARDS)
         -- frac: renders SUB-UNIT values so the value moves without the whole-unit
         -- count changing. Destruction (spec index 3, same spec the partial-pip
@@ -733,25 +733,25 @@ local function GetSecondaryResource()
             type = "points",
             frac = (specInfo == 3) or nil,
         }
-    elseif classFile == "DEATHKNIGHT" then
+    elseif class == "DEATHKNIGHT" then
         return { power = PT.RUNES, max = 6, type = "runes" }
-    elseif classFile == "EVOKER" then
+    elseif class == "EVOKER" then
         local mx = UnitPowerMax("player", PT.ESSENCE)
         return {
             power = PT.ESSENCE,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 5,
             type = "points",
         }
-    elseif classFile == "MAGE" and specInfo == 1 then
+    elseif class == "MAGE" and specInfo == 1 then
         local mx = UnitPowerMax("player", PT.ARCANE)
         return {
             power = PT.ARCANE,
             max = (not issecretvalue or not issecretvalue(mx)) and mx or 4,
             type = "points",
         }
-    elseif classFile == "MAGE" and specInfo == 3 then
+    elseif class == "MAGE" and specInfo == 3 then
         return { power = "ICICLES", max = 5, type = "custom" }
-    elseif classFile == "DEMONHUNTER" then
+    elseif class == "DEMONHUNTER" then
         -- Resolve specID: 581=Vengeance, 1480=Devourer, 577=Havoc
         local specID = specInfo
             and C_SpecializationInfo
@@ -770,7 +770,7 @@ local function GetSecondaryResource()
         end
         -- Havoc (577) has no secondary resource.
         return nil
-    elseif classFile == "SHAMAN" and specInfo == 1 then
+    elseif class == "SHAMAN" and specInfo == 1 then
         -- Elemental: Maelstrom as a bar (like Devourer soul fragments)
         local mx = UnitPowerMax("player", PT.MAELSTROM)
         if issecretvalue and issecretvalue(mx) then
@@ -780,7 +780,7 @@ local function GetSecondaryResource()
             mx = 100
         end
         return { power = "MAELSTROM_BAR", max = mx, type = "bar" }
-    elseif classFile == "PRIEST" and specInfo == 3 then
+    elseif class == "PRIEST" and specInfo == 3 then
         -- Shadow: Insanity as a bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", PT.INSANITY)
         if issecretvalue and issecretvalue(mx) then
@@ -790,13 +790,13 @@ local function GetSecondaryResource()
             mx = 100
         end
         return { power = "INSANITY_BAR", max = mx, type = "bar" }
-    elseif classFile == "SHAMAN" and specInfo == 2 then
+    elseif class == "SHAMAN" and specInfo == 2 then
         -- Base max 5, or 10 with Raging Maelstrom talent; BuildBars
         -- overrides from GetMaelstromWeapon() at runtime.
         return { power = "MAELSTROM_WEAPON", max = 5, type = "custom" }
-    elseif classFile == "HUNTER" and specInfo == 3 then
+    elseif class == "HUNTER" and specInfo == 3 then
         return { power = "TIP_OF_THE_SPEAR", max = 3, type = "custom" }
-    elseif classFile == "HUNTER" and (specInfo == 1 or specInfo == 2) then
+    elseif class == "HUNTER" and (specInfo == 1 or specInfo == 2) then
         -- BM and MM: Focus as a class resource bar (unless overridden)
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
         if pp and pp.hunterFocusAsPower then
@@ -811,7 +811,7 @@ local function GetSecondaryResource()
         end
         return { power = "FOCUS_BAR", max = mx, type = "bar" }
     elseif
-        classFile == "WARRIOR"
+        class == "WARRIOR"
         and specInfo == 3
         and ERB.db
         and ERB.db.profile
@@ -829,10 +829,10 @@ local function GetSecondaryResource()
             mx = 1
         end
         return { power = "IGNOREPAIN_BAR", max = mx * IP.CAP, type = "bar" }
-    elseif classFile == "WARRIOR" and specInfo == 2 then
+    elseif class == "WARRIOR" and specInfo == 2 then
         return { power = "WHIRLWIND_STACKS", max = 4, type = "custom" }
     elseif
-        classFile == "WARRIOR"
+        class == "WARRIOR"
         and specInfo == 1
         and ERB.db
         and ERB.db.profile

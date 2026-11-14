@@ -64,7 +64,7 @@ local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 --  not create a second NewDB on the shared table.
 -------------------------------------------------------------------------------
 local saved
-local function Prm() -- our own profile slice
+local function P() -- our own profile slice
     return saved and saved.profile and saved.profile.bloodlust
 end
 local function BR() -- BattleRes profile slice (proxy fallback source)
@@ -89,7 +89,7 @@ local APP_DEFAULTS = {
 
 -- Effective (proxied) appearance value: bloodlust override -> battleRes -> default.
 local function EP(key)
-    local bl = Prm()
+    local bl = P()
     if bl and bl[key] ~= nil then
         return bl[key]
     end
@@ -101,7 +101,7 @@ local function EP(key)
 end
 
 local function EP_borderColor()
-    local bl = Prm()
+    local bl = P()
     if bl and bl.borderColor ~= nil then
         return bl.borderColor
     end
@@ -125,7 +125,7 @@ local READY_DEFAULTS = {
 }
 
 local function RP(key)
-    local bl = Prm()
+    local bl = P()
     if bl and bl[key] ~= nil then
         return bl[key]
     end
@@ -133,7 +133,7 @@ local function RP(key)
 end
 
 local function RP_color()
-    local c = Prm() and Prm().readyColor
+    local c = P() and P().readyColor
     if c then
         return c.r or 1, c.g or 1, c.b or 1
     end
@@ -201,39 +201,39 @@ local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 -- shape-matching atlas (shapeTex) otherwise. Applied to the debuff icon AND to
 -- the 40s buff overlay, whose opaque icon would otherwise cover the debuff
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
-local function _applyBorder(hostRegion, shapeTex, level)
+local function _applyBorder(host, shapeTex, level)
     local Pix = CludesUI and CludesUI.PP
     local shape = EP("shape") or "none"
     local bs = BORDER_PX[EP("borderSize") or "thin"] or 1
 
     if shape == "none" or shape == "cropped" then
         shapeTex:Hide()
-        _applyShapeOutline(hostRegion, nil, 0)
+        _applyShapeOutline(host, nil, 0)
         if Pix then
-            if not Pix.GetBorders(hostRegion) then
-                Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1, "OVERLAY", 2)
+            if not Pix.GetBorders(host) then
+                Pix.CreateBorder(host, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
-            local brd = Pix.GetBorders(hostRegion)
+            local brd = Pix.GetBorders(host)
             if brd then
                 brd:SetFrameLevel(level)
             end
             if bs > 0 then
                 local r, g, b, a = _resolveBorderColor()
-                Pix.UpdateBorder(hostRegion, bs, r, g, b, a)
-                Pix.ShowBorder(hostRegion)
+                Pix.UpdateBorder(host, bs, r, g, b, a)
+                Pix.ShowBorder(host)
             else
-                Pix.HideBorder(hostRegion)
+                Pix.HideBorder(host)
             end
         end
         return
     end
 
-    if Pix and Pix.GetBorders(hostRegion) then
-        Pix.HideBorder(hostRegion)
+    if Pix and Pix.GetBorders(host) then
+        Pix.HideBorder(host)
     end
     shapeTex:Hide()
     local r, g, b, a = _resolveBorderColor()
-    _applyShapeOutline(hostRegion, shape, bs, r, g, b, a)
+    _applyShapeOutline(host, shape, bs, r, g, b, a)
 end
 
 -- Configure the buff overlay (texture coords + optional shape mask) so it
@@ -314,10 +314,10 @@ local function ApplyShape()
     local Pix = CludesUI and CludesUI.PP
     local shape = EP("shape") or "none"
 
-    local dim = EP("iconSize") or 40
-    local fw, fh = dim, dim
+    local size = EP("iconSize") or 40
+    local fw, fh = size, size
     if shape == "cropped" then
-        fh = math.floor(dim * 0.80 + 0.5)
+        fh = math.floor(size * 0.80 + 0.5)
     end
     if Pix and Pix.Snap then
         fw, fh = Pix.Snap(fw), Pix.Snap(fh)
@@ -469,7 +469,7 @@ local function ApplyPosition()
     if not widget then
         return
     end
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end
@@ -491,7 +491,7 @@ end
 -- Seed a concrete starting position (left of Brez) the first time the tracker
 -- is switched away from "Never". Does nothing if a position already exists.
 local function SeedDefaultPos()
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end
@@ -738,7 +738,7 @@ local _state = {
 --  Visibility / text
 -------------------------------------------------------------------------------
 local function ShouldShow()
-    local p = Prm()
+    local p = P()
     if not p or not p.enabled then
         return false
     end
@@ -1143,7 +1143,7 @@ local function Apply()
     ApplyShape()
     _applyBuffShape()
     ApplyPosition()
-    local p = Prm()
+    local p = P()
     local enabled = p and p.enabled and (p.visibility ~= "NEVER")
     _ensureEvents(enabled)
     if enabled then
@@ -1168,7 +1168,7 @@ local function RegisterUnlock()
     if not MK then
         return
     end
-    local loadPos, clearPos = mod.CenterPosFns(Prm)
+    local loadPos, clearPos = mod.CenterPosFns(P)
 
     CludesUI:RegisterUnlockElements({
         MK({
@@ -1178,7 +1178,7 @@ local function RegisterUnlock()
             order = 601,
             noAnchorTarget = true, -- icon size changes; nothing should anchor to it
             isHidden = function()
-                local p = Prm()
+                local p = P()
                 return not p or not p.enabled or (p.visibility == "NEVER")
             end,
             getFrame = function()
@@ -1193,7 +1193,7 @@ local function RegisterUnlock()
             end,
             linkedDimensions = true, -- always square; one slider drives both
             setWidth = function(_, wid)
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end
@@ -1205,7 +1205,7 @@ local function RegisterUnlock()
                 end
             end,
             setHeight = function(_, hgt)
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end
@@ -1219,7 +1219,7 @@ local function RegisterUnlock()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end

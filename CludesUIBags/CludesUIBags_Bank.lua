@@ -70,9 +70,9 @@ end
 local function GetFont()
     return CUI.GetFontPath("bags")
 end
-local function SetBankFont(fontStr, dim)
+local function SetBankFont(fontStr, size)
     CludesUI.PrimeFontShadow(fontStr, true)
-    fontStr:SetFont(GetFont(), dim, CUI.GetFontOutlineFlag("bags"))
+    fontStr:SetFont(GetFont(), size, CUI.GetFontOutlineFlag("bags"))
 end
 local GetUpgradeTrack = CUI.GetUpgradeTrack
 local ITEM_CLASS_WEAPON = Enum.ItemClass.Weapon
@@ -130,17 +130,17 @@ local function GetFallbackIcon(bagID)
         return _tabIconCache[bagID]
     end
     _usedFallbackIdx = _usedFallbackIdx + 1
-    local glyph = FALLBACK_ICONS[((_usedFallbackIdx - 1) % #FALLBACK_ICONS) + 1]
-    _tabIconCache[bagID] = glyph
-    return glyph
+    local icon = FALLBACK_ICONS[((_usedFallbackIdx - 1) % #FALLBACK_ICONS) + 1]
+    _tabIconCache[bagID] = icon
+    return icon
 end
 
 mod.BankDefaultsToOne = BankDefaultsToOne -- the offline view orders its sidebar the same way
 
 -- a tab's icon, or a fallback if it has none (saved tabs use it too)
-function mod.BankTabIcon(bagID, glyph)
-    if glyph and glyph ~= 134400 then
-        return glyph
+function mod.BankTabIcon(bagID, icon)
+    if icon and icon ~= 134400 then
+        return icon
     end
     return bagID and GetFallbackIcon(bagID) or 134400
 end
@@ -178,15 +178,15 @@ local function GetCharacterBankTabs()
             if bagID then
                 local numSlots = C_Container.GetContainerNumSlots(bagID)
                 if numSlots > 0 then
-                    local glyph = td.icon
-                    if not glyph or glyph == 134400 then
-                        glyph = GetFallbackIcon(bagID)
+                    local icon = td.icon
+                    if not icon or icon == 134400 then
+                        icon = GetFallbackIcon(bagID)
                     end
                     tabs[#tabs + 1] = {
                         bagID = bagID,
                         numSlots = numSlots,
                         name = td.name or CUI.Lf("Bank Tab %1$d", i),
-                        icon = glyph,
+                        icon = icon,
                         depositFlags = td.depositFlags or 0,
                     }
                 end
@@ -228,16 +228,16 @@ local function GetWarbandBankTabs()
                 local numSlots = C_Container.GetContainerNumSlots(bagID)
                 if numSlots > 0 then
                     local name = td.name or CUI.Lf("Tab %1$d", i)
-                    local glyph = td.icon
-                    if not glyph or glyph == 134400 then
-                        glyph = GetFallbackIcon(bagID)
+                    local icon = td.icon
+                    if not icon or icon == 134400 then
+                        icon = GetFallbackIcon(bagID)
                     end
                     tabs[#tabs + 1] = {
                         bagID = bagID,
                         numSlots = numSlots,
                         name = CUI.L("Warbank") .. " " .. name,
                         shortName = name,
-                        icon = glyph,
+                        icon = icon,
                         depositFlags = td.depositFlags or 0,
                     }
                 end
@@ -288,31 +288,31 @@ CUI_Bank._flatBorder = CUI.MakeBorder(CUI_Bank, 1, 1, 1, 0.15, CUI.PP)._frame
 -------------------------------------------------------------------------------
 --  Header
 -------------------------------------------------------------------------------
-local headerFrame = CreateFrame("Frame", nil, CUI_Bank)
-headerFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 0, 0)
-headerFrame:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", 0, 0)
-headerFrame:SetHeight(HEADER_H)
-local hdrBg = headerFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
+local header = CreateFrame("Frame", nil, CUI_Bank)
+header:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 0, 0)
+header:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", 0, 0)
+header:SetHeight(HEADER_H)
+local hdrBg = header:CreateTexture(nil, "BACKGROUND", nil, 1)
 hdrBg:SetAllPoints()
 hdrBg:SetColorTexture(0, 0, 0, 0.5)
 
-local titleText = headerFrame:CreateFontString(nil, "OVERLAY")
-SetBankFont(titleText, 13)
-titleText:SetPoint("LEFT", headerFrame, "LEFT", 8, 0)
-titleText:SetTextColor(1, 1, 1)
-titleText:SetText(CludesUI.L("Bank"))
-CUI_Bank._headerTitle = titleText -- the alt button sits next to this
+local title = header:CreateFontString(nil, "OVERLAY")
+SetBankFont(title, 13)
+title:SetPoint("LEFT", header, "LEFT", 8, 0)
+title:SetTextColor(1, 1, 1)
+title:SetText(CludesUI.L("Bank"))
+CUI_Bank._headerTitle = title -- the alt button sits next to this
 
-local itemCount = headerFrame:CreateFontString(nil, "OVERLAY")
+local itemCount = header:CreateFontString(nil, "OVERLAY")
 SetBankFont(itemCount, 11)
-itemCount:SetPoint("LEFT", titleText, "RIGHT", 8, 0)
+itemCount:SetPoint("LEFT", title, "RIGHT", 8, 0)
 itemCount:SetTextColor(0.6, 0.6, 0.6)
 CUI_Bank._headerItemCount = itemCount
 
 -- Search box
-local bankSearch = CreateFrame("EditBox", "CUI_BankSearchBox", headerFrame)
+local bankSearch = CreateFrame("EditBox", "CUI_BankSearchBox", header)
 bankSearch:SetSize(160, 22)
-bankSearch:SetPoint("RIGHT", headerFrame, "RIGHT", -35, 0)
+bankSearch:SetPoint("RIGHT", header, "RIGHT", -35, 0)
 bankSearch:SetFont(GetFont(), 12, "")
 bankSearch:SetAutoFocus(false)
 bankSearch:SetTextInsets(5, 26, 0, 0)
@@ -364,7 +364,7 @@ bankSearch:SetScript("OnTextChanged", function(self, userInput)
 end)
 
 -- Sort button
-local sortBtn = CreateFrame("Button", nil, headerFrame)
+local sortBtn = CreateFrame("Button", nil, header)
 sortBtn:SetSize(24, 24)
 sortBtn:SetPoint("RIGHT", bankSearch, "LEFT", -13, 0)
 sortBtn.icon = sortBtn:CreateTexture(nil, "OVERLAY")
@@ -422,9 +422,9 @@ sortBtn:SetScript("OnClick", function()
 end)
 
 -- Close button (created after search/sort so it renders on top)
-local close = CreateFrame("Button", nil, headerFrame)
+local close = CreateFrame("Button", nil, header)
 close:SetSize(12, 12)
-close:SetPoint("RIGHT", headerFrame, "RIGHT", -9, 0)
+close:SetPoint("RIGHT", header, "RIGHT", -9, 0)
 close.icon = close:CreateTexture(nil, "OVERLAY")
 close.icon:SetAllPoints()
 close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
@@ -443,12 +443,12 @@ end)
 do
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
-    local hdrSep = headerFrame:CreateTexture(nil, "ARTWORK")
+    local hdrSep = header:CreateTexture(nil, "ARTWORK")
     hdrSep:SetHeight(px)
-    hdrSep:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
-    hdrSep:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", 0, 0)
+    hdrSep:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
+    hdrSep:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
     hdrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
-    headerFrame.separator = hdrSep
+    header.separator = hdrSep
 end
 
 -------------------------------------------------------------------------------
@@ -472,7 +472,7 @@ if CUI.IS_FOREVER then
     winBg:SetColorTexture(0.02, 0.02, 0.02, 0.95)
     CUI.PanelPP.CreateBorder(bagsWin, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
 
-    local bagsBtn = CreateFrame("Button", nil, headerFrame)
+    local bagsBtn = CreateFrame("Button", nil, header)
     CUI_Bank._bagsBtn = bagsBtn
     bagsBtn:SetSize(24, 24)
     bagsBtn:SetPoint("RIGHT", sortBtn, "LEFT", -6, 0)
@@ -732,12 +732,12 @@ do
     local withdrawMoneyBtn = MakeStyledFooterBtn("Withdraw", "Withdraw from Warbank")
     withdrawMoneyBtn:SetPoint("RIGHT", depositMoneyBtn, "LEFT", -8, 0)
 
-    local function ShowMoneyPopup(titleText, onAccept)
+    local function ShowMoneyPopup(title, onAccept)
         if not CUI.ShowInputPopup then
             return
         end
         CUI:ShowInputPopup({
-            title = CludesUI.L(titleText),
+            title = CludesUI.L(title),
             message = CludesUI.L("Enter an amount:"),
             money = true, -- gold/silver/copper boxes, onConfirm gets copper
             confirmText = ACCEPT,
@@ -998,12 +998,12 @@ local function EnsureBankTabConfigFrame()
         btn:SetPoint("TOPLEFT", assignToTabFrame, "TOPLEFT", xOffset, yOffset)
         btn:SetFrameLevel(assignToTabFrame:GetFrameLevel() + 2)
 
-        local boxFrame, _, _, cbApply = CUI.BuildCheckboxControl(btn, assignToTabFrame:GetFrameLevel() + 2)
-        Pix.Point(boxFrame, "LEFT", btn, "LEFT", 0, 0)
+        local box, _, _, cbApply = CUI.BuildCheckboxControl(btn, assignToTabFrame:GetFrameLevel() + 2)
+        Pix.Point(box, "LEFT", btn, "LEFT", 0, 0)
 
         local label = CUI.MakeFont(btn, 14, nil, CUI.TEXT_WHITE.r, CUI.TEXT_WHITE.g, CUI.TEXT_WHITE.b)
         SetBankFont(label, 10)
-        label:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
+        label:SetPoint("LEFT", box, "RIGHT", 8, 0)
         label:SetText(option.text)
 
         local isHovering = false
@@ -1189,7 +1189,7 @@ sidebar._leftInset = 0
 local function GetBankSidebarContentWidth()
     return GetBankSidebarWidth() - sidebar._leftInset
 end
-sidebar:SetPoint("TOPLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
+sidebar:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, 0)
 sidebar:SetPoint("BOTTOMLEFT", CUI_Bank, "BOTTOMLEFT", 0, FOOTER_H)
 sidebar:SetWidth(GetBankSidebarContentWidth())
 local sidebarBg = sidebar:CreateTexture(nil, "BACKGROUND", nil, 2)
@@ -1326,7 +1326,7 @@ scrollFrame:SetScrollChild(childFrame)
 
 -- Track (always visible when content scrolls)
 local track, thumb, UpdateThumb = mod.AttachGridScrollbar(CUI_Bank, scrollFrame, false, true)
-track:SetPoint("TOPRIGHT", headerFrame, "BOTTOMRIGHT", -1, -1)
+track:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", -1, -1)
 track:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -1, FOOTER_H)
 
 CUI_Bank._scrollFrame = scrollFrame
@@ -1423,12 +1423,12 @@ CUI_Bank._bankSlots = _bankSlots
 function CUI_Bank:GetSelectedTabBagID()
     if _selectedView == -2 or _selectedView == -3 then
         -- Aggregate warband view: find first warband tab with space
-        for _, tabButton in ipairs(_allTabs) do
-            if tabButton.isWarband then
-                local numSlots = C_Container.GetContainerNumSlots(tabButton.bagID)
-                for slotIndex = 1, numSlots do
-                    if not C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex) then
-                        return tabButton.bagID
+        for _, tab in ipairs(_allTabs) do
+            if tab.isWarband then
+                local numSlots = C_Container.GetContainerNumSlots(tab.bagID)
+                for slot = 1, numSlots do
+                    if not C_Container.GetContainerItemInfo(tab.bagID, slot) then
+                        return tab.bagID
                     end
                 end
             end
@@ -1438,8 +1438,8 @@ function CUI_Bank:GetSelectedTabBagID()
     if _selectedView <= 0 then
         return nil
     end
-    local tabButton = _allTabs[_selectedView]
-    return tabButton and tabButton.bagID or nil
+    local tab = _allTabs[_selectedView]
+    return tab and tab.bagID or nil
 end
 
 --- Bags an Auto Split from srcBag may fill: the source tab first, then the
@@ -1447,14 +1447,14 @@ end
 function CUI_Bank:GetSplitTargetBags(srcBag)
     local targets = { srcBag }
     local isWarband = false
-    for _, tabButton in ipairs(_allTabs) do
-        if tabButton.bagID == srcBag then
-            isWarband = tabButton.isWarband
+    for _, tab in ipairs(_allTabs) do
+        if tab.bagID == srcBag then
+            isWarband = tab.isWarband
         end
     end
-    for _, tabButton in ipairs(_allTabs) do
-        if tabButton.bagID ~= srcBag and tabButton.isWarband == isWarband then
-            targets[#targets + 1] = tabButton.bagID
+    for _, tab in ipairs(_allTabs) do
+        if tab.bagID ~= srcBag and tab.isWarband == isWarband then
+            targets[#targets + 1] = tab.bagID
         end
     end
     return targets
@@ -1532,12 +1532,12 @@ local function WipeTransferState()
     end
 end
 
-local function IsSlotAllocated(bagID, slotIndex)
-    return _allocatedSlots[bagID * 1000 + slotIndex]
+local function IsSlotAllocated(bagID, slot)
+    return _allocatedSlots[bagID * 1000 + slot]
 end
 
-local function AllocateSlot(bagID, slotIndex)
-    _allocatedSlots[bagID * 1000 + slotIndex] = true
+local function AllocateSlot(bagID, slot)
+    _allocatedSlots[bagID * 1000 + slot] = true
 end
 
 --- Find target in a specific bank bag, skipping allocated slots.
@@ -1550,20 +1550,20 @@ local function FindTargetSlot(targetBag, srcItemID)
     local maxStack = C_Item.GetItemMaxStackSizeByID(srcItemID) or 1
     -- Partial stack first
     if maxStack > 1 then
-        for slotIndex = 1, numSlots do
-            if not IsSlotAllocated(targetBag, slotIndex) then
-                local details = C_Container.GetContainerItemInfo(targetBag, slotIndex)
+        for slot = 1, numSlots do
+            if not IsSlotAllocated(targetBag, slot) then
+                local details = C_Container.GetContainerItemInfo(targetBag, slot)
                 if details and details.itemID == srcItemID and details.stackCount < maxStack then
-                    return slotIndex
+                    return slot
                 end
             end
         end
     end
     -- Empty slot
-    for slotIndex = 1, numSlots do
-        if not IsSlotAllocated(targetBag, slotIndex) then
-            if not C_Container.GetContainerItemInfo(targetBag, slotIndex) then
-                return slotIndex
+    for slot = 1, numSlots do
+        if not IsSlotAllocated(targetBag, slot) then
+            if not C_Container.GetContainerItemInfo(targetBag, slot) then
+                return slot
             end
         end
     end
@@ -1590,14 +1590,14 @@ local function ProcessTransfer(srcBag, srcSlot)
         local maxStack = C_Item.GetItemMaxStackSizeByID(details.itemID) or 1
         -- Pass 1: partial stack in any warband tab
         if maxStack > 1 then
-            for _, tabButton in ipairs(_allTabs) do
-                if tabButton.isWarband then
-                    local numSlots = C_Container.GetContainerNumSlots(tabButton.bagID)
-                    for slotIndex = 1, numSlots do
-                        if not IsSlotAllocated(tabButton.bagID, slotIndex) then
-                            local si = C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex)
+            for _, tab in ipairs(_allTabs) do
+                if tab.isWarband then
+                    local numSlots = C_Container.GetContainerNumSlots(tab.bagID)
+                    for slot = 1, numSlots do
+                        if not IsSlotAllocated(tab.bagID, slot) then
+                            local si = C_Container.GetContainerItemInfo(tab.bagID, slot)
                             if si and si.itemID == details.itemID and si.stackCount < maxStack then
-                                targetBag, targetSlot = tabButton.bagID, slotIndex
+                                targetBag, targetSlot = tab.bagID, slot
                                 break
                             end
                         end
@@ -1610,13 +1610,13 @@ local function ProcessTransfer(srcBag, srcSlot)
         end
         -- Pass 2: first empty slot in any warband tab
         if not targetSlot then
-            for _, tabButton in ipairs(_allTabs) do
-                if tabButton.isWarband then
-                    local numSlots = C_Container.GetContainerNumSlots(tabButton.bagID)
-                    for slotIndex = 1, numSlots do
-                        if not IsSlotAllocated(tabButton.bagID, slotIndex) then
-                            if not C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex) then
-                                targetBag, targetSlot = tabButton.bagID, slotIndex
+            for _, tab in ipairs(_allTabs) do
+                if tab.isWarband then
+                    local numSlots = C_Container.GetContainerNumSlots(tab.bagID)
+                    for slot = 1, numSlots do
+                        if not IsSlotAllocated(tab.bagID, slot) then
+                            if not C_Container.GetContainerItemInfo(tab.bagID, slot) then
+                                targetBag, targetSlot = tab.bagID, slot
                                 break
                             end
                         end
@@ -1648,8 +1648,8 @@ local function DrainQueue()
     -- Clear allocations for slots that now have items (transfer completed)
     for key in pairs(_allocatedSlots) do
         local bagID = math.floor(key / 1000)
-        local slotIndex = key % 1000
-        if C_Container.GetContainerItemInfo(bagID, slotIndex) then
+        local slot = key % 1000
+        if C_Container.GetContainerItemInfo(bagID, slot) then
             _allocatedSlots[key] = nil
         end
     end
@@ -1879,7 +1879,7 @@ end
 -- gives the grid (nil for the grid's own; see CompactPack's out.contentW).
 local ToCompactLayout
 do
-    local dim, labelW, labelText, labelEntry = {}, {}, {}, {}
+    local size, labelW, labelText, labelEntry = {}, {}, {}, {}
     local result
     -- One label entry per pooled label, built once with every field and reused:
     -- it takes its group's header entry's place in the layout, so the header
@@ -1897,7 +1897,7 @@ do
             CUI_Bank._compactLabels = pool
         end
         mod.CompactHideLabels(pool, 1)
-        local num = mod.CompactSegmentLayout(layout, dim, labelText, labelEntry)
+        local num = mod.CompactSegmentLayout(layout, size, labelText, labelEntry)
         local bandH = mod.CompactBandHeight(LABEL_SIZE)
         local k = 0
         for g = 1, num do
@@ -1927,7 +1927,7 @@ do
                 labelW[g] = 0
             end
         end
-        local _, _, bottomY = mod.CompactPack(dim, labelW, num, columns, bandH, -6, result)
+        local _, _, bottomY = mod.CompactPack(size, labelW, num, columns, bandH, -6, result)
         local cellX, cellY = result.cellX, result.cellY
         local li, ci = 0, 0
         for g = 1, num do
@@ -1943,7 +1943,7 @@ do
                 le.h = bandH
                 le.bw = result.groupW[g] -- the divider runs to the block's right edge
             end
-            for _ = 1, dim[g] do
+            for _ = 1, size[g] do
                 li, ci = li + 1, ci + 1
                 local e = layout[li]
                 e.x = startX + cellX[ci]
@@ -2099,16 +2099,16 @@ end
 -- slotList entries are { bagID, slot, _cachedInfo }. mode is "expansion",
 -- "type" or "slot". Empty slots have no _cachedInfo and always collect into a
 -- single trailing bucket rather than landing under Unknown / Other.
-local function BuildBankBuckets(slotList, modeName)
+local function BuildBankBuckets(slotList, mode)
     local byKey, entries = {}, {}
     for _, s in ipairs(slotList) do
         local link = s._cachedInfo and s._cachedInfo.hyperlink
         local k, label, isOther
         if not link then
             k, label, isOther = EXP_KEY_EMPTY, CludesUI.L("Empty Slots"), false
-        elseif modeName == "type" then
+        elseif mode == "type" then
             k, label, isOther = GetSubTypeBucket(link)
-        elseif modeName == "slot" then
+        elseif mode == "slot" then
             k, label, isOther = GetSlotBucket(link)
         else
             k, label = GetExpansionBucketKeyAndLabel(link)
@@ -2135,10 +2135,10 @@ local function BuildBankBuckets(slotList, modeName)
         if a.isEmpty or a.isOther then
             return a.label < b.label
         end
-        if modeName == "type" then
+        if mode == "type" then
             return a.label < b.label
         end
-        if modeName == "slot" then
+        if mode == "slot" then
             return a.key < b.key
         end
         return a.key > b.key -- expansion: newest first
@@ -2255,11 +2255,11 @@ end
 -- the CategoryManager is unavailable, which makes every caller fall back.
 local function BuildBankCategoryIndex(tabs, passes)
     local slots = {}
-    for _, tabButton in ipairs(tabs) do
-        for slotIndex = 1, tabButton.numSlots do
-            local details = C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex)
-            if details and details.hyperlink and (not passes or passes(tabButton.bagID, slotIndex)) then
-                slots[#slots + 1] = { bagID = tabButton.bagID, slot = slotIndex, _cachedInfo = details }
+    for _, tab in ipairs(tabs) do
+        for slot = 1, tab.numSlots do
+            local details = C_Container.GetContainerItemInfo(tab.bagID, slot)
+            if details and details.hyperlink and (not passes or passes(tab.bagID, slot)) then
+                slots[#slots + 1] = { bagID = tab.bagID, slot = slot, _cachedInfo = details }
             end
         end
     end
@@ -2272,9 +2272,9 @@ local function BuildBankCategoryIndex(tabs, passes)
         local key = cb.cat._defaultName
         if key then
             position.byKey[key] = cb
-            local modeName = DetailModeForCategory(cb.cat)
-            if modeName then
-                local bs = BuildBankBuckets(cb.slots, modeName)
+            local mode = DetailModeForCategory(cb.cat)
+            if mode then
+                local bs = BuildBankBuckets(cb.slots, mode)
                 -- A single bucket is the whole category; no point offering it.
                 if #bs > 1 then
                     position.detailByKey[key] = bs
@@ -2400,8 +2400,8 @@ CUI_Bank.RefreshIconZoom = RefreshBankIconZoom
 
 local function CountUsedSlots(bagID, numSlots)
     local used = 0
-    for slotIndex = 1, numSlots do
-        if C_Container.GetContainerItemInfo(bagID, slotIndex) then
+    for slot = 1, numSlots do
+        if C_Container.GetContainerItemInfo(bagID, slot) then
             used = used + 1
         end
     end
@@ -2550,15 +2550,15 @@ function CUI_Bank:RefreshBank()
     childFrame:SetWidth(gridW + contentPad)
 
     -- Helper: check if a slot passes the search filter
-    local function PassesSearch(bagID, slotIndex)
+    local function PassesSearch(bagID, slot)
         if not hasSearch then
             return true
         end
-        local details = C_Container.GetContainerItemInfo(bagID, slotIndex)
+        local details = C_Container.GetContainerItemInfo(bagID, slot)
         if not details then
             return false
         end
-        CUI_Bags.ApplyBindKeyword(details, bagID, slotIndex)
+        CUI_Bags.ApplyBindKeyword(details, bagID, slot)
         return not details.isFiltered
     end
 
@@ -2572,12 +2572,11 @@ function CUI_Bank:RefreshBank()
     local function BuildOneView(tabs)
         local collected = {}
         local filled = 0
-        for _, tabButton in ipairs(tabs) do
-            for slotIndex = 1, tabButton.numSlots do
-                if PassesSearch(tabButton.bagID, slotIndex) then
-                    local details = C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex)
-                    collected[#collected + 1] =
-                        { bagID = tabButton.bagID, slot = slotIndex, _cachedInfo = details }
+        for _, tab in ipairs(tabs) do
+            for slot = 1, tab.numSlots do
+                if PassesSearch(tab.bagID, slot) then
+                    local details = C_Container.GetContainerItemInfo(tab.bagID, slot)
+                    collected[#collected + 1] = { bagID = tab.bagID, slot = slot, _cachedInfo = details }
                     if details then
                         filled = filled + 1
                     end
@@ -2601,13 +2600,13 @@ function CUI_Bank:RefreshBank()
             curY = curY - 22
             for vi, s in ipairs(slotList) do
                 local col = (vi - 1) % COLUMNS
-                local rowFrame = math.floor((vi - 1) / COLUMNS)
+                local row = math.floor((vi - 1) / COLUMNS)
                 _layout[#_layout + 1] = {
                     bagID = s.bagID,
                     slot = s.slot,
                     _cachedInfo = s._cachedInfo,
                     x = startX + (col * (SLOT_SIZE + SPACING)),
-                    y = curY - (rowFrame * (SLOT_SIZE + SPACING)),
+                    y = curY - (row * (SLOT_SIZE + SPACING)),
                 }
             end
             local rowList = math.ceil(math.max(#slotList, 1) / COLUMNS)
@@ -2636,13 +2635,13 @@ function CUI_Bank:RefreshBank()
     local function EmitSlots(entries)
         for vi, sl in ipairs(entries) do
             local col = (vi - 1) % COLUMNS
-            local rowFrame = math.floor((vi - 1) / COLUMNS)
+            local row = math.floor((vi - 1) / COLUMNS)
             _layout[#_layout + 1] = {
                 bagID = sl.bagID,
                 slot = sl.slot,
                 _cachedInfo = sl._cachedInfo,
                 x = startX + (col * (SLOT_SIZE + SPACING)),
-                y = curY - (rowFrame * (SLOT_SIZE + SPACING)),
+                y = curY - (row * (SLOT_SIZE + SPACING)),
             }
         end
         local rowList = math.ceil(math.max(#entries, 1) / COLUMNS)
@@ -2654,12 +2653,12 @@ function CUI_Bank:RefreshBank()
     -- nothing, and at three levels deep that noise adds up fast.
     local function LayoutCategoryBucket(cb, depth)
         EmitHeader(cb.label, #cb.slots, depth)
-        local modeName = DetailModeForCategory(cb.cat)
-        if not modeName then
+        local mode = DetailModeForCategory(cb.cat)
+        if not mode then
             EmitSlots(cb.slots)
             return
         end
-        local buckets = BuildBankBuckets(cb.slots, modeName)
+        local buckets = BuildBankBuckets(cb.slots, mode)
         if #buckets < 2 then
             EmitSlots(cb.slots)
             return
@@ -2753,9 +2752,9 @@ function CUI_Bank:RefreshBank()
                 return
             end
             local cb = _catIndex and _catIndex.byKey[_catSel.key]
-            local modeName = cb and DetailModeForCategory(cb.cat)
-            if modeName then
-                local bs = BuildBankBuckets(entries, modeName)
+            local mode = cb and DetailModeForCategory(cb.cat)
+            if mode then
+                local bs = BuildBankBuckets(entries, mode)
                 if #bs > 1 then
                     for _, b in ipairs(bs) do
                         EmitHeader(b.label, #b.slots, depth)
@@ -2793,19 +2792,19 @@ function CUI_Bank:RefreshBank()
 
     -- Helper: build per-tab header layout for a set of tabs
     local function LayoutTabHeaders(tabs)
-        for _, tabButton in ipairs(tabs) do
-            if tabButton.numSlots > 0 then
+        for _, tab in ipairs(tabs) do
+            if tab.numSlots > 0 then
                 local visibleSlots = {}
                 local used = 0
-                for slotIndex = 1, tabButton.numSlots do
-                    local details = C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex)
+                for slot = 1, tab.numSlots do
+                    local details = C_Container.GetContainerItemInfo(tab.bagID, slot)
                     if details then
                         used = used + 1
                     end
-                    CUI_Bags.ApplyBindKeyword(details, tabButton.bagID, slotIndex)
+                    CUI_Bags.ApplyBindKeyword(details, tab.bagID, slot)
                     -- use native search filter so type keywords work too
                     if not hasSearch or (details and not details.isFiltered) then
-                        visibleSlots[#visibleSlots + 1] = { slot = slotIndex, _cachedInfo = details }
+                        visibleSlots[#visibleSlots + 1] = { slot = slot, _cachedInfo = details }
                     end
                 end
                 if not hasSearch or #visibleSlots > 0 then
@@ -2813,31 +2812,31 @@ function CUI_Bank:RefreshBank()
                     _layout[#_layout + 1] = {
                         isHeader = true,
                         headerIdx = headerIdx,
-                        label = tabButton.name .. " (" .. used .. ")",
-                        name = tabButton.name,
+                        label = tab.name .. " (" .. used .. ")",
+                        name = tab.name,
                         x = startX,
                         y = curY,
                         w = gridW,
                     }
                     curY = curY - 22
-                    local count = hasSearch and #visibleSlots or tabButton.numSlots
+                    local count = hasSearch and #visibleSlots or tab.numSlots
                     for vi = 1, count do
-                        local slotIndex, cachedInfo
+                        local slot, cachedInfo
                         if hasSearch then
-                            slotIndex = visibleSlots[vi].slot
+                            slot = visibleSlots[vi].slot
                             cachedInfo = visibleSlots[vi]._cachedInfo
                         else
-                            slotIndex = vi
+                            slot = vi
                             cachedInfo = visibleSlots[vi] and visibleSlots[vi]._cachedInfo
                         end
                         local col = (vi - 1) % COLUMNS
-                        local rowFrame = math.floor((vi - 1) / COLUMNS)
+                        local row = math.floor((vi - 1) / COLUMNS)
                         _layout[#_layout + 1] = {
-                            bagID = tabButton.bagID,
-                            slot = slotIndex,
+                            bagID = tab.bagID,
+                            slot = slot,
                             _cachedInfo = cachedInfo,
                             x = startX + (col * (SLOT_SIZE + SPACING)),
-                            y = curY - (rowFrame * (SLOT_SIZE + SPACING)),
+                            y = curY - (row * (SLOT_SIZE + SPACING)),
                         }
                     end
                     local rowList = math.ceil(count / COLUMNS)
@@ -2849,11 +2848,11 @@ function CUI_Bank:RefreshBank()
 
     -- Split tabs into char and warband
     local charTabs, warbTabs = {}, {}
-    for _, tabButton in ipairs(_allTabs) do
-        if tabButton.isWarband then
-            warbTabs[#warbTabs + 1] = tabButton
+    for _, tab in ipairs(_allTabs) do
+        if tab.isWarband then
+            warbTabs[#warbTabs + 1] = tab
         else
-            charTabs[#charTabs + 1] = tabButton
+            charTabs[#charTabs + 1] = tab
         end
     end
 
@@ -2887,17 +2886,17 @@ function CUI_Bank:RefreshBank()
         -- All Bank Tabs: per-tab headers for character only
         LayoutTabHeaders(charTabs)
     else
-        local tabButton = _allTabs[_selectedView]
-        if tabButton then
+        local tab = _allTabs[_selectedView]
+        if tab then
             local allSlots = {}
             local used = 0
-            for slotIndex = 1, tabButton.numSlots do
-                local details = C_Container.GetContainerItemInfo(tabButton.bagID, slotIndex)
+            for slot = 1, tab.numSlots do
+                local details = C_Container.GetContainerItemInfo(tab.bagID, slot)
                 if details then
                     used = used + 1
                 end
-                CUI_Bags.ApplyBindKeyword(details, tabButton.bagID, slotIndex)
-                allSlots[#allSlots + 1] = { slot = slotIndex, _cachedInfo = details }
+                CUI_Bags.ApplyBindKeyword(details, tab.bagID, slot)
+                allSlots[#allSlots + 1] = { slot = slot, _cachedInfo = details }
             end
             local visibleSlots = allSlots
             if hasSearch then
@@ -2914,8 +2913,8 @@ function CUI_Bank:RefreshBank()
             _layout[#_layout + 1] = {
                 isHeader = true,
                 headerIdx = headerIdx,
-                label = tabButton.name .. " (" .. used .. ")",
-                name = tabButton.name,
+                label = tab.name .. " (" .. used .. ")",
+                name = tab.name,
                 x = startX,
                 y = curY,
                 w = gridW,
@@ -2925,13 +2924,13 @@ function CUI_Bank:RefreshBank()
             for vi = 1, count do
                 local vs = visibleSlots[vi]
                 local col = (vi - 1) % COLUMNS
-                local rowFrame = math.floor((vi - 1) / COLUMNS)
+                local row = math.floor((vi - 1) / COLUMNS)
                 _layout[#_layout + 1] = {
-                    bagID = tabButton.bagID,
+                    bagID = tab.bagID,
                     slot = vs.slot,
                     _cachedInfo = vs._cachedInfo,
                     x = startX + (col * (SLOT_SIZE + SPACING)),
-                    y = curY - (rowFrame * (SLOT_SIZE + SPACING)),
+                    y = curY - (row * (SLOT_SIZE + SPACING)),
                 }
             end
             local rowList = math.ceil(count / COLUMNS)
@@ -2991,7 +2990,7 @@ function CUI_Bank:RefreshBank()
     -- as on the bank's list rows (read once per refresh)
     local junkOn = _G.CUI_CategoryManager:IsJunkMarkerEnabled()
     local desatJunk = BP().bagDesaturateJunkItems == true
-    local function RenderSlotContent(btn, bagID, slotIndex, cachedInfo)
+    local function RenderSlotContent(btn, bagID, slot, cachedInfo)
         if btn.ProfessionQualityOverlay then
             btn.ProfessionQualityOverlay:SetAlpha(0)
         end
@@ -3003,7 +3002,7 @@ function CUI_Bank:RefreshBank()
             btn.IconOverlay2:SetAlpha(0)
             btn.IconOverlay2:Hide()
         end
-        local details = cachedInfo or C_Container.GetContainerItemInfo(bagID, slotIndex)
+        local details = cachedInfo or C_Container.GetContainerItemInfo(bagID, slot)
         if not details then
             btn:SetItemButtonTexture(nil)
             btn:SetItemButtonCount(0)
@@ -3051,7 +3050,7 @@ function CUI_Bank:RefreshBank()
                     ))))
                     or false
             )
-            local itemLink = C_Container.GetContainerItemLink(bagID, slotIndex)
+            local itemLink = C_Container.GetContainerItemLink(bagID, slot)
             if itemLink then
                 btn:SetItemButtonQuality(quality, itemLink, false, false)
             end
@@ -3075,7 +3074,7 @@ function CUI_Bank:RefreshBank()
             end
             if btn.icon and details and details.itemID then
                 local unusable = CUI._BagsItemUnusable
-                    and CUI._BagsItemUnusable(bagID, slotIndex, details.hyperlink, details.itemID)
+                    and CUI._BagsItemUnusable(bagID, slot, details.hyperlink, details.itemID)
                 btn.icon:SetVertexColor(1, unusable and 0.1 or 1, unusable and 0.1 or 1)
             end
             if btn.IconOverlay2 then
@@ -3097,7 +3096,7 @@ function CUI_Bank:RefreshBank()
             local qr, qg, qb = mod.QualityBorderColor(quality)
             SetInsetBorderColor(btn, qr, qg, qb, 1)
             if btn._fvSlotBorder then
-                mod.SetForeverSlotQuestBorder(btn, mod.GetSlotQuestFlags(bagID, slotIndex))
+                mod.SetForeverSlotQuestBorder(btn, mod.GetSlotQuestFlags(bagID, slot))
             end
 
             -- One gear check + one GetItemInfo fetch shared by the bind-type
@@ -3109,7 +3108,7 @@ function CUI_Bank:RefreshBank()
             local loc
             if showBindType or showIlvl then
                 local _, _, _, _, _, _, _, _, _, _, _, _, _, b14 = GetItemInfo(itemLink)
-                loc = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex)
+                loc = ItemLocation:CreateFromBagAndSlot(bagID, slot)
                 giIlvl = showIlvl and GetItemLevelAtLocation(loc, itemLink) or nil
                 giBindType = b14
             end
@@ -3157,7 +3156,7 @@ function CUI_Bank:RefreshBank()
                 end
             end
             if btn.Cooldown then
-                local cdS, cdD, cdE = C_Container.GetContainerItemCooldown(bagID, slotIndex)
+                local cdS, cdD, cdE = C_Container.GetContainerItemCooldown(bagID, slot)
                 if cdE and cdE ~= 0 and cdS > 0 and cdD > 0 then
                     btn.Cooldown:SetDrawEdge(true)
                     btn.Cooldown:SetCooldown(cdS, cdD)
@@ -3167,8 +3166,8 @@ function CUI_Bank:RefreshBank()
             end
         end
         if next(CUI_Bags.itemOverlayIcons) ~= nil then
-            overlayData.bag, overlayData.slot, overlayData.info = bagID, slotIndex, details
-            overlayData.itemLink = details and C_Container.GetContainerItemLink(bagID, slotIndex) or nil
+            overlayData.bag, overlayData.slot, overlayData.info = bagID, slot, details
+            overlayData.itemLink = details and C_Container.GetContainerItemLink(bagID, slot) or nil
             CUI_Bags.RunItemOverlays(btn, overlayData)
         end
     end
@@ -3330,8 +3329,8 @@ local function DragBlock(sel, scope)
         return nil
     end
     local cats = CM:GetCategories()
-    local group, i = sel.group, nil
-    if not group then
+    local set, i = sel.group, nil
+    if not set then
         for ci, c in ipairs(cats) do
             if c._defaultName == sel.key then
                 i = ci
@@ -3341,24 +3340,24 @@ local function DragBlock(sel, scope)
         if not i or cats[i].isJunk or cats[i].isEquipSet or cats[i].isVirtual then
             return nil
         end
-        group = cats[i].groupName
+        set = cats[i].groupName
     end
     if scope == "top" then
-        if group then
-            return "g:" .. group, CM:GetGroupMembers(group)
+        if set then
+            return "g:" .. set, CM:GetGroupMembers(set)
         end
         -- item set gear drags its set categories with it
-        local blockData = { i }
+        local block = { i }
         if cats[i].isSetGear then
             for ci, c in ipairs(cats) do
                 if c.isEquipSet then
-                    blockData[#blockData + 1] = ci
+                    block[#block + 1] = ci
                 end
             end
         end
-        return "k:" .. sel.key, blockData
+        return "k:" .. sel.key, block
     end
-    if i and group and scope == "group:" .. group then
+    if i and set and scope == "group:" .. set then
         return "k:" .. sel.key, { i }
     end
 end
@@ -3439,7 +3438,7 @@ local function DragTarget()
     if not over then
         return nil
     end
-    local ident, blockData = RowBlock(over)
+    local ident, block = RowBlock(over)
     if not ident or ident == _drag.id then
         return nil
     end
@@ -3458,7 +3457,7 @@ local function DragTarget()
     local _, cy = GetCursorPosition()
     cy = cy / sidebarChild:GetEffectiveScale()
     local after = cy < (topY:GetTop() + bottom:GetBottom()) / 2
-    return blockData, after, after and bottom or topY
+    return block, after, after and bottom or topY
 end
 
 local function FinishDrag(apply)
@@ -3473,27 +3472,27 @@ local function FinishDrag(apply)
         return
     end
     d.btn:SetAlpha(1)
-    local targetUnit = apply and d.target
-    if not targetUnit then
+    local target = apply and d.target
+    if not target then
         return
     end
     local CM = _G.CUI_CategoryManager
     local cats = CM:GetCategories()
     -- from the row's selection at press time: a refresh mid-drag can hand the pooled row to another category
-    local _, blockData = DragBlock(d.sel, d.scope)
-    if not blockData then
+    local _, block = DragBlock(d.sel, d.scope)
+    if not block then
         return
     end
-    local insertAt = d.after and (math.max(unpack(targetUnit)) + 1) or math.min(unpack(targetUnit))
-    table.sort(blockData)
-    if insertAt >= blockData[1] and insertAt <= blockData[#blockData] + 1 then
+    local insertAt = d.after and (math.max(unpack(target)) + 1) or math.min(unpack(target))
+    table.sort(block)
+    if insertAt >= block[1] and insertAt <= block[#block] + 1 then
         return
     end
     -- equip sets follow item set gear on their own (SaveState), so the rest
     -- moves one ReorderCategory at a time (its junk / set rules apply), each
     -- dropped in just above the target row; found by reference every step
     local moving, sets = {}, false
-    for _, i in ipairs(blockData) do
+    for _, i in ipairs(block) do
         if cats[i].isEquipSet then
             sets = true
         else
@@ -3560,14 +3559,14 @@ dragFrame:SetScript("OnUpdate", function()
     local sc = UIParent:GetEffectiveScale()
     dragGhost:ClearAllPoints()
     dragGhost:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posX / sc + 12, posY / sc)
-    local blockData, after, rowFrame = DragTarget()
-    d.target, d.after = blockData, after
-    if rowFrame then
+    local block, after, row = DragTarget()
+    d.target, d.after = block, after
+    if row then
         dragLine:ClearAllPoints()
         local inset = math.floor(sidebarChild:GetWidth() * 0.05)
         local edge = after and "BOTTOM" or "TOP"
-        dragLine:SetPoint("LEFT", rowFrame, edge .. "LEFT", inset, 0)
-        dragLine:SetPoint("RIGHT", rowFrame, edge .. "RIGHT", -inset, 0)
+        dragLine:SetPoint("LEFT", row, edge .. "LEFT", inset, 0)
+        dragLine:SetPoint("RIGHT", row, edge .. "RIGHT", -inset, 0)
         dragLine:Show()
     else
         dragLine:Hide()
@@ -3769,7 +3768,7 @@ function BuildBankSidebar()
         posY = posY - SIDEBAR_BTN_H - SIDEBAR_PAD
     end
 
-    local function RenderSidebarEntry(viewIdx, name, glyph, count, isSelected, indent, catSel, isAtlas)
+    local function RenderSidebarEntry(viewIdx, name, icon, count, isSelected, indent, catSel, isAtlas)
         btnIdx = btnIdx + 1
         local btn = MakeSidebarBtn(btnIdx)
         btn._viewIdx = viewIdx
@@ -3785,12 +3784,12 @@ function BuildBankSidebar()
         btn:SetWidth(sidebarW)
         mod.AnchorBagSidebarIcon(btn._icon, collapsed, 8 + (indent or 0) * 10)
         if isAtlas and btn._icon.SetAtlas then
-            btn._icon:SetAtlas(glyph)
+            btn._icon:SetAtlas(icon)
         else
             -- Through the client icon map, like the bag window's sidebar: a
             -- default the Forever client cannot draw takes its stand-in there.
             -- Cropped on every paint (a pooled row may last have drawn an atlas).
-            btn._icon:SetTexture(CludesUI.ClientIcon(glyph))
+            btn._icon:SetTexture(CludesUI.ClientIcon(icon))
             btn._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         end
         btn._icon:SetAlpha(isSelected and 1 or 0.75)
@@ -3828,14 +3827,14 @@ function BuildBankSidebar()
     -- Count used slots per tab, split by bank/warbank
     local charUsed, charTotal = 0, 0
     local warbUsed, warbTotal = 0, 0
-    for _, tabButton in ipairs(_allTabs) do
-        tabButton._usedSlots = CountUsedSlots(tabButton.bagID, tabButton.numSlots)
-        if tabButton.isWarband then
-            warbUsed = warbUsed + tabButton._usedSlots
-            warbTotal = warbTotal + tabButton.numSlots
+    for _, tab in ipairs(_allTabs) do
+        tab._usedSlots = CountUsedSlots(tab.bagID, tab.numSlots)
+        if tab.isWarband then
+            warbUsed = warbUsed + tab._usedSlots
+            warbTotal = warbTotal + tab.numSlots
         else
-            charUsed = charUsed + tabButton._usedSlots
-            charTotal = charTotal + tabButton.numSlots
+            charUsed = charUsed + tab._usedSlots
+            charTotal = charTotal + tab.numSlots
         end
     end
 
@@ -3892,8 +3891,8 @@ function BuildBankSidebar()
 
     local defaultOneBag = BankDefaultsToOne()
     local hasWarband = false
-    for _, tabButton in ipairs(_allTabs) do
-        if tabButton.isWarband then
+    for _, tab in ipairs(_allTabs) do
+        if tab.isWarband then
             hasWarband = true
             break
         end
@@ -3904,13 +3903,13 @@ function BuildBankSidebar()
             if not showTabs then
                 return
             end
-            for ti, tabButton in ipairs(_allTabs) do
-                if (tabButton.isWarband == true) == warband then
+            for ti, tab in ipairs(_allTabs) do
+                if (tab.isWarband == true) == warband then
                     RenderSidebarEntry(
                         ti,
-                        tabButton.shortName or tabButton.name,
-                        tabButton.icon or (warband and 1542854 or 133652),
-                        tabButton._usedSlots,
+                        tab.shortName or tab.name,
+                        tab.icon or (warband and 1542854 or 133652),
+                        tab._usedSlots,
                         selView == ti,
                         1
                     )
@@ -4128,15 +4127,9 @@ function BuildBankSidebar()
             ShowDivider("_bankTabDivider")
 
             -- Character bank tabs
-            for ti, tabButton in ipairs(_allTabs) do
-                if not tabButton.isWarband then
-                    RenderSidebarEntry(
-                        ti,
-                        tabButton.name,
-                        tabButton.icon or 133652,
-                        tabButton._usedSlots,
-                        selView == ti
-                    )
+            for ti, tab in ipairs(_allTabs) do
+                if not tab.isWarband then
+                    RenderSidebarEntry(ti, tab.name, tab.icon or 133652, tab._usedSlots, selView == ti)
                 end
             end
         else
@@ -4165,15 +4158,9 @@ function BuildBankSidebar()
         if hasWarband and showTabs then
             ShowDivider("_warbandDivider")
 
-            for ti, tabButton in ipairs(_allTabs) do
-                if tabButton.isWarband then
-                    RenderSidebarEntry(
-                        ti,
-                        tabButton.name,
-                        tabButton.icon or 1542854,
-                        tabButton._usedSlots,
-                        selView == ti
-                    )
+            for ti, tab in ipairs(_allTabs) do
+                if tab.isWarband then
+                    RenderSidebarEntry(ti, tab.name, tab.icon or 1542854, tab._usedSlots, selView == ti)
                 end
             end
         else
@@ -4401,8 +4388,8 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             DiscoverBankTabs()
             if selTab then
                 _selectedView = BankDefaultsToOne() and -1 or 0
-                for i, tabButton in ipairs(_allTabs) do
-                    if tabButton.bagID == selTab.bagID then
+                for i, tab in ipairs(_allTabs) do
+                    if tab.bagID == selTab.bagID then
                         _selectedView = i
                         break
                     end
@@ -4450,13 +4437,13 @@ loader:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
     if mod.SkinForeverBagWindow(CUI_Bank, bgAtlas, bgOverlay, true, true) then
         CUI_Bank._flatBorder:Hide()
-        headerFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 1, -1)
-        headerFrame:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", -1, -1)
-        mod.LayoutForeverBagHeader(headerFrame)
-        HEADER_H = headerFrame:GetHeight() + 1
+        header:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 1, -1)
+        header:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", -1, -1)
+        mod.LayoutForeverBagHeader(header)
+        HEADER_H = header:GetHeight() + 1
         local inset = mod.ForeverBagSidebarInset(CUI_Bank)
         sidebar._leftInset = inset
-        sidebar:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", inset, -headerFrame:GetHeight())
+        sidebar:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", inset, -header:GetHeight())
         sidebar:SetPoint("BOTTOMLEFT", CUI_Bank, "BOTTOMLEFT", inset, FOOTER_H)
         sidebar:SetWidth(GetBankSidebarContentWidth())
         sidebarChild:SetWidth(GetBankSidebarContentWidth())
@@ -4465,18 +4452,18 @@ loader:SetScript("OnEvent", function(self)
         track:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", -7, -HEADER_H)
         track:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -7, FOOTER_H)
         hdrBg:Hide()
-        headerFrame.separator:Hide()
+        header.separator:Hide()
         sidebarBg:SetColorTexture(0.10, 0.065, 0.035, 0.45)
         sidebar.separator:SetColorTexture(0.45, 0.33, 0.21, 0.85)
 
-        mod.SkinForeverBagTitle(titleText, itemCount)
-        mod.AddForeverBagPortrait(headerFrame, "Interface\\Icons\\INV_Misc_Coin_01")
+        mod.SkinForeverBagTitle(title, itemCount)
+        mod.AddForeverBagPortrait(header, "Interface\\Icons\\INV_Misc_Coin_01")
         mod.PositionForeverBagClose(close)
 
         sortBtn:ClearAllPoints()
-        sortBtn:SetPoint("RIGHT", headerFrame, "TOPRIGHT", -9, headerFrame._foreverToolsY)
+        sortBtn:SetPoint("RIGHT", header, "TOPRIGHT", -9, header._foreverToolsY)
         bankSearch:ClearAllPoints()
-        bankSearch:SetPoint("LEFT", headerFrame, "TOPLEFT", 45, headerFrame._foreverToolsY)
+        bankSearch:SetPoint("LEFT", header, "TOPLEFT", 45, header._foreverToolsY)
         bankSearch:SetPoint("RIGHT", CUI_Bank._bagsBtn or sortBtn, "LEFT", -6, 0)
         bankSearch:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
         CUI.PanelPP.HideBorder(bankSearch)

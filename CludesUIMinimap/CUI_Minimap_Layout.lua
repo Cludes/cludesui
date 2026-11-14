@@ -841,15 +841,15 @@ function SKIN._ClassicRingButton(button, crop, ...)
         -- Icon 16px inside the 20px disc: a sliver of disc shows round the
         -- icon, as on the stock round buttons, rather than the art running
         -- under the band (which reads as zoomed in).
-        local maskTex = button:CreateMaskTexture()
-        maskTex:SetTexture(
+        local mask = button:CreateMaskTexture()
+        mask:SetTexture(
             "Interface\\AddOns\\CludesUI\\media\\portraits\\circle_mask.tga",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
-        maskTex:SetSize(16, 16)
-        maskTex:SetPoint("CENTER", button, "TOPLEFT", 16.6, -16.2)
-        button._classicMask = maskTex
+        mask:SetSize(16, 16)
+        mask:SetPoint("CENTER", button, "TOPLEFT", 16.6, -16.2)
+        button._classicMask = mask
     end
     ring:Show()
     button._classicDisc:Show()
@@ -960,20 +960,20 @@ end
 -- pass nudges it (INDICATOR_ATLAS_*), so the art sits as it does in the box.
 -- Re-applied per pass: the indicator pass sizes the icon for the box first.
 function SKIN._RingIndicator(button)
-    local glyph, up = button._icon, button._upAtlas
-    SKIN._ClassicRingButton(button, nil, glyph)
-    local ratio = glyph and up and INDICATOR_ATLAS_RATIO[up]
+    local icon, up = button._icon, button._upAtlas
+    SKIN._ClassicRingButton(button, nil, icon)
+    local ratio = icon and up and INDICATOR_ATLAS_RATIO[up]
     if ratio then
         local s = INDICATOR_ATLAS_SCALE[up] or 1
-        local offset = INDICATOR_ATLAS_OFFSET[button._indicatorKey]
-        glyph:SetSize(16 * ratio * s, 16 * s)
-        glyph:ClearAllPoints()
-        glyph:SetPoint(
+        local off = INDICATOR_ATLAS_OFFSET[button._indicatorKey]
+        icon:SetSize(16 * ratio * s, 16 * s)
+        icon:ClearAllPoints()
+        icon:SetPoint(
             "CENTER",
             button,
             "TOPLEFT",
-            16.6 + (offset and offset[1] or 0),
-            -16.2 + (offset and offset[2] or 0)
+            16.6 + (off and off[1] or 0),
+            -16.2 + (off and off[2] or 0)
         )
     end
 end
@@ -1004,10 +1004,10 @@ function SKIN._FvHeaderIndicator(button, key, s)
         button._bg:Hide()
     end
     button._upAtlas, button._overAtlas, button._downAtlas = atlas, atlas, atlas
-    local glyph = button._icon
-    glyph:ClearAllPoints()
-    glyph:SetAllPoints(button)
-    glyph:SetAtlas(atlas)
+    local icon = button._icon
+    icon:ClearAllPoints()
+    icon:SetAllPoints(button)
+    icon:SetAtlas(atlas)
     local highlight = button._fvHeaderHL
     if not highlight then
         highlight = button:CreateTexture(nil, "HIGHLIGHT")
@@ -1061,14 +1061,8 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             end
             button._icon:ClearAllPoints()
             button._icon:SetSize(iconW, iconH)
-            local offset = button._indicatorKey and INDICATOR_ATLAS_OFFSET[button._indicatorKey]
-            button._icon:SetPoint(
-                "CENTER",
-                button,
-                "CENTER",
-                offset and offset[1] or 0,
-                offset and offset[2] or 0
-            )
+            local off = button._indicatorKey and INDICATOR_ATLAS_OFFSET[button._indicatorKey]
+            button._icon:SetPoint("CENTER", button, "CENTER", off and off[1] or 0, off and off[2] or 0)
         end
     end
     ResizeIndicator(ci.tracking)
@@ -1496,8 +1490,8 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             button:SetScript("OnDragStart", nil)
             button:SetScript("OnDragStop", nil)
             if rowBoxes then
-                local glyph = button.icon or button.Icon
-                if not glyph then
+                local icon = button.icon or button.Icon
+                if not icon then
                     for _, regionFrame in ipairs({ button:GetRegions() }) do
                         if
                             regionFrame:IsObjectType("Texture")
@@ -1506,19 +1500,19 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
                             and not IsJunkTexture(regionFrame)
                             and regionFrame ~= GetFFD(button).ungroupBg
                         then
-                            glyph = regionFrame
+                            icon = regionFrame
                             break
                         end
                     end
                 end
-                if glyph then
-                    glyph:ClearAllPoints()
-                    glyph:SetPoint("TOPLEFT", button, "TOPLEFT", 3, -3)
-                    glyph:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
-                    pcall(glyph.SetTexCoord, glyph, 0.05, 0.95, 0.05, 0.95)
+                if icon then
+                    icon:ClearAllPoints()
+                    icon:SetPoint("TOPLEFT", button, "TOPLEFT", 3, -3)
+                    icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
+                    pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
                     -- Foreign icon: no global SetTexCoord snap hook, so disable once.
                     if CludesUI.PP then
-                        CludesUI.PP.DisablePixelSnap(glyph)
+                        CludesUI.PP.DisablePixelSnap(icon)
                     end
                 end
                 SKIN._ShowAddonBtnBox(button)
@@ -2020,12 +2014,12 @@ local function ApplyOmniumFolio()
             if not m then
                 return
             end
-            local modeName = GetOmniumFolioMode(m)
+            local mode = GetOmniumFolioMode(m)
             -- Boundary-tolerant like the reveal path: RefreshButton Hide()/Show()s the button, and a raw IsMouseOver could veto that Show at the exact edge.
             if
-                modeName == "never"
+                mode == "never"
                 or IsFolioReplacedByAddOn()
-                or (modeName == "hover" and not (Minimap and SKIN._HoverStillOver(Minimap)))
+                or (mode == "hover" and not (Minimap and SKIN._HoverStillOver(Minimap)))
             then
                 self:Hide()
             else
@@ -2042,8 +2036,8 @@ local function ApplyOmniumFolio()
         end)
     end
 
-    local modeName = GetOmniumFolioMode(mp)
-    if modeName == "never" then
+    local mode = GetOmniumFolioMode(mp)
+    if mode == "never" then
         button:Hide()
         return
     end
@@ -2051,7 +2045,7 @@ local function ApplyOmniumFolio()
     if IsFolioReplacedByAddOn() then
         return
     end
-    if modeName == "hover" and not Minimap:IsMouseOver() then
+    if mode == "hover" and not Minimap:IsMouseOver() then
         button:Hide()
         return
     end

@@ -49,7 +49,7 @@ local MINI_ENABLE_LABELS = {
 --  Shared mini frame settings builder
 ---------------------------------------------------------------------------
 local function BuildMiniTextAndSize(
-    Widgets,
+    W,
     hostFrame,
     posY,
     settingsTable,
@@ -86,7 +86,7 @@ local function BuildMiniTextAndSize(
 
     -- DISPLAY
     local displayHeader
-    displayHeader, hgt = Widgets:SectionHeader(hostFrame, "DISPLAY", posY)
+    displayHeader, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
     posY = posY - hgt
     -- The Move in Unlock Mode button on the frame's first section: its mover
     -- exists only for the CludesUI frame source, so the button explains
@@ -108,7 +108,7 @@ local function BuildMiniTextAndSize(
     -- Enable row (passed in from each builder)
     local enableRowFrame
     if enableRow then
-        enableRowFrame, hgt = enableRow(Widgets, hostFrame, posY)
+        enableRowFrame, hgt = enableRow(W, hostFrame, posY)
         posY = posY - hgt
     end
 
@@ -180,7 +180,7 @@ local function BuildMiniTextAndSize(
             }
         end
         local barTexRow
-        barTexRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        barTexRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Bar Texture",
             values = mtVals,
@@ -306,7 +306,7 @@ local function BuildMiniTextAndSize(
     -- while the style reads Inherit. Full pairs, so Strata | Dark Mode below
     -- stays the section's last row.
     if unitKey == "boss" then
-        posY = posY - mod.UF_BossFrameBorderRows(Widgets, hostFrame, posY, settingsTable, ReloadAndUpdate)
+        posY = posY - mod.UF_BossFrameBorderRows(W, hostFrame, posY, settingsTable, ReloadAndUpdate)
     end
 
     -- Dark Mode for this frame alone, as on the Main Frames page (unset follows the
@@ -345,7 +345,7 @@ local function BuildMiniTextAndSize(
         local bossStrataValues = CludesUI.FRAME_STRATA_LABELS
         local bossStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
         local strataRow
-        strataRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        strataRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Strata",
             tooltip = "Overrides the Frame Strata set in the main frames for this frame only. Controls the order that overlapping frames display in; set higher to show above other frames.",
@@ -368,7 +368,7 @@ local function BuildMiniTextAndSize(
     -- borderSizeOverride nil = inherit donor size until set. Boss frames use
     -- their own Border Style | Border Size row above instead.
     if unitKey ~= "boss" then
-        _, hgt = Widgets:DualRow(
+        _, hgt = W:DualRow(
             hostFrame,
             posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
@@ -401,19 +401,19 @@ local function BuildMiniTextAndSize(
         )
         posY = posY - hgt
         local darkRow
-        darkRow, hgt = Widgets:DualRow(hostFrame, posY, darkCfg, CludesUI.BlankRowCfg())
+        darkRow, hgt = W:DualRow(hostFrame, posY, darkCfg, CludesUI.BlankRowCfg())
         posY = posY - hgt
         LockDark(darkRow._leftRegion)
     end
 
     -- Optional extra rows after enable (e.g. portrait, cast icon, indicators)
     if afterSizeRow then
-        posY = afterSizeRow(Widgets, hostFrame, posY)
+        posY = afterSizeRow(W, hostFrame, posY)
     end
 
     -- HEALTH BAR section
     local textHeader
-    textHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    textHeader, hgt = W:SectionHeader(hostFrame, "HEALTH BAR", posY)
     posY = posY - hgt
 
     -- Row 1: Bar Height + Bar Width
@@ -462,7 +462,7 @@ local function BuildMiniTextAndSize(
             end,
         })
     end
-    sizeRow, hgt = Widgets:DualRow(
+    sizeRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -608,7 +608,7 @@ local function BuildMiniTextAndSize(
         end
 
         local colorRow
-        colorRow, hgt = Widgets:DualRow(hostFrame, posY, leftSlot2, rightSlot2)
+        colorRow, hgt = W:DualRow(hostFrame, posY, leftSlot2, rightSlot2)
         posY = posY - hgt
 
         if isBoss then
@@ -821,7 +821,7 @@ local function BuildMiniTextAndSize(
         end,
     }
     if unitKey == "boss" then
-        _, hgt = Widgets:DualRow(hostFrame, posY, smoothBarsWidget, reverseFillWidget)
+        _, hgt = W:DualRow(hostFrame, posY, smoothBarsWidget, reverseFillWidget)
         posY = posY - hgt
     else
         -- Bar Background (opacity slider + inline color swatch) | Reverse Fill.
@@ -829,7 +829,7 @@ local function BuildMiniTextAndSize(
         -- variables -- same as the Boss frames and the runtime health bg, so
         -- no saved option changes.
         local bgRow
-        bgRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        bgRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
             min = 0,
@@ -904,7 +904,7 @@ local function BuildMiniTextAndSize(
 
     -- Vertical Fill swaps the fill AXIS (Reverse Fill above flips direction within
     -- it, so vertical+reverse fills top-to-bottom); own row since Reverse Fill's row is already full on both layouts.
-    _, hgt = Widgets:DualRow(
+    _, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -929,7 +929,7 @@ local function BuildMiniTextAndSize(
     -- offsets on a cog. The row is the preview level text's click target
     -- (stashed on the page: the boss targets table reads it).
     if unitKey == "boss" and CludesUI.BlizzStyle.Get("unitframes") then
-        hostFrame._ufLevelRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        hostFrame._ufLevelRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Level",
             tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
@@ -1197,8 +1197,8 @@ local function BuildMiniTextAndSize(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -1458,8 +1458,8 @@ local function BuildMiniTextAndSize(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -1711,8 +1711,8 @@ local function BuildMiniTextAndSize(
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and CludesUI.GetClassColor(classFile)
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -1979,8 +1979,8 @@ local function BuildMiniTextAndSize(
                         region,
                         region:GetFrameLevel() + 5,
                         function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and CludesUI.GetClassColor(classFile)
+                            local _, class = UnitClass("player")
+                            local cc = class and CludesUI.GetClassColor(class)
                             if cc then
                                 return cc.r, cc.g, cc.b
                             end
@@ -2056,7 +2056,7 @@ local function BuildMiniTextAndSize(
         }
     end
     local textRow
-    posY, textRow = mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, {
+    posY, textRow = mod.UFO_BuildTextSlots(W, hostFrame, posY, {
         slots = textSlots,
         values = healthTextValues,
         contentOrder = textSlots[1].cfg.order,
@@ -2076,12 +2076,12 @@ local function BuildMiniTextAndSize(
     -- a height of 0 effectively hides the bar.
     if options.hasPowerBar then
         local powerHeader
-        powerHeader, hgt = Widgets:SectionHeader(hostFrame, "POWER BAR", posY)
+        powerHeader, hgt = W:SectionHeader(hostFrame, "POWER BAR", posY)
         posY = posY - hgt
 
         -- Row 1: Power Bar Height (+ Reverse Fill cog) | Above Health Bar toggle
         local pwrRow1
-        pwrRow1, hgt = Widgets:DualRow(
+        pwrRow1, hgt = W:DualRow(
             hostFrame,
             posY,
             -- Blizzard Style: the stock track fixes height and spot; the
@@ -2139,7 +2139,7 @@ local function BuildMiniTextAndSize(
         -- Fill Color (opacity slider + power/custom fill swatches). Mirrors the
         -- Main Frames power bar; the opacity sliders replace the old plain ones.
         local pwrRow2
-        pwrRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+        pwrRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Bar Background",
             min = 0,
@@ -2344,7 +2344,7 @@ local function BuildMiniTextAndSize(
             -- The page stays, so the menu is rebuilt for Custom's pencil.
             mod.UFO_RefreshMenus(pwrTextRow and pwrTextRow._leftRegion)
         end
-        pwrTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        pwrTextRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Power Text",
             values = mod.UFO_CustomTextValues({
@@ -2553,7 +2553,7 @@ local function BuildMiniTextAndSize(
 
         -- Power bar border size and color, matching Player/Target/Focus.
         local pwrBorderRow
-        pwrBorderRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        pwrBorderRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Border Size",
             min = 0,
@@ -2599,7 +2599,7 @@ local function BuildMiniTextAndSize(
 
     -- Extra section rendered at the very bottom, below the Power Bar (boss "Indicators").
     if options.afterPowerRow then
-        posY = options.afterPowerRow(Widgets, hostFrame, posY)
+        posY = options.afterPowerRow(W, hostFrame, posY)
     end
 
     return posY, displayHeader, sizeRow, textHeader, textRow, enableRowFrame
@@ -2804,7 +2804,7 @@ end
 -- Shared builder for the two independent mini frames (Target of Target,
 -- Focus Target). settingsTable/unitKey select which one; each renders its
 -- own single enable toggle + Show Portrait (right slot), Pet-style.
-function mod.UFO_BuildFoTToTOptions(Widgets, hostFrame, posY, settingsTable, unitKey)
+function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, settingsTable, unitKey)
     local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
         environ.AttachFrameSourceCog,
@@ -2879,7 +2879,7 @@ function mod.UFO_BuildFoTToTOptions(Widgets, hostFrame, posY, settingsTable, uni
 
     local displayHeader, sizeRow, textHeader, textRow
     posY, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(Widgets, hostFrame, posY, settingsTable, unitKey, enableRow)
+        BuildMiniTextAndSize(W, hostFrame, posY, settingsTable, unitKey, enableRow)
 
     -- Store click targets for hover highlight system
     hostFrame._ufClickTargets = {
@@ -2914,7 +2914,7 @@ function mod.UFO_BuildFoTToTOptions(Widgets, hostFrame, posY, settingsTable, uni
     return abs(posY)
 end
 
-function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
+function mod.UFO_BuildPetOptions(W, hostFrame, posY)
     local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildApplyAllRow, MINI_GROUP_ORDER, PromptReloadIfUnspawned =
         environ.AttachFrameSourceCog,
@@ -2986,9 +2986,9 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
     local petOpts, petPower, happyHeader, happyRow
     if CludesUI.IS_FOREVER == true then
         petPower = mod.UF_PetHasPower and not CludesUI.BlizzStyle.Get("unitframes")
-        local Prm = saved.profile.pet
+        local P = saved.profile.pet
         local function happyOff()
-            return Prm.happinessEnabled == false
+            return P.happinessEnabled == false
         end
         -- The live icon repaints itself; the preview mirrors it.
         local function happyApply()
@@ -3008,10 +3008,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                     text = "Show Happiness",
                     tooltip = "Shows your hunter pet's happiness beside the pet frame.",
                     getValue = function()
-                        return Prm.happinessEnabled ~= false
+                        return P.happinessEnabled ~= false
                     end,
                     setValue = function(v)
-                        Prm.happinessEnabled = v
+                        P.happinessEnabled = v
                         happyApply()
                         CludesUI:RefreshPage()
                     end,
@@ -3024,10 +3024,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                     disabled = happyOff,
                     disabledTooltip = "Show Happiness",
                     getValue = function()
-                        return Prm.happinessSize or 20
+                        return P.happinessSize or 20
                     end,
                     setValue = function(v)
-                        Prm.happinessSize = v
+                        P.happinessSize = v
                         happyApply()
                     end,
                 })
@@ -3043,10 +3043,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                     disabled = happyOff,
                     disabledTooltip = "Show Happiness",
                     getValue = function()
-                        return Prm.happinessAlign or "right"
+                        return P.happinessAlign or "right"
                     end,
                     setValue = function(v)
-                        Prm.happinessAlign = v
+                        P.happinessAlign = v
                         happyApply()
                     end,
                 }, CludesUI.BlankRowCfg())
@@ -3064,10 +3064,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    return Prm.happinessX or 0
+                                    return P.happinessX or 0
                                 end,
                                 set = function(v)
-                                    Prm.happinessX = v
+                                    P.happinessX = v
                                     happyApply()
                                 end,
                             },
@@ -3078,10 +3078,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    return Prm.happinessY or 0
+                                    return P.happinessY or 0
                                 end,
                                 set = function(v)
-                                    Prm.happinessY = v
+                                    P.happinessY = v
                                     happyApply()
                                 end,
                             },
@@ -3095,7 +3095,7 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
 
     local displayHeader, sizeRow, textHeader, textRow
     posY, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(Widgets, hostFrame, posY, saved.profile.pet, "pet", enableRow, nil, petOpts)
+        BuildMiniTextAndSize(W, hostFrame, posY, saved.profile.pet, "pet", enableRow, nil, petOpts)
 
     -- BUFFS AND DEBUFFS, on the CludesUI pet frame only (an inactive frame
     -- shows the notice above instead). Location, size (Cropped Icons
@@ -3138,12 +3138,12 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
                 CludesUI:RefreshPage()
             end)
         end
-        auraHeader, hgt = Widgets:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
+        auraHeader, hgt = W:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
         posY = posY - hgt
 
         -- Buffs Location | Buff Size, then Debuffs Location | Debuff Size: the
         -- settings cog on each Location, the position cog on each Size.
-        buffRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        buffRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Buffs Location",
             values = environ.buffAnchorValues,
@@ -3172,7 +3172,7 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
             end,
         })
         posY = posY - hgt
-        debuffRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        debuffRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Debuffs Location",
             values = environ.buffAnchorValues,
@@ -3204,7 +3204,7 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
         -- no pick follows. Every pick is stored, so it sticks when Copy Look
         -- From changes later.
         if anyOn() then
-            _, hgt = Widgets:DualRow(hostFrame, posY, {
+            _, hgt = W:DualRow(hostFrame, posY, {
                 type = "segmented",
                 text = "Copy Auras From",
                 tooltip = "The frame whose aura look the pet copies.",
@@ -3265,21 +3265,21 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
     -- CAST BAR, on the CludesUI pet frame only. Off by default; the bar is
     -- built at login, so turning it on asks for a reload. Move it in Unlock Mode.
     if mod.GetUnitFrameSource("pet") == "cui" then
-        local Prm = saved.profile.pet
+        local P = saved.profile.pet
         local function castOff()
-            return Prm.showCastbar ~= true
+            return P.showCastbar ~= true
         end
-        _, hgt = Widgets:SectionHeader(hostFrame, "CAST BAR", posY)
+        _, hgt = W:SectionHeader(hostFrame, "CAST BAR", posY)
         posY = posY - hgt
-        _, hgt = Widgets:DualRow(hostFrame, posY, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cast Bar",
             tooltip = "Shows a cast bar for your pet's spells (e.g. Seduction). Turning it on needs a reload. Position it in Layout Mode.",
             getValue = function()
-                return Prm.showCastbar == true
+                return P.showCastbar == true
             end,
             setValue = function(v)
-                Prm.showCastbar = v
+                P.showCastbar = v
                 ReloadAndUpdate()
                 local popFrame = mod.frames and mod.frames.pet
                 if v and popFrame and not popFrame.Castbar then
@@ -3302,15 +3302,15 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return Prm.castbarWidth or 120
+                return P.castbarWidth or 120
             end,
             setValue = function(v)
-                Prm.castbarWidth = v
+                P.castbarWidth = v
                 ReloadAndUpdate()
             end,
         })
         posY = posY - hgt
-        _, hgt = Widgets:DualRow(hostFrame, posY, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Cast Bar Height",
             min = 1,
@@ -3319,10 +3319,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return Prm.castbarHeight or 12
+                return P.castbarHeight or 12
             end,
             setValue = function(v)
-                Prm.castbarHeight = v
+                P.castbarHeight = v
                 ReloadAndUpdate()
             end,
         }, {
@@ -3332,10 +3332,10 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
             disabled = castOff,
             disabledTooltip = "Show Cast Bar",
             getValue = function()
-                return Prm.castbarHideWhenInactive ~= false
+                return P.castbarHideWhenInactive ~= false
             end,
             setValue = function(v)
-                Prm.castbarHideWhenInactive = v
+                P.castbarHideWhenInactive = v
                 ReloadAndUpdate()
             end,
         })
@@ -3392,7 +3392,7 @@ function mod.UFO_BuildPetOptions(Widgets, hostFrame, posY)
     return abs(posY)
 end
 
-function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
+function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     local environ = mod._UFO_OptEnv
     local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, Pix =
         environ.AttachDebuffModeWarn, environ.AttachFrameSourceCog, environ.DebuffModeDropdownCfg, environ.PP
@@ -3415,7 +3415,7 @@ function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
     local function BossFramesDisabled()
         return mod.GetUnitFrameSource("boss") ~= "cui"
     end
-    activateBtnFrame, hgt = Widgets:WideButton(hostFrame, PreviewLabel(), posY, function()
+    activateBtnFrame, hgt = W:WideButton(hostFrame, PreviewLabel(), posY, function()
         if BossFramesDisabled() then
             return
         end
@@ -3455,13 +3455,13 @@ function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
         end
     end
     local function UpdateActivateBtn()
-        local offset = BossFramesDisabled()
+        local off = BossFramesDisabled()
         if activateBtnLbl then
             activateBtnLbl:SetText(PreviewLabel())
         end
         if activateBtn then
-            activateBtn:SetAlpha(offset and 0.4 or 1)
-            activateBtn:EnableMouse(not offset)
+            activateBtn:SetAlpha(off and 0.4 or 1)
+            activateBtn:EnableMouse(not off)
         end
     end
     UpdateActivateBtn()
@@ -5832,23 +5832,23 @@ function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
             if not region then
                 return
             end
-            local blockData = CreateFrame("Frame", nil, region)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(region:GetFrameLevel() + 50)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(blockData, CludesUI.DisabledTooltip("Show Cast Bar"))
+            local block = CreateFrame("Frame", nil, region)
+            block:SetAllPoints()
+            block:SetFrameLevel(region:GetFrameLevel() + 50)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Show Cast Bar"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function Update()
                 if B.showCastbar == false then
                     region:SetAlpha(0.3)
-                    blockData:Show()
+                    block:Show()
                 else
                     region:SetAlpha(enabledAlpha and enabledAlpha() or 1)
-                    blockData:Hide()
+                    block:Hide()
                 end
             end
             Update()
@@ -6052,9 +6052,9 @@ function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
                 }
                 if disabledFn then
                     local function Update()
-                        local offset = disabledFn()
-                        sw:SetAlpha(offset and 0.3 or 1)
-                        sw:EnableMouse(not offset)
+                        local off = disabledFn()
+                        sw:SetAlpha(off and 0.3 or 1)
+                        sw:EnableMouse(not off)
                         if updateSw then
                             updateSw()
                         end
@@ -6477,15 +6477,15 @@ function mod.UFO_BuildBossOptions(Widgets, hostFrame, posY)
         -- The Show Cast Bar toggle's own color swatches stay gated grey +
         -- blocked while the cast bar is off (the Height slider uses a
         -- native disabled state; the hidden rows need nothing).
-        for _, itemInfo in ipairs(castColorSwatches) do
-            AddCastBlock(itemInfo.sw, itemInfo.enabledAlpha)
+        for _, item in ipairs(castColorSwatches) do
+            AddCastBlock(item.sw, item.enabledAlpha)
         end
         return yy
     end
 
     local displayHeader, sizeRow, textHeader, textRow
     posY, displayHeader, sizeRow, textHeader, textRow =
-        BuildMiniTextAndSize(Widgets, hostFrame, posY, saved.profile.boss, "boss", enableRow, bossAfterSize, {
+        BuildMiniTextAndSize(W, hostFrame, posY, saved.profile.boss, "boss", enableRow, bossAfterSize, {
             hasPowerBar = true,
             afterPowerRow = function(Ww, pp, yy)
                 yy = bossCastBar(Ww, pp, yy)

@@ -65,19 +65,19 @@ do
     function mod.UF_NameFormatRows(prefixText, contentDefault, get, set, rowList, contentKey)
         local formatKey = prefixText .. "NameFormat"
         contentKey = contentKey or (prefixText .. "Content")
-        local rowFrame = CludesUI.NameFormatCogRow(function()
+        local row = CludesUI.NameFormatCogRow(function()
             return get(formatKey)
         end, function(v)
             set(formatKey, v)
         end, ENEMIES)
-        rowFrame.disabled = function()
+        row.disabled = function()
             return not mod.UF_ContentShowsName(
                 get(contentKey, contentDefault),
                 get(prefixText .. "CustomFormat")
             )
         end
-        rowFrame.disabledTooltip = "This option only applies when the text shows a name."
-        table.insert(rowList, 1, rowFrame)
+        row.disabledTooltip = "This option only applies when the text shows a name."
+        table.insert(rowList, 1, row)
         return rowList
     end
 end
@@ -137,7 +137,7 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, posY, getS, key, onChange, sy
     if not (BS and BS.Active("unitframes") == "classic") then
         return 0
     end
-    local rowFrame, hgt = W:DualRow(
+    local row, hgt = W:DualRow(
         hostFrame,
         posY,
         BS.ClassicBorderSizeCfg(function()
@@ -157,7 +157,7 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, posY, getS, key, onChange, sy
         right or CludesUI.BlankRowCfg()
     )
     if sync and not CludesUI._prebuilding then
-        local rgn = rowFrame._leftRegion
+        local rgn = row._leftRegion
         local function apply(units)
             local s = getS()
             local v = s and s[key]
@@ -201,7 +201,7 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, posY, getS, key, onChange, sy
             },
         })
     end
-    return hgt, rowFrame
+    return hgt, row
 end
 
 -- The 3D portrait performance warning, shown until confirmed once (account-
@@ -334,7 +334,7 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
         end
     end
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-    local rowFrame, hgt = W:DualRow(
+    local row, hgt = W:DualRow(
         hostFrame,
         posY,
         BS.Gate("unitframes", {
@@ -351,8 +351,8 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
                 s.castBorderStyle = v
                 s.castBorderOffsetX, s.castBorderOffsetY = nil, nil
                 s.castBorderShiftX, s.castBorderShiftY = nil, nil
-                local column, behind = CludesUI.GetBorderStyleSelectDefaults(v)
-                s.castBorderColor, s.castBorderAlpha, s.castBorderBehind = column, 1, behind
+                local col, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                s.castBorderColor, s.castBorderAlpha, s.castBorderBehind = col, 1, behind
                 local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
                 if defSz then
                     s.castBorderSize = defSz
@@ -461,7 +461,7 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
             end
             Changed()
         end
-        local cogBtn = CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -518,8 +518,8 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
 
     -- Colour swatch (with alpha) on Border Size; greyed and blocked at 0.
     do
-        local rgn = rowFrame._rightRegion
-        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rowFrame:GetFrameLevel() + 3, function()
+        local rgn = row._rightRegion
+        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
             local s = getS()
             local c = s.castBorderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBorderAlpha or 1
@@ -537,27 +537,27 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
             CludesUI.HideWidgetTooltip()
         end)
         rgn._lastInline = sw
-        local blockData = CreateFrame("Frame", nil, sw)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, sw)
+        block:SetAllPoints()
+        block:SetFrameLevel(sw:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 sw,
                 CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
             )
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSw()
             updateSw()
             if (getS().castBorderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
-                blockData:Show()
+                block:Show()
             else
                 sw:SetAlpha(1)
-                blockData:Hide()
+                block:Hide()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSw)
@@ -658,7 +658,7 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
             end
             return true
         end
-        local lr, rr = rowFrame._leftRegion, rowFrame._rightRegion
+        local lr, rr = row._leftRegion, row._rightRegion
         CludesUI.BuildSyncIcon({
             region = lr,
             tooltip = "Apply Cast Bar Border Style to all Frames",
@@ -724,7 +724,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
     table.insert(texOrder, 1, "inherit")
     texValues.inherit = "Inherit (Main Frames)"
-    local rowFrame, hgt = W:DualRow(
+    local row, hgt = W:DualRow(
         hostFrame,
         posY,
         BS.Gate("unitframes", {
@@ -755,8 +755,8 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
                     B.borderTexture = v
                     B.borderTextureOffset, B.borderTextureOffsetY = nil, nil
                     B.borderTextureShiftX, B.borderTextureShiftY = nil, nil
-                    local column, behind = CludesUI.GetBorderStyleSelectDefaults(v)
-                    B.borderColor, B.borderAlpha, B.borderBehind = column, 1, behind
+                    local col, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+                    B.borderColor, B.borderAlpha, B.borderBehind = col, 1, behind
                     local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
                     if defSz then
                         B.borderSize = defSz
@@ -867,7 +867,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
             end
             onChange()
         end
-        local cogBtn = CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -948,7 +948,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
     -- Colour swatch (with alpha) on Border Size: shows what is drawn; greyed
     -- and blocked while inheriting or at 0.
     do
-        local rgn = rowFrame._rightRegion
+        local rgn = row._rightRegion
         -- Corner Radius (CludesUI_RoundedCorners.lua): the boss table's own,
         -- beside the control with the swatch left of it; while inheriting the
         -- main frames' radius applies.
@@ -1002,7 +1002,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
                 "Detached Power Bar"
             ),
         })
-        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, rowFrame:GetFrameLevel() + 3, function()
+        local sw, updateSw = CludesUI.BuildColorSwatch(rgn, row:GetFrameLevel() + 3, function()
             local s = Src()
             local c = s.borderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.borderAlpha or 1
@@ -1019,25 +1019,25 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
             CludesUI.HideWidgetTooltip()
         end)
         rgn._lastInline = sw
-        local blockData = CreateFrame("Frame", nil, sw)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, sw)
+        block:SetAllPoints()
+        block:SetFrameLevel(sw:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             local req = Inheriting() and NEEDS_STYLE or "This option requires a Border Size above 0."
             CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(req))
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSw()
             updateSw()
             if Inheriting() or (B.borderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
-                blockData:Show()
+                block:Show()
             else
                 sw:SetAlpha(1)
-                blockData:Hide()
+                block:Hide()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSw)
@@ -1188,25 +1188,25 @@ function mod.UFOpt_PreviewPurgeGlow(bf, unitKey, s, wid, hgt)
         end
         enabled = magic or enrage
     end
-    local hostRegion = bf._purgeGlow
+    local host = bf._purgeGlow
     if not enabled then
-        if hostRegion then
-            if hostRegion._cuiGlowActive then
-                Glows.StopGlow(hostRegion)
+        if host then
+            if host._cuiGlowActive then
+                Glows.StopGlow(host)
             end
-            hostRegion:Hide()
+            host:Hide()
         end
         return
     end
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, bf)
-        hostRegion:SetAllPoints(bf)
-        hostRegion:SetFrameLevel(bf:GetFrameLevel() + 2)
-        bf._purgeGlow = hostRegion
+    if not host then
+        host = CreateFrame("Frame", nil, bf)
+        host:SetAllPoints(bf)
+        host:SetFrameLevel(bf:GetFrameLevel() + 2)
+        bf._purgeGlow = host
     end
-    hostRegion:Show()
+    host:Show()
     -- The live renderer's own spec, so the preview is the live look.
-    Glows.StartSpecGlow(hostRegion, mod.UF_PurgeGlowSpec(s), wid, hgt, "engine", Glows.PANEL_EXTRA)
+    Glows.StartSpecGlow(host, mod.UF_PurgeGlowSpec(s), wid, hgt, "engine", Glows.PANEL_EXTRA)
 end
 
 -- Target/focus/boss Debuff Filter: ONE single-select mode, an engine VIEW over
@@ -1249,10 +1249,10 @@ local function DebuffModeDropdownCfg(textValue, unitKey, getS, onChanged, extra)
         importantOwn = "Important and Own",
         importantOrOwn = "Important or Own",
         _menuOpts = {
-            onItemHover = function(key, itemInfo)
+            onItemHover = function(key, item)
                 local tipText = DEBUFF_MODE_TIPS[key]
-                if tipText and itemInfo then
-                    CludesUI.ShowWidgetTooltip(itemInfo, tipText)
+                if tipText and item then
+                    CludesUI.ShowWidgetTooltip(item, tipText)
                 end
             end,
             onItemLeave = function()
@@ -2110,12 +2110,12 @@ initFrame:SetScript("OnEvent", function(self)
         local MASK_INSETS = CludesUI.SHAPE_INSETS
 
         -- mirror = true swaps the cell's left/right coords (Mirror Portrait).
-        local function ApplyClassIconTexture_Preview(texture, classToken, look, mirror)
+        local function ApplyClassIconTexture_Preview(texture, classToken, style, mirror)
             local coords = CLASS_FULL_COORDS[classToken]
             if not coords then
                 return false
             end
-            texture:SetTexture(CLASS_FULL_SPRITE_BASE .. look .. ".tga")
+            texture:SetTexture(CLASS_FULL_SPRITE_BASE .. style .. ".tga")
             if mirror then
                 texture:SetTexCoord(coords[2], coords[1], coords[3], coords[4])
             else
@@ -2293,10 +2293,10 @@ initFrame:SetScript("OnEvent", function(self)
             -- Pixels Circle (ns.UF_UNMASKED_RING) keeps its ring outside the mask,
             -- inset from the frame edge, exactly as on the live portrait.
             local ringInset = mod.UF_UNMASKED_RING[shape]
-            local offset = bExp - (ringInset or 0)
+            local off = bExp - (ringInset or 0)
             pFrame._shapeBorderTex:ClearAllPoints()
-            Pix.Point(pFrame._shapeBorderTex, "TOPLEFT", pFrame, "TOPLEFT", -offset, offset)
-            Pix.Point(pFrame._shapeBorderTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", offset, -offset)
+            Pix.Point(pFrame._shapeBorderTex, "TOPLEFT", pFrame, "TOPLEFT", -off, off)
+            Pix.Point(pFrame._shapeBorderTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", off, -off)
             -- Add border to mask so the mask clips its inner edge
             if pFrame._shapeMask then
                 pcall(pFrame._shapeBorderTex.RemoveMaskTexture, pFrame._shapeBorderTex, pFrame._shapeMask)
@@ -2553,9 +2553,9 @@ initFrame:SetScript("OnEvent", function(self)
         local function ResolveSpellInfo(spellNameOrID)
             local details = C_Spell.GetSpellInfo(spellNameOrID)
             if details then
-                local glyph = details.iconID or 136197
+                local icon = details.iconID or 136197
                 local ct = (details.castTime or 0) / 1000 -- API returns ms
-                return glyph, ct
+                return icon, ct
             end
             return 136197, 0
         end
@@ -2608,9 +2608,9 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local chosen = nil
             for _, s in ipairs(pool) do
-                local glyph, ct = ResolveSpellInfo(s.spellID or s.name)
+                local icon, ct = ResolveSpellInfo(s.spellID or s.name)
                 if ct and ct > 0 then
-                    chosen = { icon = glyph, name = s.name, castTime = ct }
+                    chosen = { icon = icon, name = s.name, castTime = ct }
                     break
                 end
             end
@@ -2647,29 +2647,29 @@ initFrame:SetScript("OnEvent", function(self)
             if not (UFB and mod.UF_BlizzSide and mod.UF_PaintBlizzArt) then
                 return nil
             end
-            local kindOf
+            local kind
             if unitKey == "player" then
-                kindOf = "player"
+                kind = "player"
             elseif unitKey == "target" or unitKey == "focus" or unitKey == "boss" then
-                kindOf = "target"
+                kind = "target"
             elseif unitKey == "pet" and UFB.pet then
-                kindOf = "pet"
+                kind = "pet"
             else
-                kindOf = "mini"
+                kind = "mini"
             end
-            local native = UFB[kindOf]
-            local sideName = mod.UF_BlizzSide(s, native)
+            local native = UFB[kind]
+            local side = mod.UF_BlizzSide(s, native)
             local G, mirror = native, nil
             if native.small then
-                if sideName ~= native.side then
+                if side ~= native.side then
                     mirror = true
                 end
-            elseif sideName == "right" then
+            elseif side == "right" then
                 G = UFB.target
             else
                 G = UFB.player
             end
-            return G, mirror, (G.rep and kindOf == "target") or nil
+            return G, mirror, (G.rep and kind == "target") or nil
         end
         -- Frame Scale (the style's stand-in for Bar Width / Health Bar Height).
         local function BlizzPreviewScale(s)
@@ -2706,26 +2706,26 @@ initFrame:SetScript("OnEvent", function(self)
             if not rgn then
                 return
             end
-            local blockData = CreateFrame("Frame", nil, rgn)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(rgn:GetFrameLevel() + 50)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, rgn)
+            block:SetAllPoints()
+            block:SetFrameLevel(rgn:GetFrameLevel() + 50)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
-                    blockData,
+                    block,
                     "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
                 )
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function Update()
                 if mod.UF_DarkThemeOn(unitFn()) then
                     rgn:SetAlpha(0.3)
-                    blockData:Show()
+                    block:Show()
                 else
                     rgn:SetAlpha(1)
-                    blockData:Hide()
+                    block:Hide()
                 end
             end
             Update()
@@ -3075,14 +3075,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- player). No choice (lookSource nil) keeps following that order:
         -- re-picking the frame shown stores nothing, and Focus, which behaves
         -- exactly as no choice, is stored as none.
-        local function BuildLookSourcePair(rowFrame, unitKey, ddW)
+        local function BuildLookSourcePair(row, unitKey, ddW)
             local function Shown()
                 return mod.UF_MiniDonorKey(unitKey)
             end
             local ddBtn = CludesUI.BuildDropdownControl(
-                rowFrame,
+                row,
                 ddW,
-                rowFrame:GetFrameLevel() + 2,
+                row:GetFrameLevel() + 2,
                 { target = "Target", focus = "Focus", player = "Player" },
                 { "target", "focus", "player" },
                 Shown,
@@ -3101,7 +3101,7 @@ initFrame:SetScript("OnEvent", function(self)
                 ddBtn._refreshLabel()
             end)
 
-            local labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
+            local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
             labelText:SetText(CludesUI.L("Copy Look From"))
             labelText:SetTextColor(1, 1, 1, 0.6)
             return labelText, ddBtn
@@ -3133,19 +3133,19 @@ initFrame:SetScript("OnEvent", function(self)
 
             local ROW_H = 50
             local contentPad = CludesUI.CONTENT_PAD or 45
-            local rowFrame = CreateFrame("Frame", nil, hostFrame)
-            Pix.Size(rowFrame, hostFrame:GetWidth() - contentPad * 2, ROW_H)
-            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
+            local row = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(row, hostFrame:GetWidth() - contentPad * 2, ROW_H)
+            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
 
-            local labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
+            local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
             labelText:SetText(CludesUI.L("Apply All Settings From"))
             labelText:SetTextColor(1, 1, 1, 0.6)
 
             local DD_W, GAP, PAIR_GAP = 180, 12, 40
             local ddBtn = CludesUI.BuildDropdownControl(
-                rowFrame,
+                row,
                 DD_W,
-                rowFrame:GetFrameLevel() + 2,
+                row:GetFrameLevel() + 2,
                 ddValues,
                 ddOrder,
                 function()
@@ -3193,23 +3193,23 @@ initFrame:SetScript("OnEvent", function(self)
             local totalW = labelText:GetStringWidth() + GAP + DD_W
             local lookLabel, lookDD
             if withLook then
-                lookLabel, lookDD = BuildLookSourcePair(rowFrame, curUnit, DD_W)
+                lookLabel, lookDD = BuildLookSourcePair(row, curUnit, DD_W)
                 totalW = totalW + PAIR_GAP + lookLabel:GetStringWidth() + GAP + DD_W
             end
-            labelText:SetPoint("LEFT", rowFrame, "CENTER", -totalW / 2, 0)
+            labelText:SetPoint("LEFT", row, "CENTER", -totalW / 2, 0)
             ddBtn:SetPoint("LEFT", labelText, "RIGHT", GAP, 0)
             if lookLabel then
                 lookLabel:SetPoint("LEFT", ddBtn, "RIGHT", PAIR_GAP, 0)
                 lookDD:SetPoint("LEFT", lookLabel, "RIGHT", GAP, 0)
             end
 
-            return rowFrame, ROW_H
+            return row, ROW_H
         end
 
         local function BuildSharedSettings(hostFrame, posY)
             local W = CludesUI.Widgets
             local _, hgt
-            local rowFrame
+            local row
 
             ---------------------------------------------------------------
             --  Unified Get / Set / DB abstraction
@@ -3267,17 +3267,17 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 local tipText = not visible and unsupportedTip or nil
                 if tipText then
-                    local function MakeSupportHit(anchorFrame)
-                        if not anchorFrame then
+                    local function MakeSupportHit(anchor)
+                        if not anchor then
                             return
                         end
                         local hitFrame = CreateFrame("Frame", nil, regionFrame)
-                        hitFrame:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", -5, 5)
-                        hitFrame:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", 5, -5)
+                        hitFrame:SetPoint("TOPLEFT", anchor, "TOPLEFT", -5, 5)
+                        hitFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 5, -5)
                         hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
                         hitFrame:EnableMouse(true)
                         hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(anchorFrame, tipText)
+                            CludesUI.ShowWidgetTooltip(anchor, tipText)
                         end)
                         hitFrame:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
@@ -3296,7 +3296,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             hostFrame._showRowDivider = true
 
-            rowFrame, hgt = BuildApplyAllRow(hostFrame, posY, GROUP_UNIT_ORDER, optionState.selectedUnit)
+            row, hgt = BuildApplyAllRow(hostFrame, posY, GROUP_UNIT_ORDER, optionState.selectedUnit)
             posY = posY - hgt
 
             -- The sections live in UnitFrames_Options\Shared*_Options.lua and read
@@ -3486,8 +3486,8 @@ initFrame:SetScript("OnEvent", function(self)
                 ddBtn:SetHeight(DD_H)
                 fy = fy - DD_H - 20
 
-                local sideName = unitSide[optionState.selectedUnit] or "left"
-                local preview = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, sideName)
+                local side = unitSide[optionState.selectedUnit] or "left"
+                local preview = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, side)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0
@@ -3837,8 +3837,8 @@ initFrame:SetScript("OnEvent", function(self)
                 ddBtn:SetHeight(DD_H)
                 fy = fy - DD_H - 20
 
-                local sideName = unitSide[selectedMiniUnit] or "left"
-                local preview = mod.UFO_BuildUnitPreview(heading, selectedMiniUnit, sideName)
+                local side = unitSide[selectedMiniUnit] or "left"
+                local preview = mod.UFO_BuildUnitPreview(heading, selectedMiniUnit, side)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0
@@ -3990,8 +3990,8 @@ initFrame:SetScript("OnEvent", function(self)
             -------------------------------------------------------------------
             mod._bossHeaderBuilder = function(heading, hdrW)
                 local fy = -20
-                local sideName = unitSide.boss or "right"
-                local preview = mod.UFO_BuildUnitPreview(heading, "boss", sideName)
+                local side = unitSide.boss or "right"
+                local preview = mod.UFO_BuildUnitPreview(heading, "boss", side)
                 activePreview = preview
                 local previewScale = preview._previewScale or 1
                 local initBuffTopPad = preview._buffTopPad or 0

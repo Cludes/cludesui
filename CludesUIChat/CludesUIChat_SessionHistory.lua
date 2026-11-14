@@ -558,9 +558,9 @@ end
 -- Normalized hashes of what a window already shows, so relog restores do not
 -- duplicate lines that survived in the engine (O(n) once per window).
 local function BuildWindowMessageSet(castFrame)
-    local group = {}
+    local set = {}
     if not CHAT.EngineGetMessageLines then
-        return group
+        return set
     end
     local raw = {}
     CHAT.EngineGetMessageLines(castFrame, raw)
@@ -569,11 +569,11 @@ local function BuildWindowMessageSet(castFrame)
         if stored then
             local success, norm = pcall(NormalizeForDedup, stored)
             if success and norm then
-                group[norm] = true
+                set[norm] = true
             end
         end
     end
-    return group
+    return set
 end
 
 local function RestoreWindow(castFrame, frameName, log)

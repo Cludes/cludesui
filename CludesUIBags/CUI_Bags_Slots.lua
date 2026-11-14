@@ -859,7 +859,7 @@ do
     -- windows repaint when the game reports it, see SetSearchText). Returns
     -- the box's change handler.
     local SEARCH_DEBOUNCE = 0.1
-    function CUI_Bags.WatchSearchBox(boxFrame, apply)
+    function CUI_Bags.WatchSearchBox(box, apply)
         local armed, lastKeyAt = false, 0
         local function flush()
             local wait = lastKeyAt + SEARCH_DEBOUNCE - GetTime()
@@ -868,7 +868,7 @@ do
                 return
             end
             armed = false
-            local textValue = boxFrame:GetText()
+            local textValue = box:GetText()
             if textValue ~= CUI_Bags._appliedSearch then
                 apply(textValue)
             end
@@ -882,7 +882,7 @@ do
                 end
                 return
             end
-            local textValue = boxFrame:GetText()
+            local textValue = box:GetText()
             if textValue ~= CUI_Bags._appliedSearch then
                 apply(textValue)
             end
@@ -898,13 +898,13 @@ do
     end
 
     -- Overrides info.isFiltered for the active expression; no-op when none is active.
-    function CUI_Bags.ApplyBindKeyword(details, bag, slotIndex)
+    function CUI_Bags.ApplyBindKeyword(details, bag, slot)
         local q = CUI_Bags._bindKeyword
         if not q or not details then
             return
         end
         local match = false
-        loc:SetBagAndSlot(bag, slotIndex)
+        loc:SetBagAndSlot(bag, slot)
         if C_Item.DoesItemExist(loc) then
             curLink, curBound = details.hyperlink, details.isBound
             curBindType = curLink and select(14, GetItemInfo(curLink))

@@ -70,14 +70,14 @@ EAB_VTABLE.MOD_TARGET_PAGING = {
 local PAGING_GROUP_KEY = { modifier = "modifierPaging", target = "targetPaging" }
 
 -- True while the bar's group ("modifier" or "target") is switched off.
-function EAB_VTABLE.PagingGroupOff(bs, group)
+function EAB_VTABLE.PagingGroupOff(bs, set)
     if not bs then
         return false
     end
     if bs.modTargetPaging == false then
         return true
     end
-    return bs[PAGING_GROUP_KEY[group]] == false
+    return bs[PAGING_GROUP_KEY[set]] == false
 end
 
 -- True when the bar has paging of the player's own that applies: a state
@@ -165,7 +165,7 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
         return nil
     end
     local PG = EAB_VTABLE.PAGING_STATES
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts(barId)
     local bs = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[barId]
     local noModifier = EAB_VTABLE.PagingGroupOff(bs, "modifier")
@@ -197,11 +197,11 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
         DRUID = { prowl = 7, cat = 7, bear = 9, moonkin = 10 },
         ROGUE = { stealth = 7 },
     }
-    local classStates = PG.class[classFile]
+    local classStates = PG.class[class]
     if classStates then
         -- noForm drops only the implicit fallback: a page the user picked for
         -- a specific form is explicit, not auto-paging, so it still applies.
-        local defs = (barId == "MainBar" and not noForm) and CLASS_DEFAULTS[classFile]
+        local defs = (barId == "MainBar" and not noForm) and CLASS_DEFAULTS[class]
         for _, status in ipairs(classStates) do
             local page = pagingConfig[status.id]
             if page then
@@ -258,7 +258,7 @@ end
 --  custom paging is configured). Format: "[condition] pageNumber; ..."
 -------------------------------------------------------------------------------
 local function GetClassPagingConditions()
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts("MainBar")
     local conditions = ""
 
@@ -300,10 +300,10 @@ local function GetClassPagingConditions()
             if formClauses then
                 conditions = conditions .. formClauses .. "; "
             end
-        elseif classFile == "DRUID" then
+        elseif class == "DRUID" then
             conditions = conditions
                 .. "[bonusbar:1,stealth] 7; [bonusbar:1] 7; [bonusbar:3] 9; [bonusbar:4] 10; "
-        elseif classFile == "ROGUE" then
+        elseif class == "ROGUE" then
             conditions = conditions .. "[bonusbar:1] 7; "
         end
     end
@@ -369,14 +369,14 @@ end
 local function BuildFilteredPageMacro(delta, skip)
     local macro = {}
     for page = 1, NUM_AB_PAGES do
-        local targetUnit = page
+        local target = page
         for _ = 1, NUM_AB_PAGES do
-            targetUnit = (targetUnit - 1 + delta + NUM_AB_PAGES) % NUM_AB_PAGES + 1
-            if not skip[targetUnit] then
+            target = (target - 1 + delta + NUM_AB_PAGES) % NUM_AB_PAGES + 1
+            if not skip[target] then
                 break
             end
         end
-        macro[#macro + 1] = "[bar:" .. page .. "] " .. targetUnit
+        macro[#macro + 1] = "[bar:" .. page .. "] " .. target
     end
     return "/changeactionbar " .. table.concat(macro, "; ")
 end
@@ -624,9 +624,8 @@ LayoutPagingFrame = function()
     end
 
     local isVertical = (s.orientation == "vertical")
-    local baseValue = barBaseSize and barBaseSize["MainBar"]
-    local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight
-        or (baseValue and baseValue.h or 45)
+    local base = barBaseSize and barBaseSize["MainBar"]
+    local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or (base and base.h or 45)
     local arrowSize, textSize, gap, barGap = mod.AB_PagingArrowMetrics(btnH)
 
     f._upBtn:SetSize(arrowSize, arrowSize)

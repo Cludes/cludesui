@@ -183,7 +183,7 @@ local function SetupOptionsPanel()
                 Pix.CreateBorder(border, 0, 0, 0, 1)
             end
         else
-            local dim = prefs.auraBorderSize or 1
+            local size = prefs.auraBorderSize or 1
             local texture = prefs.auraBorderTexture or "solid"
             if mod.UF_BossAuraBorderAboveEffects(prefs) then
                 border:SetFrameLevel(border:GetParent():GetFrameLevel() + 20)
@@ -191,7 +191,7 @@ local function SetupOptionsPanel()
             CludesUI.ApplySecretSafeBorderStyle(
                 border,
                 border,
-                dim,
+                size,
                 prefs.auraBorderR or 0,
                 prefs.auraBorderG or 0,
                 prefs.auraBorderB or 0,
@@ -202,9 +202,9 @@ local function SetupOptionsPanel()
                 prefs.auraBorderTextureShiftX,
                 prefs.auraBorderTextureShiftY,
                 "unitframes",
-                dim,
+                size,
                 nil,
-                CludesUI.BorderPx(prefs.auraBorderSizePx, dim, texture)
+                CludesUI.BorderPx(prefs.auraBorderSizePx, size, texture)
             )
         end
         -- The border frame is reused across refreshes and its level is set on
@@ -330,9 +330,9 @@ local function SetupOptionsPanel()
             local iconFrame = icons[position]
             if not iconFrame then
                 iconFrame = CreateFrame("Frame", nil, holderFrame)
-                local glyph = iconFrame:CreateTexture(nil, "ARTWORK")
-                glyph:SetAllPoints()
-                iconFrame._icon = glyph
+                local icon = iconFrame:CreateTexture(nil, "ARTWORK")
+                icon:SetAllPoints()
+                iconFrame._icon = icon
                 -- Static fake cooldown swipe: a huge duration parked at a fixed fraction so
                 -- the wedge never visibly moves. Native countdown numbers stay hidden; the
                 -- duration text below is a manual static FontString instead.
@@ -363,7 +363,7 @@ local function SetupOptionsPanel()
                 -- Border just above the icon; its PP container renders at border+1
                 -- (iconFrame+2), below the swipe and text host so both stay on top.
                 local border = CreateFrame("Frame", nil, iconFrame)
-                border:SetAllPoints(glyph)
+                border:SetAllPoints(icon)
                 iconFrame._border = border
                 icons[position] = iconFrame
             end
@@ -375,12 +375,12 @@ local function SetupOptionsPanel()
                 iconFrame:SetPoint("RIGHT", holderFrame, "RIGHT", -(position - 1) * (iconSize + iconGap), 0)
             end
             iconFrame:SetFrameLevel(holderFrame:GetFrameLevel())
-            local glyph = iconFrame._icon
+            local icon = iconFrame._icon
             local texture = GetSpellTexture and GetSpellTexture(spellId)
                 or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellId))
-            glyph:SetTexture(texture)
+            icon:SetTexture(texture)
             local z = prefs.debuffIconZoom or 0.07
-            glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+            icon:SetTexCoord(z, 1 - z, z, 1 - z)
             -- Swipe sits above the border (border at +1, PP container at +2) so
             -- the layering matches the live boss aura buttons.
             local cd = iconFrame._cd
@@ -444,7 +444,7 @@ local function SetupOptionsPanel()
         if not simple and (prefs.showBuffs == false or (prefs.buffAnchor or "topleft") == "none") then
             return
         end
-        local anchorFrame = prefs.buffAnchor or "topleft"
+        local anchor = prefs.buffAnchor or "topleft"
         local bOffX = prefs.buffOffsetX or 0
         local bOffY = prefs.buffOffsetY or 0
         -- Simple mode uses its own X/Y offsets (falling back to the regular buff
@@ -490,15 +490,15 @@ local function SetupOptionsPanel()
             else
                 holderFrame:SetPoint("TOPRIGHT", widget, "TOPLEFT", -1 + bOffX, bOffY)
             end
-        elseif anchorFrame == "topleft" then
+        elseif anchor == "topleft" then
             holderFrame:SetPoint("BOTTOMLEFT", widget, "TOPLEFT", 0 + bOffX, gap + bOffY)
-        elseif anchorFrame == "topright" then
+        elseif anchor == "topright" then
             holderFrame:SetPoint("BOTTOMRIGHT", widget, "TOPRIGHT", 0 + bOffX, gap + bOffY)
-        elseif anchorFrame == "bottomleft" then
+        elseif anchor == "bottomleft" then
             holderFrame:SetPoint("TOPLEFT", widget, "BOTTOMLEFT", 0 + bOffX, -gap - castbarH + bOffY)
-        elseif anchorFrame == "bottomright" then
+        elseif anchor == "bottomright" then
             holderFrame:SetPoint("TOPRIGHT", widget, "BOTTOMRIGHT", 0 + bOffX, -gap - castbarH + bOffY)
-        elseif anchorFrame == "right" then
+        elseif anchor == "right" then
             holderFrame:SetPoint("LEFT", widget, "RIGHT", gap + bOffX, 0 + bOffY)
         else -- "left" or fallback
             holderFrame:SetPoint("RIGHT", widget, "LEFT", -gap + bOffX, 0 + bOffY)
@@ -508,11 +508,11 @@ local function SetupOptionsPanel()
             local iconFrame = icons[position]
             if not iconFrame then
                 iconFrame = CreateFrame("Frame", nil, holderFrame)
-                local glyph = iconFrame:CreateTexture(nil, "ARTWORK")
-                glyph:SetAllPoints()
-                iconFrame._icon = glyph
+                local icon = iconFrame:CreateTexture(nil, "ARTWORK")
+                icon:SetAllPoints()
+                iconFrame._icon = icon
                 local border = CreateFrame("Frame", nil, iconFrame)
-                border:SetAllPoints(glyph)
+                border:SetAllPoints(icon)
                 iconFrame._border = border
                 icons[position] = iconFrame
             end
@@ -525,12 +525,12 @@ local function SetupOptionsPanel()
                 iconFrame:SetPoint("LEFT", holderFrame, "LEFT", (position - 1) * (iconSize + iconGap), 0)
             end
             iconFrame:SetFrameLevel(holderFrame:GetFrameLevel())
-            local glyph = iconFrame._icon
+            local icon = iconFrame._icon
             local texture = GetSpellTexture and GetSpellTexture(spellId)
                 or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellId))
-            glyph:SetTexture(texture)
+            icon:SetTexture(texture)
             local z = prefs.buffIconZoom or 0.07
-            glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+            icon:SetTexCoord(z, 1 - z, z, 1 - z)
             local border = iconFrame._border
             border:SetFrameLevel(iconFrame:GetFrameLevel() + 1)
             mod.BossPreviewAuraBorder(border, prefs)

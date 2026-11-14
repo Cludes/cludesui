@@ -107,8 +107,8 @@ local function CanSummonNow()
     then
         return false
     end
-    local _, kindOf = IsInInstance()
-    return kindOf ~= "party" and kindOf ~= "raid" and kindOf ~= "pvp" and kindOf ~= "arena"
+    local _, kind = IsInInstance()
+    return kind ~= "party" and kind ~= "raid" and kind ~= "pvp" and kind ~= "arena"
 end
 
 local Queue

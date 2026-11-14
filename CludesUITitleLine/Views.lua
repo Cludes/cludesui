@@ -261,17 +261,17 @@ local function DrawGuild(panelFrame)
     end
 
     -- The scroll bar: a hairline track, and a thumb sized to the share in view.
-    local barFrame = panelFrame.bar
-    barFrame:SetShown(scrolls)
+    local bar = panelFrame.bar
+    bar:SetShown(scrolls)
     if scrolls then
         local trackH = st.capacity * ROW_H
         local thumbH = math.max(20, trackH * st.capacity / #st.entries)
         local travel = trackH - thumbH
         Rect(kit.fill, panelFrame, wid - BAR_W, st.top + 3, BAR_W, trackH, C.grid)
-        barFrame.travel, barFrame.trackH = travel, trackH
-        barFrame:SetSize(BAR_W, thumbH)
-        barFrame:ClearAllPoints()
-        barFrame:SetPoint(
+        bar.travel, bar.trackH = travel, trackH
+        bar:SetSize(BAR_W, thumbH)
+        bar:ClearAllPoints()
+        bar:SetPoint(
             "TOPLEFT",
             panelFrame,
             "TOPLEFT",
@@ -313,20 +313,20 @@ local function SetUpScrolling(panelFrame)
         end
     end)
 
-    local barFrame = CreateFrame("Button", nil, panelFrame)
-    barFrame.fill = barFrame:CreateTexture(nil, "ARTWORK")
-    barFrame.fill:SetAllPoints()
-    mod.UI.Color(barFrame.fill, C.ink2, 0.45)
-    barFrame:SetScript("OnEnter", function()
-        mod.UI.Color(barFrame.fill, C.ink2, 0.8)
+    local bar = CreateFrame("Button", nil, panelFrame)
+    bar.fill = bar:CreateTexture(nil, "ARTWORK")
+    bar.fill:SetAllPoints()
+    mod.UI.Color(bar.fill, C.ink2, 0.45)
+    bar:SetScript("OnEnter", function()
+        mod.UI.Color(bar.fill, C.ink2, 0.8)
     end)
-    barFrame:SetScript("OnLeave", function()
-        if not barFrame.dragging then
-            mod.UI.Color(barFrame.fill, C.ink2, 0.45)
+    bar:SetScript("OnLeave", function()
+        if not bar.dragging then
+            mod.UI.Color(bar.fill, C.ink2, 0.45)
         end
     end)
     -- Dragging: rows follow the cursor at the track's scale.
-    barFrame:SetScript("OnMouseDown", function(self)
+    bar:SetScript("OnMouseDown", function(self)
         local st = panelFrame.scroll
         if not st or self.travel <= 0 then
             return
@@ -340,15 +340,15 @@ local function SetUpScrolling(panelFrame)
             ScrollBy(panelFrame, math.floor(self.startOffset + rowList + 0.5) - st.offset)
         end)
     end)
-    barFrame:SetScript("OnMouseUp", function(self)
+    bar:SetScript("OnMouseUp", function(self)
         self.dragging = false
         self:SetScript("OnUpdate", nil)
         if not self:IsMouseOver() then
             mod.UI.Color(self.fill, C.ink2, 0.45)
         end
     end)
-    barFrame:Hide()
-    panelFrame.bar = barFrame
+    bar:Hide()
+    panelFrame.bar = bar
 end
 
 -- A guildmate's keys, as a card over the list: their best in each dungeon,
@@ -428,24 +428,24 @@ local function DrawCard(panelFrame)
 
     local payload, source = mod.Share.Keys(m.key)
     local asking = mod.Share.AskState(m.key)
-    local subFrame
+    local sub
     if source == "shared" then
-        subFrame = ("%s rating, from their TitleLine %s"):format(mod.Fmt(m.score), Ago(payload.at, nowTime))
+        sub = ("%s rating, from their TitleLine %s"):format(mod.Fmt(m.score), Ago(payload.at, nowTime))
         if (payload.count or 0) > 0 then
-            subFrame = subFrame .. (", %d keys this season"):format(payload.count)
+            sub = sub .. (", %d keys this season"):format(payload.count)
         end
     elseif source == "grouped" then
-        subFrame = ("%s rating. Keys as of when you grouped, %s"):format(
+        sub = ("%s rating. Keys as of when you grouped, %s"):format(
             mod.Fmt(m.score),
             Ago(payload.at, nowTime) or "earlier"
         )
     else
-        subFrame = mod.Fmt(m.score) .. " rating"
+        sub = mod.Fmt(m.score) .. " rating"
     end
     if asking == "asking" then
-        subFrame = subFrame .. ". Asking their TitleLine..."
+        sub = sub .. ". Asking their TitleLine..."
     end
-    textValue("small", C.muted, 14, -36, subFrame)
+    textValue("small", C.muted, 14, -36, sub)
 
     if not payload then
         local why

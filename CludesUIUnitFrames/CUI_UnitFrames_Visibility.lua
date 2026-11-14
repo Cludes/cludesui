@@ -184,12 +184,12 @@ end
 
 function mod.SyncHealthVisibilityEvents()
     local player = mod.HealthVisibilityEnabled(saved.profile.player, frameList.player)
-    local targetUnit = mod.HealthVisibilityEnabled(saved.profile.target, frameList.target)
+    local target = mod.HealthVisibilityEnabled(saved.profile.target, frameList.target)
     local focus = mod.HealthVisibilityEnabled(saved.profile.focus, frameList.focus)
-    local maskTex = (player and 1 or 0) + (targetUnit and 2 or 0) + (focus and 4 or 0)
+    local mask = (player and 1 or 0) + (target and 2 or 0) + (focus and 4 or 0)
     local eventFrame = mod.healthVisibilityEvents
     if not eventFrame then
-        if maskTex == 0 then
+        if mask == 0 then
             return
         end
         eventFrame = CreateFrame("Frame")
@@ -201,19 +201,19 @@ function mod.SyncHealthVisibilityEvents()
         end)
         mod.healthVisibilityEvents = eventFrame
     end
-    if eventFrame.mask == maskTex then
+    if eventFrame.mask == mask then
         return
     end
-    eventFrame.mask = maskTex
+    eventFrame.mask = mask
     eventFrame:UnregisterAllEvents()
-    if maskTex ~= 0 then
+    if mask ~= 0 then
         local units = eventFrame.units or {}
         eventFrame.units = units
         wipe(units)
         if player then
             units[#units + 1] = "player"
         end
-        if targetUnit then
+        if target then
             units[#units + 1] = "target"
         end
         if focus then

@@ -6,32 +6,32 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  CURRENCY (searchable-picker driven; icon + amount + owned tooltip)
 -------------------------------------------------------------------------------
-mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = { "CURRENCY_DISPLAY_UPDATE" }
 
@@ -50,7 +50,7 @@ mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx
     btnFrame:EnableMouse(true)
     btnFrame:RegisterForClicks("AnyUp")
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
     local amountText = btnFrame:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, amountText)
 
@@ -80,7 +80,7 @@ mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx
         local s = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
 
@@ -103,49 +103,49 @@ mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx
         local iconSz = 0
         if s.showIcon ~= false and details and details.iconFileID then
             iconSz = fontSize + 2
-            glyph:SetTexture(details.iconFileID)
-            glyph:SetTexCoord(5 / 64, 59 / 64, 5 / 64, 59 / 64)
-            glyph:Show()
+            icon:SetTexture(details.iconFileID)
+            icon:SetTexCoord(5 / 64, 59 / 64, 5 / 64, 59 / 64)
+            icon:Show()
         else
-            glyph:Hide()
+            icon:Hide()
         end
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             _curFitBuf[1] = textValue
             mod.SetFont(amountText, fontSize, barCfg)
             amountText:SetText(textValue)
             local totalH = 8
             if iconSz > 0 then
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
             mod.SetWrappedText(amountText, innerW, "CENTER")
             amountText:ClearAllPoints()
             if iconSz > 0 then
-                amountText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+                amountText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
                 amountText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
             totalH = totalH + mod.SnapToPixelGrid(amountText:GetStringHeight()) + 4
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
             local slotW = HBudget(instance, 120)
-            local textBudget = upper(20, slotW - iconSz - gap - 8)
+            local textBudget = max(20, slotW - iconSz - gap - 8)
             _curFitBuf[1] = textValue
             mod.SetFont(amountText, fontSize, barCfg)
             mod.ResetInlineText(amountText, "LEFT")
             amountText:SetText(textValue)
             if iconSz > 0 then
                 iconSz = fontSize + 2
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
             amountText:ClearAllPoints()
             local xOff = 0
@@ -155,14 +155,14 @@ mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx
             amountText:SetPoint("LEFT", btnFrame, "LEFT", xOff, 0)
             local tw = mod.SnapToPixelGrid(amountText:GetStringWidth())
             local totalW = min(slotW, iconSz + (iconSz > 0 and gap or 0) + tw + 4)
-            contentFrame:SetSize(upper(totalW, 10), barH)
-            btnFrame:SetSize(upper(totalW, 10), barH)
+            contentFrame:SetSize(max(totalW, 10), barH)
+            btnFrame:SetSize(max(totalW, 10), barH)
         end
 
         local cbr, cbg, cbb = BlockColorOf(blockCfg)
         do
             local ir, ig, ib = IconColorOf(blockCfg)
-            glyph:SetVertexColor(ir, ig, ib, 1)
+            icon:SetVertexColor(ir, ig, ib, 1)
         end
         if not s.currencyId then
             amountText:SetTextColor(0.55, 0.55, 0.55, 1)
@@ -287,9 +287,9 @@ mod.BlockFactories.currency = function(blockCfg, slotIndex, contentFrame, barCtx
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

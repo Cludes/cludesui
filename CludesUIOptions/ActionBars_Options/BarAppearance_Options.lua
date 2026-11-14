@@ -34,9 +34,9 @@ local function BuildBarAppearance(hostFrame, posY, context)
         context.BgDisabled, context.SGet, context.SSeedTextOffsets, context.SSet
     local SSetColor, SUpdatePreview, SUpdatePreviewAndResize, SVal =
         context.SSetColor, context.SUpdatePreview, context.SUpdatePreviewAndResize, context.SVal
-    local Widgets = context.W
+    local W = context.W
     local _, hgt
-    local rowFrame
+    local row
     -- Row / section references for click-navigation (returned to BuildSharedBarSettings)
     local iconsSectionHeader, textSectionHeader
     local keybindRow, chargesRow
@@ -104,7 +104,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     -- The checklist in `rgn` (a half built from ChecklistCfg). Spec Overrides
     -- see each click as it happens (the slot's capture); onMenuClosed runs
     -- each time its open menu hides. The search prebuild builds none.
-    local function BuildChecklist(rgn, itemList, get, group, onMenuClosed)
+    local function BuildChecklist(rgn, itemList, get, set, onMenuClosed)
         if CludesUI._prebuilding then
             return
         end
@@ -117,7 +117,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             rgn:GetFrameLevel() + 2,
             itemList,
             get,
-            group,
+            set,
             nil,
             nil,
             nil,
@@ -134,7 +134,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     -------------------------------------------------------------------
     --  APPEARANCE
     -------------------------------------------------------------------
-    iconsSectionHeader, hgt = Widgets:SectionHeader(hostFrame, SECTION_ICON_APPEARANCE, posY)
+    iconsSectionHeader, hgt = W:SectionHeader(hostFrame, SECTION_ICON_APPEARANCE, posY)
     posY = posY - hgt
     posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "actionbars")
 
@@ -269,7 +269,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
                 end,
             })
         end
-        abBsRow, hgt = Widgets:DualRow(
+        abBsRow, hgt = W:DualRow(
             hostFrame,
             posY,
             CludesUI.BlizzStyle.Gate("actionbars", {
@@ -377,7 +377,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         SUpdatePreview()
                     end,
                 })
-                _, hgt = Widgets:DualRow(
+                _, hgt = W:DualRow(
                     hostFrame,
                     posY,
                     CludesUI.BlizzStyle.Gate("actionbars", ocfgL),
@@ -834,7 +834,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     end
 
     local classColorBorderRow
-    classColorBorderRow, hgt = Widgets:DualRow(
+    classColorBorderRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("actionbars", {
@@ -1066,7 +1066,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     -- Icon Background | Blizzard Icon Background
     local slotBgRow
-    slotBgRow, hgt = Widgets:DualRow(
+    slotBgRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("actionbars", {
@@ -1237,10 +1237,10 @@ local function BuildBarAppearance(hostFrame, posY, context)
             return math.max(prefs.bgPadX or 0, prefs.bgPadY or 0)
         end
         local function ApplySpacingTo(key)
-            local targetUnit = ABAR.db.profile.bars[key]
-            targetUnit.bgPadding = CurrentSpacing(SB())
-            targetUnit.bgPadX = nil
-            targetUnit.bgPadY = nil
+            local target = ABAR.db.profile.bars[key]
+            target.bgPadding = CurrentSpacing(SB())
+            target.bgPadX = nil
+            target.bgPadY = nil
             ABAR:ApplyBackgroundForBar(key)
         end
         CludesUI.BuildSyncIcon({
@@ -1295,7 +1295,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         -- the selected bar (its SectionToggleSetValue rebuilds the page on a flip).
         if SVal("bgEnabled", false) then
             local bgColorRow
-            bgColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
+            bgColorRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "colorpicker",
                 text = "Background Color",
                 hasAlpha = false,
@@ -1336,9 +1336,9 @@ local function BuildBarAppearance(hostFrame, posY, context)
                 local regionFrame = bgColorRow._leftRegion
                 local function ApplyColorTo(key)
                     local source = SGet("bgColor") or { r = 0, g = 0, b = 0, a = 0.5 }
-                    local targetUnit = ABAR.db.profile.bars[key]
-                    local old = targetUnit.bgColor
-                    targetUnit.bgColor = {
+                    local target = ABAR.db.profile.bars[key]
+                    local old = target.bgColor
+                    target.bgColor = {
                         r = source.r,
                         g = source.g,
                         b = source.b,
@@ -1358,12 +1358,8 @@ local function BuildBarAppearance(hostFrame, posY, context)
                     isSynced = function()
                         local color = SGet("bgColor") or { r = 0, g = 0, b = 0 }
                         for _, key in ipairs(GROUP_BAR_ORDER) do
-                            local targetUnit = ABAR.db.profile.bars[key].bgColor or { r = 0, g = 0, b = 0 }
-                            if
-                                targetUnit.r ~= color.r
-                                or targetUnit.g ~= color.g
-                                or targetUnit.b ~= color.b
-                            then
+                            local target = ABAR.db.profile.bars[key].bgColor or { r = 0, g = 0, b = 0 }
+                            if target.r ~= color.r or target.g ~= color.g or target.b ~= color.b then
                                 return false
                             end
                         end
@@ -1391,8 +1387,8 @@ local function BuildBarAppearance(hostFrame, posY, context)
             do
                 local regionFrame = bgColorRow._rightRegion
                 local function ApplyOpacityTo(key)
-                    local targetUnit = ABAR.db.profile.bars[key]
-                    targetUnit.bgOpacity = BackgroundOpacity(SB())
+                    local target = ABAR.db.profile.bars[key]
+                    target.bgOpacity = BackgroundOpacity(SB())
                     ABAR:ApplyBackgroundForBar(key)
                 end
                 CludesUI.BuildSyncIcon({
@@ -1435,7 +1431,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             do
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local bgBorderRow
-                bgBorderRow, hgt = Widgets:DualRow(
+                bgBorderRow, hgt = W:DualRow(
                     hostFrame,
                     posY,
                     {
@@ -1545,7 +1541,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         })
                         ocfgL.text = "Background Border Width Offset"
                         ocfgR.text = "Background Border Height Offset"
-                        _, hgt = Widgets:DualRow(hostFrame, posY, ocfgL, ocfgR)
+                        _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
                         posY = posY - hgt
                     end
                 end
@@ -1581,18 +1577,18 @@ local function BuildBarAppearance(hostFrame, posY, context)
                     local regionFrame = bgBorderRow._rightRegion
                     local function ApplySizeTo(key)
                         local source = SB()
-                        local targetUnit = ABAR.db.profile.bars[key]
-                        targetUnit.bgBorderThickness = source.bgBorderThickness
+                        local target = ABAR.db.profile.bars[key]
+                        target.bgBorderThickness = source.bgBorderThickness
                         do
                             local v = source.bgBorderThicknessPx
-                            if v == nil and targetUnit.bgBorderThicknessPx ~= nil then
+                            if v == nil and target.bgBorderThicknessPx ~= nil then
                                 v = false
                             end
-                            targetUnit.bgBorderThicknessPx = v
+                            target.bgBorderThicknessPx = v
                         end
                         local color = source.bgBorderColor
                         if color then
-                            targetUnit.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
+                            target.bgBorderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
                         end
                         ABAR:ApplyBackgroundForBar(key)
                     end
@@ -1610,14 +1606,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
                             local thicknessPx = SGet("bgBorderThicknessPx") or false -- nil and false render alike
                             local color = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
                             for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local targetUnit = ABAR.db.profile.bars[key]
-                                if (targetUnit.bgBorderThickness or "none") ~= thickness then
+                                local target = ABAR.db.profile.bars[key]
+                                if (target.bgBorderThickness or "none") ~= thickness then
                                     return false
                                 end
-                                if (targetUnit.bgBorderThicknessPx or false) ~= thicknessPx then
+                                if (target.bgBorderThicknessPx or false) ~= thicknessPx then
                                     return false
                                 end
-                                local targetColor = targetUnit.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
+                                local targetColor = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
                                 if
                                     targetColor.r ~= color.r
                                     or targetColor.g ~= color.g
@@ -1745,13 +1741,13 @@ local function BuildBarAppearance(hostFrame, posY, context)
                     local regionFrame = bgBorderRow._leftRegion
                     local function ApplyStyleTo(key)
                         local source = SB()
-                        local targetUnit = ABAR.db.profile.bars[key]
-                        targetUnit.bgBorderTexture = source.bgBorderTexture
-                        targetUnit.bgBorderOffsetX = source.bgBorderOffsetX
-                        targetUnit.bgBorderOffsetY = source.bgBorderOffsetY
-                        targetUnit.bgBorderShiftX = source.bgBorderShiftX
-                        targetUnit.bgBorderShiftY = source.bgBorderShiftY
-                        targetUnit.bgBorderBehind = source.bgBorderBehind
+                        local target = ABAR.db.profile.bars[key]
+                        target.bgBorderTexture = source.bgBorderTexture
+                        target.bgBorderOffsetX = source.bgBorderOffsetX
+                        target.bgBorderOffsetY = source.bgBorderOffsetY
+                        target.bgBorderShiftX = source.bgBorderShiftX
+                        target.bgBorderShiftY = source.bgBorderShiftY
+                        target.bgBorderBehind = source.bgBorderBehind
                         ABAR:ApplyBackgroundForBar(key)
                     end
                     CludesUI.BuildSyncIcon({
@@ -1766,28 +1762,26 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         isSynced = function()
                             local source = SB()
                             for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local targetUnit = ABAR.db.profile.bars[key]
+                                local target = ABAR.db.profile.bars[key]
                                 if
-                                    (targetUnit.bgBorderTexture or "solid")
+                                    (target.bgBorderTexture or "solid")
                                     ~= (source.bgBorderTexture or "solid")
                                 then
                                     return false
                                 end
-                                if targetUnit.bgBorderOffsetX ~= source.bgBorderOffsetX then
+                                if target.bgBorderOffsetX ~= source.bgBorderOffsetX then
                                     return false
                                 end
-                                if targetUnit.bgBorderOffsetY ~= source.bgBorderOffsetY then
+                                if target.bgBorderOffsetY ~= source.bgBorderOffsetY then
                                     return false
                                 end
-                                if targetUnit.bgBorderShiftX ~= source.bgBorderShiftX then
+                                if target.bgBorderShiftX ~= source.bgBorderShiftX then
                                     return false
                                 end
-                                if targetUnit.bgBorderShiftY ~= source.bgBorderShiftY then
+                                if target.bgBorderShiftY ~= source.bgBorderShiftY then
                                     return false
                                 end
-                                if
-                                    (targetUnit.bgBorderBehind or false) ~= (source.bgBorderBehind or false)
-                                then
+                                if (target.bgBorderBehind or false) ~= (source.bgBorderBehind or false) then
                                     return false
                                 end
                             end
@@ -1814,7 +1808,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             end
 
             local bgMultiplierRow
-            bgMultiplierRow, hgt = Widgets:DualRow(hostFrame, posY, {
+            bgMultiplierRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Multiplier X",
                 min = 1,
@@ -1905,7 +1899,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
             if not capsForever then
                 local spacingRow
-                spacingRow, hgt = Widgets:DualRow(hostFrame, posY, BarBgSpacingCfg(), CludesUI.BlankRowCfg())
+                spacingRow, hgt = W:DualRow(hostFrame, posY, BarBgSpacingCfg(), CludesUI.BlankRowCfg())
                 posY = posY - hgt
                 BarBgSpacingSync(spacingRow._leftRegion)
             end
@@ -1967,7 +1961,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
                 "Bar Frame",
                 { "Show the frame and dividers behind the bar's buttons.", "Show Bar Background" }
             )
-            capsRow, hgt = Widgets:DualRow(hostFrame, posY, CAPS.Cfg(), {
+            capsRow, hgt = W:DualRow(hostFrame, posY, CAPS.Cfg(), {
                 type = "toggle",
                 text = "Bar Frame",
                 tooltip = "Show the frame and dividers behind the bar's buttons.",
@@ -2033,14 +2027,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
             local bgOn = SVal("bgEnabled", false)
             local bgRow
             bgRow, hgt =
-                Widgets:DualRow(hostFrame, posY, bgCfg, bgOn and BarBgSpacingCfg() or CludesUI.BlankRowCfg())
+                W:DualRow(hostFrame, posY, bgCfg, bgOn and BarBgSpacingCfg() or CludesUI.BlankRowCfg())
             posY = posY - hgt
             bgRgn = bgRow._leftRegion
             if bgOn then
                 BarBgSpacingSync(bgRow._rightRegion)
             end
         else
-            capsRow, hgt = Widgets:DualRow(hostFrame, posY, CAPS.Cfg(), bgCfg)
+            capsRow, hgt = W:DualRow(hostFrame, posY, CAPS.Cfg(), bgCfg)
             posY = posY - hgt
             CAPS.Build(capsRow._leftRegion)
             bgRgn = capsRow._rightRegion
@@ -2093,7 +2087,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     -------------------------------------------------------------------
     --  EFFECTS
     -------------------------------------------------------------------
-    _, hgt = Widgets:SectionHeader(hostFrame, "EFFECTS", posY)
+    _, hgt = W:SectionHeader(hostFrame, "EFFECTS", posY)
     posY = posY - hgt
 
     -- Desaturate on Cooldown | Alpha on Cooldown
@@ -2101,7 +2095,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         "Dims action button icons to this opacity while on cooldown (100 = off), using the same detection as Desaturate on Cooldown.",
         "Alpha when on CD",
     })
-    _, hgt = Widgets:DualRow(hostFrame, posY, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Desaturate on Cooldown",
         -- setValue runs a one-shot catch-up sweep: cooldown repaints happen on edges only, so an icon grey at uncheck time would stay grey.
@@ -2142,7 +2136,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         "CD Swipe Opacity",
     })
     local rangeSwipeRow
-    rangeSwipeRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    rangeSwipeRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Out of Range Coloring",
         getValue = function()
@@ -2253,8 +2247,8 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end
 
         CludesUI.RegisterWidgetRefresh(function()
-            local offset = RangeDisabled()
-            rangeSwatch:SetAlpha(offset and 0.3 or 1)
+            local off = RangeDisabled()
+            rangeSwatch:SetAlpha(off and 0.3 or 1)
             rangeUpdateSwatch()
         end)
         rangeSwatch:SetAlpha(RangeDisabled() and 0.3 or 1)
@@ -2300,28 +2294,28 @@ local function BuildBarAppearance(hostFrame, posY, context)
         local function SwipeDisabled()
             return (ABAR.db.profile.cdSwipeAlpha or 80) == 0
         end
-        local blockData = CreateFrame("Frame", nil, colorSwatch)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, colorSwatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 colorSwatch,
                 CludesUI.DisabledTooltip("Set Cooldown Swipe Opacity above 0")
             )
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(function()
             updateSwatch()
-            local offset = SwipeDisabled()
-            colorSwatch:SetAlpha(offset and 0.3 or 1)
-            blockData:SetShown(offset)
+            local off = SwipeDisabled()
+            colorSwatch:SetAlpha(off and 0.3 or 1)
+            block:SetShown(off)
         end)
         local off0 = SwipeDisabled()
         colorSwatch:SetAlpha(off0 and 0.3 or 1)
-        blockData:SetShown(off0)
+        block:SetShown(off0)
     end
 
     -- Hide Charge Count at 0 | Item Information: Item Rank (this bar's) and
@@ -2338,7 +2332,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             "Show Equipped Item Color",
         })
         local itemRow
-        itemRow, hgt = Widgets:DualRow(
+        itemRow, hgt = W:DualRow(
             hostFrame,
             posY,
             {
@@ -2444,7 +2438,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     -- One Button Assist Icon | blank
     local obaRow
-    obaRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    obaRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "One Button Assist Icon",
         getValue = function()
@@ -2493,16 +2487,16 @@ local function BuildBarAppearance(hostFrame, posY, context)
         local _bkp = mod.EAB_VTABLE and mod.EAB_VTABLE.BAR_KEY_TO_PAGE
         local showPaging = selKey and _bkp and _bkp[selKey]
         if showPaging then
-            _, hgt = Widgets:SectionHeader(hostFrame, "BEHAVIOR & PAGING", posY)
+            _, hgt = W:SectionHeader(hostFrame, "BEHAVIOR & PAGING", posY)
             posY = posY - hgt
         else
-            _, hgt = Widgets:SectionHeader(hostFrame, "BEHAVIOR", posY)
+            _, hgt = W:SectionHeader(hostFrame, "BEHAVIOR", posY)
             posY = posY - hgt
         end
 
         -- Click Through | Disable Tooltips
         local behaviorRow
-        behaviorRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        behaviorRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Click Through",
             getValue = function()
@@ -2927,8 +2921,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             local pagingRow
             for idx = 1, #slots, 2 do
                 local r
-                r, hgt =
-                    Widgets:DualRow(hostFrame, posY, slots[idx], slots[idx + 1] or CludesUI.BlankRowCfg())
+                r, hgt = W:DualRow(hostFrame, posY, slots[idx], slots[idx + 1] or CludesUI.BlankRowCfg())
                 posY = posY - hgt
                 pagingRow = pagingRow or r
             end
@@ -2984,13 +2977,13 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     -------------------------------------------------------------------
     --  TEXT
     -------------------------------------------------------------------
-    textSectionHeader, hgt = Widgets:SectionHeader(hostFrame, SECTION_TEXT, posY)
+    textSectionHeader, hgt = W:SectionHeader(hostFrame, SECTION_TEXT, posY)
     posY = posY - hgt
 
     -- Each row's left control turns its text on or off. While it is off, the
@@ -3016,7 +3009,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     -- Blizzard's countdownForCooldowns CVar and is never stored in our DB;
     -- the CVar is written only on an actual user flip.
     local cdTextRow
-    cdTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    cdTextRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Cooldown Numbers",
         tooltip = "Toggles Blizzard's cooldown numbers setting.",
@@ -3245,7 +3238,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         { "Which counts show on this bar's buttons.", "Charges", "Stacks", "Item Count" }
     )
     RowSearch("Charge Text Size", { "Charges Text Size" })
-    chargesRow, hgt = Widgets:DualRow(
+    chargesRow, hgt = W:DualRow(
         hostFrame,
         posY,
         ChecklistCfg("Charge Numbers", "Which counts show on this bar's buttons.", function()
@@ -3396,9 +3389,9 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         return SVal("countAnchor", "default")
                     end,
                     set = function(v)
-                        local anchorFrame = v ~= "default" and v or nil
-                        SSeedTextOffsets("count", "countAnchor", "countOffsetX", "countOffsetY", anchorFrame)
-                        SSet("countAnchor", anchorFrame or false, function(k)
+                        local anchor = v ~= "default" and v or nil
+                        SSeedTextOffsets("count", "countAnchor", "countOffsetX", "countOffsetY", anchor)
+                        SSet("countAnchor", anchor or false, function(k)
                             ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
@@ -3460,7 +3453,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     -- Keybind Text | Keybind Text Size
     RowSearch("Keybind Text", { "Hide Keybind Text" })
-    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Keybind Text",
         -- Shows the inverse of hideKeybind, the stored setting.
@@ -3493,9 +3486,9 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end,
     })
     posY = posY - hgt
-    keybindRow = rowFrame
+    keybindRow = row
     do
-        local rgn = rowFrame._leftRegion
+        local rgn = row._leftRegion
         CludesUI.BuildSyncIcon({
             region = rgn,
             tooltip = "Apply Keybind Visibility to all Bars",
@@ -3637,16 +3630,16 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         return SVal("keybindAnchor", "default")
                     end,
                     set = function(v)
-                        local anchorFrame = v ~= "default" and v or nil
+                        local anchor = v ~= "default" and v or nil
                         SSeedTextOffsets(
                             "keybind",
                             "keybindAnchor",
                             "keybindOffsetX",
                             "keybindOffsetY",
-                            anchorFrame
+                            anchor
                         )
                         -- Default is stored false, not nil: profile sync copies only keys that exist.
-                        SSet("keybindAnchor", anchorFrame or false, function(k)
+                        SSet("keybindAnchor", anchor or false, function(k)
                             ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
@@ -3709,7 +3702,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     -- Macro Text | Macro Text Size
     RowSearch("Macro Text", { "Hide Macro Text" })
     local macroRow
-    macroRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    macroRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Macro Text",
         -- Shows the inverse of hideMacroText, the stored setting.
@@ -3885,9 +3878,9 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         return SVal("macroAnchor", "default")
                     end,
                     set = function(v)
-                        local anchorFrame = v ~= "default" and v or nil
-                        SSeedTextOffsets("macro", "macroAnchor", "macroOffsetX", "macroOffsetY", anchorFrame)
-                        SSet("macroAnchor", anchorFrame or false, function(k)
+                        local anchor = v ~= "default" and v or nil
+                        SSeedTextOffsets("macro", "macroAnchor", "macroOffsetX", "macroOffsetY", anchor)
+                        SSet("macroAnchor", anchor or false, function(k)
                             ABAR:ApplyFontsForBar(k)
                         end)
                         SUpdatePreview()
@@ -3947,7 +3940,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         }, { disabled = TextOff.macro, disabledTooltip = "Macro Text" })
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, iconsSectionHeader, textSectionHeader, keybindRow, chargesRow, classColorBorderRow

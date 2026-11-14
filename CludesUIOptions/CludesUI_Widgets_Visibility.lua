@@ -271,8 +271,8 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- arrived with an imported profile therefore stays visible and can be cleared;
     -- every other lane of such a row is inert on that client.
     local foreverSel
-    local function ForeverLaneOn(spec_def, k)
-        if spec_def.axis == "opt" then
+    local function ForeverLaneOn(def, k)
+        if def.axis == "opt" then
             if options.getOption then
                 return options.getOption(k) == true
             end
@@ -285,71 +285,69 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         end
         return foreverSel ~= false and foreverSel[k] == true
     end
-    local function ForeverRowHidden(spec_def)
-        if ForeverLaneOn(spec_def, spec_def.show) then
+    local function ForeverRowHidden(def)
+        if ForeverLaneOn(def, def.show) then
             return false
         end
-        return not (spec_def.forever == "always" and ForeverLaneOn(spec_def, spec_def.hide))
+        return not (def.forever == "always" and ForeverLaneOn(def, def.hide))
     end
 
-    for _, spec_def in ipairs(CludesUI.VIS_ROW_ITEMS) do
-        if spec_def.isHeader then
-            itemList[#itemList + 1] = spec_def
+    for _, def in ipairs(CludesUI.VIS_ROW_ITEMS) do
+        if def.isHeader then
+            itemList[#itemList + 1] = def
         elseif
-            not (spec_def.key == "mouseover" and caps.noMouseover)
-            and not (spec_def.forever and CludesUI.IS_FOREVER and ForeverRowHidden(spec_def))
+            not (def.key == "mouseover" and caps.noMouseover)
+            and not (def.forever and CludesUI.IS_FOREVER and ForeverRowHidden(def))
         then
-            local itemInfo = {
-                key = spec_def.key,
-                label = spec_def.label,
-                tooltip = spec_def.tooltip,
-                dual = spec_def.axis and true or nil,
-                isModifier = spec_def.modifier,
+            local item = {
+                key = def.key,
+                label = def.label,
+                tooltip = def.tooltip,
+                dual = def.axis and true or nil,
+                isModifier = def.modifier,
             }
             -- Never / Always / Mouseover are the exclusive states: each one writes the
             -- legacy scalar on its own, which an override CAN hold. Everything else is
             -- the compound half.
-            if spec_def.key ~= "never" and spec_def.key ~= "always" and spec_def.key ~= "mouseover" then
-                itemInfo.ovLockedFn = OvSessionActive
-                itemInfo.ovLockedTooltip = OV_LOCK_TIP
-            elseif spec_def.key == "mouseover" and caps.noOverrideMouseover then
+            if def.key ~= "never" and def.key ~= "always" and def.key ~= "mouseover" then
+                item.ovLockedFn = OvSessionActive
+                item.ovLockedTooltip = OV_LOCK_TIP
+            elseif def.key == "mouseover" and caps.noOverrideMouseover then
                 -- Joins the sealed run: this row sits directly above the section header
                 -- the block starts at, so it simply grows by one and stays contiguous,
                 -- with Never and Always left outside it.
-                itemInfo.ovLockedFn = OvSessionActive
-                itemInfo.ovLockedTooltip = OV_LOCK_TIP_MO
+                item.ovLockedFn = OvSessionActive
+                item.ovLockedTooltip = OV_LOCK_TIP_MO
             end
-            if caps.noGroupModes and spec_def.axis == "group" then
-                itemInfo.locked = true
-                itemInfo.lockedTooltip = (caps.lockedTooltips and caps.lockedTooltips[spec_def.key])
+            if caps.noGroupModes and def.axis == "group" then
+                item.locked = true
+                item.lockedTooltip = (caps.lockedTooltips and caps.lockedTooltips[def.key])
                     or "This element cannot use group-based visibility."
             end
             -- Only the two airborne rows need the takeoff/landing edge; the mount row
             -- rides PLAYER_CAN_GLIDE_CHANGED, which is always registered.
-            if
-                caps.luaDragonriding and (spec_def.key == "skyAirborne" or spec_def.key == "notSkyAirborne")
-            then
-                itemInfo.lockedFn = function()
+            if caps.luaDragonriding and (def.key == "skyAirborne" or def.key == "notSkyAirborne") then
+                item.lockedFn = function()
                     return not CludesUI._hasGlidingEvent
                 end
-                itemInfo.lockedTooltip = "Requires a client with gliding events."
+                item.lockedTooltip = "Requires a client with gliding events."
             end
-            if spec_def.modifier then
-                itemInfo.lockedFn = OrphanActive
-                itemInfo.lockedTooltip =
+            if def.modifier then
+                item.lockedFn = OrphanActive
+                item.lockedTooltip =
                     "Not available while a legacy visibility value is selected. Pick Never or Always first."
             end
             -- Rows whose tooltip states a combining rule have to restate it under Any.
-            if spec_def.tooltipAny then
-                itemInfo.tooltip = function()
-                    return GetMatchAny() and spec_def.tooltipAny or spec_def.tooltip
+            if def.tooltipAny then
+                item.tooltip = function()
+                    return GetMatchAny() and def.tooltipAny or def.tooltip
                 end
             end
             -- The three exclusive states behave differently inside a session, so they
             -- say so instead of showing their normal text.
-            if spec_def.key == "never" or spec_def.key == "always" or spec_def.key == "mouseover" then
-                local baseTip = itemInfo.tooltip
-                itemInfo.tooltip = function()
+            if def.key == "never" or def.key == "always" or def.key == "mouseover" then
+                local baseTip = item.tooltip
+                item.tooltip = function()
                     if OvSessionActive() then
                         return OV_PICK_TIP
                     end
@@ -359,17 +357,17 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                     return baseTip
                 end
             end
-            itemList[#itemList + 1] = itemInfo
-            defs[spec_def.key] = spec_def
-            if spec_def.axis == "mode" then
-                listed[spec_def.show] = true
-                listed[spec_def.hide] = true
-            elseif spec_def.axis == "group" then
-                listed[spec_def.key] = true
-            elseif spec_def.modifier then
+            itemList[#itemList + 1] = item
+            defs[def.key] = def
+            if def.axis == "mode" then
+                listed[def.show] = true
+                listed[def.hide] = true
+            elseif def.axis == "group" then
+                listed[def.key] = true
+            elseif def.modifier then
                 -- Never a stored scalar, so it must not shadow the orphan rule.
-            elseif not spec_def.axis then
-                listed[spec_def.key] = true
+            elseif not def.axis then
+                listed[def.key] = true
             end
         end
     end
@@ -664,18 +662,18 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     end
 
     local function GetChecked(k, neg)
-        local spec_def = defs[k]
-        if not spec_def then
+        local def = defs[k]
+        if not def then
             return false
         end
-        if spec_def.modifier then
-            return (spec_def.matchValue == "any") == GetMatchAny()
+        if def.modifier then
+            return (def.matchValue == "any") == GetMatchAny()
         end
-        if spec_def.axis == "extra" then
-            return spec_def.get() == true
+        if def.axis == "extra" then
+            return def.get() == true
         end
-        if spec_def.axis == "opt" then
-            return GetOpt(neg and spec_def.hide or spec_def.show)
+        if def.axis == "opt" then
+            return GetOpt(neg and def.hide or def.show)
         end
         local sel, storage = SelRead()
         if not sel then
@@ -694,11 +692,11 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 return (not neg) and (k == shade)
             end
         end
-        if spec_def.axis == "mode" then
-            return sel[neg and spec_def.hide or spec_def.show] == true
+        if def.axis == "mode" then
+            return sel[neg and def.hide or def.show] == true
         end
-        if spec_def.axis == "group" then
-            return sel[neg and spec_def.hide or spec_def.key] == true
+        if def.axis == "group" then
+            return sel[neg and def.hide or def.key] == true
         end
         if k == "always" then
             return (sel.always == true or OnlyHideLanes(sel)) and not AnyShowOptActive()
@@ -707,8 +705,8 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     end
 
     local function SetChecked(k, checked, neg)
-        local spec_def = defs[k]
-        if not spec_def then
+        local def = defs[k]
+        if not def then
             return
         end
 
@@ -744,22 +742,22 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
 
         -- Modifier: a radio pair over one scalar; picking one unpicks the other and
         -- deliberately clears nothing else.
-        if spec_def.modifier then
-            SetMatchAny(spec_def.matchValue == "any")
+        if def.modifier then
+            SetMatchAny(def.matchValue == "any")
             AfterChange(false, true)
             return
         end
 
-        if spec_def.axis == "extra" then
-            spec_def.set(checked)
+        if def.axis == "extra" then
+            def.set(checked)
             AfterChange(false, true)
             return
         end
 
-        if spec_def.axis == "opt" then
-            local lane, other = spec_def.show, spec_def.hide
+        if def.axis == "opt" then
+            local lane, other = def.show, def.hide
             if neg then
-                lane, other = spec_def.hide, spec_def.show
+                lane, other = def.hide, def.show
             end
             SetOpt(lane, checked)
             if checked then
@@ -786,7 +784,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         end
         -- Any condition write clears the exclusive scalars (Never/Always/orphan) but
         -- combines with every other axis.
-        if spec_def.axis or k == "mouseover" then
+        if def.axis or k == "mouseover" then
             for key in pairs(sel) do
                 if not CludesUI.VIS_COMBINABLE_KEYS[key] then
                     sel[key] = nil
@@ -794,10 +792,10 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             end
         end
 
-        if spec_def.axis == "mode" then
-            local lane, other = spec_def.show, spec_def.hide
+        if def.axis == "mode" then
+            local lane, other = def.show, def.hide
             if neg then
-                lane, other = spec_def.hide, spec_def.show
+                lane, other = def.hide, def.show
             end
             sel[lane] = checked or nil
             if checked then
@@ -808,10 +806,10 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             return
         end
 
-        if spec_def.axis == "group" then
-            local lane, other = spec_def.key, spec_def.hide
+        if def.axis == "group" then
+            local lane, other = def.key, def.hide
             if neg then
-                lane, other = spec_def.hide, spec_def.key
+                lane, other = def.hide, def.key
             end
             sel[lane] = checked or nil
             if checked then
@@ -937,8 +935,8 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- getter READS, so a row whose override lives in either key has to touch both
             -- or it never marks itself as overridden. The override wins as the value,
             -- being the effective one this is meant to report.
-            local shade, baseValue = s.visibilityOverride, s[legacyKey]
-            return shade or baseValue or "always"
+            local shade, base = s.visibilityOverride, s[legacyKey]
+            return shade or base or "always"
         end,
         setValue = function(val)
             local s = options.getStore()
@@ -988,16 +986,16 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
 
     if options.disabledFn then
         local function ApplyChecklistDisabled()
-            local offset = options.disabledFn()
-            cbDD:SetAlpha(offset and 0.3 or 1)
-            cbDD:EnableMouse(not offset)
+            local off = options.disabledFn()
+            cbDD:SetAlpha(off and 0.3 or 1)
+            cbDD:EnableMouse(not off)
         end
         CludesUI.RegisterWidgetRefresh(ApplyChecklistDisabled)
         ApplyChecklistDisabled()
     end
 end
 
-function CludesUI.BuildVisibilityRow(Widgets, hostFrame, posY, options, rightCfg)
+function CludesUI.BuildVisibilityRow(W, hostFrame, posY, options, rightCfg)
     -- The placeholder slot the checklist replaces; W:DualRow only knows plain widgets.
     local function Slot(o)
         return {
@@ -1023,11 +1021,11 @@ function CludesUI.BuildVisibilityRow(Widgets, hostFrame, posY, options, rightCfg
     -- one. Excludes rightVis and rightCfg.
     local rightVis = options.rightVis
     local leftCfg = options.leftCfg
-    local rowFrame, hgt
+    local row, hgt
     if leftCfg then
-        rowFrame, hgt = Widgets:DualRow(hostFrame, posY, leftCfg, Slot(options))
+        row, hgt = W:DualRow(hostFrame, posY, leftCfg, Slot(options))
     else
-        rowFrame, hgt = Widgets:DualRow(
+        row, hgt = W:DualRow(
             hostFrame,
             posY,
             Slot(options),
@@ -1038,13 +1036,13 @@ function CludesUI.BuildVisibilityRow(Widgets, hostFrame, posY, options, rightCfg
     -- Search pre-build: the row is an absorber, so the chrome below would throw. The
     -- row's labels were already indexed by the factory stubs; nothing here registers.
     if CludesUI._prebuilding then
-        return rowFrame, hgt
+        return row, hgt
     end
 
-    CludesUI.AttachVisibilityChecklist(leftCfg and rowFrame._rightRegion or rowFrame._leftRegion, options)
+    CludesUI.AttachVisibilityChecklist(leftCfg and row._rightRegion or row._leftRegion, options)
     if rightVis and not leftCfg then
-        CludesUI.AttachVisibilityChecklist(rowFrame._rightRegion, rightVis)
+        CludesUI.AttachVisibilityChecklist(row._rightRegion, rightVis)
     end
 
-    return rowFrame, hgt
+    return row, hgt
 end

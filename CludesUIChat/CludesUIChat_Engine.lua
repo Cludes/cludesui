@@ -92,7 +92,7 @@ mod._chatWins = WINS
 --  clicks from Blizzard's own secure scripts (the buffer write-back keeps
 --  their layout identical to ours even for width-transformed lines).
 -------------------------------------------------------------------------------
-local function SetBarMouse(barFrame, enabled)
+local function SetBarMouse(bar, enabled)
     local function Apply(f)
         if not f then
             return
@@ -104,9 +104,9 @@ local function SetBarMouse(barFrame, enabled)
             f:SetMouseMotionEnabled(enabled)
         end
     end
-    Apply(barFrame)
-    Apply(barFrame.Track)
-    Apply(barFrame.Track and barFrame.Track.Thumb)
+    Apply(bar)
+    Apply(bar.Track)
+    Apply(bar.Track and bar.Track.Thumb)
 end
 
 local function SuppressChatFrameVisuals(castFrame)
@@ -119,18 +119,18 @@ local function SuppressChatFrameVisuals(castFrame)
     if fsc then
         fsc:SetAlpha(0)
     end
-    local barFrame = castFrame.ScrollBar
-    if barFrame then
-        if barFrame.Back and barFrame.Back:GetParent() ~= void then
-            barFrame.Back:SetParent(void)
+    local bar = castFrame.ScrollBar
+    if bar then
+        if bar.Back and bar.Back:GetParent() ~= void then
+            bar.Back:SetParent(void)
         end
-        if barFrame.Forward and barFrame.Forward:GetParent() ~= void then
-            barFrame.Forward:SetParent(void)
+        if bar.Forward and bar.Forward:GetParent() ~= void then
+            bar.Forward:SetParent(void)
         end
-        if barFrame.Track then
-            barFrame.Track:SetAlpha(0)
+        if bar.Track then
+            bar.Track:SetAlpha(0)
         end
-        SetBarMouse(barFrame, false)
+        SetBarMouse(bar, false)
     end
 end
 
@@ -218,8 +218,8 @@ local function UpdateScrollbar(window)
         return
     end
     local range = smf:GetMaxScrollRange()
-    local offset = smf:GetScrollOffset()
-    local show = (offset > 0 or window.dragging) and range > 0
+    local off = smf:GetScrollOffset()
+    local show = (off > 0 or window.dragging) and range > 0
     if track:IsShown() ~= show then
         track:SetShown(show)
         -- Stock sidebar: the scroll button flashes while scrolled back.
@@ -240,7 +240,7 @@ local function UpdateScrollbar(window)
     local frac = sum > 0 and (visible / sum) or 1
     local thumbH = max(16, trackH * frac)
     thumb:SetHeight(thumbH)
-    local pct = range > 0 and (offset / range) or 0
+    local pct = range > 0 and (off / range) or 0
     thumb:ClearAllPoints()
     -- offset 0 = bottom of history, so the thumb rides up as offset grows.
     thumb:SetPoint("BOTTOM", track, "BOTTOM", 0, pct * (trackH - thumbH))
@@ -438,11 +438,11 @@ local CJK_CLIENT_ALPHABET = ({
     zhCN = "simplifiedchinese",
     zhTW = "traditionalchinese",
 })[GetLocale()]
-local function CJKHeight(alphabet, dim)
+local function CJKHeight(alphabet, size)
     if alphabet == CJK_CLIENT_ALPHABET then
-        return dim
+        return size
     end
-    return dim + 2
+    return size + 2
 end
 -- Line spacing, per alphabet. Blizzard's chat family (ChatFontNormal ->
 -- NumberFont_Shadow_Med) pads its korean member with spacing="3" and gives
@@ -451,7 +451,7 @@ end
 -- the koKR report that produced CJKHeight. CreateFontFamilyMemberInfo has no
 -- spacing field, so it goes on the member object after creation.
 local CJK_SPACING = { korean = 3 }
-function CHAT.EngineFontFamily(ident, font, dim, flags)
+function CHAT.EngineFontFamily(ident, font, size, flags)
     flags = flags or ""
     local fam = FAMS[ident]
     if fam == false then
@@ -463,8 +463,8 @@ function CHAT.EngineFontFamily(ident, font, dim, flags)
             return nil
         end
         local members = {
-            { alphabet = "roman", file = font, height = dim, flags = flags },
-            { alphabet = "russian", file = font, height = dim, flags = flags },
+            { alphabet = "roman", file = font, height = size, flags = flags },
+            { alphabet = "russian", file = font, height = size, flags = flags },
         }
         -- CJK renders +2px: ideographs at latin point sizes read visibly
         -- smaller (dense glyphs, no ascender/descender whitespace). Not on the
@@ -475,7 +475,7 @@ function CHAT.EngineFontFamily(ident, font, dim, flags)
         for alphabet, file in pairs(CJK_FILES) do
             local memberFile = (alphabet == CJK_CLIENT_ALPHABET) and font or file
             members[#members + 1] =
-                { alphabet = alphabet, file = memberFile, height = CJKHeight(alphabet, dim), flags = flags }
+                { alphabet = alphabet, file = memberFile, height = CJKHeight(alphabet, size), flags = flags }
         end
         local success, created = pcall(CreateFontFamily, "CUIChatFontFamily" .. ident, members)
         if not success or not created then
@@ -486,12 +486,12 @@ function CHAT.EngineFontFamily(ident, font, dim, flags)
         fam = created
     end
     local success = pcall(function()
-        fam:GetFontObjectForAlphabet("roman"):SetFont(font, dim, flags)
-        fam:GetFontObjectForAlphabet("russian"):SetFont(font, dim, flags)
+        fam:GetFontObjectForAlphabet("roman"):SetFont(font, size, flags)
+        fam:GetFontObjectForAlphabet("russian"):SetFont(font, size, flags)
         for alphabet, file in pairs(CJK_FILES) do
             local memberFile = (alphabet == CJK_CLIENT_ALPHABET) and font or file
             local member = fam:GetFontObjectForAlphabet(alphabet)
-            member:SetFont(memberFile, CJKHeight(alphabet, dim), flags)
+            member:SetFont(memberFile, CJKHeight(alphabet, size), flags)
             member:SetSpacing(CJK_SPACING[alphabet] or 0)
         end
     end)
@@ -507,14 +507,14 @@ function CHAT.EngineApplyFontTo(castFrame)
         return
     end
     local font = CHAT.EngineFontProvider and CHAT.EngineFontProvider()
-    local dim = CHAT.EngineFontSizeProvider and CHAT.EngineFontSizeProvider(castFrame:GetID())
+    local size = CHAT.EngineFontSizeProvider and CHAT.EngineFontSizeProvider(castFrame:GetID())
     local flags = CHAT.EngineOutlineProvider and CHAT.EngineOutlineProvider()
-    if font and dim then
-        local fam = CHAT.EngineFontFamily(castFrame:GetID(), font, dim, flags or "")
+    if font and size then
+        local fam = CHAT.EngineFontFamily(castFrame:GetID(), font, size, flags or "")
         if fam then
             window.smf:SetFontObject(fam)
         else
-            window.smf:SetFont(font, dim, flags or "")
+            window.smf:SetFont(font, size, flags or "")
         end
         window.smf:SetShadowOffset(1, -1)
         window.smf:SetShadowColor(0, 0, 0, 0.8)
@@ -683,11 +683,11 @@ local function RosterAdd(unitToken, colors)
     if type(name) ~= "string" or name == "" then
         return
     end
-    local classFile = (UnitClassBase and UnitClassBase(unitToken)) or select(2, UnitClass(unitToken))
-    if issecretvalue and issecretvalue(classFile) then
+    local class = (UnitClassBase and UnitClassBase(unitToken)) or select(2, UnitClass(unitToken))
+    if issecretvalue and issecretvalue(class) then
         return
     end
-    local c = classFile and colors[classFile]
+    local c = class and colors[class]
     if c and c.colorStr then
         ROSTER_LOW[name:lower()] = c.colorStr
     end
@@ -1278,23 +1278,23 @@ function CHAT.EngineUpdateCombatLogHost()
     local selected = GENERAL_CHAT_DOCK
         and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
-    local hostRegion = (selected == cf2)
-    if hostRegion == (mod._clHosted or false) then
+    local host = (selected == cf2)
+    if host == (mod._clHosted or false) then
         return
     end
-    mod._clHosted = hostRegion
+    mod._clHosted = host
     local window = WINS[cf2]
     local fsc = cf2.FontStringContainer
-    local barFrame = cf2.ScrollBar
-    if hostRegion then
+    local bar = cf2.ScrollBar
+    if host then
         if fsc then
             fsc:SetAlpha(1)
         end
-        if barFrame then
-            if barFrame.Track then
-                barFrame.Track:SetAlpha(1)
+        if bar then
+            if bar.Track then
+                bar.Track:SetAlpha(1)
             end
-            SetBarMouse(barFrame, true)
+            SetBarMouse(bar, true)
         end
         if window then
             window.smf:Hide()
@@ -1303,11 +1303,11 @@ function CHAT.EngineUpdateCombatLogHost()
         if fsc then
             fsc:SetAlpha(0)
         end
-        if barFrame then
-            if barFrame.Track then
-                barFrame.Track:SetAlpha(0)
+        if bar then
+            if bar.Track then
+                bar.Track:SetAlpha(0)
             end
-            SetBarMouse(barFrame, false)
+            SetBarMouse(bar, false)
         end
         if window then
             window.smf:Show()

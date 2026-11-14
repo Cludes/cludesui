@@ -310,24 +310,24 @@ end
 
 --- SetCVarBitfield likewise. Recorded per bit, so only the bits CludesUI
 --- set go back, never one the game set since.
-function CludesUI.SetCVarBitfield(name, slotPos, value, ownerFrame)
+function CludesUI.SetCVarBitfield(name, index, value, ownerFrame)
     if _uninstalled then
         return false
     end
-    local before = GetCVarBitfield(name, slotPos)
-    local success = C_CVar.SetCVarBitfield(name, slotPos, value)
+    local before = GetCVarBitfield(name, index)
+    local success = C_CVar.SetCVarBitfield(name, index, value)
     local root = success and _fresh ~= nil and before ~= nil and CVarRoot(name)
     if root then
         local t = Sub(Sub(root, "bits"), name:lower())
-        local e = t[slotPos]
+        local e = t[index]
         if not e then
             e = {}
-            t[slotPos] = e
+            t[index] = e
             if Record().fresh then
                 e.b = before
             end
         end
-        e.a = GetCVarBitfield(name, slotPos)
+        e.a = GetCVarBitfield(name, index)
         e.o = ownerFrame
     end
     return success
@@ -418,13 +418,13 @@ end
 -- A bitfield CVar is a version character followed by characters carrying six
 -- bits each (the game's own reader, CVarCallbackRegistry:GetCVarBitfieldIndex):
 -- the bit of index in the CVar's default.
-local function DefaultBit(name, slotPos)
-    local spec_def = C_CVar.GetCVarDefault(name)
-    if type(spec_def) ~= "string" then
+local function DefaultBit(name, index)
+    local def = C_CVar.GetCVarDefault(name)
+    if type(def) ~= "string" then
         return nil
     end
-    local idx = slotPos - 1
-    local byte = spec_def:byte(2 + math.floor(idx / 6))
+    local idx = index - 1
+    local byte = def:byte(2 + math.floor(idx / 6))
     if not byte then
         return false
     end
@@ -436,15 +436,15 @@ local function RestoreBits(t)
         return
     end
     for name, bits in pairs(t) do
-        for slotPos, e in pairs(bits) do
-            local current = GetCVarBitfield(name, slotPos)
+        for index, e in pairs(bits) do
+            local current = GetCVarBitfield(name, index)
             if current ~= nil and current == e.a then
                 local wanted = e.b
                 if wanted == nil then
-                    wanted = DefaultBit(name, slotPos)
+                    wanted = DefaultBit(name, index)
                 end
                 if wanted ~= nil and wanted ~= current then
-                    pcall(C_CVar.SetCVarBitfield, name, slotPos, wanted)
+                    pcall(C_CVar.SetCVarBitfield, name, index, wanted)
                 end
             end
         end
@@ -508,14 +508,14 @@ local function RevertOffModules(root, acct)
     local bits = root.bits
     if bits then
         for name, byIndex in pairs(bits) do
-            for slotPos, e in pairs(byIndex) do
+            for index, e in pairs(byIndex) do
                 if ModuleOff(e.o, acct) then
-                    local current = GetCVarBitfield(name, slotPos)
+                    local current = GetCVarBitfield(name, index)
                     if e.b ~= nil and e.b ~= e.a and current == e.a then
-                        pcall(C_CVar.SetCVarBitfield, name, slotPos, e.b)
+                        pcall(C_CVar.SetCVarBitfield, name, index, e.b)
                     end
                     if e.b ~= nil or current ~= e.a then
-                        byIndex[slotPos] = nil
+                        byIndex[index] = nil
                     end
                 end
             end
@@ -703,8 +703,8 @@ end
 --- NoteEditModeSetting) to anchor, its only anchor from then on: records the
 --- system's position then and anchor. Where the position from before is
 --- unknown, Uninstall leaves the system where it is.
-function CludesUI.NoteEditModeAnchor(layout, sysInfo, anchorFrame)
-    if _fresh == nil or type(anchorFrame) ~= "table" then
+function CludesUI.NoteEditModeAnchor(layout, sysInfo, anchor)
+    if _fresh == nil or type(anchor) ~= "table" then
         return
     end
     if type(sysInfo) ~= "table" or type(sysInfo.anchorInfo) ~= "table" then
@@ -717,18 +717,18 @@ function CludesUI.NoteEditModeAnchor(layout, sysInfo, anchorFrame)
     if not e then
         return
     end
-    e.a = AnchorCopy(anchorFrame)
+    e.a = AnchorCopy(anchor)
 end
 
 -- The rows of one system that go back, as row -> value (nil: none).
 local function SystemRestores(sys, bySys)
     local rowList = {}
-    for _, rowFrame in ipairs(sys.settings) do
-        rowList[rowFrame.setting] = rowFrame
+    for _, row in ipairs(sys.settings) do
+        rowList[row.setting] = row
     end
     local function Ours(setting)
-        local e, rowFrame = bySys[setting], rowList[setting]
-        return e ~= nil and rowFrame ~= nil and rowFrame.value == e.a
+        local e, row = bySys[setting], rowList[setting]
+        return e ~= nil and row ~= nil and row.value == e.a
     end
     local result
     for setting, e in pairs(bySys) do
@@ -804,8 +804,8 @@ local function RestoreEditMode(acct, mine)
                 local bySys = byLayout[sys.system * 1000 + (sys.systemIndex or 0)]
                 local result = bySys and type(sys.settings) == "table" and SystemRestores(sys, bySys)
                 if result then
-                    for rowFrame, wanted in pairs(result) do
-                        rowFrame.value = wanted
+                    for row, wanted in pairs(result) do
+                        row.value = wanted
                     end
                     changed = true
                 end
@@ -827,12 +827,12 @@ end
 
 --- SetChatWindowSize for a font size CludesUI applies on its own (stored
 --- per character, like the window itself).
-function CludesUI.SetChatWindowSize(slotPos, dim)
+function CludesUI.SetChatWindowSize(index, size)
     if _uninstalled then
         return
     end
-    local _, before = GetChatWindowInfo(slotPos)
-    SetChatWindowSize(slotPos, dim)
+    local _, before = GetChatWindowInfo(index)
+    SetChatWindowSize(index, size)
     if _fresh == nil or before == nil then
         return
     end
@@ -841,15 +841,15 @@ function CludesUI.SetChatWindowSize(slotPos, dim)
         return
     end
     local t = Sub(c, "chatFont")
-    local e = t[slotPos]
+    local e = t[index]
     if not e then
         e = {}
-        t[slotPos] = e
+        t[index] = e
         if Record().fresh then
             e.b = before
         end
     end
-    local _, after = GetChatWindowInfo(slotPos)
+    local _, after = GetChatWindowInfo(index)
     e.a = after
 end
 
@@ -857,10 +857,10 @@ local function RestoreChatFonts(t)
     if not t then
         return
     end
-    for slotPos, e in pairs(t) do
-        local _, current = GetChatWindowInfo(slotPos)
+    for index, e in pairs(t) do
+        local _, current = GetChatWindowInfo(index)
         if current ~= nil and current == e.a and e.b ~= nil and e.b ~= current then
-            SetChatWindowSize(slotPos, e.b)
+            SetChatWindowSize(index, e.b)
         end
     end
 end
@@ -899,16 +899,16 @@ end
 -- while it is off and work again if it comes back. Only the binding set in
 -- use can be saved; returns that set.
 local function RestoreBindings(acct, mine)
-    local group = GetCurrentBindingSet()
-    local recd
-    if group == 2 then
-        recd = mine.bind
+    local set = GetCurrentBindingSet()
+    local rec
+    if set == 2 then
+        rec = mine.bind
     else
-        recd = acct.bind
+        rec = acct.bind
     end
-    if recd then
+    if rec then
         local changed = false
-        for key, before in pairs(recd) do
+        for key, before in pairs(rec) do
             local action = GetBindingAction(key)
             if before and type(action) == "string" and (action == "" or action:find("^CUI_")) then
                 SetBinding(key, before)
@@ -916,10 +916,10 @@ local function RestoreBindings(acct, mine)
             end
         end
         if changed then
-            SaveBindings(group)
+            SaveBindings(set)
         end
     end
-    return group
+    return set
 end
 
 -------------------------------------------------------------------------------
@@ -992,9 +992,9 @@ function CludesUI.Uninstall()
     if pcall(RestoreChatFonts, mine.chatFont) then
         mine.chatFont = nil
     end
-    local okBind, group = pcall(RestoreBindings, r, mine)
+    local okBind, set = pcall(RestoreBindings, r, mine)
     if okBind then
-        if group == 2 then
+        if set == 2 then
             mine.bind = nil
         else
             r.bind = nil

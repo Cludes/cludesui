@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local floor, ceil, min, upper, abs = math.floor, math.ceil, math.min, math.max, math.abs
+local floor, ceil, min, max, abs = math.floor, math.ceil, math.min, math.max, math.abs
 local sin, cos, atan2, sqrt, pi = math.sin, math.cos, math.atan2, math.sqrt, math.pi
 local tsort = table.sort
 
@@ -95,7 +95,7 @@ local function AutoGridColumns(isShown)
     if cols < isShown and isShown % cols == 1 then
         cols = cols + 1
     end
-    return min(MAX_SLOTS, upper(1, cols))
+    return min(MAX_SLOTS, max(1, cols))
 end
 
 -- A pointer-steered fan IS a grid one entry deep, so it resolves here rather
@@ -108,10 +108,10 @@ end
 -- when shownCount still describes whatever was drawn last.
 function PaletteView:GridDims(shownOverride)
     local p = self:P()
-    local isShown = upper(1, shownOverride or self.shownCount)
+    local isShown = max(1, shownOverride or self.shownCount)
 
-    local modeName = self:LayoutMode()
-    if modeName == "FAN" then
+    local mode = self:LayoutMode()
+    if mode == "FAN" then
         if self:FanHoriz() then
             return isShown, 1
         end
@@ -125,9 +125,9 @@ function PaletteView:GridDims(shownOverride)
         -- column count would make the editor lay a palette out differently from
         -- the way it is played -- six actions previewing as 4 + 3 while the
         -- live palette drew 3 + 3.
-        cols = AutoGridColumns(upper(1, shownOverride or self.slotCount or isShown))
+        cols = AutoGridColumns(max(1, shownOverride or self.slotCount or isShown))
     else
-        cols = min(MAX_SLOTS, upper(1, floor(p.gridColumns or 4)))
+        cols = min(MAX_SLOTS, max(1, floor(p.gridColumns or 4)))
     end
     if cols > isShown then
         cols = isShown
@@ -264,7 +264,7 @@ local function PerimeterStep(ta, HX, HY, R, pitch)
     -- fraction of a pixel well inside the bound.
     for _ = 1, 8 do
         local bx, by = PerimeterPoint(ta + dt, HX, HY, R)
-        local sep = upper(abs(bx - ax), abs(by - ay))
+        local sep = max(abs(bx - ax), abs(by - ay))
         if sep >= pitch - 0.5 then
             break
         end
@@ -394,8 +394,8 @@ function PaletteView:NestMetrics(isShown)
     local p = self:P()
     local _, iconSize = self:Geom()
     local pitch = self:Pitch()
-    local baseValue = p.iconSize or 40
-    local k = (baseValue > 0) and (iconSize / baseValue) or 1
+    local base = p.iconSize or 40
+    local k = (base > 0) and (iconSize / base) or 1
     local cols, rowList = self:GridDims(isShown)
 
     local m = {
@@ -403,7 +403,7 @@ function PaletteView:NestMetrics(isShown)
         pitch = pitch,
         cols = cols,
         rows = rowList,
-        band = upper(0, p.nestBand or NEST_BAND_DEFAULT) * k,
+        band = max(0, p.nestBand or NEST_BAND_DEFAULT) * k,
         gap = (p.fanGap or 10) * k,
         -- FIXED true -- nests break out above/right wherever the sides tie
         -- (the Nest Side setting was removed); a nestSide key left in stored
@@ -420,7 +420,7 @@ function PaletteView:NestMetrics(isShown)
     -- Nested entries are drawn smaller than the palette's own, so a nest reads
     -- as subordinate to the entry it hangs off rather than as a second block of
     -- equals.
-    m.childIcon = iconSize * min(1, upper(0.4, p.nestScale or 0.8))
+    m.childIcon = iconSize * min(1, max(0.4, p.nestScale or 0.8))
     m.childPitch = m.childIcon + m.gap
     -- Across the run: how thick the band of boxes is. One icon plus the gap
     -- either side of it, so the box reaches back to the block's own edge and a
@@ -432,7 +432,7 @@ function PaletteView:NestMetrics(isShown)
     -- with. The lane hugs the block at the default and reads the slider as
     -- extra clearance on top of that, so the two answers agree wherever the
     -- user has moved it and the snug read is what an untouched profile gets.
-    m.bandExtra = upper(0, (p.nestBand or NEST_BAND_DEFAULT) - NEST_BAND_DEFAULT) * k
+    m.bandExtra = max(0, (p.nestBand or NEST_BAND_DEFAULT) - NEST_BAND_DEFAULT) * k
     -- A strip has no interior to displace and no corner to wrap, so the styles
     -- that rearrange a block have nothing to rearrange: it is always a small
     -- block of its own, centred on the parent and broken out perpendicular to
@@ -490,7 +490,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     -- so the cells are SPACED by that same measure -- see PerimeterStep --
     -- and a turn costs the run extra path rather than ground.
     local turn = (standoff - m.childPitch * 0.5) * sqrt(2) / (2 * sqrt(2) + 1 - sqrt(2) * pi * 0.25)
-    local R = min(depth * 0.5, min(HX, HY) * 0.5, upper(0, turn))
+    local R = min(depth * 0.5, min(HX, HY) * 0.5, max(0, turn))
     local sx, sy, arc, L = PerimeterSpan(HX, HY, R)
 
     local childPitch, childIcon = m.childPitch, m.childIcon
@@ -565,15 +565,15 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         for cr = 0, ceil(c.n / cols) - 1 do
             local inRow = min(cols, c.n - cr * cols)
             local start = c.t0 - (inRow - 1) * 0.5 * childPitch
-            local rowFrame
+            local row
             for _ = 1, 2 do
-                rowFrame = { start }
+                row = { start }
                 for jr = 2, inRow do
-                    rowFrame[jr] = rowFrame[jr - 1] + PerimeterStep(rowFrame[jr - 1], HX, HY, R, childPitch)
+                    row[jr] = row[jr - 1] + PerimeterStep(row[jr - 1], HX, HY, R, childPitch)
                 end
-                start = c.t0 - (rowFrame[inRow] - rowFrame[1]) * 0.5
+                start = c.t0 - (row[inRow] - row[1]) * 0.5
             end
-            rowTs[cr + 1] = rowFrame
+            rowTs[cr + 1] = row
         end
         c.cells = {}
         -- The sides the run came down on, in the order it reached them. A run
@@ -590,8 +590,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             -- normal, which keeps them square on a straight edge and fanned
             -- around a corner.
             local outw = cr * (childIcon + m.gap)
-            local boxFrame = RunBox(posX + nx * outw, posY + ny * outw, axis, childPitch, depth)
-            c.cells[jdx] = boxFrame
+            local box = RunBox(posX + nx * outw, posY + ny * outw, axis, childPitch, depth)
+            c.cells[jdx] = box
             -- PerimeterPoint hands a cell more than halfway round a corner to
             -- the side it is heading onto, so these come out as the runs the eye
             -- actually reads rather than as a split at the corner's own edge.
@@ -601,7 +601,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
                 g = { axis = axis, sign = sign, cells = {}, order = #groups + 1 }
                 bySide[key], groups[#groups + 1] = g, g
             end
-            g.cells[#g.cells + 1] = boxFrame
+            g.cells[#g.cells + 1] = box
         end
 
         -- The walk above holds every CONSECUTIVE pair a whole pitch apart, but
@@ -620,7 +620,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
                 local pa, pb = c.cells[ja], c.cells[jb]
                 -- Square icons drawn on the cell centres, so a pair clears as
                 -- soon as ONE axis separates them by a whole icon.
-                local sep = upper(abs(pa.x - pb.x), abs(pa.y - pb.y))
+                local sep = max(abs(pa.x - pb.x), abs(pa.y - pb.y))
                 if sep < tight then
                     tight = sep
                 end
@@ -667,14 +667,14 @@ function PaletteView:HaloNest(claims, isShown, m)
     -- Small enough that a full-size parent still has clear ground around it,
     -- which is the whole read of this style -- children AROUND an entry, not
     -- crowding it.
-    local glyph = min(m.childIcon, hp * 0.62)
+    local icon = min(m.childIcon, hp * 0.62)
     for idx = 1, #claims do
         local c = claims[idx]
         local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
         -- No axis and no side: a halo surrounds its parent rather than coming
         -- out of one edge of the block, so there is no "other side" for the hub
         -- caption to move to and it keeps the placement it would have had.
-        c.icon, c.dim = glyph, true
+        c.icon, c.dim = icon, true
         -- The parent draws back to leave the ring somewhere to be. It keeps its
         -- full colour, unlike the rest of the block: it is what the ring is
         -- about, and dimming it would leave nothing saying which entry opened.
@@ -740,17 +740,17 @@ function PaletteView:StripCellNest(claims, isShown, m)
                 room = min(room, abs(claims[jdx].t0 - c.t0) * 0.5)
             end
         end
-        local ccols = min(MAX_SLOTS, upper(1, ceil(sqrt(c.n))))
+        local ccols = min(MAX_SLOTS, max(1, ceil(sqrt(c.n))))
         if room < math.huge then
-            ccols = min(ccols, upper(1, floor(room * 2 / m.childPitch)))
+            ccols = min(ccols, max(1, floor(room * 2 / m.childPitch)))
         end
 
         c.cells = {}
         for jdx = 1, c.n do
             local cr = floor((jdx - 1) / ccols)
             local cc = (jdx - 1) % ccols
-            local rowFrame = min(ccols, c.n - cr * ccols)
-            local a = (cc - (rowFrame - 1) * 0.5) * m.childPitch
+            local row = min(ccols, c.n - cr * ccols)
+            local a = (cc - (row - 1) * 0.5) * m.childPitch
             local d = result + cr * m.childPitch
             local posX, posY
             if axis == "X" then
@@ -881,7 +881,7 @@ function PaletteView:CellChildGeom(claims, isShown)
             -- block, and the slider only adds to that -- and a grace read off
             -- the slider there would leave the bottom of its travel moving
             -- nothing but invisible slack.
-            local grace = upper(c.standoff or m.band, 0.75 * m.childPitch)
+            local grace = max(c.standoff or m.band, 0.75 * m.childPitch)
             local sides = c.groups
             c.regions = { c.parentBox }
             if sides then
@@ -908,8 +908,8 @@ function PaletteView:CellChildGeom(claims, isShown)
             local y0, y1 = pb.y - m.pitch * 0.5, pb.y + m.pitch * 0.5
             for jdx = 1, c.n do
                 local b = c.cells[jdx]
-                x0, x1 = min(x0, b.x - b.hw), upper(x1, b.x + b.hw)
-                y0, y1 = min(y0, b.y - b.hh), upper(y1, b.y + b.hh)
+                x0, x1 = min(x0, b.x - b.hw), max(x1, b.x + b.hw)
+                y0, y1 = min(y0, b.y - b.hh), max(y1, b.y + b.hh)
             end
             c.regions = {}
             AddRegion(c, EdgeBox(x0, x1, y0, y1), c.axis, holes)

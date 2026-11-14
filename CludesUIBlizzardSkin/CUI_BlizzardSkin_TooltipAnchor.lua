@@ -254,7 +254,7 @@ end
 do
     -- Representative mover-box size; real tooltips vary, but they pin corner-to-corner to the box so they render inside this footprint.
     local FIXED_W, FIXED_H = 280, 165
-    local anchorFrame
+    local anchor
 
     local function ActiveProfile()
         return CludesUI.GetActiveProfileData()
@@ -272,15 +272,15 @@ do
     end
 
     local function EnsureFixedFrame()
-        if anchorFrame then
-            return anchorFrame
+        if anchor then
+            return anchor
         end
-        anchorFrame = CreateFrame("Frame", "CludesUI_TooltipFixedAnchor", UIParent)
-        anchorFrame:SetSize(FIXED_W, FIXED_H)
-        anchorFrame:EnableMouse(false)
+        anchor = CreateFrame("Frame", "CludesUI_TooltipFixedAnchor", UIParent)
+        anchor:SetSize(FIXED_W, FIXED_H)
+        anchor:EnableMouse(false)
         -- Placeholder point; PositionFromSaved overrides from the profile pos.
-        anchorFrame:SetPoint("CENTER", UIParent, "CENTER", -350, -150)
-        return anchorFrame
+        anchor:SetPoint("CENTER", UIParent, "CENTER", -350, -150)
+        return anchor
     end
 
     -- One-time per-profile seed: store where Blizzard's Edit Mode container puts
@@ -380,7 +380,7 @@ do
         if tooltip:IsForbidden() then
             return
         end
-        local af = anchorFrame
+        local af = anchor
         if not af then
             return
         end
@@ -444,7 +444,7 @@ do
     -- Every explicit tooltip build starts with SetOwner, which runs BEFORE the SetDefaultAnchor post-hook re-arms the flag, so explicitly-anchored uses (bags, other addons) never get their anchors rewritten.
     hooksecurefunc(GameTooltip, "SetOwner", function(self)
         _fixedArmed = false
-        if not anchorFrame or self:IsForbidden() then
+        if not anchor or self:IsForbidden() then
             return
         end
         -- Left on our box, Blizzard's next restricted SetPoint fails with an anchor family error.
@@ -454,7 +454,7 @@ do
         if not success or (issecretvalue and issecretvalue(relTo)) then
             return
         end
-        if relTo == anchorFrame then
+        if relTo == anchor then
             self:ClearAllPoints()
         end
     end)

@@ -95,16 +95,16 @@ local function StripButtonDecorations(button)
                 { region = highlight, alpha = highlight:GetAlpha(), shown = highlight:IsShown() }
         end
         -- Snapshot icon anchors/texcoord/size for RestoreButtonDecorations.
-        local glyph = button.icon or button.Icon
-        if glyph then
-            local nPts = glyph:GetNumPoints()
+        local icon = button.icon or button.Icon
+        if icon then
+            local nPts = icon:GetNumPoints()
             local pts = {}
             for idx = 1, nPts do
-                pts[idx] = { glyph:GetPoint(idx) }
+                pts[idx] = { icon:GetPoint(idx) }
             end
-            saved.icon = glyph
+            saved.icon = icon
             saved.iconPoints = pts
-            saved.iconTC = { glyph:GetTexCoord() }
+            saved.iconTC = { icon:GetTexCoord() }
         end
         saved.btnW, saved.btnH = button:GetWidth(), button:GetHeight()
         flyoutSavedRegions[button] = saved
@@ -208,10 +208,10 @@ function SKIN._RaiseLateFlyoutChildren(button)
         return
     end
     local combat = InCombatLockdown()
-    local boxFrame = GetFFD(button).ungroupBg
+    local box = GetFFD(button).ungroupBg
     local function raise(widget, level)
         for _, childFrame in ipairs({ widget:GetChildren() }) do
-            if childFrame ~= boxFrame and not (combat and childFrame:IsProtected()) then
+            if childFrame ~= box and not (combat and childFrame:IsProtected()) then
                 childFrame:SetFrameStrata("DIALOG")
                 childFrame:SetFrameLevel(level)
                 raise(childFrame, level + 1)
@@ -299,10 +299,10 @@ local function LayoutFlyoutButtons()
             }
         end
 
-        local column = (idx - 1) % cols
-        local rowFrame = math.floor((idx - 1) / cols)
-        local xOff = margin + column * (btnSize + FLYOUT_PADDING)
-        local yOff = -(margin + rowFrame * (btnSize + FLYOUT_PADDING))
+        local col = (idx - 1) % cols
+        local row = math.floor((idx - 1) / cols)
+        local xOff = margin + col * (btnSize + FLYOUT_PADDING)
+        local yOff = -(margin + row * (btnSize + FLYOUT_PADDING))
 
         button:SetParent(flyoutPanel)
         -- Unlock fixed strata/level first (LibDBIcon locks these)
@@ -349,8 +349,8 @@ local function LayoutFlyoutButtons()
                 button:HookScript("OnClick", SKIN._RaiseLateFlyoutChildren)
             end
         end
-        local glyph = button.icon or button.Icon
-        if not glyph then
+        local icon = button.icon or button.Icon
+        if not icon then
             for _, regionFrame in ipairs({ button:GetRegions() }) do
                 if
                     regionFrame:IsObjectType("Texture")
@@ -358,21 +358,21 @@ local function LayoutFlyoutButtons()
                     and regionFrame:GetAlpha() > 0
                     and not IsJunkTexture(regionFrame)
                 then
-                    glyph = regionFrame
+                    icon = regionFrame
                     break
                 end
             end
         end
-        if glyph then
+        if icon then
             -- Same inset as the row: 3px inside the box, 2px inside the ring
             local inset = boxes and 3 or 2
-            glyph:ClearAllPoints()
-            glyph:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-            glyph:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
-            pcall(glyph.SetTexCoord, glyph, 0.05, 0.95, 0.05, 0.95)
+            icon:ClearAllPoints()
+            icon:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+            icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+            pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
             if CludesUI.PP then
-                CludesUI.PP.DisablePixelSnap(glyph)
+                CludesUI.PP.DisablePixelSnap(icon)
             end
         end
         if boxes then
@@ -666,9 +666,9 @@ end
 -- Distance from Map push: left/right rows move horizontally, above/below vertically.
 -- Icon Spacing is applied per link at placement. Forever Square's rows hang
 -- from the frame's outer edge and start EBS.FV_ROW_AIR clear of it.
-local function GetRowBase(modeName, distance)
+local function GetRowBase(mode, distance)
     local d = (distance or 0) + (SKIN._fvSquare and SKIN.FV_ROW_AIR or 0)
-    return d * modeName.awayX, d * modeName.awayY
+    return d * mode.awayX, d * mode.awayY
 end
 
 -- Scale for the custom tooltips on the unique minimap buttons (vault, friends,

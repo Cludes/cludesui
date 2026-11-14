@@ -179,28 +179,28 @@ local function ItemName(ident)
 end
 
 local function KnownReagent(family)
-    local itemInfo
+    local item
     for _, rank in ipairs(family) do
         if Known(rank[1]) then
-            itemInfo = rank[2]
+            item = rank[2]
         end
     end
-    return itemInfo
+    return item
 end
 
 local function CarriedAmmo()
     if THROWN_CLASSES[CLASS] then
-        local itemInfo = GetInventoryItemID("player", RANGED_SLOT)
-        if itemInfo then
-            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(itemInfo)
+        local item = GetInventoryItemID("player", RANGED_SLOT)
+        if item then
+            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(item)
             if classID == WEAPON_CLASS and subID == THROWN_SUBCLASS then
-                local stack = select(8, C_Item.GetItemInfo(itemInfo))
+                local stack = select(8, C_Item.GetItemInfo(item))
                 if not stack then
-                    RequestItem(itemInfo)
+                    RequestItem(item)
                     return
                 end
                 if stack > 1 then
-                    return itemInfo
+                    return item
                 end
                 return
             end
@@ -213,9 +213,9 @@ local function Wanted()
     local wanted = {}
     if R.Get("reagents") then
         for _, f in ipairs(FAMILIES) do
-            local itemInfo = f.class == CLASS and KnownReagent(f)
-            if itemInfo and Target(itemInfo) > 0 then
-                wanted[itemInfo] = Target(itemInfo)
+            local item = f.class == CLASS and KnownReagent(f)
+            if item and Target(item) > 0 then
+                wanted[item] = Target(item)
             end
         end
     end
@@ -240,8 +240,8 @@ local function ScanBags()
         if (family or 0) == 0 then
             free = free + (slots or 0)
         end
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local details = C_Container.GetContainerItemInfo(bag, slot)
             if details then
                 if details.quality == Enum.ItemQuality.Poor and not details.hasNoValue then
                     junk = junk + 1
@@ -270,11 +270,11 @@ end
 
 local function Lines()
     local lines = {}
-    for ident, targetUnit in pairs(Wanted()) do
+    for ident, target in pairs(Wanted()) do
         local have = C_Item.GetItemCount(ident)
         local hunterAmmo = HunterAmmoOn() and ident == GetInventoryItemID("player", AMMO_SLOT)
-        if not hunterAmmo and have < targetUnit then
-            lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(ident), have, targetUnit)
+        if not hunterAmmo and have < target then
+            lines[#lines + 1] = ("%s  %d / %d"):format(ItemName(ident), have, target)
         end
     end
     table.sort(lines)
@@ -350,9 +350,9 @@ end
 
 local function ShowAlert(lines)
     BuildAlert()
-    local dim = R.Get("size")
-    CludesUI.Kit.Font(alert.title, dim + 6, "essentials")
-    CludesUI.Kit.Font(alert.text, dim, "essentials")
+    local size = R.Get("size")
+    CludesUI.Kit.Font(alert.title, size + 6, "essentials")
+    CludesUI.Kit.Font(alert.text, size, "essentials")
     alert.text:SetText(table.concat(lines, "\n"))
     alert:SetSize(
         math.max(alert.title:GetStringWidth(), alert.text:GetStringWidth()) + 16,
@@ -396,25 +396,25 @@ local function Buy()
     local wanted = Wanted()
     local money = GetMoney()
     local spent, bought = 0, {}
-    for slotPos = 1, GetMerchantNumItems() do
-        local ident = tonumber((GetMerchantItemLink(slotPos) or ""):match("item:(%d+)"))
-        local targetUnit = ident and wanted[ident]
-        local details = targetUnit and C_MerchantFrame.GetItemInfo(slotPos)
+    for index = 1, GetMerchantNumItems() do
+        local ident = tonumber((GetMerchantItemLink(index) or ""):match("item:(%d+)"))
+        local target = ident and wanted[ident]
+        local details = target and C_MerchantFrame.GetItemInfo(index)
         if details and details.isPurchasable and not details.hasExtendedCost then
             local bundle = math.max(details.stackCount, 1)
-            local bundles = math.ceil((targetUnit - C_Item.GetItemCount(ident)) / bundle)
+            local bundles = math.ceil((target - C_Item.GetItemCount(ident)) / bundle)
             if details.numAvailable and details.numAvailable >= 0 then
                 bundles = math.min(bundles, details.numAvailable)
             end
             if details.price > 0 then
                 bundles = math.min(bundles, math.floor(money / details.price))
             end
-            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(slotPos) / bundle), 1)
+            local perBuy = math.max(math.floor(GetMerchantItemMaxStack(index) / bundle), 1)
             if bundles > 0 then
                 local leftX = bundles
                 while leftX > 0 do
                     local take = math.min(leftX, perBuy)
-                    BuyMerchantItem(slotPos, take * bundle)
+                    BuyMerchantItem(index, take * bundle)
                     leftX = leftX - take
                 end
                 money = money - bundles * details.price
@@ -503,10 +503,10 @@ local function ClassReagents()
     for _, f in ipairs(FAMILIES) do
         if f.class == CLASS then
             for _, rank in ipairs(f) do
-                local itemInfo = rank[2]
-                if not seen[itemInfo] then
-                    seen[itemInfo] = true
-                    result[#result + 1] = { item = itemInfo, name = ItemName(itemInfo) }
+                local item = rank[2]
+                if not seen[item] then
+                    seen[item] = true
+                    result[#result + 1] = { item = item, name = ItemName(item) }
                 end
             end
         end
@@ -644,8 +644,8 @@ local function WornHere(wid, here)
         return wid.instance == here
     end
     if wid.where and G.Get(wid.where) == "instance" then
-        local _, kindOf = IsInInstance()
-        return kindOf == "party" or kindOf == "raid"
+        local _, kind = IsInInstance()
+        return kind == "party" or kind == "raid"
     end
     return true
 end
@@ -687,7 +687,7 @@ GUpdate = function()
     if not gFrame then
         return
     end
-    local dim = G.Get("size")
+    local size = G.Get("size")
     local here = select(8, GetInstanceInfo())
     local isShown = 0
     for _, wid in ipairs(WORN) do
@@ -695,7 +695,7 @@ GUpdate = function()
         if dismissed[wid.slot] ~= ident then
             dismissed[wid.slot] = nil
         end
-        local show, texture, slotIndex
+        local show, texture, slot
         if CludesUI._unlockActive then
             show, texture = G.Get(wid.setting), C_Item.GetItemIconByID(wid.item or wid.sample)
         elseif
@@ -705,29 +705,29 @@ GUpdate = function()
             and WornHere(wid, here)
             and Wearing(wid, ident)
         then
-            show, texture, slotIndex = true, C_Item.GetItemIconByID(ident), wid.slot
+            show, texture, slot = true, C_Item.GetItemIconByID(ident), wid.slot
         end
         if show then
             isShown = isShown + 1
             local b = Icon(isShown)
-            b:SetSize(dim, dim)
+            b:SetSize(size, size)
             b:ClearAllPoints()
-            b:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (dim + 4), 0)
+            b:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (size + 4), 0)
             b.tex:SetTexture(texture)
-            b.slot = slotIndex
+            b.slot = slot
             b:Show()
         end
     end
     for idx = isShown + 1, #gIcons do
         gIcons[idx]:Hide()
     end
-    gFrame:SetSize(math.max(isShown, 1) * (dim + 4) - 4, dim)
+    gFrame:SetSize(math.max(isShown, 1) * (size + 4) - 4, size)
 end
 
 local gEv = CreateFrame("Frame")
-gEv:SetScript("OnEvent", function(_, evt, slotIndex, hasCurrent)
+gEv:SetScript("OnEvent", function(_, evt, slot, hasCurrent)
     if evt == "PLAYER_EQUIPMENT_CHANGED" and not hasCurrent then
-        dismissed[slotIndex] = nil
+        dismissed[slot] = nil
     end
     GUpdate()
 end)

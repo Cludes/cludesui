@@ -418,7 +418,7 @@ end
 local function BuildUnlockLayoutRow(parent, y, g, opts)
     opts = opts or {}
     local crumbText = opts.crumb or "Custom Layout Mode"
-    local titleText = opts.title or "Delete Custom Layout Mode"
+    local title = opts.title or "Delete Custom Layout Mode"
     local msgText = opts.message
         or "Delete the custom layout mode for '%s'? Its specs return to your default layout mode layout."
     local removeFn = opts.removeFn or CludesUI.SpecOverrides_RemoveUnlockLayout
@@ -457,7 +457,7 @@ local function BuildUnlockLayoutRow(parent, y, g, opts)
     end)
     b:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
-            title = L(titleText),
+            title = L(title),
             message = string.format(L(msgText), g.name or "?"),
             confirmText = L("Delete"),
             cancelText = L("Cancel"),

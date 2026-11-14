@@ -62,11 +62,11 @@ end
 local function Chunks(textValue)
     local result = {}
     textValue = textValue:gsub("\r", "\n")
-    for lineTex in (textValue .. "\n"):gmatch("([^\n]*)\n") do
+    for line in (textValue .. "\n"):gmatch("([^\n]*)\n") do
         local starts = {}
         local place = 1
         while true do
-            local a = lineTex:find("{time:", place, true)
+            local a = line:find("{time:", place, true)
             if not a then
                 break
             end
@@ -74,8 +74,8 @@ local function Chunks(textValue)
             place = a + 6
         end
         for idx, a in ipairs(starts) do
-            local b = (starts[idx + 1] or (#lineTex + 1)) - 1
-            result[#result + 1] = lineTex:sub(a, b)
+            local b = (starts[idx + 1] or (#line + 1)) - 1
+            result[#result + 1] = line:sub(a, b)
         end
     end
     return result

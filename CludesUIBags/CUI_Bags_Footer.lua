@@ -121,12 +121,12 @@ local function GetGoldTooltip()
     f._fadeOutAG = fadeOutAG
     f._fadeOut = fadeOut
 
-    local titleText = f:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
-    titleText:SetTextColor(0.80, 0.80, 0.80, 1)
-    titleText:SetPoint("TOP", f, "TOP", 0, -GOLD_PAD)
-    titleText:SetText(CludesUI.L("Gold Summary"))
-    f._title = titleText
+    local title = f:CreateFontString(nil, "OVERLAY")
+    title:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+    title:SetTextColor(0.80, 0.80, 0.80, 1)
+    title:SetPoint("TOP", f, "TOP", 0, -GOLD_PAD)
+    title:SetText(CludesUI.L("Gold Summary"))
+    f._title = title
 
     local hint = f:CreateFontString(nil, "OVERLAY")
     hint:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
@@ -145,19 +145,19 @@ local function EnsureGoldRows(total)
     for i = 1, total do
         if not _goldTTRows[i] then
             _goldTTRows[i] = {}
-            for column = 0, 1 do
+            for col = 0, 1 do
                 local fontStr = tt:CreateFontString(nil, "OVERLAY")
                 fontStr:SetFont(fontFile, 11, fontFlags)
-                fontStr:SetJustifyH(column == 0 and "LEFT" or "RIGHT")
-                _goldTTRows[i][column] = fontStr
+                fontStr:SetJustifyH(col == 0 and "LEFT" or "RIGHT")
+                _goldTTRows[i][col] = fontStr
             end
         end
     end
     tt._title:SetFont(fontFile, 11, fontFlags)
     tt._hint:SetFont(fontFile, 10, fontFlags)
     for i = 1, total do
-        for column = 0, 1 do
-            _goldTTRows[i][column]:SetFont(fontFile, 11, fontFlags)
+        for col = 0, 1 do
+            _goldTTRows[i][col]:SetFont(fontFile, 11, fontFlags)
         end
     end
 end
@@ -172,7 +172,7 @@ local function StripRealm(name)
     return name
 end
 
-local function ShowGoldTooltip(anchorFrame)
+local function ShowGoldTooltip(anchor)
     if not GoldLedger.IsTracking() then
         return
     end
@@ -297,7 +297,7 @@ local function ShowGoldTooltip(anchorFrame)
 
     tt:SetSize(totalW, totalH)
     tt:ClearAllPoints()
-    tt:SetPoint("BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 4)
+    tt:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 4)
 
     tt._fadeOutAG:Stop()
     tt._fadeInAG:Stop()
@@ -475,12 +475,12 @@ local function UpdateCurrencyDisplays(footerWidth)
     for i, details in ipairs(tracked) do
         local display = pool.displays[i]
         local fullInfo = C_CurrencyInfo.GetCurrencyInfo(details.currencyTypesID)
-        local glyph = fullInfo and fullInfo.iconFileID or details.iconFileID
+        local icon = fullInfo and fullInfo.iconFileID or details.iconFileID
         local quantity = fullInfo and fullInfo.quantity or 0
         local discovered = fullInfo and fullInfo.discovered
         local name = fullInfo and fullInfo.name or ""
-        if glyph and (discovered ~= false) then
-            display:SetText("|T" .. tostring(glyph) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
+        if icon and (discovered ~= false) then
+            display:SetText("|T" .. tostring(icon) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
             local itemWidth = display:GetStringWidth() + padding
             if currentX + itemWidth > leftOffset + availableWidth and currentX > leftOffset then
                 currentRow = currentRow + 1
@@ -555,19 +555,19 @@ local function CreateReagentBagUI()
     if CUI_BagsReagent.Header then
         return
     end
-    local headerFrame = CreateFrame("Frame", nil, CUI_BagsReagent)
-    headerFrame:SetPoint("TOPLEFT", 1, -1)
-    headerFrame:SetPoint("TOPRIGHT", -1, -1)
-    headerFrame:SetHeight(35)
-    headerFrame.bg = headerFrame:CreateTexture(nil, "BACKGROUND")
-    headerFrame.bg:SetAllPoints()
-    headerFrame.bg:SetColorTexture(0, 0, 0, 0.5)
-    headerFrame.title = headerFrame:CreateFontString(nil, "OVERLAY")
-    SetBagFont(headerFrame.title, 13)
-    headerFrame.title:SetPoint("LEFT", 15, 0)
-    headerFrame.title:SetText(CludesUI.L("REAGENTS"))
-    headerFrame.title:SetTextColor(1, 1, 1)
-    local close = CreateFrame("Button", nil, headerFrame)
+    local header = CreateFrame("Frame", nil, CUI_BagsReagent)
+    header:SetPoint("TOPLEFT", 1, -1)
+    header:SetPoint("TOPRIGHT", -1, -1)
+    header:SetHeight(35)
+    header.bg = header:CreateTexture(nil, "BACKGROUND")
+    header.bg:SetAllPoints()
+    header.bg:SetColorTexture(0, 0, 0, 0.5)
+    header.title = header:CreateFontString(nil, "OVERLAY")
+    SetBagFont(header.title, 13)
+    header.title:SetPoint("LEFT", 15, 0)
+    header.title:SetText(CludesUI.L("REAGENTS"))
+    header.title:SetTextColor(1, 1, 1)
+    local close = CreateFrame("Button", nil, header)
     close:SetSize(20, 20)
     close:SetPoint("RIGHT", -5, 0)
     close.icon = close:CreateTexture(nil, "OVERLAY")
@@ -584,17 +584,17 @@ local function CreateReagentBagUI()
         CUI_BagsReagent:Hide()
     end)
     if mod.BagsForever() then
-        mod.LayoutForeverBagHeader(headerFrame, 35)
-        headerFrame.bg:Hide()
-        mod.AddForeverBagPortrait(headerFrame, CUI.ClientIcon(3622222))
-        mod.SkinForeverBagTitle(headerFrame.title)
+        mod.LayoutForeverBagHeader(header, 35)
+        header.bg:Hide()
+        mod.AddForeverBagPortrait(header, CUI.ClientIcon(3622222))
+        mod.SkinForeverBagTitle(header.title)
         mod.PositionForeverBagClose(close)
     end
     -- Controller cursor: Cancel finds the close button.
     if CUI.PadCP() then
         CUI_BagsReagent.CloseButton = close
     end
-    CUI_BagsReagent.Header = headerFrame
+    CUI_BagsReagent.Header = header
     local footer = CreateFrame("Frame", nil, CUI_BagsReagent)
     footer:SetPoint("BOTTOMLEFT", 1, 1)
     footer:SetPoint("BOTTOMRIGHT", -1, 1)

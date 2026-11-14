@@ -47,7 +47,7 @@ initFrame:SetScript("OnEvent", function(self)
         saved = _G._CUCL_AceDB
     end)
 
-    local function SavedDB()
+    local function DB()
         if not saved then
             saved = _G._CUCL_AceDB
         end
@@ -55,7 +55,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function GCD_DB()
-        local p = SavedDB()
+        local p = DB()
         if not p then
             return {}
         end
@@ -66,7 +66,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function Cast_DB()
-        local p = SavedDB()
+        local p = DB()
         if not p then
             return {}
         end
@@ -138,7 +138,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildCursorPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local posY = yOffset
-        local _, hgt, rowFrame, heading
+        local _, hgt, row, heading
 
         CludesUI:ClearContentHeader()
 
@@ -149,20 +149,20 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         -- Enable Cursor Circle ---- Color (multiSwatch: custom left, class colored right)
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Cursor Circle",
             getValue = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and (p.enabled ~= false)
             end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(function()
-                local p = SavedDB()
+                local p = DB()
                 return p and (p.enabled ~= false)
             end, function(val)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -178,7 +178,7 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return 76 / 255, 201 / 255, 240 / 255
                         end
@@ -186,7 +186,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return r, g, b
                     end,
                     setValue = function(r, g, b)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -194,7 +194,7 @@ initFrame:SetScript("OnEvent", function(self)
                         RefreshAddon()
                     end,
                     onClick = function(self)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -210,7 +210,7 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                     end,
                     refreshAlpha = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p or p.enabled == false then
                             return 0.15
                         end
@@ -221,8 +221,8 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = "Class Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -230,7 +230,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -240,7 +240,7 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p or p.enabled == false then
                             return 0.15
                         end
@@ -256,7 +256,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -266,7 +266,7 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p or p.enabled == false then
                             return 0.15
                         end
@@ -278,7 +278,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
         -- Block overlay on the right region when Cursor Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = rowFrame._rightRegion
+            local rightRgn = row._rightRegion
             local circleBlock = CreateFrame("Frame", nil, rightRgn)
             circleBlock:SetAllPoints()
             circleBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -290,12 +290,12 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateCircleBlock()
-                local p = SavedDB()
-                local offset = not p or p.enabled == false
-                circleBlock:SetShown(offset)
+                local p = DB()
+                local off = not p or p.enabled == false
+                circleBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
+                    rightRgn._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateCircleBlock()
@@ -304,7 +304,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Rows below are HIDDEN entirely while the Cursor Circle is off (the
         -- toggle's DependentSetValue forces the rebuild on flips).
-        if SavedDB() and SavedDB().enabled ~= false then
+        if DB() and DB().enabled ~= false then
             -- Texture ---- Scale
             _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
@@ -327,11 +327,11 @@ initFrame:SetScript("OnEvent", function(self)
                     "ring_thick",
                 },
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.texture or "ring_normal"
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -345,11 +345,11 @@ initFrame:SetScript("OnEvent", function(self)
                 max = 2.0,
                 step = 0.1,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.scale or 1
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -367,11 +367,11 @@ initFrame:SetScript("OnEvent", function(self)
                 max = 100,
                 step = 1,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and (p.alpha or 100)
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -382,11 +382,11 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "toggle",
                 text = "Cursor Trail",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.trail or false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -403,11 +403,11 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.instanceOnly
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -421,11 +421,11 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Only Show When Hidden",
                 tooltip = "Only shows the cursor circle while the mouse is hidden -- that is, while you hold the left and/or right mouse button to pan the camera or move your character.",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.onlyWhenHidden or false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -443,11 +443,11 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Combat Only",
                 tooltip = "Only shows the cursor circle while you are in combat.",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.combatOnly or false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -464,11 +464,11 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Center Reticle",
                 tooltip = "Adds a small filled dot at the center of the cursor circle. Uses the same color and opacity as the circle.",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.reticle or false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -504,7 +504,7 @@ initFrame:SetScript("OnEvent", function(self)
         })
 
         -- Enable GCD Circle ---- Color (multiSwatch: custom left, class colored right)
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable GCD Circle",
             getValue = function()
@@ -561,8 +561,8 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = "Class Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -612,7 +612,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
         -- Block overlay on the right region when GCD Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = rowFrame._rightRegion
+            local rightRgn = row._rightRegion
             local gcdBlock = CreateFrame("Frame", nil, rightRgn)
             gcdBlock:SetAllPoints()
             gcdBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -624,11 +624,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateGCDBlock()
-                local offset = not GCD_DB().enabled
-                gcdBlock:SetShown(offset)
+                local off = not GCD_DB().enabled
+                gcdBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
+                    rightRgn._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateGCDBlock()
@@ -752,7 +752,7 @@ initFrame:SetScript("OnEvent", function(self)
         })
 
         -- Enable Cast Bar Circle ---- Color (multiSwatch: custom left, class colored right)
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Cast Bar Circle",
             getValue = function()
@@ -809,8 +809,8 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = "Class Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -860,7 +860,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
         -- Block overlay on the right region when Cast Bar Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = rowFrame._rightRegion
+            local rightRgn = row._rightRegion
             local castBlock = CreateFrame("Frame", nil, rightRgn)
             castBlock:SetAllPoints()
             castBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
@@ -872,11 +872,11 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateCastBlock()
-                local offset = not Cast_DB().enabled
-                castBlock:SetShown(offset)
+                local off = not Cast_DB().enabled
+                castBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRgn._label then
-                    rightRgn._label:SetAlpha(offset and 0.3 or 1)
+                    rightRgn._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateCastBlock()
@@ -884,7 +884,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Inline cog on Enable Cast Bar Circle for "Show Spark"
-        CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        CludesUI.BuildInlineCog(row._leftRegion, {
             title = "Cast Bar Settings",
             disabled = function()
                 return not Cast_DB().enabled
@@ -939,7 +939,7 @@ initFrame:SetScript("OnEvent", function(self)
             posY = posY - hgt
 
             -- Circle Opacity ---- Attach to Cursor
-            rowFrame, hgt = W:DualRow(hostFrame, posY, {
+            row, hgt = W:DualRow(hostFrame, posY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,

@@ -170,12 +170,12 @@ local function CountFont()
     local scrollBar = _G.LFGListFrame
         and _G.LFGListFrame.SearchPanel
         and _G.LFGListFrame.SearchPanel.SearchBox
-    local filePath, dim
+    local filePath, size
     if type(scrollBar) == "table" and scrollBar.GetFont then
-        filePath, dim = scrollBar:GetFont()
+        filePath, size = scrollBar:GetFont()
     end
-    if filePath and dim and dim > 0 then
-        return filePath, dim
+    if filePath and size and size > 0 then
+        return filePath, size
     end
     return CM.GetFontPath(ADDON_NAME), 12
 end
@@ -211,9 +211,9 @@ local function Place()
     if not (cardFrame and inset) then
         return
     end
-    local r1, r2, dim = -42, -57, 28
+    local r1, r2, size = -42, -57, 28
     if mod.Search_Rows then
-        r1, r2, dim = mod.Search_Rows()
+        r1, r2, size = mod.Search_Rows()
     end
     local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
     local st, pt = sp and sp:GetTop(), pve:GetTop()
@@ -236,7 +236,7 @@ local function Place()
     cardFrame.title:SetShown(not (ac and ac.showTitle == false))
     cardFrame.box:SetPoint("TOPLEFT", pve, "TOPLEFT", x1, dy + r2)
     cardFrame.box:SetPoint("TOPRIGHT", pve, "TOPLEFT", x2, dy + r2)
-    cardFrame.box:SetHeight(dim)
+    cardFrame.box:SetHeight(size)
     cardFrame.title:ClearAllPoints()
     cardFrame.title:SetPoint("LEFT", pve, "TOPLEFT", x1, dy + r1)
 end
@@ -294,16 +294,16 @@ local function Refresh()
         shares[idx] = Get(seg.cfg, true) and val or 0
         sum = sum + shares[idx]
     end
-    local barFrame = cardFrame.bar
-    local wid = barFrame:GetWidth() or 0
+    local bar = cardFrame.bar
+    local wid = bar:GetWidth() or 0
     local textured = TexturePath()
     local posX = 0
     for idx, seg in ipairs(SEGMENTS) do
         local texture, num = cardFrame.segs[idx], cardFrame.nums[idx]
         local sw = (sum > 0) and (wid * shares[idx] / sum) or 0
         texture:ClearAllPoints()
-        texture:SetPoint("TOPLEFT", barFrame, "TOPLEFT", posX, 0)
-        texture:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, 0)
+        texture:SetPoint("TOPLEFT", bar, "TOPLEFT", posX, 0)
+        texture:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", posX, 0)
         texture:SetWidth(math.max(sw, 0.01))
         -- Each segment shows its slice of the texture so it reads as one bar.
         if textured and wid > 0 then
@@ -335,59 +335,59 @@ local function BuildCard()
 end
 
 BuildCardInto = function()
-    local hostRegion = _G.GroupFinderFrame
+    local host = _G.GroupFinderFrame
     local pve = _G.PVEFrame
-    if not (hostRegion and pve and pve.Inset) then
+    if not (host and pve and pve.Inset) then
         return nil
     end
 
     -- Build into a local first so a failure never leaves half a card.
-    local cardFrame = CreateFrame("Frame", nil, hostRegion)
-    cardFrame:SetAllPoints(hostRegion)
-    cardFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 5)
+    local cardFrame = CreateFrame("Frame", nil, host)
+    cardFrame:SetAllPoints(host)
+    cardFrame:SetFrameLevel(host:GetFrameLevel() + 5)
 
     cardFrame.title = cardFrame:CreateFontString(nil, "OVERLAY")
     CM.ApplyModuleFont(cardFrame.title, nil, 12, ADDON_NAME, "")
     cardFrame.title:SetTextColor(1, 0.82, 0, 1)
     cardFrame.title:SetText(CludesUI.L("M+ Applications"))
 
-    local boxFrame = CreateFrame("Frame", nil, cardFrame)
-    boxFrame:EnableMouse(true)
-    boxFrame:SetScript("OnEnter", ShowTip)
-    boxFrame:SetScript("OnLeave", HideTip)
-    local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+    local box = CreateFrame("Frame", nil, cardFrame)
+    box:EnableMouse(true)
+    box:SetScript("OnEnter", ShowTip)
+    box:SetScript("OnLeave", HideTip)
+    local backdrop = box:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
-    local Stl = mod.Skin()
-    if Stl and Stl.AddBorder then
-        Stl.AddBorder(boxFrame)
+    local S = mod.Skin()
+    if S and S.AddBorder then
+        S.AddBorder(box)
     else
         local r, g, b, a = mod.ThemeBorder()
-        CM.MakeBorder(boxFrame, r, g, b, a)
+        CM.MakeBorder(box, r, g, b, a)
     end
-    cardFrame.box = boxFrame
+    cardFrame.box = box
     local px = CM.PP.mult
-    local barFrame = CreateFrame("Frame", nil, boxFrame)
-    barFrame:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", px, -px)
-    barFrame:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -px, px)
-    cardFrame.bar = barFrame
+    local bar = CreateFrame("Frame", nil, box)
+    bar:SetPoint("TOPLEFT", box, "TOPLEFT", px, -px)
+    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -px, px)
+    cardFrame.bar = bar
     cardFrame.segs, cardFrame.nums = {}, {}
     for idx = 1, #SEGMENTS do
-        cardFrame.segs[idx] = barFrame:CreateTexture(nil, "ARTWORK", nil, 1)
-        local num = barFrame:CreateFontString(nil, "OVERLAY")
+        cardFrame.segs[idx] = bar:CreateTexture(nil, "ARTWORK", nil, 1)
+        local num = bar:CreateFontString(nil, "OVERLAY")
         CM.ApplyModuleFont(num, nil, 12, ADDON_NAME, "OUTLINE")
         num:SetTextColor(1, 1, 1, 1)
         num:SetJustifyH("CENTER")
         num:SetJustifyV("MIDDLE")
         cardFrame.nums[idx] = num
     end
-    cardFrame.empty = barFrame:CreateFontString(nil, "OVERLAY")
+    cardFrame.empty = bar:CreateFontString(nil, "OVERLAY")
     CM.ApplyModuleFont(cardFrame.empty, nil, 12, ADDON_NAME, "OUTLINE")
     cardFrame.empty:SetTextColor(1, 1, 1, 0.6)
-    cardFrame.empty:SetPoint("CENTER", barFrame, "CENTER", 0, 0)
+    cardFrame.empty:SetPoint("CENTER", bar, "CENTER", 0, 0)
     cardFrame.empty:SetText(CludesUI.L("N/A"))
     cardFrame.empty:Hide()
-    barFrame:SetScript("OnSizeChanged", function()
+    bar:SetScript("OnSizeChanged", function()
         Refresh()
     end)
     return cardFrame

@@ -12,9 +12,9 @@ visuals.idleSize, visuals.hoverSize = 8, 12
 local defaultSet = { point = { 1, 1, 1, 1 }, border = { 0, 0, 0, 1 }, line = { 1, 0.2, 0.2, 1 } }
 local dots
 
-function CludesUI.GetPointAnchorColor(kindOf)
+function CludesUI.GetPointAnchorColor(kind)
     local colors = CludesUIDB and CludesUIDB.unlockPointColors
-    local color = colors and colors[kindOf] or defaultSet[kindOf]
+    local color = colors and colors[kind] or defaultSet[kind]
     return unpack(color)
 end
 
@@ -26,32 +26,32 @@ function visuals.ColorDot(art, alpha)
     art.border:SetVertexColor(r, g, b, a * alpha)
 end
 
-function CludesUI.SetPointAnchorColor(kindOf, r, g, b, a)
-    if not defaultSet[kindOf] then
+function CludesUI.SetPointAnchorColor(kind, r, g, b, a)
+    if not defaultSet[kind] then
         return
     end
     CludesUIDB.unlockPointColors = CludesUIDB.unlockPointColors or {}
-    CludesUIDB.unlockPointColors[kindOf] = { r, g, b, a }
-    if dots and kindOf ~= "line" then
+    CludesUIDB.unlockPointColors[kind] = { r, g, b, a }
+    if dots and kind ~= "line" then
         for idx = 1, #dots do
             visuals.ColorDot(dots[idx], dots[idx].colorAlpha)
         end
     end
 end
 
-function visuals.SizeDot(art, dim)
+function visuals.SizeDot(art, size)
     local pp = CludesUI.PP
     local px = pp.perfect / art:GetEffectiveScale()
-    if art.dotSize == dim and art.pixelSize == px then
+    if art.dotSize == size and art.pixelSize == px then
         return
     end
-    art.dotSize, art.pixelSize = dim, px
-    art:SetSize(dim, dim)
+    art.dotSize, art.pixelSize = size, px
+    art:SetSize(size, size)
     -- Matched cells prefilter both edges at their displayed pixel size.
-    local diameter = math.max(1, math.min(16, math.floor(dim / px + 0.5)))
-    local cellFrame = diameter - 1
-    local posX, posY = (cellFrame % 4) * 64, math.floor(cellFrame / 4) * 64
-    local padded = dim * (diameter + 2) / diameter
+    local diameter = math.max(1, math.min(16, math.floor(size / px + 0.5)))
+    local cell = diameter - 1
+    local posX, posY = (cell % 4) * 64, math.floor(cell / 4) * 64
+    local padded = size * (diameter + 2) / diameter
     art.fill:SetSize(padded, padded)
     art.border:SetSize(padded, padded)
     art.fill:SetTexCoord(posX / 256, (posX + 64) / 256, posY / 256, (posY + 64) / 256)
@@ -66,12 +66,12 @@ function visuals.CreateDot(hostFrame)
     border:SetTexture(DOT_BORDER, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "LINEAR")
     border:SetSnapToPixelGrid(false)
     border:SetTexelSnappingBias(0)
-    local fillTex = art:CreateTexture(nil, "ARTWORK")
-    fillTex:SetPoint("CENTER", art, "CENTER")
-    fillTex:SetTexture(DOT_FILL, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "LINEAR")
-    fillTex:SetSnapToPixelGrid(false)
-    fillTex:SetTexelSnappingBias(0)
-    art.fill, art.border = fillTex, border
+    local fill = art:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("CENTER", art, "CENTER")
+    fill:SetTexture(DOT_FILL, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "LINEAR")
+    fill:SetSnapToPixelGrid(false)
+    fill:SetTexelSnappingBias(0)
+    art.fill, art.border = fill, border
     visuals.ColorDot(art, 1)
     dots = dots or {}
     dots[#dots + 1] = art
@@ -97,11 +97,11 @@ function visuals.RaiseAboveMover(widget, mover)
 end
 
 local markers
-local function ShowPoint(slotPos, mover, anchorPoint, alpha)
-    local marker = markers[slotPos]
+local function ShowPoint(index, mover, anchorPoint, alpha)
+    local marker = markers[index]
     if not marker then
         marker = visuals.CreateDot(mover)
-        markers[slotPos] = marker
+        markers[index] = marker
     end
     if marker:GetParent() ~= mover then
         marker:SetParent(mover)
@@ -113,16 +113,16 @@ local function ShowPoint(slotPos, mover, anchorPoint, alpha)
         marker.point, marker.mover = anchorPoint, mover
     end
     local pp = CludesUI.PP
-    local dim = visuals.idleSize * pp.perfect / marker:GetEffectiveScale()
-    visuals.SizeDot(marker, dim)
+    local size = visuals.idleSize * pp.perfect / marker:GetEffectiveScale()
+    visuals.SizeDot(marker, size)
     marker:SetAlpha(alpha)
     marker:Show()
 end
 
-function visuals.Connection(slotPos, source, sourcePoint, targetUnit, targetPoint, alpha)
+function visuals.Connection(index, source, sourcePoint, target, targetPoint, alpha)
     markers = markers or {}
-    ShowPoint(slotPos * 2 - 1, source, sourcePoint, alpha)
-    ShowPoint(slotPos * 2, targetUnit, targetPoint, alpha)
+    ShowPoint(index * 2 - 1, source, sourcePoint, alpha)
+    ShowPoint(index * 2, target, targetPoint, alpha)
 end
 
 function visuals.TrimConnections(total)

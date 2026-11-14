@@ -61,26 +61,26 @@ function mod.TalentCondPreviewSet(barId, tracked)
     if not storage or type(tracked) ~= "table" then
         return nil
     end
-    local group
+    local set
     for _, ident in ipairs(tracked) do
         local record = type(ident) == "number"
             and (ident > 0 or mod.IsEmptySlotMarker(ident))
             and storage[ident]
         local conds = type(record) == "table" and rawget(record, "talentConditions")
         if type(conds) == "table" and #conds > 0 then
-            group = group or {}
-            group[ident] = mod.TalentConditionsHold(conds) and "on" or "off"
+            set = set or {}
+            set[ident] = mod.TalentConditionsHold(conds) and "on" or "off"
         end
     end
-    return group
+    return set
 end
 
 -- Small corner mark on a preview slot whose spell carries conditions: accent while
 -- they hold, red while they do not. state nil hides it. Built on first use. Kept under
 -- the slot's text overlay (its border strips sit one level above the fill), so keybind
 -- and stack text stay readable in every icon style (the overlay's level differs per style).
-function mod.PaintTalentCondMark(slotIndex, status)
-    local mark = slotIndex._tcMark
+function mod.PaintTalentCondMark(slot, status)
+    local mark = slot._tcMark
     if not status then
         if mark then
             mark:Hide()
@@ -88,18 +88,18 @@ function mod.PaintTalentCondMark(slotIndex, status)
         return
     end
     if not mark then
-        mark = CreateFrame("Frame", nil, slotIndex)
+        mark = CreateFrame("Frame", nil, slot)
         mark:EnableMouse(false)
         mark._tex = mark:CreateTexture(nil, "ARTWORK")
         mark._tex:SetAllPoints()
         Pix.CreateBorder(mark, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        slotIndex._tcMark = mark
+        slot._tcMark = mark
     end
-    mark:SetFrameLevel(slotIndex._pvTextOverlay:GetFrameLevel() - 2)
-    local dim = math.max(6, math.floor((slotIndex:GetWidth() or 0) * 0.28 + 0.5))
-    mark:SetSize(dim, dim)
+    mark:SetFrameLevel(slot._pvTextOverlay:GetFrameLevel() - 2)
+    local size = math.max(6, math.floor((slot:GetWidth() or 0) * 0.28 + 0.5))
+    mark:SetSize(size, size)
     mark:ClearAllPoints()
-    mark:SetPoint("TOPLEFT", slotIndex, "TOPLEFT", 3, -3)
+    mark:SetPoint("TOPLEFT", slot, "TOPLEFT", 3, -3)
     if status == "off" then
         mark._tex:SetColorTexture(NOT_TAKEN[1], NOT_TAKEN[2], NOT_TAKEN[3], 1)
     else

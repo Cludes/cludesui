@@ -193,9 +193,9 @@ do
             -- preset.icon is PICKER-ONLY art (the current-tier pot): every resolved
             -- variant, the primary included, paints its own item art so the icon
             -- always matches the counted/tooltipped variant.
-            local glyph = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)) or preset.icon
+            local icon = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)) or preset.icon
             if f._tex then
-                f._tex:SetTexture(glyph)
+                f._tex:SetTexture(icon)
             end
         end
         return ident
@@ -647,11 +647,11 @@ local function ProcessPresetCooldowns()
                 f._isItemPresetFrame
                 and f._presetItemID
                 and nowTime >= _encounterResetUntil
-                -- Item read-skip (probe-proven capture #12: the item branch was the
-                -- drain's entire remaining cost): a READY, un-armed, un-desaturated item
-                -- frame cannot change state -- loot/bag edges arm it, lockout/desat keep
-                -- it polling, an on-cd frame polls for its own expiry edge, and the 5s
-                -- sweep heals anything missed.
+                -- Item read-skip (probe-proven capture #12: the item branch was the
+                -- drain's entire remaining cost): a READY, un-armed, un-desaturated item
+                -- frame cannot change state -- loot/bag edges arm it, lockout/desat keep
+                -- it polling, an on-cd frame polls for its own expiry edge, and the 5s
+                -- sweep heals anything missed.
                 and (
                     fullSweep
                     or f._itemWalkArm ~= false
@@ -1129,13 +1129,13 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
             -- matches the tracked spell). A nil or unreadable id is a wave ("all
             -- cooldowns should be updated") and re-arms every spell preset. Frames
             -- with no extracted id yet arm conservatively.
-            local spellRef, baseValue = a1, a2
+            local spellRef, base = a1, a2
             local named = _PlainNum(spellRef)
-            local baseOk = named and _PlainNum(baseValue)
+            local baseOk = named and _PlainNum(base)
             for f in pairs(_pcActive) do
                 if not f._isItemPresetFrame then
                     local fsid = f._cachedPresetSID
-                    if not named or not fsid or fsid == spellRef or (baseOk and fsid == baseValue) then
+                    if not named or not fsid or fsid == spellRef or (baseOk and fsid == base) then
                         f._cdPushArm = true
                     end
                 end

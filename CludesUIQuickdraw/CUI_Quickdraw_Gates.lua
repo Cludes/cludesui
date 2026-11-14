@@ -546,11 +546,11 @@ do
         end
     end
 
-    function EnsureGates(slotPos, button, need)
-        local pool = gatePools[slotPos]
+    function EnsureGates(index, button, need)
+        local pool = gatePools[index]
         if not pool then
             pool = { pgate = {}, rgate = {}, built = 0 }
-            gatePools[slotPos] = pool
+            gatePools[index] = pool
 
             -- The FLOOR. One per palette, under every other gate and over
             -- everything else, shown only while some claim is armed -- see
@@ -584,7 +584,7 @@ do
             -- under. See GateMouse, which is what makes that true.
             local fgate = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. slotPos .. "FGate",
+                "CUIQuickdrawButton" .. index .. "FGate",
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -612,7 +612,7 @@ do
         for key = pool.built + 1, need do
             local pgate = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. slotPos .. "PGate" .. key,
+                "CUIQuickdrawButton" .. index .. "PGate" .. key,
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -652,7 +652,7 @@ do
             for r = 1, REGION_MAX do
                 local rgate = CreateFrame(
                     "Frame",
-                    "CUIQuickdrawButton" .. slotPos .. "RGate" .. key .. "_" .. r,
+                    "CUIQuickdrawButton" .. index .. "RGate" .. key .. "_" .. r,
                     UIParent,
                     "SecureHandlerEnterLeaveTemplate"
                 )
@@ -717,8 +717,8 @@ do
     -- sized by the window, not by how many entries nest, and nine lean frames is
     -- what the whole thing costs. Only a strip that actually nests something
     -- ever builds it -- see the call in PushPalette.
-    function EnsureLatticeGates(slotPos, button)
-        local pool = gatePools[slotPos]
+    function EnsureLatticeGates(index, button)
+        local pool = gatePools[index]
         if not pool or pool.lattice then
             return
         end
@@ -729,7 +729,7 @@ do
             -- offset, which is what the snippets loop.
             local g = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. slotPos .. "LGate" .. (d + MAX_LATTICE),
+                "CUIQuickdrawButton" .. index .. "LGate" .. (d + MAX_LATTICE),
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )

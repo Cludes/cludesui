@@ -254,7 +254,7 @@ ABAR.VisibilityCompat = ABAR.VisibilityCompat or {}
 -------------------------------------------------------------------------------
 local _G = _G
 local ipairs, pairs, type, pcall = ipairs, pairs, type, pcall
-local abs, ceil, floor, min, upper = math.abs, math.ceil, math.floor, math.min, math.max
+local abs, ceil, floor, min, max = math.abs, math.ceil, math.floor, math.min, math.max
 local wipe, tinsert = wipe, table.insert
 local InCombatLockdown = InCombatLockdown
 local hooksecurefunc = hooksecurefunc
@@ -598,18 +598,18 @@ mod.BAR_LOOKUP = BAR_LOOKUP
 mod.ALL_BARS = ALL_BARS
 mod.EXTRA_BARS = EXTRA_BARS
 
-function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
+function ABAR.VisibilityCompat.ApplyMode(prefs, mode)
     if not prefs then
         return "always"
     end
 
-    modeName = modeName or "always"
-    prefs.barVisibility = modeName
-    prefs.alwaysHidden = (modeName == "never")
+    mode = mode or "always"
+    prefs.barVisibility = mode
+    prefs.alwaysHidden = (mode == "never")
 
     local wasMouseover = prefs.mouseoverEnabled
-    prefs.mouseoverEnabled = (modeName == "mouseover")
-    if modeName == "mouseover" then
+    prefs.mouseoverEnabled = (mode == "mouseover")
+    if mode == "mouseover" then
         if not prefs._savedBarAlpha then
             prefs._savedBarAlpha = prefs.mouseoverAlpha or 1
         end
@@ -619,9 +619,9 @@ function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
         prefs._savedBarAlpha = nil
     end
 
-    prefs.combatHideEnabled = (modeName == "out_of_combat")
-    prefs.combatShowEnabled = (modeName == "in_combat")
-    return modeName
+    prefs.combatHideEnabled = (mode == "out_of_combat")
+    prefs.combatShowEnabled = (mode == "in_combat")
+    return mode
 end
 
 function ABAR.VisibilityCompat.Normalize(prefs)
@@ -666,10 +666,10 @@ function ABAR.VisibilityCompat.Copy(dst, source, dstNoGroupModes)
         return
     end
 
-    local modeName = ABAR.VisibilityCompat.Normalize(source)
-    ABAR.VisibilityCompat.ApplyMode(dst, modeName)
+    local mode = ABAR.VisibilityCompat.Normalize(source)
+    ABAR.VisibilityCompat.ApplyMode(dst, mode)
 
-    if modeName == "mouseover" then
+    if mode == "mouseover" then
         dst._savedBarAlpha = source._savedBarAlpha or source.mouseoverAlpha or 1
         dst.mouseoverAlpha = 0
     else

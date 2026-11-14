@@ -81,7 +81,7 @@ local _pendingCasts = {}
 -------------------------------------------------------------------------------
 --  Helpers
 -------------------------------------------------------------------------------
-local floor, format, min, upper = math.floor, string.format, math.min, math.max
+local floor, format, min, max = math.floor, string.format, math.min, math.max
 local GetTime = GetTime
 
 -- Spell info cache: spellID -> { name, iconID } (never changes for a given ID)
@@ -89,7 +89,7 @@ local _spellInfoCache = {}
 
 -- Cached DB accessor; defaults are merged once at init, not per-call
 local _shDB
-local function SavedDB()
+local function DB()
     if _shDB then
         return _shDB
     end
@@ -107,8 +107,8 @@ local function SavedDB()
     return sh
 end
 
-local function SetFont(fontStr, dim)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, "damageMeters")
+local function SetFont(fontStr, size)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, "damageMeters")
 end
 
 -- Icon size is a coordinate value like the window width and icon spacing, so it
@@ -123,7 +123,7 @@ end
 
 local function GetBarTexturePath()
     local dmCfg = mod.EDM.DB()
-    local sh = SavedDB()
+    local sh = DB()
     local key = sh.spellHistoryBarTexture
     if not key or key == "match" then
         key = (dmCfg and dmCfg.barTexture) or "none"
@@ -149,13 +149,10 @@ local function OutcomeColor(status)
     if status == "failed" or status == "interrupted" then
         return CLR_STOPPED[1], CLR_STOPPED[2], CLR_STOPPED[3]
     end
-    local sh = SavedDB()
+    local sh = DB()
     if sh.barColorUseClass then
-        local _, classFile = UnitClass("player")
-        local cc = classFile
-            and RAID_CLASS_COLORS
-            and RAID_CLASS_COLORS[classFile]
-            and CUI.GetClassColor(classFile)
+        local _, class = UnitClass("player")
+        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
         if cc then
             return cc.r, cc.g, cc.b
         end
@@ -210,14 +207,14 @@ local function BuildRightText(record)
     local outcomeStr = OUTCOME_TEXT[record.status]
     -- Outcome (Interrupted/Failed) replaces target; otherwise show target.
     -- Enemy names in M+ are secret values but FontStrings can display them.
-    local targetUnit = record.target
-    local isSecret = targetUnit and issecretvalue and issecretvalue(targetUnit)
-    local hasTarget = targetUnit and (isSecret or targetUnit ~= "")
+    local target = record.target
+    local isSecret = target and issecretvalue and issecretvalue(target)
+    local hasTarget = target and (isSecret or target ~= "")
     -- Strip realm suffix for non-secret names (secret values pass through to FontString as-is)
     if hasTarget and not isSecret and not outcomeStr and Ambiguate then
-        targetUnit = Ambiguate(targetUnit, "short")
+        target = Ambiguate(target, "short")
     end
-    local rightPart = outcomeStr or (hasTarget and targetUnit) or nil
+    local rightPart = outcomeStr or (hasTarget and target) or nil
     local result
     if castStr ~= "" and rightPart then
         result = castStr .. "  " .. rightPart
@@ -242,7 +239,7 @@ local StartCastAnim
 --  History management
 -------------------------------------------------------------------------------
 local function RefreshViews()
-    local sh = SavedDB()
+    local sh = DB()
     if sh.iconEnabled then
         BuildIconStrip()
     end
@@ -363,9 +360,9 @@ local function FinishPending(castGUID, status)
         local dur = record.endTime - record.startTime
         if dur > 0 then
             if record.isChannel then
-                record.fillProgress = upper(0, min(1, (record.endTime - nowTime) / dur))
+                record.fillProgress = max(0, min(1, (record.endTime - nowTime) / dur))
             else
-                record.fillProgress = upper(0, min(1, (nowTime - record.startTime) / dur))
+                record.fillProgress = max(0, min(1, (nowTime - record.startTime) / dur))
             end
         end
     end
@@ -392,9 +389,9 @@ local function OnSpellEvent(_, evt, unitToken, ...)
 
     -- UNIT_SPELLCAST_SENT has unique args: unit, target, castGUID, spellID
     if evt == "UNIT_SPELLCAST_SENT" then
-        local targetUnit, castGUID2, sentSpellID = ...
-        if castGUID2 and targetUnit then
-            _pendingTargets[castGUID2] = targetUnit
+        local target, castGUID2, sentSpellID = ...
+        if castGUID2 and target then
+            _pendingTargets[castGUID2] = target
         end
         if castGUID2 and sentSpellID and _consumableSpells[sentSpellID] then
             _sentConsumable = castGUID2
@@ -669,11 +666,11 @@ local ANIM_SLIDE_PX = 6
 -- existing profile.  The container expands around that fixed icon so changing
 -- the history length or growth direction never makes the row wander.
 local function IconStripGeometry(count)
-    local sh = SavedDB()
+    local sh = DB()
     local iconSz = SnapSize(sh.iconSize or 24)
     local gap = sh.iconSpacing or 1
     local dir = sh.growDirection or "LEFT"
-    count = upper(1, count or sh.iconCount or 5)
+    count = max(1, count or sh.iconCount or 5)
     local span = count * iconSz + (count - 1) * gap
     local horizontal = dir == "LEFT" or dir == "RIGHT"
     local width = horizontal and span or iconSz
@@ -707,7 +704,7 @@ local function PositionIconContainer(count)
         return
     end
 
-    local place = SavedDB().iconPos
+    local place = DB().iconPos
     local firstLeft, firstTop
     if place and place.x and place.y then
         firstLeft, firstTop = place.x, place.y
@@ -728,7 +725,7 @@ local function SaveIconPositionFromFrame(count)
         return
     end
     local _, _, _, _, _, leftOffset, upOffset = IconStripGeometry(count)
-    SavedDB().iconPos = { x = leftX + leftOffset, y = topY - upOffset }
+    DB().iconPos = { x = leftX + leftOffset, y = topY - upOffset }
 end
 
 local function StartIconDrag(button)
@@ -847,15 +844,15 @@ local function EnsureFadeEvents()
         else
             local cs = _combatStart
             _combatStart = nil
-            if (SavedDB().iconFadeTime or 0) <= 0 then
+            if (DB().iconFadeTime or 0) <= 0 then
                 return
             end
             local nowTime = GetTime()
             cs = cs or nowTime
             for i = 1, #_history do
                 local e = _history[i]
-                local baseValue = FadeBase(e)
-                e._fadeBase = baseValue + (nowTime - upper(cs, baseValue))
+                local base = FadeBase(e)
+                e._fadeBase = base + (nowTime - max(cs, base))
             end
             BuildIconStrip()
         end
@@ -953,7 +950,7 @@ local function MakeIcon(hostFrame)
     ic.bg = backdrop
     ic.tex = ic.frame:CreateTexture(nil, "ARTWORK")
     ic.tex:SetAllPoints()
-    local z = SavedDB().iconZoom or 0.08
+    local z = DB().iconZoom or 0.08
     ic.tex:SetTexCoord(z, 1 - z, z, 1 - z)
     ic.frame:Hide()
     return ic
@@ -967,10 +964,10 @@ local function GetPreviewIcons()
     end
     _previewIcons = {}
     -- Pull from action bars first (most recognizable spells)
-    for slotIndex = 1, 120 do
-        local actionType, ident = GetActionInfo(slotIndex)
+    for slot = 1, 120 do
+        local actionType, ident = GetActionInfo(slot)
         if actionType == "spell" and ident and ident > 0 then
-            local texture = GetActionTexture(slotIndex)
+            local texture = GetActionTexture(slot)
             if texture then
                 -- Deduplicate
                 local dup = false
@@ -997,7 +994,7 @@ local function GetPreviewIcons()
 end
 
 BuildIconStrip = function()
-    local sh = SavedDB()
+    local sh = DB()
     if
         not sh.iconEnabled
         or ShouldHide(
@@ -1129,7 +1126,7 @@ BuildIconStrip = function()
     -- Layout only changes when settings change; content changes every cast.
     local iconAlpha = iconAlphaCheck
     local layoutChanged = needsLayout
-    local loopEnd = upper(count, _lastIconCount or 0)
+    local loopEnd = max(count, _lastIconCount or 0)
 
     for i = 1, loopEnd do
         local ic = _iconPool[i]
@@ -1146,17 +1143,17 @@ BuildIconStrip = function()
                 ic.frame:SetScale(1)
                 ic.frame:SetSize(iconSz, iconSz)
                 ic.frame:ClearAllPoints()
-                local offset = (i - 1) * (iconSz + gap)
+                local off = (i - 1) * (iconSz + gap)
                 if i == 1 then
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, 0)
                 elseif dir == "RIGHT" then
-                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", offset, 0)
+                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", off, 0)
                 elseif dir == "LEFT" then
-                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", -offset, 0)
+                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", -off, 0)
                 elseif dir == "DOWN" then
-                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, -offset)
+                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, -off)
                 else
-                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, offset)
+                    ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, off)
                 end
                 ic.frame:SetAlpha(iconAlpha)
                 ic.frame:Show()
@@ -1246,7 +1243,7 @@ end
 -- preview mode, giving the strip the same labeled placement box as Combat Timer.
 mod.MakeIconHistoryUnlockElement = function(MK)
     local function UnlockGeometry()
-        return IconStripGeometry(SavedDB().iconCount or 5)
+        return IconStripGeometry(DB().iconCount or 5)
     end
     return MK({
         key = "EDM_IconHistory",
@@ -1270,7 +1267,7 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             return width, height
         end,
         isHidden = function()
-            return not SavedDB().iconEnabled
+            return not DB().iconEnabled
         end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
             -- Unlock Mode stores registered elements as CENTER/CENTER offsets.
@@ -1287,10 +1284,10 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             if dir == "UP" then
                 firstTop = firstTop - height + iconSz
             end
-            SavedDB().iconPos = { x = firstLeft, y = firstTop }
+            DB().iconPos = { x = firstLeft, y = firstTop }
         end,
         loadPos = function()
-            local place = SavedDB().iconPos
+            local place = DB().iconPos
             local iconSz, _, dir, width, height = UnlockGeometry()
             local firstLeft = place and place.x or (UIParent:GetWidth() * 0.5 - iconSz * 0.5)
             local firstTop = place and place.y or (UIParent:GetHeight() * 0.5 + iconSz * 0.5)
@@ -1304,11 +1301,11 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             }
         end,
         clearPos = function()
-            SavedDB().iconPos = nil
+            DB().iconPos = nil
         end,
         applyPos = function()
             PositionIconContainer(
-                (CUI._unlockActive and SavedDB().iconCount) or _iconContainer and _iconContainer._layoutCount
+                (CUI._unlockActive and DB().iconCount) or _iconContainer and _iconContainer._layoutCount
             )
         end,
     })
@@ -1325,53 +1322,53 @@ local _barLayoutCache = "" -- tracks layout changes (barH, spacing, texture)
 local _lastBarVisible = 0 -- tracks visible bar count for minimal loop
 
 local function MakeHistoryBar(hostFrame)
-    local barFrame = {}
-    barFrame.row = CreateFrame("Frame", nil, hostFrame)
-    barFrame.row:SetHeight(18)
+    local bar = {}
+    bar.row = CreateFrame("Frame", nil, hostFrame)
+    bar.row:SetHeight(18)
 
     -- Icon anchored to row left; fill starts right of icon
-    barFrame.icon = barFrame.row:CreateTexture(nil, "OVERLAY")
-    barFrame.icon:SetSize(18, 18)
-    barFrame.icon:SetPoint("LEFT", barFrame.row, "LEFT", 0, 0)
-    local z = SavedDB().iconZoom or 0.08
-    barFrame.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    bar.icon = bar.row:CreateTexture(nil, "OVERLAY")
+    bar.icon:SetSize(18, 18)
+    bar.icon:SetPoint("LEFT", bar.row, "LEFT", 0, 0)
+    local z = DB().iconZoom or 0.08
+    bar.icon:SetTexCoord(z, 1 - z, z, 1 - z)
 
-    barFrame.fill = CreateFrame("StatusBar", nil, barFrame.row)
-    barFrame.fill:SetPoint("TOPLEFT", barFrame.icon, "TOPRIGHT", 0, 0)
-    barFrame.fill:SetPoint("BOTTOMRIGHT", barFrame.row, "BOTTOMRIGHT", 0, 0)
-    barFrame.fill:SetMinMaxValues(0, 1)
-    barFrame.fill:SetValue(1)
-    barFrame.fill:SetStatusBarTexture(BAR_TEX)
+    bar.fill = CreateFrame("StatusBar", nil, bar.row)
+    bar.fill:SetPoint("TOPLEFT", bar.icon, "TOPRIGHT", 0, 0)
+    bar.fill:SetPoint("BOTTOMRIGHT", bar.row, "BOTTOMRIGHT", 0, 0)
+    bar.fill:SetMinMaxValues(0, 1)
+    bar.fill:SetValue(1)
+    bar.fill:SetStatusBarTexture(BAR_TEX)
     -- Blizzard Style: the same track and edge as the meter's own rows
     -- (Classic WoW UI rows stay plain).
     if mod.DMStyle() == "blizzard" then
-        barFrame._bg = barFrame.row:CreateTexture(nil, "BACKGROUND")
-        mod.DMApplyBlizzBarBg(barFrame)
+        bar._bg = bar.row:CreateTexture(nil, "BACKGROUND")
+        mod.DMApplyBlizzBarBg(bar)
     end
 
-    local tf = CreateFrame("Frame", nil, barFrame.fill)
-    tf:SetAllPoints(barFrame.fill)
-    tf:SetFrameLevel(barFrame.fill:GetFrameLevel() + 2)
+    local tf = CreateFrame("Frame", nil, bar.fill)
+    tf:SetAllPoints(bar.fill)
+    tf:SetFrameLevel(bar.fill:GetFrameLevel() + 2)
 
-    local sh = SavedDB()
+    local sh = DB()
     local fontStr = sh.textSize or 11
 
-    barFrame.label = tf:CreateFontString(nil, "OVERLAY")
-    barFrame.label:SetPoint("LEFT", barFrame.icon, "RIGHT", 4, 0)
-    barFrame.label:SetJustifyH("LEFT")
-    barFrame.label:SetWordWrap(false)
-    SetFont(barFrame.label, fontStr)
+    bar.label = tf:CreateFontString(nil, "OVERLAY")
+    bar.label:SetPoint("LEFT", bar.icon, "RIGHT", 4, 0)
+    bar.label:SetJustifyH("LEFT")
+    bar.label:SetWordWrap(false)
+    SetFont(bar.label, fontStr)
 
-    barFrame.rightText = tf:CreateFontString(nil, "OVERLAY")
-    barFrame.rightText:SetPoint("RIGHT", tf, "RIGHT", -3, 0)
-    barFrame.rightText:SetJustifyH("RIGHT")
-    barFrame.rightText:SetWordWrap(false)
-    SetFont(barFrame.rightText, fontStr)
+    bar.rightText = tf:CreateFontString(nil, "OVERLAY")
+    bar.rightText:SetPoint("RIGHT", tf, "RIGHT", -3, 0)
+    bar.rightText:SetJustifyH("RIGHT")
+    bar.rightText:SetWordWrap(false)
+    SetFont(bar.rightText, fontStr)
 
-    barFrame.label:SetPoint("RIGHT", barFrame.rightText, "LEFT", -4, 0)
+    bar.label:SetPoint("RIGHT", bar.rightText, "LEFT", -4, 0)
 
-    barFrame.row:Hide()
-    return barFrame
+    bar.row:Hide()
+    return bar
 end
 
 local MEDIA = "Interface\\AddOns\\CludesUIDamageMeters\\Media\\"
@@ -1379,7 +1376,7 @@ local RESIZE_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\resize_element.p
 local MIN_W, MIN_H = 150, 80
 
 local function BuildBarWindow()
-    local sh = SavedDB()
+    local sh = DB()
     local dmCfg = mod.EDM.DB()
     if
         not sh.barEnabled
@@ -1435,11 +1432,11 @@ local function BuildBarWindow()
         hdrBg:SetAllPoints()
         widget._hdrBg = hdrBg
 
-        local titleText = heading:CreateFontString(nil, "OVERLAY")
-        titleText:SetPoint("LEFT", heading, "LEFT", 6, mod.DMHdrLift(22))
-        SetFont(titleText, 11)
-        titleText:SetText("Spell History")
-        widget._title = titleText
+        local title = heading:CreateFontString(nil, "OVERLAY")
+        title:SetPoint("LEFT", heading, "LEFT", 6, mod.DMHdrLift(22))
+        SetFont(title, 11)
+        title:SetText("Spell History")
+        widget._title = title
 
         -- Header icons (right-aligned, matching DM window style)
         local ICON_A = 0.4
@@ -1456,23 +1453,23 @@ local function BuildBarWindow()
             button:SetSize(btnSize, btnSize)
             button:SetPoint("RIGHT", heading, "RIGHT", xOff, mod.DMHdrLift(22))
             button:SetFrameLevel(heading:GetFrameLevel() + 2)
-            local glyph = button:CreateTexture(nil, "ARTWORK")
-            glyph:SetAllPoints()
-            button._hdrIcon = glyph
-            if not mod.DMPaintHdrArt(glyph, artKey) then
-                glyph:SetTexture(texFile)
-                glyph:SetDesaturated(true)
-                glyph:SetVertexColor(1, 1, 1, ICON_A)
+            local icon = button:CreateTexture(nil, "ARTWORK")
+            icon:SetAllPoints()
+            button._hdrIcon = icon
+            if not mod.DMPaintHdrArt(icon, artKey) then
+                icon:SetTexture(texFile)
+                icon:SetDesaturated(true)
+                icon:SetVertexColor(1, 1, 1, ICON_A)
             end
             button:SetScript("OnEnter", function()
-                if not mod.DMHdrHover(glyph, true) then
-                    glyph:SetVertexColor(1, 1, 1, ICON_HA)
+                if not mod.DMHdrHover(icon, true) then
+                    icon:SetVertexColor(1, 1, 1, ICON_HA)
                 end
                 CUI.ShowWidgetTooltip(button, tooltip)
             end)
             button:SetScript("OnLeave", function()
-                if not mod.DMHdrHover(glyph, false) then
-                    glyph:SetVertexColor(1, 1, 1, ICON_A)
+                if not mod.DMHdrHover(icon, false) then
+                    icon:SetVertexColor(1, 1, 1, ICON_A)
                 end
                 CUI.HideWidgetTooltip()
             end)
@@ -1480,7 +1477,7 @@ local function BuildBarWindow()
                 CUI.HideWidgetTooltip()
                 onClick(button)
             end)
-            button._icon = glyph
+            button._icon = icon
             return button
         end
 
@@ -1506,7 +1503,7 @@ local function BuildBarWindow()
             widget._locked and "Locked" or "Unlocked",
             function()
                 widget._locked = not widget._locked
-                SavedDB().barLocked = widget._locked
+                DB().barLocked = widget._locked
                 local ic = widget._lockBtn._icon
                 if not mod.DMPaintHdrArt(ic, widget._locked and "locked" or "unlocked") then
                     ic:SetTexture(
@@ -1542,7 +1539,7 @@ local function BuildBarWindow()
             end
             local cx = GetCursorPosition()
             local es = widget:GetEffectiveScale()
-            widget:SetWidth(upper(MIN_W, resizeStartW + (cx / es - resizeStartX)))
+            widget:SetWidth(max(MIN_W, resizeStartW + (cx / es - resizeStartX)))
         end)
         resizeBtnHdr:SetScript("OnMouseDown", function(_, button)
             if button ~= "LeftButton" or widget._locked then
@@ -1565,7 +1562,7 @@ local function BuildBarWindow()
             end
             widget._resizing = false
             resizeFrame:Hide()
-            SavedDB().barWidth = floor(widget:GetWidth() + 0.5)
+            DB().barWidth = floor(widget:GetWidth() + 0.5)
         end)
 
         -- Header drag
@@ -1578,7 +1575,7 @@ local function BuildBarWindow()
             widget:StopMovingOrSizing()
             local l, t = widget:GetLeft(), widget:GetTop()
             if l and t then
-                SavedDB().barPos = { x = l, y = t }
+                DB().barPos = { x = l, y = t }
             end
         end)
 
@@ -1591,8 +1588,8 @@ local function BuildBarWindow()
 
         contentFrame:EnableMouseWheel(true)
         contentFrame:SetScript("OnMouseWheel", function(_, delta)
-            local maxS = upper(0, #_history - (widget._visSlots or 1))
-            _barScroll = upper(0, min(_barScroll - delta, maxS))
+            local maxS = max(0, #_history - (widget._visSlots or 1))
+            _barScroll = max(0, min(_barScroll - delta, maxS))
             RefreshBarWindow()
         end)
     end
@@ -1674,14 +1671,14 @@ RefreshBarWindow = function()
     end
 
     local dmCfg = mod.EDM.DB()
-    local sh = SavedDB()
+    local sh = DB()
     local barH, barSp, stride =
         mod._RowMetrics(sh.shBarHeight or 18, dmCfg.barSpacing or 2, _barWin:GetEffectiveScale())
     local texPath = GetBarTexturePath()
     local fontSize = sh.textSize or 11
     local contentFrame = _barWin._content
     local frameH = contentFrame:GetHeight()
-    local visSlots = upper(1, floor(frameH / stride + 0.5))
+    local visSlots = max(1, floor(frameH / stride + 0.5))
     _barWin._visSlots = visSlots
 
     -- Text color from spell history settings
@@ -1716,7 +1713,7 @@ RefreshBarWindow = function()
     local stR, stG, stB = CLR_STOPPED[1], CLR_STOPPED[2], CLR_STOPPED[3]
 
     local sum = min(#_history, sh.maxBars or 5)
-    local loopEnd = upper(visSlots, _lastBarVisible)
+    local loopEnd = max(visSlots, _lastBarVisible)
     local barIconZoom = sh.iconZoom or 0.08
 
     -- Layout key: only rebuild positions/sizes when settings change
@@ -1727,99 +1724,99 @@ RefreshBarWindow = function()
     end
 
     for i = 1, loopEnd do
-        local barFrame = _barPool[i]
-        if not barFrame then
+        local bar = _barPool[i]
+        if not bar then
             break
         end
         local position = _barScroll + i
         if i <= visSlots and position <= sum then
             local record = _history[position]
 
-            if barFrame._cachedZoom ~= barIconZoom then
-                barFrame._cachedZoom = barIconZoom
-                barFrame.icon:SetTexCoord(barIconZoom, 1 - barIconZoom, barIconZoom, 1 - barIconZoom)
+            if bar._cachedZoom ~= barIconZoom then
+                bar._cachedZoom = barIconZoom
+                bar.icon:SetTexCoord(barIconZoom, 1 - barIconZoom, barIconZoom, 1 - barIconZoom)
             end
 
             -- Layout: only on settings change or slot reuse
-            if layoutChanged or barFrame._cachedSlot ~= i then
-                barFrame._cachedSlot = i
+            if layoutChanged or bar._cachedSlot ~= i then
+                bar._cachedSlot = i
                 local posY = -(i - 1) * stride
-                barFrame.row:ClearAllPoints()
-                barFrame.row:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, posY)
-                barFrame.row:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", 0, posY)
-                barFrame.row:SetHeight(barH)
-                barFrame.fill:SetStatusBarTexture(texPath)
+                bar.row:ClearAllPoints()
+                bar.row:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, posY)
+                bar.row:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", 0, posY)
+                bar.row:SetHeight(barH)
+                bar.fill:SetStatusBarTexture(texPath)
                 -- Blizzard Style: the stock bevel over the user's texture
                 -- (none under Classic WoW UI).
                 if mod.DMStyle() == "blizzard" then
-                    mod.DMApplyBlizzFill(barFrame.fill)
+                    mod.DMApplyBlizzFill(bar.fill)
                 end
-                barFrame.icon:SetSize(barH, barH)
-                barFrame._cachedEntry = nil -- force content rebuild
+                bar.icon:SetSize(barH, barH)
+                bar._cachedEntry = nil -- force content rebuild
             end
 
             -- Content: only when entry changes
-            if barFrame._cachedEntry ~= record then
-                barFrame._cachedEntry = record
+            if bar._cachedEntry ~= record then
+                bar._cachedEntry = record
                 if record.icon then
-                    barFrame.icon:SetTexture(record.icon)
-                    barFrame.icon:Show()
+                    bar.icon:SetTexture(record.icon)
+                    bar.icon:Show()
                 else
-                    barFrame.icon:Hide()
+                    bar.icon:Hide()
                 end
-                barFrame.label:SetText(record.spellName or "?")
-                barFrame._cachedStatus = nil -- force color/fill rebuild
-                barFrame._cachedFillDone = nil -- force fill value reset
+                bar.label:SetText(record.spellName or "?")
+                bar._cachedStatus = nil -- force color/fill rebuild
+                bar._cachedFillDone = nil -- force fill value reset
             end
 
             -- Color + fill: update when status changes or on active casts
             local status = record.status
-            if barFrame._cachedStatus ~= status then
-                barFrame._cachedStatus = status
+            if bar._cachedStatus ~= status then
+                bar._cachedStatus = status
                 local cr, cg, cb
                 if status == "failed" or status == "interrupted" then
                     cr, cg, cb = stR, stG, stB
                 else
                     cr, cg, cb = nR, nG, nB
                 end
-                barFrame.fill:SetStatusBarColor(cr, cg, cb, barAlpha)
+                bar.fill:SetStatusBarColor(cr, cg, cb, barAlpha)
             end
 
             -- Fill value: always set for active casts, once for finished
             if record.fillProgress then
-                barFrame.fill:SetValue(record.fillProgress)
+                bar.fill:SetValue(record.fillProgress)
             elseif status == "casting" or status == "channeling" then
                 local nowTime = GetTime()
                 local dur = record.endTime - record.startTime
                 if dur > 0 then
                     local progress = status == "channeling" and (record.endTime - nowTime) / dur
                         or (nowTime - record.startTime) / dur
-                    barFrame.fill:SetValue(min(upper(progress, 0), 1))
+                    bar.fill:SetValue(min(max(progress, 0), 1))
                 else
-                    barFrame.fill:SetValue(1)
+                    bar.fill:SetValue(1)
                 end
-            elseif not barFrame._cachedFillDone then
-                barFrame._cachedFillDone = true
-                barFrame.fill:SetValue(1)
+            elseif not bar._cachedFillDone then
+                bar._cachedFillDone = true
+                bar.fill:SetValue(1)
             end
 
             -- Text color: only on settings change
-            if layoutChanged or not barFrame._cachedTxColor then
-                barFrame._cachedTxColor = true
-                barFrame.label:SetTextColor(txR, txG, txB, 1)
-                barFrame.rightText:SetTextColor(txR, txG, txB, 1)
+            if layoutChanged or not bar._cachedTxColor then
+                bar._cachedTxColor = true
+                bar.label:SetTextColor(txR, txG, txB, 1)
+                bar.rightText:SetTextColor(txR, txG, txB, 1)
             end
 
-            barFrame.rightText:SetText(BuildRightText(record))
-            barFrame.row:Show()
+            bar.rightText:SetText(BuildRightText(record))
+            bar.row:Show()
         else
-            if barFrame then
-                barFrame.row:Hide()
-                barFrame._cachedSlot = nil
-                barFrame._cachedEntry = nil
-                barFrame._cachedStatus = nil
-                barFrame._cachedFillDone = nil
-                barFrame._cachedTxColor = nil
+            if bar then
+                bar.row:Hide()
+                bar._cachedSlot = nil
+                bar._cachedEntry = nil
+                bar._cachedStatus = nil
+                bar._cachedFillDone = nil
+                bar._cachedTxColor = nil
             end
         end
     end
@@ -1856,15 +1853,15 @@ _castAnimFrame:SetScript("OnUpdate", function(self)
         end
         local status = record.status
         if status == "casting" or status == "channeling" then
-            local barFrame = _barPool[i]
-            if barFrame and barFrame.row:IsShown() then
+            local bar = _barPool[i]
+            if bar and bar.row:IsShown() then
                 local dur = record.endTime - record.startTime
                 if dur > 0 then
                     local progress = status == "channeling" and (record.endTime - nowTime) / dur
                         or (nowTime - record.startTime) / dur
-                    barFrame.fill:SetValue(min(upper(progress, 0), 1))
+                    bar.fill:SetValue(min(max(progress, 0), 1))
                 end
-                barFrame.rightText:SetText(BuildRightText(record))
+                bar.rightText:SetText(BuildRightText(record))
             end
         end
     end
@@ -1884,7 +1881,7 @@ end
 --  Public API
 -------------------------------------------------------------------------------
 function mod.ApplySpellHistory()
-    local sh = SavedDB()
+    local sh = DB()
     local isActive = sh.iconEnabled or sh.barEnabled
 
     -- Dynamic event registration: zero overhead when disabled
@@ -1912,7 +1909,7 @@ function mod.ApplySpellHistory()
     if sh.iconEnabled and not mod._iconUnlockListenerRegistered and CUI.RegisterUnlockModeListener then
         mod._iconUnlockListenerRegistered = true
         CUI:RegisterUnlockModeListener("EDM_IconHistory", function()
-            if SavedDB().iconEnabled then
+            if DB().iconEnabled then
                 BuildIconStrip()
             end
         end)

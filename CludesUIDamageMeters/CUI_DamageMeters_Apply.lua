@@ -18,7 +18,7 @@ Inner.broken = true
 
 local CUI = CludesUI
 
-local SavedDB, GetHeaderH, ICON_ALPHA = Inner.DB, Inner.GetHeaderH, Inner.ICON_ALPHA
+local DB, GetHeaderH, ICON_ALPHA = Inner.DB, Inner.GetHeaderH, Inner.ICON_ALPHA
 local _windows = Inner._windows
 local ApplyHeaderButtonsHoverVisibility = Inner.ApplyHeaderButtonsHoverVisibility
 local LayoutHeaderButtons, GetAccentRGB = Inner.LayoutHeaderButtons, Inner.GetAccentRGB
@@ -27,7 +27,7 @@ local PhysicalPixels, SetDMFont = Inner.PhysicalPixels, Inner.SetDMFont
 -- ns exports (loop over all windows)
 mod.RefreshMeter = function()
     mod.DMInvalidateAppearance()
-    local conf = SavedDB()
+    local conf = DB()
     for _, wid in ipairs(_windows) do
         if conf.barSeparators or conf.iconSeparator or wid._decorSync then
             mod.DMSetWindowBorderLayer(wid, conf)
@@ -94,9 +94,9 @@ mod.ApplyBorder = function()
     mod.DMInvalidateAppearance()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyBorder then
-                    barFrame.ApplyBorder()
+            for _, bar in ipairs(wid.rowPool) do
+                if bar.ApplyBorder then
+                    bar.ApplyBorder()
                 end
             end
         end
@@ -110,9 +110,9 @@ end
 mod.ApplyBarBg = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyBg then
-                    barFrame.ApplyBg()
+            for _, bar in ipairs(wid.rowPool) do
+                if bar.ApplyBg then
+                    bar.ApplyBg()
                 end
             end
         end
@@ -125,9 +125,9 @@ end
 mod.ApplyBarTextOffsets = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyTextOffsets then
-                    barFrame.ApplyTextOffsets()
+            for _, bar in ipairs(wid.rowPool) do
+                if bar.ApplyTextOffsets then
+                    bar.ApplyTextOffsets()
                 end
             end
         end
@@ -138,7 +138,7 @@ mod.ApplyBarTextOffsets = function()
 end
 
 mod.ApplyBackground = function()
-    local conf = SavedDB()
+    local conf = DB()
     local r, g, b, a = conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.75
     for _, wid in ipairs(_windows) do
         if wid.frame and wid.frame._bg then
@@ -156,13 +156,13 @@ end
 
 mod.ApplyWindowBorder = function()
     mod.DMInvalidateAppearance()
-    local conf = SavedDB()
+    local conf = DB()
     -- Stock-style windows carry their own frame art (the stock panel, the
     -- classic tooltip edge), no CUI border.
-    local dim = mod.DMBlizz() and 0 or (tonumber(conf.windowBorderSize) or 0)
+    local size = mod.DMBlizz() and 0 or (tonumber(conf.windowBorderSize) or 0)
     local texture = conf.windowBorderTexture or "solid"
     -- Exact size (nil = the legacy step path); a stock style forces size 0, no px.
-    local px = dim > 0 and CUI.BorderPx(conf.windowBorderSizePx, dim, texture) or nil
+    local px = size > 0 and CUI.BorderPx(conf.windowBorderSizePx, size, texture) or nil
     local color = conf.windowBorderColor or {}
     local r, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
     local includeHeader = conf.windowBorderIncludeHeader ~= false
@@ -170,18 +170,18 @@ mod.ApplyWindowBorder = function()
     local offsetY = texture ~= "solid" and (tonumber(conf.windowBorderOffsetY) or 0) or 0
 
     for _, wid in ipairs(_windows) do
-        local targetUnit = wid.windowBorderTarget
-        if targetUnit and wid.frame and wid.header then
+        local target = wid.windowBorderTarget
+        if target and wid.frame and wid.header then
             local relayered = mod.DMSetWindowBorderLayer(wid, conf)
-            targetUnit:ClearAllPoints()
+            target:ClearAllPoints()
             if includeHeader then
-                targetUnit:SetPoint("TOPLEFT", wid.frame, "TOPLEFT", -offsetX, offsetY)
+                target:SetPoint("TOPLEFT", wid.frame, "TOPLEFT", -offsetX, offsetY)
             else
-                targetUnit:SetPoint("TOPLEFT", wid.header, "BOTTOMLEFT", -offsetX, offsetY)
+                target:SetPoint("TOPLEFT", wid.header, "BOTTOMLEFT", -offsetX, offsetY)
             end
-            targetUnit:SetPoint("BOTTOMRIGHT", wid.frame, "BOTTOMRIGHT", offsetX, -offsetY)
+            target:SetPoint("BOTTOMRIGHT", wid.frame, "BOTTOMRIGHT", offsetX, -offsetY)
             -- Offsets are represented by the target geometry itself, which also makes them work for the solid four-strip border implementation
-            CUI.ApplyBorderStyle(targetUnit, dim, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
+            CUI.ApplyBorderStyle(target, size, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
             if conf.hdrBottomSeparator or wid._headerSeparator then
                 mod.DMApplyHeaderSeparator(wid)
             end
@@ -201,7 +201,7 @@ mod.ApplyWindowBorder = function()
 end
 
 mod.ApplyHeader = function()
-    local conf = SavedDB()
+    local conf = DB()
     local hc = conf.hdrBgColor
     local hR = hc and hc.r or 0x1B / 255
     local hG = hc and hc.g or 0x1B / 255
@@ -229,16 +229,16 @@ mod.ApplyHeader = function()
                 wid.header._bottomBorder
                 and not mod.DMClassicSeparator(wid.header._bottomBorder, PhysicalPixels(1))
             then
-                local dim = conf.hdrBottomBorderSize or 0
+                local size = conf.hdrBottomBorderSize or 0
                 local color = conf.hdrBottomBorderColor or {}
-                wid.header._bottomBorder:SetHeight(PhysicalPixels(dim))
+                wid.header._bottomBorder:SetHeight(PhysicalPixels(size))
                 wid.header._bottomBorder:SetColorTexture(
                     color.r or 0,
                     color.g or 0,
                     color.b or 0,
                     color.a or 1
                 )
-                wid.header._bottomBorder:SetShown(dim > 0 and not mod.DMBlizz())
+                wid.header._bottomBorder:SetShown(size > 0 and not mod.DMBlizz())
             end
         end
         if wid.frame and wid.frame._bg then
@@ -274,7 +274,7 @@ mod.ApplyHeader = function()
 end
 
 mod.ApplyIconColor = function()
-    local conf = SavedDB()
+    local conf = DB()
     local r, g, b
     if conf.iconColorUseAccent then
         r, g, b = GetAccentRGB()
@@ -285,10 +285,10 @@ mod.ApplyIconColor = function()
         b = c and c.b or 1
     end
     for _, wid in ipairs(_windows) do
-        for _, glyph in ipairs(wid.hdrIcons) do
+        for _, icon in ipairs(wid.hdrIcons) do
             -- Stock-style art carries its own colours.
-            if not glyph._hdrArt then
-                glyph:SetVertexColor(r, g, b, ICON_ALPHA)
+            if not icon._hdrArt then
+                icon:SetVertexColor(r, g, b, ICON_ALPHA)
             end
         end
     end
@@ -297,9 +297,9 @@ end
 mod.ApplyIconBorder = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyIconBorder then
-                    barFrame.ApplyIconBorder()
+            for _, bar in ipairs(wid.rowPool) do
+                if bar.ApplyIconBorder then
+                    bar.ApplyIconBorder()
                 end
             end
         end

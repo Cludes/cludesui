@@ -182,8 +182,8 @@ do
     -- screen-space and the overlay covers the same rect -- exactly like the
     -- fake-active overlay does (ns.ApplyShapeToOverlay). none/cropped return
     -- nil: their icon art fills the frame rect, so a square press is correct.
-    local function IconShape(glyph)
-        local ifc = _ecmeFC and _ecmeFC[glyph]
+    local function IconShape(icon)
+        local ifc = _ecmeFC and _ecmeFC[icon]
         if not (ifc and ifc.shapeApplied and ifc.shapeMask) then
             return nil
         end
@@ -213,39 +213,39 @@ do
     -- One overlay per icon in `store`, `level` above the icon (above the
     -- cooldown swipe), fitted to the icon's shape and styled by `style`, which
     -- returns false (nothing to show), "border" + r, g, b, size, or true.
-    local function ShowOverlay(glyph, storage, level, look)
-        local shade = storage[glyph]
+    local function ShowOverlay(icon, storage, level, style)
+        local shade = storage[icon]
         if not shade then
-            shade = CreateFrame("Frame", nil, glyph)
-            shade:SetFrameLevel(glyph:GetFrameLevel() + level)
+            shade = CreateFrame("Frame", nil, icon)
+            shade:SetFrameLevel(icon:GetFrameLevel() + level)
             shade:Hide()
             local texture = shade:CreateTexture(nil, "OVERLAY")
             texture:SetAllPoints(shade)
             shade._tex = texture
-            storage[glyph] = shade
+            storage[icon] = shade
         end
         -- Re-sync the shape mask on every press: the shape can change or be
         -- cleared between presses, and a cleared shapeMask is emptied + hidden
         -- rather than destroyed -- left attached it would blank the overlay.
         -- A shape swap keeps the same mask object (re-textured), so it stays.
-        local shape, maskTex = IconShape(glyph)
-        if shade._shapeMask and shade._shapeMask ~= maskTex then
+        local shape, mask = IconShape(icon)
+        if shade._shapeMask and shade._shapeMask ~= mask then
             pcall(shade._tex.RemoveMaskTexture, shade._tex, shade._shapeMask)
             shade._shapeMask = nil
         end
-        if maskTex and not shade._shapeMask then
-            pcall(shade._tex.AddMaskTexture, shade._tex, maskTex)
-            shade._shapeMask = maskTex
+        if mask and not shade._shapeMask then
+            pcall(shade._tex.AddMaskTexture, shade._tex, mask)
+            shade._shapeMask = mask
         end
         -- Blizzard Style: the flash rounds off with the icon's viewer mask.
         if mod.CdmBlizzIcons() then
-            local bm = mod.CdmBlizzIconMask(glyph)
+            local bm = mod.CdmBlizzIconMask(icon)
             if bm and shade._blizzMask ~= bm then
                 pcall(shade._tex.AddMaskTexture, shade._tex, bm)
                 shade._blizzMask = bm
             end
         end
-        local result, cr, cg, cb, bsz = look(shade._tex)
+        local result, cr, cg, cb, bsz = style(shade._tex)
         if not result then
             shade:Hide()
             return nil
@@ -253,7 +253,7 @@ do
         -- Shaped icons expand their icon texture past the frame (and expand the
         -- texcoords to match), so anchor to the frame itself -- the rect the
         -- shapeMask covers -- rather than to the oversized texture.
-        local regionFrame = (shape and glyph) or glyph.Icon or glyph
+        local regionFrame = (shape and icon) or icon.Icon or icon
         shade:ClearAllPoints()
         shade:SetPoint("TOPLEFT", regionFrame, "TOPLEFT", 0, 0)
         shade:SetPoint("BOTTOMRIGHT", regionFrame, "BOTTOMRIGHT", 0, 0)
@@ -315,8 +315,8 @@ do
         return shade
     end
 
-    local function ShowPush(glyph)
-        return ShowOverlay(glyph, _pushOverlay, 15, StylePush)
+    local function ShowPush(icon)
+        return ShowOverlay(icon, _pushOverlay, 15, StylePush)
     end
 
     ---------------------------------------------------------------------------
@@ -392,13 +392,13 @@ do
         return _presetPrimaryByAltID[itemId]
     end
 
-    local function IconSpellID(glyph)
-        local fc = _ecmeFC and _ecmeFC[glyph]
+    local function IconSpellID(icon)
+        local fc = _ecmeFC and _ecmeFC[icon]
         local spellRef = fc and fc.spellID
         if spellRef then
             return spellRef
         end
-        local cdID = glyph.cooldownID
+        local cdID = icon.cooldownID
         if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
             local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
             if details then
@@ -479,18 +479,18 @@ do
     mod.RefreshCdmPressMirrorFlag = RefreshCdmPressMirrorFlag
     RefreshCdmPressMirrorFlag()
 
-    local function SlotSpellID(slotIndex)
-        if not slotIndex then
+    local function SlotSpellID(slot)
+        if not slot then
             return nil
         end
-        if HasAction and not HasAction(slotIndex) then
+        if HasAction and not HasAction(slot) then
             return nil
         end
         -- NOTE (Midnight): GetActionInfo is documented as usable only in the
         -- secure restricted environment. This runs from an insecure post-hook,
         -- so a future build could hand back nil/secret here and silently no-op
         -- the press mirror. Revisit via a secure route if that ever regresses.
-        local actionType, ident, subType = GetActionInfo(slotIndex)
+        local actionType, ident, subType = GetActionInfo(slot)
         if actionType == "spell" then
             return ident
         elseif actionType == "item" then
@@ -507,7 +507,7 @@ do
             elseif subType == "item" then
                 return nil
             end
-            local macroName = GetActionText(slotIndex)
+            local macroName = GetActionText(slot)
             local macroIndex = macroName and GetMacroIndexByName(macroName)
             if macroIndex and macroIndex > 0 then
                 if GetMacroItem and GetMacroItem(macroIndex) then
@@ -529,8 +529,8 @@ do
         if not button or not _anyPressMirror then
             return
         end
-        local slotIndex = button.action or (button.GetAttribute and button:GetAttribute("action"))
-        local spellRef, itemId = SlotSpellID(slotIndex)
+        local slot = button.action or (button.GetAttribute and button:GetAttribute("action"))
+        local spellRef, itemId = SlotSpellID(slot)
         if not spellRef and not itemId then
             return
         end
@@ -565,11 +565,11 @@ do
                 local edge = barDataByKey and barDataByKey[barId]
                 if edge and edge.pressMirror and not mod.IsBarBuffFamily(edge) then
                     for idx = 1, #entries do
-                        local glyph = entries[idx]
-                        if glyph and glyph:IsShown() then
-                            local isid = IconSpellID(glyph)
+                        local icon = entries[idx]
+                        if icon and icon:IsShown() then
+                            local isid = IconSpellID(icon)
                             if isid and IconMatches(pressedSet, isid) then
-                                local shade = ShowPush(glyph)
+                                local shade = ShowPush(icon)
                                 if shade then
                                     overlays = overlays or {}
                                     overlays[#overlays + 1] = shade
@@ -711,15 +711,15 @@ do
             local edge = barDataByKey and barDataByKey[barId]
             if edge and not mod.IsBarBuffFamily(edge) then
                 for idx = 1, #entries do
-                    local glyph = entries[idx]
-                    if glyph and glyph:IsShown() then
-                        local spellRef = IconSpellID(glyph)
+                    local icon = entries[idx]
+                    if icon and icon:IsShown() then
+                        local spellRef = IconSpellID(icon)
                         if
                             not issecretvalue(spellRef)
                             and spellRef
                             and C_Spell.GetSpellName(spellRef) == name
                         then
-                            local shade = ShowOverlay(glyph, _checkOverlay, 14, StyleChecked)
+                            local shade = ShowOverlay(icon, _checkOverlay, 14, StyleChecked)
                             if shade then
                                 _lit[#_lit + 1] = shade
                             end
@@ -739,8 +739,8 @@ do
         end
         self:UnregisterEvent("PLAYER_LOGIN")
         local lists = CludesUI.FOREVER_NEXT_SWING
-        local _, classFile = UnitClass("player")
-        local ids = lists and lists[classFile]
+        local _, class = UnitClass("player")
+        local ids = lists and lists[class]
         if not (ids and C_Spell.IsCurrentSpell) then
             return
         end

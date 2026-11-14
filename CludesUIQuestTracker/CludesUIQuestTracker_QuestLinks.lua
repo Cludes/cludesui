@@ -77,12 +77,12 @@ end
 -- The tracker's quest menu is owned by the tracker, not the quest. It opens
 -- from a click on a quest's header, which Blizzard reports as the cursor
 -- enters it, so the quest is that header's while the cursor is still on it.
-local function OnQuestHeaderEnter(_, blockData)
-    hoverBlock = blockData
+local function OnQuestHeaderEnter(_, block)
+    hoverBlock = block
 end
 local function AddTrackerLink(_, root)
-    local headerFrame = hoverBlock and hoverBlock.HeaderButton
-    if headerFrame and headerFrame:IsMouseOver() then
+    local header = hoverBlock and hoverBlock.HeaderButton
+    if header and header:IsMouseOver() then
         AddLinkButton(hoverBlock.id, root)
     end
 end

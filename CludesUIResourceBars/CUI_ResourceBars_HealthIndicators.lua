@@ -53,21 +53,21 @@ local KINDS = mod.HEALTH_INDICATORS
 
 -- The overlay's style while it is on, nil while it is off.
 local function StyleOf(conf, k)
-    local look = conf[k.style]
+    local style = conf[k.style]
     if k.show then
-        return conf[k.show] == true and (look or "striped") or nil
+        return conf[k.show] == true and (style or "striped") or nil
     end
-    return (look and look ~= "none") and look or nil
+    return (style and style ~= "none") and style or nil
 end
 
 -- Style key -> texture: the shared absorb styles, else the Resource Bars bar
 -- textures ("sm:" SharedMedia keys land there). The live overlays and the
 -- options dropdown preview both resolve through this.
-function mod.HealthIndicatorTex(look)
-    return STYLE_TEX[look] or CludesUI.ResolveTexturePath(_G._CURB_BarTextures, look, WHITE)
+function mod.HealthIndicatorTex(style)
+    return STYLE_TEX[style] or CludesUI.ResolveTexturePath(_G._CURB_BarTextures, style, WHITE)
 end
 
-local hostRegion, scrollBar -- the health bar and its clipped inner StatusBar (first use)
+local host, scrollBar -- the health bar and its clipped inner StatusBar (first use)
 local barList = {} -- indicator key -> overlay StatusBar, built on first use
 local on = {} -- indicator key -> true while switched on
 local styled = {} -- indicator key -> style its texture was last set from
@@ -85,12 +85,12 @@ local AXIS = {
     VERTICAL_DOWN = { "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT" },
 }
 
-local function AnchorEdgeBar(barFrame, modeName, down, axis)
-    local atEnd = (modeName == "right") ~= down
+local function AnchorEdgeBar(bar, mode, down, axis)
+    local atEnd = (mode == "right") ~= down
     local p1, p2 = axis[atEnd and 3 or 1], axis[atEnd and 4 or 2]
-    barFrame:SetPoint(p1, scrollBar, p1)
-    barFrame:SetPoint(p2, scrollBar, p2)
-    barFrame:SetReverseFill(modeName == "right")
+    bar:SetPoint(p1, scrollBar, p1)
+    bar:SetPoint(p2, scrollBar, p2)
+    bar:SetReverseFill(mode == "right")
 end
 
 local function BuildSegments()
@@ -145,30 +145,24 @@ end
 -- in the engine; clip frames split absorbs without reading that edge in Lua.
 local function Layout()
     local inset = CludesUI.PP.mult * 0.25
-    local wid = math.max(0, hostRegion:GetWidth() - 2 * inset)
-    local hgt = math.max(0, hostRegion:GetHeight() - 2 * inset)
+    local wid = math.max(0, host:GetWidth() - 2 * inset)
+    local hgt = math.max(0, host:GetHeight() - 2 * inset)
     -- Vertical exactly where the health bar is (ApplyBarOrientation).
     local down = ori == "VERTICAL_DOWN"
     local vertical = down or ori == "VERTICAL_UP"
     local cut = (vertical and hgt or wid) * loss
     scrollBar:ClearAllPoints()
-    scrollBar:SetPoint(
-        "TOPLEFT",
-        hostRegion,
-        "TOPLEFT",
-        inset,
-        -inset - ((vertical and not down) and cut or 0)
-    )
+    scrollBar:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset - ((vertical and not down) and cut or 0))
     scrollBar:SetPoint(
         "BOTTOMRIGHT",
-        hostRegion,
+        host,
         "BOTTOMRIGHT",
         -inset - (vertical and 0 or cut),
         inset + (down and cut or 0)
     )
 
     local span = (vertical and hgt or wid) - cut
-    local fillTex = scrollBar:GetStatusBarTexture()
+    local fill = scrollBar:GetStatusBarTexture()
     local p1, p2
     if not vertical then
         p1, p2 = "TOPRIGHT", "BOTTOMRIGHT"
@@ -177,24 +171,24 @@ local function Layout()
     else
         p1, p2 = "TOPLEFT", "TOPRIGHT"
     end
-    for key, barFrame in pairs(barList) do
-        barFrame:SetOrientation(vertical and "VERTICAL" or "HORIZONTAL")
-        barFrame:SetReverseFill(not down)
-        barFrame:ClearAllPoints()
+    for key, bar in pairs(barList) do
+        bar:SetOrientation(vertical and "VERTICAL" or "HORIZONTAL")
+        bar:SetReverseFill(not down)
+        bar:ClearAllPoints()
         if key == "maxHealthLoss" then
-            barFrame:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", inset, -inset)
-            barFrame:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -inset, inset)
+            bar:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset)
+            bar:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -inset, inset)
         else
             if key == "healAbsorb" and (healMode == "right" or healMode == "left") then
-                AnchorEdgeBar(barFrame, healMode, down, AXIS[ori] or AXIS.HORIZONTAL)
+                AnchorEdgeBar(bar, healMode, down, AXIS[ori] or AXIS.HORIZONTAL)
             else
-                barFrame:SetPoint(p1, fillTex, p1)
-                barFrame:SetPoint(p2, fillTex, p2)
+                bar:SetPoint(p1, fill, p1)
+                bar:SetPoint(p2, fill, p2)
             end
             if vertical then
-                barFrame:SetHeight(span)
+                bar:SetHeight(span)
             else
-                barFrame:SetWidth(span)
+                bar:SetWidth(span)
             end
         end
     end
@@ -205,12 +199,12 @@ local function Layout()
         local fw = ab._forward
         curClip:ClearAllPoints()
         missClip:ClearAllPoints()
-        missClip:SetPoint(start1, fillTex, end1)
+        missClip:SetPoint(start1, fill, end1)
         missClip:SetPoint(end2, scrollBar, end2)
         fw:ClearAllPoints()
         local full = absorbMode == "overlayReverseFull"
-        fw:SetPoint(start1, full and scrollBar or fillTex, full and start1 or end1)
-        fw:SetPoint(start2, full and scrollBar or fillTex, full and start2 or end2)
+        fw:SetPoint(start1, full and scrollBar or fill, full and start1 or end1)
+        fw:SetPoint(start2, full and scrollBar or fill, full and start2 or end2)
         fw:SetOrientation(vertical and "VERTICAL" or "HORIZONTAL")
         fw:SetReverseFill(down)
         if vertical then
@@ -225,11 +219,10 @@ local function Layout()
             AnchorEdgeBar(ab, absorbMode, down, axis)
         else
             curClip:SetPoint(start1, scrollBar, start1)
-            curClip:SetPoint(end2, fillTex, end2)
-            local targetUnit = absorbMode == "overlay" and overshieldMode ~= "fromleft" and scrollBar
-                or fillTex
-            ab:SetPoint(end1, targetUnit, end1)
-            ab:SetPoint(end2, targetUnit, end2)
+            curClip:SetPoint(end2, fill, end2)
+            local target = absorbMode == "overlay" and overshieldMode ~= "fromleft" and scrollBar or fill
+            ab:SetPoint(end1, target, end1)
+            ab:SetPoint(end2, target, end2)
             if absorbMode == "overlay" and overshieldMode == "fromleft" then
                 ab:SetReverseFill(down)
             else
@@ -325,9 +318,9 @@ local function PaintLoss()
     end
     loss = val
     Layout()
-    local barFrame = barList.maxHealthLoss
-    barFrame:SetValue(val)
-    barFrame:SetShown(val > 0)
+    local bar = barList.maxHealthLoss
+    bar:SetValue(val)
+    bar:SetShown(val > 0)
 end
 
 -- Amounts go straight to SetValue: they may be secret, so they are never
@@ -350,22 +343,22 @@ eventFrame:SetScript("OnEvent", function(_, evt)
 end)
 
 local function Overlay(key)
-    local barFrame = barList[key]
-    if barFrame then
-        return barFrame
+    local bar = barList[key]
+    if bar then
+        return bar
     end
     -- The absorbs are children of the clipped inner bar, so they never draw
     -- past the health area; the reduction sits on the health bar itself.
-    barFrame = CreateFrame("StatusBar", nil, key == "maxHealthLoss" and hostRegion or scrollBar)
-    barFrame:SetMinMaxValues(0, 1)
-    barFrame:Hide()
-    barList[key] = barFrame
-    return barFrame
+    bar = CreateFrame("StatusBar", nil, key == "maxHealthLoss" and host or scrollBar)
+    bar:SetMinMaxValues(0, 1)
+    bar:Hide()
+    barList[key] = bar
+    return bar
 end
 
-local function ApplyHealBacking(barFrame, conf)
+local function ApplyHealBacking(bar, conf)
     local alpha = (conf.healAbsorbBgOpacity or 0) / 100
-    local backdrop = barFrame._bg
+    local backdrop = bar._bg
     if alpha <= 0 then
         if backdrop then
             backdrop:Hide()
@@ -373,13 +366,13 @@ local function ApplyHealBacking(barFrame, conf)
         return
     end
     if not backdrop then
-        backdrop = barFrame:CreateTexture(nil, "ARTWORK", nil, 1)
-        barFrame._bg = backdrop
+        backdrop = bar:CreateTexture(nil, "ARTWORK", nil, 1)
+        bar._bg = backdrop
     end
-    local fillTex = barFrame:GetStatusBarTexture()
-    fillTex:SetDrawLayer("ARTWORK", 2)
+    local fill = bar:GetStatusBarTexture()
+    fill:SetDrawLayer("ARTWORK", 2)
     backdrop:SetColorTexture(0, 0, 0, alpha)
-    backdrop:SetAllPoints(fillTex)
+    backdrop:SetAllPoints(fill)
     backdrop:Show()
 end
 
@@ -413,13 +406,13 @@ local function Deactivate()
     WantEvent("UNIT_HEALTH", false)
     local inset = CludesUI.PP.mult * 0.25
     scrollBar:ClearAllPoints()
-    scrollBar:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", inset, -inset)
-    scrollBar:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -inset, inset)
+    scrollBar:SetPoint("TOPLEFT", host, "TOPLEFT", inset, -inset)
+    scrollBar:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -inset, inset)
 end
 
 -- Settings pass, from the health bar build: cfg is the health settings (nil
 -- while the bar is off or disabled for this spec), orientation the bar's own.
-function mod.HealthIndicatorsApply(barFrame, conf, orientation)
+function mod.HealthIndicatorsApply(bar, conf, orientation)
     local showA = conf and StyleOf(conf, KINDS[1]) ~= nil
     local showH = conf and StyleOf(conf, KINDS[2]) ~= nil
     local showL = conf and StyleOf(conf, KINDS[3]) ~= nil
@@ -429,9 +422,9 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
         end
         return
     end
-    if not hostRegion then
-        hostRegion, scrollBar = barFrame, barFrame._sb
-        hostRegion:HookScript("OnSizeChanged", OnHostSized)
+    if not host then
+        host, scrollBar = bar, bar._sb
+        host:HookScript("OnSizeChanged", OnHostSized)
     end
     isActive = true
     ori = orientation or "HORIZONTAL"
@@ -452,17 +445,17 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
             local shade = Overlay(k.key)
             shade:SetFrameLevel(level + (k.key == "healAbsorb" and 2 or 1))
             -- A retexture resets the colour, so the colour goes on after it.
-            local look = StyleOf(conf, k)
-            local tiled = TILED[look] == true
+            local style = StyleOf(conf, k)
+            local tiled = TILED[style] == true
             local fw = k.key == "absorb" and shade._forward
-            if styled[k.key] ~= look then
-                styled[k.key] = look
-                shade:SetStatusBarTexture(mod.HealthIndicatorTex(look))
+            if styled[k.key] ~= style then
+                styled[k.key] = style
+                shade:SetStatusBarTexture(mod.HealthIndicatorTex(style))
                 local texture = shade:GetStatusBarTexture()
                 texture:SetHorizTile(tiled)
                 texture:SetVertTile(tiled)
                 if fw then
-                    fw:SetStatusBarTexture(mod.HealthIndicatorTex(look))
+                    fw:SetStatusBarTexture(mod.HealthIndicatorTex(style))
                     local fwTex = fw:GetStatusBarTexture()
                     fwTex:SetHorizTile(tiled)
                     fwTex:SetVertTile(tiled)
@@ -478,7 +471,7 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
                 a = (conf[k.opacity] or k.opacityDef) / 100
             end
             -- The outlined stripes carry their own colours: only the alpha tints them.
-            if look == "largeOutlinedStripes" or look == "largeOutlinedStripesR" then
+            if style == "largeOutlinedStripes" or style == "largeOutlinedStripesR" then
                 r, g, b = 1, 1, 1
             end
             shade:SetStatusBarColor(r, g, b, a)
@@ -520,5 +513,5 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
         barList.maxHealthLoss:SetShown(loss > 0)
     end
     -- The overlays draw inside the bar's rect: keep its border over them.
-    hostRegion:RaiseBorderAbove(level + (ab and ab._glowOn and 4 or 2), conf.borderBehind)
+    host:RaiseBorderAbove(level + (ab and ab._glowOn and 4 or 2), conf.borderBehind)
 end

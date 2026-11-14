@@ -374,10 +374,10 @@ function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
     -- (every connection edge passes through here).
     local kp = d.kitPortrait
     if kp then
-        local offset = not connected
-        if d._kitDesat ~= offset then
-            d._kitDesat = offset
-            kp:SetDesaturated(offset)
+        local off = not connected
+        if d._kitDesat ~= off then
+            d._kitDesat = off
+            kp:SetDesaturated(off)
         end
     end
     -- Party portrait (CUI_RaidFrames_Portrait.lua): the same grey.
@@ -477,26 +477,26 @@ end
 local function GetHealthColor(unitToken, s)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
     s = s or saved.profile
-    local modeName = s.healthColorMode or "class"
+    local mode = s.healthColorMode or "class"
 
-    if modeName == "dark" then
+    if mode == "dark" then
         local dfr, dfg, dfb = CludesUI.GetDarkModeFill()
         return dfr, dfg, dfb
-    elseif modeName == "classic" then
+    elseif mode == "classic" then
         -- Native WoW health gradient via Blizzard's curve system (secret-value safe)
         local color = UnitHealthPercent(unitToken, true, GetClassicHealthCurve())
         if color and color.GetRGB then
             return color:GetRGB()
         end
         return 0, 1, 0
-    elseif modeName == "customDynamic" then
+    elseif mode == "customDynamic" then
         -- User-customizable gradient via the same secret-safe curve path as Classic
         local color = UnitHealthPercent(unitToken, true, mod.GetCustomDynamicCurve(s))
         if color and color.GetRGB then
             return color:GetRGB()
         end
         return 0, 1, 0
-    elseif modeName == "classReactive" then
+    elseif mode == "classReactive" then
         -- Class color at full health bleeding into the reactive palette as the
         -- unit takes damage (fully reactive by 40%); engine-evaluated per-class
         -- curve, so secret health never touches Lua.
@@ -508,7 +508,7 @@ local function GetHealthColor(unitToken, s)
             end
         end
         return 0.5, 0.5, 0.5
-    elseif modeName == "custom" then
+    elseif mode == "custom" then
         local c = s.customFillColor
         return c.r, c.g, c.b
     else -- "class"
@@ -554,14 +554,14 @@ end
 -- Forever: First / Last Name leave a non-player's name whole, a mob a member
 -- targets included). A tag's modifier shapes any name.
 function mod.RF_FormatName(display, s, fmt, unitToken)
-    local modeName = fmt or (s and s.nameFormat)
-    if not modeName or modeName == "full" then
+    local mode = fmt or (s and s.nameFormat)
+    if not mode or mode == "full" then
         return display
     end
     if not fmt then
-        modeName = CludesUI.UnitNameFormat(modeName, unitToken)
+        mode = CludesUI.UnitNameFormat(mode, unitToken)
     end
-    return CludesUI.ShortName(display, modeName)
+    return CludesUI.ShortName(display, mode)
 end
 
 -- Fraction of the frame width the NAME text may fill before auto-truncating
@@ -894,16 +894,16 @@ end
 -- A preview text's colour for its colour mode: accent, class (classToken: the sample member's
 -- class; none, as for a pet, reads white), power (pToken: the sample member's power type) or
 -- custom (custom: the colour). r, g, b: the colour without one.
-function mod.RF_PreviewTextColor(modeName, custom, classToken, r, g, b, pToken)
-    if modeName == "accent" then
+function mod.RF_PreviewTextColor(mode, custom, classToken, r, g, b, pToken)
+    if mode == "accent" then
         local ar, ag, ab = CludesUI.ResolveActiveAccent()
         if ar then
             return ar, ag, ab
         end
-    elseif modeName == "class" then
+    elseif mode == "class" then
         local cc = CludesUI.GetClassColor(classToken)
         return cc.r, cc.g, cc.b
-    elseif modeName == "power" then
+    elseif mode == "power" then
         local pc = CludesUI.GetPowerColor(pToken or "MANA")
         if pc then
             return pc.r, pc.g, pc.b
@@ -1004,15 +1004,15 @@ do
         end
     end
 
-    local function GetHealth(unitToken, upper)
-        if upper then
+    local function GetHealth(unitToken, max)
+        if max then
             return UnitHealthMax(unitToken) or 0
         end
         return UnitHealth(unitToken, true) or 0
     end
-    local function GetPower(unitToken, upper)
+    local function GetPower(unitToken, max)
         local pType = UnitPowerType(unitToken)
-        if upper then
+        if max then
             return UnitPowerMax(unitToken, pType) or 0
         end
         return UnitPower(unitToken, pType) or 0
@@ -1021,12 +1021,12 @@ do
     -- [hp], [pp] and their :max / :abr keys. Current health names the status, so
     -- Health / Max names it once ("DEAD / 150 K").
     local function Amount(key)
-        local kindOf = ssub(key, 1, 2)
-        local get = kindOf == "hp" and GetHealth or GetPower
-        local upper, abr = sfind(key, ":max", 1, true) ~= nil, sfind(key, ":abr", 1, true) ~= nil
-        local status = kindOf == "hp" and not upper
-        local pctKey, perKey, sample = kindOf .. "Pct", kindOf .. "Per", SCHEMA[key].sample
-        local valueType = kindOf == "hp" and (upper and "maxHealth" or "health") or nil
+        local kind = ssub(key, 1, 2)
+        local get = kind == "hp" and GetHealth or GetPower
+        local max, abr = sfind(key, ":max", 1, true) ~= nil, sfind(key, ":abr", 1, true) ~= nil
+        local status = kind == "hp" and not max
+        local pctKey, perKey, sample = kind .. "Pct", kind .. "Per", SCHEMA[key].sample
+        local valueType = kind == "hp" and (max and "maxHealth" or "health") or nil
         return function(unitToken, s, pv)
             local st = status and Status(unitToken, pv)
             if st then
@@ -1034,9 +1034,9 @@ do
             end
             local val
             if unitToken then
-                val = get(unitToken, upper)
+                val = get(unitToken, max)
             elseif pv and pv[perKey] then
-                val = upper and 100 * pv[perKey] or (pv[pctKey] or 0) * pv[perKey]
+                val = max and 100 * pv[perKey] or (pv[pctKey] or 0) * pv[perKey]
             else
                 return sample
             end
@@ -1241,13 +1241,13 @@ end
 -- unit's values are read only in the modes that show them; a preview (unit nil) shows made-up
 -- ones, perPct per percent. Returns false for None or an unknown mode, which blank the text;
 -- otherwise true.
-function mod.RF_HealthTextInto(fontStr, modeName, pct, unitToken, perPct)
+function mod.RF_HealthTextInto(fontStr, mode, pct, unitToken, perPct)
     local val
-    if modeName == "percent" then
+    if mode == "percent" then
         fontStr:SetFormattedText("%.0f%%", pct)
-    elseif modeName == "percentNoSign" then
+    elseif mode == "percentNoSign" then
         fontStr:SetFormattedText("%.0f", pct)
-    elseif modeName == "number" then
+    elseif mode == "number" then
         if unitToken then
             val = UnitHealth(unitToken, true)
         else
@@ -1258,19 +1258,19 @@ function mod.RF_HealthTextInto(fontStr, modeName, pct, unitToken, perPct)
         elseif val then
             fontStr:SetFormattedText("%s", val)
         end
-    elseif modeName == "numberPercent" or modeName == "percentNumber" then
+    elseif mode == "numberPercent" or mode == "percentNumber" then
         if unitToken then
             val = UnitHealth(unitToken, true)
         else
             val = pct * perPct
         end
         local numStr = (val and AbbreviateNumbers) and AbbreviateValue(val, "health") or tostring(val or 0)
-        if modeName == "numberPercent" then
+        if mode == "numberPercent" then
             fontStr:SetFormattedText("%s | %.0f%%", numStr, pct)
         else
             fontStr:SetFormattedText("%.0f%% | %s", pct, numStr)
         end
-    elseif modeName == "missing" then
+    elseif mode == "missing" then
         if unitToken then
             val = UnitHealthMissing(unitToken, true)
         else
@@ -1296,16 +1296,16 @@ end
 -- after) is a SECRET string for a secret absorb, so ONLY feed it to SetText or test truthiness --
 -- never compare it (== "" taints). "short" gates on GetText truthiness alone (non-nil exactly when
 -- non-zero) before abbreviating.
-function mod.FormatHealAbsorbInto(fontStr, amt, modeName)
+function mod.FormatHealAbsorbInto(fontStr, amt, mode)
     if not fontStr then
         return
     end
-    if not modeName or modeName == "none" then
+    if not mode or mode == "none" then
         fontStr:SetText("")
         return
     end
     fontStr:SetText(C_StringUtil.TruncateWhenZero(amt or 0))
-    if modeName == "short" and AbbreviateNumbers and fontStr:GetText() then
+    if mode == "short" and AbbreviateNumbers and fontStr:GetText() then
         fontStr:SetText(AbbreviateValue(amt or 0, "absorb"))
     end
 end
@@ -1398,25 +1398,25 @@ end
 -- straight through AbbreviateNumbers into the setter, never compared. A preview (unit nil)
 -- shows made-up amounts, perPct per percent. Returns false when it blanks the text (dead,
 -- offline, None or an unknown mode), otherwise true.
-function mod.RF_PowerTextInto(fontStr, modeName, pct, unitToken, pType, perPct)
+function mod.RF_PowerTextInto(fontStr, mode, pct, unitToken, pType, perPct)
     if unitToken and (UnitIsDeadOrGhost(unitToken) or not UnitIsConnected(unitToken)) then
         fontStr:SetText("")
         return false
     end
-    if modeName == "percent" then
+    if mode == "percent" then
         fontStr:SetFormattedText("%.0f%%", pct)
-    elseif modeName == "percentNoSign" then
+    elseif mode == "percentNoSign" then
         fontStr:SetFormattedText("%.0f", pct)
-    elseif modeName == "number" or modeName == "numberPercent" or modeName == "percentNumber" then
+    elseif mode == "number" or mode == "numberPercent" or mode == "percentNumber" then
         local num
         if unitToken then
             num = AbbreviateNumbers(UnitPower(unitToken, pType))
         else
             num = AbbreviateNumbers(pct * perPct)
         end
-        if modeName == "number" then
+        if mode == "number" then
             fontStr:SetText(num)
-        elseif modeName == "numberPercent" then
+        elseif mode == "numberPercent" then
             fontStr:SetFormattedText("%s | %.0f%%", num, pct)
         else
             fontStr:SetFormattedText("%.0f%% | %s", pct, num)

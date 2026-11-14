@@ -135,18 +135,18 @@ end
 --- "info" blocks the whole page: edits there would land in whatever layer is live
 --- and bank to the WRONG owner at the next harvest.
 function CludesUI.SpecOverrides_BmOverlayState()
-    local g, kindOf
+    local g, kind
     if _editGroup then
-        g, kindOf = _editGroup, "spec"
+        g, kind = _editGroup, "spec"
     elseif Cond._edit then
-        g, kindOf = Cond._edit, "cond"
+        g, kind = Cond._edit, "cond"
     else
         return nil
     end
     local current = CurrentSpecID()
     local s = GetBmStore()
-    local liveKey, forked, eligible, textValue, subFrame
-    if kindOf == "spec" then
+    local liveKey, forked, eligible, textValue, sub
+    if kind == "spec" then
         liveKey = g.id
         forked = (s and s.layouts[g.id] ~= nil) or false
         local member = false
@@ -189,13 +189,13 @@ function CludesUI.SpecOverrides_BmOverlayState()
         return nil, liveNow ~= liveKey
     end
     if not eligible then
-        return { mode = "info", kind = kindOf, gid = g.id, text = textValue, sub = subFrame }
+        return { mode = "info", kind = kind, gid = g.id, text = textValue, sub = sub }
     end
     return {
         mode = "activate",
-        kind = kindOf,
+        kind = kind,
         gid = g.id,
-        text = kindOf == "spec"
+        text = kind == "spec"
                 and L(
                     "This will create a fully unique Buff Manager for this override group. Changes made to your default Buff Manager will no longer affect these specs."
                 )
@@ -209,7 +209,7 @@ end
 --- (baseline) Buff Manager, every other override that already has its own
 --- Buff Manager, then the two presets. Returns values, order for a dropdown.
 --- Keys: "main" | "spec:<gid>" | "cond:<gid>" | "default" | "empty".
-function CludesUI.SpecOverrides_BmSeedSources(kindOf, groupId)
+function CludesUI.SpecOverrides_BmSeedSources(kind, groupId)
     local values, sequence = {}, {}
     local function Add(key, labelText)
         values[key] = labelText
@@ -219,7 +219,7 @@ function CludesUI.SpecOverrides_BmSeedSources(kindOf, groupId)
     local s = GetBmStore()
     if s and s.layouts then
         for _, g in ipairs(GetGroups() or {}) do
-            if s.layouts[g.id] ~= nil and not (kindOf == "spec" and g.id == groupId) then
+            if s.layouts[g.id] ~= nil and not (kind == "spec" and g.id == groupId) then
                 Add("spec:" .. g.id, CludesUI.Lf("Copy from %1$s Buff Manager", g.name or "?"))
             end
         end
@@ -227,7 +227,7 @@ function CludesUI.SpecOverrides_BmSeedSources(kindOf, groupId)
     local cs = GetCondBmStore()
     if cs and cs.layouts and CludesUI.Conditions_GetGroups then
         for _, g in ipairs(CludesUI.Conditions_GetGroups() or {}) do
-            if cs.layouts[g.id] ~= nil and not (kindOf == "cond" and g.id == groupId) then
+            if cs.layouts[g.id] ~= nil and not (kind == "cond" and g.id == groupId) then
                 Add("cond:" .. g.id, CludesUI.Lf("Copy from %1$s Buff Manager", g.name or "?"))
             end
         end
@@ -240,9 +240,9 @@ end
 --- READ-ONLY: the override groups with their own Buff Manager (kind "bm") or
 --- Debuff Manager ("dm"): spec group ids, then condition group ids, each list
 --- in creation order.
-function CludesUI.SpecOverrides_ManagerForkOwners(kindOf)
+function CludesUI.SpecOverrides_ManagerForkOwners(kind)
     local s, cs
-    if kindOf == "dm" then
+    if kind == "dm" then
         s, cs = GetDmStore(), GetCondDmStore()
     else
         s, cs = GetBmStore(), GetCondBmStore()
@@ -315,9 +315,9 @@ end
 --- otherwise from live. Other overrides and the two presets seed a fresh layer,
 --- which must then be PAINTED when the new fork becomes the live one (the main
 --- copy is already what is on screen).
-function CludesUI.SpecOverrides_ActivateBm(kindOf, groupId, source)
+function CludesUI.SpecOverrides_ActivateBm(kind, groupId, source)
     local status = CludesUI.SpecOverrides_BmOverlayState()
-    if not status or status.mode ~= "activate" or status.kind ~= kindOf or status.gid ~= groupId then
+    if not status or status.mode ~= "activate" or status.kind ~= kind or status.gid ~= groupId then
         return
     end
     -- Source key -> fresh layer table; nil = "main" (seeded below as before).
@@ -362,7 +362,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindOf, groupId, source)
             s.baselineLayout = BmHarvestLayer()
         end
     end
-    if kindOf == "spec" then
+    if kind == "spec" then
         local s = GetBmStore(true)
         if not s or s.layouts[groupId] ~= nil then
             return
@@ -443,18 +443,18 @@ end
 --- Overlay policy for the Debuff Manager page (mirror of BmOverlayState;
 --- same eligibility rules and returns).
 function CludesUI.SpecOverrides_DmOverlayState()
-    local g, kindOf
+    local g, kind
     if _editGroup then
-        g, kindOf = _editGroup, "spec"
+        g, kind = _editGroup, "spec"
     elseif Cond._edit then
-        g, kindOf = Cond._edit, "cond"
+        g, kind = Cond._edit, "cond"
     else
         return nil
     end
     local current = CurrentSpecID()
     local s = GetDmStore()
-    local liveKey, forked, eligible, textValue, subFrame
-    if kindOf == "spec" then
+    local liveKey, forked, eligible, textValue, sub
+    if kind == "spec" then
         liveKey = g.id
         forked = (s and s.layouts[g.id] ~= nil) or false
         local member = false
@@ -491,13 +491,13 @@ function CludesUI.SpecOverrides_DmOverlayState()
         return nil, liveNow ~= liveKey
     end
     if not eligible then
-        return { mode = "info", kind = kindOf, gid = g.id, text = textValue, sub = subFrame }
+        return { mode = "info", kind = kind, gid = g.id, text = textValue, sub = sub }
     end
     return {
         mode = "activate",
-        kind = kindOf,
+        kind = kind,
         gid = g.id,
-        text = kindOf == "spec"
+        text = kind == "spec"
                 and L(
                     "This will create a fully unique Debuff Manager for this override group. Your current Debuff Manager settings are copied as its starting point, and changes made to your default Debuff Manager will no longer affect these specs."
                 )
@@ -539,9 +539,9 @@ end
 
 --- Creates the edited group's DM fork (mirror of SpecOverrides_ActivateBm,
 --- including the virgin-store baseline seed and conditional seeding rules).
-function CludesUI.SpecOverrides_ActivateDm(kindOf, groupId)
+function CludesUI.SpecOverrides_ActivateDm(kind, groupId)
     local status = CludesUI.SpecOverrides_DmOverlayState()
-    if not status or status.mode ~= "activate" or status.kind ~= kindOf or status.gid ~= groupId then
+    if not status or status.mode ~= "activate" or status.kind ~= kind or status.gid ~= groupId then
         return
     end
     local current = CurrentSpecID()
@@ -552,7 +552,7 @@ function CludesUI.SpecOverrides_ActivateDm(kindOf, groupId)
             s.baselineLayout = DmHarvestLayer()
         end
     end
-    if kindOf == "spec" then
+    if kind == "spec" then
         local s = GetDmStore(true)
         if not s or s.layouts[groupId] ~= nil then
             return
@@ -706,13 +706,13 @@ function Cond.WriteValues(groupId, forSession)
     local touched = nil
     for _, record in ipairs(storage) do
         local map = groupId and record.values[groupId] or nil
-        for fkey, spec_def in pairs(record.values.default) do
+        for fkey, def in pairs(record.values.default) do
             if
                 not BlacklistedFKey(fkey)
                 and not MatchOwnedFKey(fkey)
                 and (forSession or not EntryOwning(fkey))
             then
-                local val = spec_def
+                local val = def
                 if map and map[fkey] ~= nil then
                     val = map[fkey]
                 end
@@ -753,11 +753,11 @@ end
 --- defaults-backed key is harvest residue, not a real removal).
 --- touched: folder-set accumulator; the caller refreshes once.
 function Cond.RestoreEntryDefaults(record, touched)
-    local spec_def = record.values and record.values.default
-    if not spec_def then
+    local def = record.values and record.values.default
+    if not def then
         return
     end
-    for fkey, dv in pairs(spec_def) do
+    for fkey, dv in pairs(def) do
         if
             not BlacklistedFKey(fkey)
             and not MatchOwnedFKey(fkey)
@@ -795,9 +795,9 @@ function Cond.PruneRedundant()
     local changed = false
     for idx = #storage, 1, -1 do
         local e = storage[idx]
-        local spec_def = e.values and e.values.default
-        if spec_def then
-            for fkey in pairs(spec_def) do
+        local def = e.values and e.values.default
+        if def then
+            for fkey in pairs(def) do
                 local held = false
                 for k, m in pairs(e.values) do
                     if k ~= "default" and type(m) == "table" and m[fkey] ~= nil then
@@ -807,17 +807,17 @@ function Cond.PruneRedundant()
                 end
                 if not held then
                     -- An exact-size companion stays while its size key does (PxCo).
-                    local baseValue = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
-                    if baseValue and spec_def[baseValue] ~= nil and PxCo.Partner(baseValue) == fkey then
+                    local base = fkey:sub(-2) == "Px" and fkey:sub(1, -3) or nil
+                    if base and def[base] ~= nil and PxCo.Partner(base) == fkey then
                         held = true
                     end
                 end
                 if not held then
-                    spec_def[fkey] = nil
+                    def[fkey] = nil
                     changed = true
                 end
             end
-            if not next(spec_def) then
+            if not next(def) then
                 table.remove(storage, idx)
                 changed = true
             end
@@ -1086,13 +1086,13 @@ function CludesUI.SpecOverrides_MergeImportedStores(merged, incoming)
         local result = {}
         for _, e in ipairs(entries or {}) do
             local ne = keepImported and DeepCopy(e) or e
-            local spec_def = ne.values and ne.values.default
-            if spec_def then
-                for fkey in pairs(spec_def) do
+            local def = ne.values and ne.values.default
+            if def then
+                for fkey in pairs(def) do
                     local folder = SplitFKey(fkey)
                     local isImported = folder and importedFolders[folder] or false
                     if isImported ~= keepImported then
-                        spec_def[fkey] = nil
+                        def[fkey] = nil
                         for k, m in pairs(ne.values) do
                             if k ~= "default" and type(m) == "table" then
                                 m[fkey] = nil
@@ -1100,7 +1100,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(merged, incoming)
                         end
                     end
                 end
-                if next(spec_def) ~= nil then
+                if next(def) ~= nil then
                     result[#result + 1] = ne
                 end
             end
@@ -1357,9 +1357,9 @@ function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
     end
     local function Rebank(storage)
         for _, record in ipairs(storage or {}) do
-            local spec_def = record.values and record.values.default
-            if spec_def then
-                for fkey in pairs(spec_def) do
+            local def = record.values and record.values.default
+            if def then
+                for fkey in pairs(def) do
                     local folder = SplitFKey(fkey)
                     -- Folder filter + loaded-module guard: an unloaded child
                     -- addon has no Lite DB, so ReadLive returns nil for EVERY
@@ -1369,7 +1369,7 @@ function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
                         -- Table values are never banked (aliasing/reference-
                         -- compare policy); keep the stored default.
                         if type(live) ~= "table" then
-                            spec_def[fkey] = (live == nil) and NIL_SENT or live
+                            def[fkey] = (live == nil) and NIL_SENT or live
                         end
                     end
                 end

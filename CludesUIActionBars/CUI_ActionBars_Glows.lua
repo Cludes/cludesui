@@ -92,9 +92,9 @@ local function UpdateFlipbook(button)
         local resolved
         if bk and p.bars and p.bars[bk] then
             local s = p.bars[bk]
-            local baseValue = barBaseSize[bk]
-            local bW = baseValue and baseValue.w or 45
-            local bH = baseValue and baseValue.h or 45
+            local base = barBaseSize[bk]
+            local bW = base and base.w or 45
+            local bH = base and base.h or 45
             local wid = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or bW
             local hgt = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or bH
             local shape = mod.AB_LayoutShape(s)
@@ -275,11 +275,11 @@ end
 -- Resolve the spellID for a button.
 -- Stored on _procState rather than as a file-level local.
 _procState.GetButtonSpellID = function(button)
-    local slotIndex = GetButtonActionSlot(button)
-    if not slotIndex or not HasAction or not HasAction(slotIndex) then
+    local slot = GetButtonActionSlot(button)
+    if not slot or not HasAction or not HasAction(slot) then
         return nil
     end
-    local actionType, ident, subType = GetActionInfo(slotIndex)
+    local actionType, ident, subType = GetActionInfo(slot)
     if actionType == "spell" then
         return ident
     elseif actionType == "macro" then
@@ -288,7 +288,7 @@ _procState.GetButtonSpellID = function(button)
         elseif subType == "item" then
             return nil
         end
-        local macroName = GetActionText(slotIndex)
+        local macroName = GetActionText(slot)
         local macroIndex = macroName and GetMacroIndexByName(macroName)
         if macroIndex and macroIndex > 0 then
             if GetMacroItem and GetMacroItem(macroIndex) then
@@ -633,10 +633,10 @@ do
     -- flipbook ring. Created lazily, so nobody on the ring-only default pays
     -- for it.
     -- style: nil/1 = hide, 2 = overlay only, 3 = overlay under the ring.
-    mod._AssistOverlay = function(button, look)
+    mod._AssistOverlay = function(button, style)
         local fd = EFD(button)
         local shade = fd.assistOverlay
-        if not look or look == 1 then
+        if not style or style == 1 then
             if shade then
                 shade:Hide()
             end
@@ -663,9 +663,9 @@ do
         -- Cropped Buttons fitting the ring (ns._AssistFit), the tint takes the
         -- same top and bottom pull-in so the two stay flush. Change-guarded: the
         -- rescan runs several times a second while a suggestion is up.
-        local pad = (look == 3) and ((p and p.assistGlowOutset) or 0) or 0
+        local pad = (style == 3) and ((p and p.assistGlowOutset) or 0) or 0
         local padY = pad
-        if look == 3 and fd.cropped and p and p.assistGlowFitCropped then
+        if style == 3 and fd.cropped and p and p.assistGlowFitCropped then
             padY = pad - mod._ASSIST_CROP_TRIM / 2
         end
         local ofd = EFD(shade)
@@ -878,13 +878,13 @@ do
             end
         end
 
-        local look = (p and p.assistGlowStyle) or 1
+        local style = (p and p.assistGlowStyle) or 1
         -- A custom glow runs in combat only: outside it, Blizzard's frozen ring.
-        if customType > 0 or look == 0 then
-            look = 1
+        if customType > 0 or style == 0 then
+            style = 1
         end
 
-        mod._AssistOverlay(button, look)
+        mod._AssistOverlay(button, style)
 
         -- Blizzard may show its own ring on a hovered button (candidate
         -- re-add). Defer to it so two identical shines never stack, but keep it
@@ -895,7 +895,7 @@ do
         local bf = button.AssistedCombatHighlightFrame
         if bf and bf:IsShown() then
             mod._AssistRingHide(button)
-            bf:SetAlpha(look == 2 and 0 or 1)
+            bf:SetAlpha(style == 2 and 0 or 1)
             if fd.squared and not mod._AssistFit(button, bf, fd.cropped) then
                 local s = mod._AssistScale(button)
                 if bf:GetScale() ~= s then
@@ -905,7 +905,7 @@ do
             return
         end
 
-        if look == 2 then
+        if style == 2 then
             mod._AssistRingHide(button)
             return
         end
@@ -1142,9 +1142,9 @@ function ABAR:ScanExistingProcs()
                             end
                         end
                         if not overlayed and C_Spell and C_Spell.GetBaseSpell then
-                            local baseValue = C_Spell.GetBaseSpell(spellId)
-                            if baseValue and baseValue > 0 and baseValue ~= spellId then
-                                overlayed = ISO(baseValue)
+                            local base = C_Spell.GetBaseSpell(spellId)
+                            if base and base > 0 and base ~= spellId then
+                                overlayed = ISO(base)
                             end
                         end
                     end
@@ -1162,8 +1162,8 @@ end
 local EDGE_TEXTURE = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
 
 local function GetClassColor()
-    local _, classFile = UnitClass("player")
-    local c = RAID_CLASS_COLORS[classFile]
+    local _, class = UnitClass("player")
+    local c = RAID_CLASS_COLORS[class]
     if c then
         return c.r, c.g, c.b
     end
@@ -1274,10 +1274,10 @@ local function _FlushCDPatch()
             end
             ApplySingleCooldownEdge(cdFrame, sz, cr, cg, cb, ca)
             if bfd.shapeMaskPath and bfd.shapeApplied then
-                local maskTex = bfd.shapeMask
-                if maskTex then
-                    pcall(cdFrame.RemoveMaskTexture, cdFrame, maskTex)
-                    pcall(cdFrame.AddMaskTexture, cdFrame, maskTex)
+                local mask = bfd.shapeMask
+                if mask then
+                    pcall(cdFrame.RemoveMaskTexture, cdFrame, mask)
+                    pcall(cdFrame.AddMaskTexture, cdFrame, mask)
                 end
                 if cdFrame.SetSwipeTexture then
                     pcall(cdFrame.SetSwipeTexture, cdFrame, bfd.shapeMaskPath)

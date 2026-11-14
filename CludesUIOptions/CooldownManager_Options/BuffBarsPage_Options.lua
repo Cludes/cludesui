@@ -23,7 +23,7 @@ local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
 
 local function InitBuffBarsPage(
     Pix,
-    SavedDB,
+    DB,
     Refresh,
     FONT_PATH,
     GetCDMOptOutline,
@@ -65,11 +65,11 @@ local function InitBuffBarsPage(
         local backdrop = oc:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
-        local titleText = oc:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-        titleText:SetPoint("TOP", oc, "TOP", 0, -7)
-        titleText:SetTextColor(1, 1, 1, 0.9)
-        oc._title = titleText
+        local title = oc:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+        title:SetPoint("TOP", oc, "TOP", 0, -7)
+        title:SetTextColor(1, 1, 1, 0.9)
+        oc._title = title
         local hint = oc:CreateFontString(nil, "OVERLAY")
         hint:SetFont(FONT_PATH, 10, GetCDMOptOutline())
         hint:SetPoint("BOTTOM", oc, "BOTTOM", 0, 7)
@@ -126,9 +126,9 @@ local function InitBuffBarsPage(
 
     -- Attach nav overlays for one preview bar. Bar mode: element overlays scroll to and
     -- flash their option rows; group mode: one whole-bar overlay selects the bar for editing.
-    local function UpdateTBBPvNav(wrap, modeName, barIdx)
+    local function UpdateTBBPvNav(wrap, mode, barIdx)
         HideTBBPvNav(wrap)
-        if modeName == "group" then
+        if mode == "group" then
             local button = TBBPvNavButton(wrap, "select")
             button:ClearAllPoints()
             button:SetAllPoints(wrap)
@@ -267,19 +267,19 @@ local function InitBuffBarsPage(
     end
 
     -- Vertical headroom for texts anchored above/below the bar (outside its bounds).
-    local function TBBPvTextPad(conf, sideName)
+    local function TBBPvTextPad(conf, side)
         local tp = conf.timerPosition or (conf.showTimer and "right" or "none")
         local sp = conf.stacksPosition or "center"
         local np = conf.verticalOrientation and "none"
             or (conf.namePosition or ((conf.showName ~= false) and "left" or "none"))
         local p = 0
-        if tp == sideName then
+        if tp == side then
             p = math.max(p, conf.timerSize or 11)
         end
-        if sp == sideName then
+        if sp == side then
             p = math.max(p, conf.stacksSize or 11)
         end
-        if np == sideName then
+        if np == side then
             p = math.max(p, conf.nameSize or 11)
         end
         return p > 0 and (p + 8) or 0
@@ -313,9 +313,9 @@ local function InitBuffBarsPage(
 
         -- Configs to render: the selected group's members, or the selected bar
         local entries = {}
-        local modeName = "bar"
+        local mode = "bar"
         if _tbbSelectedGroup then
-            modeName = "group"
+            mode = "group"
             for i, c in ipairs(barList) do
                 if mod.TBBBarGroupID(c) == _tbbSelectedGroup then
                     entries[#entries + 1] = { idx = i, cfg = c }
@@ -374,13 +374,13 @@ local function InitBuffBarsPage(
             -- change resets child frame levels). Guarded so refreshes that
             -- didn't touch strata skip the re-stack; level checked too, else a
             -- bar whose OWN strata is the popout's would dodge the lift.
-            local baseValue = oc:GetFrameLevel() + 20
-            if wrap:GetFrameStrata() ~= "FULLSCREEN_DIALOG" or wrap:GetFrameLevel() ~= baseValue then
+            local base = oc:GetFrameLevel() + 20
+            if wrap:GetFrameStrata() ~= "FULLSCREEN_DIALOG" or wrap:GetFrameLevel() ~= base then
                 wrap:SetFrameStrata("FULLSCREEN_DIALOG")
-                wrap:SetFrameLevel(baseValue)
+                wrap:SetFrameLevel(base)
                 local scrollBar = wrap._bar
                 if scrollBar then
-                    scrollBar:SetFrameLevel(baseValue + 1)
+                    scrollBar:SetFrameLevel(base + 1)
                 end
                 if wrap._gradClip and scrollBar then
                     wrap._gradClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
@@ -410,10 +410,10 @@ local function InitBuffBarsPage(
                 -- the tick overlay (sb+4 = base+5), which wins ties via lazy
                 -- creation.
                 if wrap._barBorder then
-                    wrap._barBorder:SetFrameLevel(baseValue + 6)
+                    wrap._barBorder:SetFrameLevel(base + 6)
                 end
                 if wrap._pandemicGlowOverlay then
-                    wrap._pandemicGlowOverlay:SetFrameLevel(baseValue + 7)
+                    wrap._pandemicGlowOverlay:SetFrameLevel(base + 7)
                 end
                 if wrap._textOverlay and scrollBar then
                     wrap._textOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 7)
@@ -446,17 +446,17 @@ local function InitBuffBarsPage(
         -- group's grow/spacing, exactly like the live BuildTrackedBuffBars
         local PAD_IN, TITLE_H = 20, 25
         local growDir, spacing = "DOWN", 2
-        if modeName == "group" then
+        if mode == "group" then
             growDir = (mod.TBBGroupGrow(_tbbSelectedGroup) or "DOWN"):upper()
             spacing = mod.TBBGroupSpacing(_tbbSelectedGroup) or 2
         end
-        local horizontalChain = modeName == "group" and (growDir == "LEFT" or growDir == "RIGHT")
+        local horizontalChain = mode == "group" and (growDir == "LEFT" or growDir == "RIGHT")
 
         local totalW, totalH = 0, 0
         for num = 1, #entries do
             local wrap = _tbbPopoutBars[num]
             local w2, h2 = wrap:GetWidth(), wrap:GetHeight()
-            if modeName ~= "group" then
+            if mode ~= "group" then
                 totalW, totalH = w2, h2
             elseif horizontalChain then
                 totalW = totalW + w2 + (num > 1 and spacing or 0)
@@ -478,7 +478,7 @@ local function InitBuffBarsPage(
 
         -- Footer hint
         local hintH = 0
-        if modeName == "bar" then
+        if mode == "bar" then
             if not (CludesUIDB and CludesUIDB.previewHintDismissed) then
                 oc._hint:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
                 oc._hint:Show()
@@ -510,11 +510,11 @@ local function InitBuffBarsPage(
             if num == 1 then
                 -- Centred bars sit on a whole-pixel left edge too.
                 local cx = Px((ocW - wrap:GetWidth()) / 2)
-                if modeName == "group" and growDir == "UP" then
+                if mode == "group" and growDir == "UP" then
                     wrap:SetPoint("BOTTOMLEFT", oc, "BOTTOMLEFT", cx, Px(PAD_IN + botPad + hintH))
-                elseif modeName == "group" and growDir == "RIGHT" then
+                elseif mode == "group" and growDir == "RIGHT" then
                     wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", Px(PAD_IN), firstY)
-                elseif modeName == "group" and growDir == "LEFT" then
+                elseif mode == "group" and growDir == "LEFT" then
                     wrap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", -Px(PAD_IN), firstY)
                 else
                     wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", cx, firstY)
@@ -532,10 +532,10 @@ local function InitBuffBarsPage(
                 end
             end
             prev = wrap
-            UpdateTBBPvNav(wrap, modeName, entries[num].idx)
+            UpdateTBBPvNav(wrap, mode, entries[num].idx)
         end
 
-        if modeName == "group" then
+        if mode == "group" then
             local gname = (mod.TBBGroupName and mod.TBBGroupName(_tbbSelectedGroup))
                 or (CludesUI.L("Group") .. " " .. _tbbSelectedGroup)
             oc._title:SetText(gname .. " " .. CludesUI.L("Preview"))
@@ -719,7 +719,7 @@ local function InitBuffBarsPage(
     end)
 
     -- Show the "Custom Buff ID" popup with Spell ID + Duration fields
-    local function ShowCustomBuffIDPopup(anchorFrame, barCfg, onChanged)
+    local function ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
         local popupName = "CUI_TBB_CustomBuffPopup"
         local dialog = _G[popupName]
         if not dialog then
@@ -744,11 +744,11 @@ local function InitBuffBarsPage(
             popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
             CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
 
-            local titleText = dialog:CreateFontString(nil, "OVERLAY")
-            titleText:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-            titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-            titleText:SetTextColor(1, 1, 1, 1)
-            titleText:SetText(CludesUI.L("Custom Buff ID"))
+            local title = dialog:CreateFontString(nil, "OVERLAY")
+            title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
+            title:SetPoint("TOP", dialog, "TOP", 0, -18)
+            title:SetTextColor(1, 1, 1, 1)
+            title:SetText(CludesUI.L("Custom Buff ID"))
 
             local sidLbl = dialog:CreateFontString(nil, "OVERLAY")
             sidLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
@@ -940,7 +940,7 @@ local function InitBuffBarsPage(
         dialog._sidBox:SetFocus()
     end
 
-    local function ShowTBBSpellPicker(anchorFrame, barCfg, onChanged)
+    local function ShowTBBSpellPicker(anchor, barCfg, onChanged)
         if _tbbSpellPickerMenu then
             _tbbSpellPickerMenu:Hide()
         end
@@ -1024,7 +1024,7 @@ local function InitBuffBarsPage(
         end)
         csItem:SetScript("OnClick", function()
             dropMenu:Hide()
-            ShowCustomBuffIDPopup(anchorFrame, barCfg, onChanged)
+            ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
         end)
         mH = mH + ITEM_H
 
@@ -1038,16 +1038,16 @@ local function InitBuffBarsPage(
         -- Popular buff entries
         local function MakePopularItem(record)
             local isSelected = barCfg.popularKey == record.key
-            local itemInfo = CreateFrame("Button", nil, inner)
-            itemInfo:SetHeight(ITEM_H)
-            itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+            local item = CreateFrame("Button", nil, inner)
+            item:SetHeight(ITEM_H)
+            item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+            item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+            item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-            local ico = itemInfo:CreateTexture(nil, "ARTWORK")
+            local ico = item:CreateTexture(nil, "ARTWORK")
             local icoSz = ITEM_H - 4
             ico:SetSize(icoSz, icoSz)
-            ico:SetPoint("RIGHT", itemInfo, "RIGHT", -6, 0)
+            ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
             ico:SetTexture(record.icon)
             ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
@@ -1056,7 +1056,7 @@ local function InitBuffBarsPage(
             local baseB = isSelected and 1 or tDimB
             local baseA = isSelected and 1 or tDimA
 
-            local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+            local labelFS = item:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
             labelFS:SetPoint("LEFT", 8, 0)
             labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
@@ -1066,19 +1066,19 @@ local function InitBuffBarsPage(
             labelFS:SetText(CludesUI.L(record.name))
             labelFS:SetTextColor(baseR, baseG, baseB, baseA)
 
-            local highlight = itemInfo:CreateTexture(nil, "ARTWORK", nil, -1)
+            local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
             highlight:SetAllPoints()
             highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
 
-            itemInfo:SetScript("OnEnter", function()
+            item:SetScript("OnEnter", function()
                 labelFS:SetTextColor(1, 1, 1, 1)
                 highlight:SetColorTexture(1, 1, 1, hlA)
             end)
-            itemInfo:SetScript("OnLeave", function()
+            item:SetScript("OnLeave", function()
                 labelFS:SetTextColor(baseR, baseG, baseB, baseA)
                 highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
             end)
-            itemInfo:SetScript("OnClick", function()
+            item:SetScript("OnClick", function()
                 dropMenu:Hide()
                 barCfg.popularKey = record.key
                 barCfg.spellIDs = record.spellIDs
@@ -1153,16 +1153,16 @@ local function InitBuffBarsPage(
                     end
                 end
             end
-            local itemInfo = CreateFrame("Button", nil, inner)
-            itemInfo:SetHeight(ITEM_H)
-            itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+            local item = CreateFrame("Button", nil, inner)
+            item:SetHeight(ITEM_H)
+            item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+            item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+            item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-            local ico = itemInfo:CreateTexture(nil, "ARTWORK")
+            local ico = item:CreateTexture(nil, "ARTWORK")
             local icoSz = ITEM_H - 4
             ico:SetSize(icoSz, icoSz)
-            ico:SetPoint("RIGHT", itemInfo, "RIGHT", -6, 0)
+            ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
             if sp.icon then
                 ico:SetTexture(sp.icon)
             end
@@ -1173,7 +1173,7 @@ local function InitBuffBarsPage(
             local baseB = isSelected and 1 or tDimB
             local baseA = isSelected and 1 or tDimA
 
-            local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+            local labelFS = item:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
             labelFS:SetPoint("LEFT", 8, 0)
             labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
@@ -1183,7 +1183,7 @@ local function InitBuffBarsPage(
             labelFS:SetText(CludesUI.L(sp.name))
             labelFS:SetTextColor(baseR, baseG, baseB, baseA)
 
-            local highlight = itemInfo:CreateTexture(nil, "ARTWORK", nil, -1)
+            local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
             highlight:SetAllPoints()
             highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
 
@@ -1192,15 +1192,15 @@ local function InitBuffBarsPage(
                 labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
                 ico:SetDesaturated(true)
                 ico:SetAlpha(0.4)
-                itemInfo:SetScript("OnEnter", function()
+                item:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
-                        itemInfo,
+                        item,
                         CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar))
                     )
                     highlight:SetColorTexture(1, 1, 1, hlA * 0.3)
                     highlight:SetAlpha(1)
                 end)
-                itemInfo:SetScript("OnLeave", function()
+                item:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                     highlight:SetAlpha(0)
                 end)
@@ -1215,21 +1215,21 @@ local function InitBuffBarsPage(
                 ico:SetDesaturated(true)
                 ico:SetAlpha(0.5)
             end
-            itemInfo:SetScript("OnEnter", function()
+            item:SetScript("OnEnter", function()
                 labelFS:SetTextColor(1, 1, 1, 1)
                 highlight:SetColorTexture(1, 1, 1, hlA)
                 if notLearned then
-                    CludesUI.ShowWidgetTooltip(itemInfo, CludesUI.L("Not currently talented"))
+                    CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
                 end
             end)
-            itemInfo:SetScript("OnLeave", function()
+            item:SetScript("OnLeave", function()
                 labelFS:SetTextColor(baseR, baseG, baseB, baseA)
                 highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
                 if notLearned then
                     CludesUI.HideWidgetTooltip()
                 end
             end)
-            itemInfo:SetScript("OnClick", function()
+            item:SetScript("OnClick", function()
                 if notLearned then
                     CludesUI.HideWidgetTooltip()
                 end
@@ -1359,16 +1359,16 @@ local function InitBuffBarsPage(
                     and barCfg.spellID
                     and barCfg.spellID > 0
                     and barCfg.spellID == sp.spellID
-                local itemInfo = CreateFrame("Button", nil, inner)
-                itemInfo:SetHeight(ITEM_H)
-                itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                local item = CreateFrame("Button", nil, inner)
+                item:SetHeight(ITEM_H)
+                item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-                local ico = itemInfo:CreateTexture(nil, "ARTWORK")
+                local ico = item:CreateTexture(nil, "ARTWORK")
                 local icoSz = ITEM_H - 4
                 ico:SetSize(icoSz, icoSz)
-                ico:SetPoint("RIGHT", itemInfo, "RIGHT", -6, 0)
+                ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
                 if sp.icon then
                     ico:SetTexture(sp.icon)
                 end
@@ -1379,7 +1379,7 @@ local function InitBuffBarsPage(
                 local baseB = isSelected and 1 or tDimB
                 local baseA = isSelected and 1 or tDimA
 
-                local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+                local labelFS = item:CreateFontString(nil, "OVERLAY")
                 labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                 labelFS:SetPoint("LEFT", 8, 0)
                 labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
@@ -1389,7 +1389,7 @@ local function InitBuffBarsPage(
                 labelFS:SetText(CludesUI.L(sp.name))
                 labelFS:SetTextColor(baseR, baseG, baseB, baseA)
 
-                local highlight = itemInfo:CreateTexture(nil, "ARTWORK", nil, -1)
+                local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
                 highlight:SetAllPoints()
                 highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
 
@@ -1398,15 +1398,15 @@ local function InitBuffBarsPage(
                     labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
                     ico:SetDesaturated(true)
                     ico:SetAlpha(0.4)
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         CludesUI.ShowWidgetTooltip(
-                            itemInfo,
+                            item,
                             CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar))
                         )
                         highlight:SetColorTexture(1, 1, 1, hlA * 0.3)
                         highlight:SetAlpha(1)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                         highlight:SetAlpha(0)
                     end)
@@ -1420,21 +1420,21 @@ local function InitBuffBarsPage(
                     ico:SetDesaturated(true)
                     ico:SetAlpha(0.5)
                 end
-                itemInfo:SetScript("OnEnter", function()
+                item:SetScript("OnEnter", function()
                     labelFS:SetTextColor(1, 1, 1, 1)
                     highlight:SetColorTexture(1, 1, 1, hlA)
                     if notLearned then
-                        CludesUI.ShowWidgetTooltip(itemInfo, CludesUI.L("Not currently talented"))
+                        CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
                     end
                 end)
-                itemInfo:SetScript("OnLeave", function()
+                item:SetScript("OnLeave", function()
                     labelFS:SetTextColor(baseR, baseG, baseB, baseA)
                     highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
                     if notLearned then
                         CludesUI.HideWidgetTooltip()
                     end
                 end)
-                itemInfo:SetScript("OnClick", function()
+                item:SetScript("OnClick", function()
                     if notLearned then
                         CludesUI.HideWidgetTooltip()
                     end
@@ -1498,9 +1498,9 @@ local function InitBuffBarsPage(
         end
 
         dropMenu:ClearAllPoints()
-        dropMenu:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -2)
+        dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
         dropMenu:SetScript("OnUpdate", function(m)
-            if not m:IsMouseOver() and not anchorFrame:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+            if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
                 m:Hide()
             end
         end)
@@ -1747,21 +1747,21 @@ local function InitBuffBarsPage(
 
     -- Lazily create the widgets for threshold row k; returns the row table.
     local function EnsureStackThreshRow(k)
-        local rowFrame = _stRows[k]
-        if rowFrame then
-            return rowFrame
+        local row = _stRows[k]
+        if row then
+            return row
         end
-        rowFrame = {}
+        row = {}
         local rf = CreateFrame("Frame", nil, stPopup)
         rf:SetSize(ST_POPUP_W - ST_PAD * 2, ST_ROW_H)
         rf:SetFrameLevel(stPopup:GetFrameLevel() + 2)
-        rowFrame.frame = rf
+        row.frame = rf
 
         local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
         labelFS:SetAlpha(0.6)
         labelFS:SetPoint("LEFT", rf, "LEFT", 2, 0)
         labelFS:SetText(CludesUI.L("At"))
-        rowFrame.lbl = labelFS
+        row.lbl = labelFS
 
         local input = CreateFrame("EditBox", nil, rf)
         input:SetSize(54, 22)
@@ -1778,7 +1778,7 @@ local function InitBuffBarsPage(
         inBg:SetAllPoints()
         inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
         CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
-        rowFrame.input = input
+        row.input = input
 
         -- Commit on focus loss (Enter clears focus -> triggers this; Escape sets
         -- _cancelCommit to discard the typed text).
@@ -1789,7 +1789,7 @@ local function InitBuffBarsPage(
             end
             local conf = CurrentStackThreshCfg()
             local entries = conf and conf.stackThresholds
-            local ent = entries and entries[rowFrame._idx]
+            local ent = entries and entries[row._idx]
             if not ent then
                 return
             end
@@ -1817,7 +1817,7 @@ local function InitBuffBarsPage(
         local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
             local conf = CurrentStackThreshCfg()
             local entries = conf and conf.stackThresholds
-            local ent = entries and entries[rowFrame._idx]
+            local ent = entries and entries[row._idx]
             if not ent then
                 return ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A
             end
@@ -1825,7 +1825,7 @@ local function InitBuffBarsPage(
         end, function(r, g, b, a)
             local conf = CurrentStackThreshCfg()
             local entries = conf and conf.stackThresholds
-            local ent = entries and entries[rowFrame._idx]
+            local ent = entries and entries[row._idx]
             if ent then
                 ent.r, ent.g, ent.b, ent.a = r, g, b, a
                 if _stRefreshFn then
@@ -1834,8 +1834,8 @@ local function InitBuffBarsPage(
             end
         end, true, 19)
         colorSwatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
-        rowFrame.swatch = colorSwatch
-        rowFrame.swatchSnap = swatchSnap
+        row.swatch = colorSwatch
+        row.swatchSnap = swatchSnap
 
         local delBtn = CreateFrame("Button", nil, rf)
         delBtn:SetSize(14, 14)
@@ -1854,8 +1854,8 @@ local function InitBuffBarsPage(
         delBtn:SetScript("OnClick", function()
             local conf = CurrentStackThreshCfg()
             local entries = conf and conf.stackThresholds
-            if entries and entries[rowFrame._idx] then
-                table.remove(entries, rowFrame._idx)
+            if entries and entries[row._idx] then
+                table.remove(entries, row._idx)
                 -- An empty list would silently fall back to the single threshold while the
                 -- toggle still reads "on"; turn it off so the popup matches the bar.
                 if #entries == 0 and conf.stackThresholdMulti then
@@ -1868,10 +1868,10 @@ local function InitBuffBarsPage(
                 RefreshStackThreshEditor()
             end
         end)
-        rowFrame.delBtn = delBtn
+        row.delBtn = delBtn
 
-        _stRows[k] = rowFrame
-        return rowFrame
+        _stRows[k] = row
+        return row
     end
 
     RefreshStackThreshEditor = function()
@@ -1901,15 +1901,15 @@ local function InitBuffBarsPage(
 
         local num = #entries
         for k = 1, num do
-            local rowFrame = EnsureStackThreshRow(k)
-            rowFrame._idx = k
-            rowFrame.frame:ClearAllPoints()
-            Pix.Point(rowFrame.frame, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
-            rowFrame.input:SetText(tostring(entries[k].value or 5))
-            if rowFrame.swatchSnap then
-                rowFrame.swatchSnap()
+            local row = EnsureStackThreshRow(k)
+            row._idx = k
+            row.frame:ClearAllPoints()
+            Pix.Point(row.frame, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
+            row.input:SetText(tostring(entries[k].value or 5))
+            if row.swatchSnap then
+                row.swatchSnap()
             end
-            rowFrame.frame:Show()
+            row.frame:Show()
             curY = curY - ST_ROW_H - 4
         end
         for k = num + 1, #_stRows do
@@ -1967,10 +1967,10 @@ local function InitBuffBarsPage(
         local _, hgt, heading
 
         -- If user chose Blizzard bars, show re-enable button and bail
-        local usingBlizz = SavedDB() and SavedDB().cdmBars and SavedDB().cdmBars.useBlizzardBuffBars
+        local usingBlizz = DB() and DB().cdmBars and DB().cdmBars.useBlizzardBuffBars
         if usingBlizz then
             _, hgt = W:WideDualButton(hostFrame, "Enable Tracking Bars", "Open Blizzard CDM", posY, function()
-                local p = SavedDB()
+                local p = DB()
                 if p and p.cdmBars then
                     p.cdmBars.useBlizzardBuffBars = false
                 end
@@ -2296,21 +2296,21 @@ local function InitBuffBarsPage(
                 local flyouts = {}
 
                 local function MakeSoundRow(i, label, field)
-                    local rowFrame = CreateFrame("Button", nil, sm)
-                    rowFrame:SetHeight(ITEM_H)
-                    rowFrame:SetPoint("TOPLEFT", sm, "TOPLEFT", 1, -4 - (i - 1) * ITEM_H)
-                    rowFrame:SetPoint("TOPRIGHT", sm, "TOPRIGHT", -1, -4 - (i - 1) * ITEM_H)
-                    rowFrame:SetFrameLevel(sm:GetFrameLevel() + 2)
-                    local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+                    local row = CreateFrame("Button", nil, sm)
+                    row:SetHeight(ITEM_H)
+                    row:SetPoint("TOPLEFT", sm, "TOPLEFT", 1, -4 - (i - 1) * ITEM_H)
+                    row:SetPoint("TOPRIGHT", sm, "TOPRIGHT", -1, -4 - (i - 1) * ITEM_H)
+                    row:SetFrameLevel(sm:GetFrameLevel() + 2)
+                    local labelFS = row:CreateFontString(nil, "OVERLAY")
                     labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
+                    labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
                     labelFS:SetText(CludesUI.L(label))
-                    local arrow = rowFrame:CreateTexture(nil, "ARTWORK")
+                    local arrow = row:CreateTexture(nil, "ARTWORK")
                     arrow:SetSize(10, 10)
-                    arrow:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 0)
+                    arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
                     arrow:SetTexture(MEDIA .. "icons\\right-arrow.png")
                     arrow:SetAlpha(0.7)
-                    local val = rowFrame:CreateFontString(nil, "OVERLAY")
+                    local val = row:CreateFontString(nil, "OVERLAY")
                     val:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                     val:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
                     val:SetPoint("RIGHT", arrow, "LEFT", -6, 0)
@@ -2318,7 +2318,7 @@ local function InitBuffBarsPage(
                     val:SetWordWrap(false)
                     val:SetMaxLines(1)
                     val:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+                    local highlight = row:CreateTexture(nil, "ARTWORK")
                     highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 1)
                     highlight:SetAlpha(0)
@@ -2374,7 +2374,7 @@ local function InitBuffBarsPage(
                             values._menuOpts.iconNativeColor = true
                             local refresh
                             fly, _, refresh = CludesUI.BuildDropdownMenu(
-                                rowFrame,
+                                row,
                                 200,
                                 sequence,
                                 values,
@@ -2396,9 +2396,9 @@ local function InitBuffBarsPage(
                             fly:Show()
                         end
                     end
-                    rowFrame:SetScript("OnEnter", ShowFlyout)
-                    rowFrame:SetScript("OnClick", ShowFlyout)
-                    rowFrame:SetScript("OnLeave", function()
+                    row:SetScript("OnEnter", ShowFlyout)
+                    row:SetScript("OnClick", ShowFlyout)
+                    row:SetScript("OnLeave", function()
                         highlight:SetAlpha(0)
                     end)
                 end
@@ -2627,35 +2627,35 @@ local function InitBuffBarsPage(
                     if mH > 4 then
                         mH = mH + 4
                     end
-                    local itemInfo = CreateFrame("Button", nil, inner)
-                    itemInfo:SetHeight(22)
-                    itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local hLbl = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local item = CreateFrame("Button", nil, inner)
+                    item:SetHeight(22)
+                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local hLbl = item:CreateFontString(nil, "OVERLAY")
                     hLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                     hLbl:SetTextColor(1, 1, 1, 0.9)
-                    hLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
+                    hLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
                     local groupDisplayName = (mod.TBBGroupName and mod.TBBGroupName(groupId))
                         or (CludesUI.L("GROUP") .. " " .. groupId)
                     hLbl:SetText(groupDisplayName)
                     if gkey then
-                        local gTag = itemInfo:CreateFontString(nil, "OVERLAY")
+                        local gTag = item:CreateFontString(nil, "OVERLAY")
                         gTag:SetFont(FONT_PATH, 9, GetCDMOptOutline())
                         gTag:SetTextColor(ar, ag, ab, 0.9)
                         gTag:SetPoint("LEFT", hLbl, "RIGHT", 6, 0)
                         gTag:SetText(CludesUI.L("GLOBAL"))
                     end
-                    local eLbl = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local eLbl = item:CreateFontString(nil, "OVERLAY")
                     eLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                     eLbl:SetTextColor(ar, ag, ab, 0.85)
                     eLbl:SetText(CludesUI.L("Edit Group"))
                     local delBtn
                     if gkey then
-                        delBtn = CreateFrame("Button", nil, itemInfo)
+                        delBtn = CreateFrame("Button", nil, item)
                         delBtn:SetSize(ICON_SZ, ICON_SZ)
-                        delBtn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
-                        delBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                        delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+                        delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                         local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                         delIcon:SetSize(ICON_SZ, ICON_SZ)
                         delIcon:SetPoint("CENTER")
@@ -2700,42 +2700,42 @@ local function InitBuffBarsPage(
                         end)
                         eLbl:SetPoint("RIGHT", delBtn, "LEFT", -8, 0)
                     else
-                        eLbl:SetPoint("RIGHT", itemInfo, "RIGHT", -10, 0)
+                        eLbl:SetPoint("RIGHT", item, "RIGHT", -10, 0)
                     end
-                    local highlight = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local highlight = item:CreateTexture(nil, "ARTWORK")
                     highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 1)
                     local isSel = _tbbSelectedGroup == groupId
                     highlight:SetAlpha(isSel and selA or 0)
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         hLbl:SetTextColor(1, 1, 1, 1)
                         eLbl:SetTextColor(1, 1, 1, 0.9)
                         highlight:SetAlpha(hlA)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         hLbl:SetTextColor(1, 1, 1, 0.9)
                         eLbl:SetTextColor(ar, ag, ab, 0.85)
                         highlight:SetAlpha(isSel and selA or 0)
                     end)
-                    itemInfo:SetScript("OnClick", function()
+                    item:SetScript("OnClick", function()
                         dropMenu:Hide()
                         _tbbSelectedGroup = groupId
                         CludesUI:RefreshPage(true)
                     end)
                     mH = mH + 22
-                    return itemInfo
+                    return item
                 end
 
                 local function AddBarItem(idx, b, indent)
-                    local itemInfo = CreateFrame("Button", nil, inner)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local item = CreateFrame("Button", nil, inner)
+                    item:SetHeight(ITEM_H)
+                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-                    local spIco = itemInfo:CreateTexture(nil, "OVERLAY")
+                    local spIco = item:CreateTexture(nil, "OVERLAY")
                     spIco:SetSize(ITEM_H - 8, ITEM_H - 8)
-                    spIco:SetPoint("LEFT", itemInfo, "LEFT", 10 + (indent or 0), 0)
+                    spIco:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
                     spIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
                     local unassigned = (not b.spellID or b.spellID == 0) and not b.glowBased
                     spIco:SetTexture(BarIconID(b))
@@ -2745,9 +2745,9 @@ local function InitBuffBarsPage(
                     end
 
                     -- Icon = change this bar's buff (green border affordance)
-                    local icoBtn = CreateFrame("Button", nil, itemInfo)
+                    local icoBtn = CreateFrame("Button", nil, item)
                     icoBtn:SetAllPoints(spIco)
-                    icoBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 3)
+                    icoBtn:SetFrameLevel(item:GetFrameLevel() + 3)
                     local egc = CludesUI.CLUDES_GREEN
                     local icoBrd = Pix.CreateBorder(icoBtn, egc.r, egc.g, egc.b, 1, 1, "OVERLAY", 7)
                     if icoBrd then
@@ -2770,7 +2770,7 @@ local function InitBuffBarsPage(
                         OpenBuffPickerForBar(idx)
                     end)
 
-                    local iLbl = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local iLbl = item:CreateFontString(nil, "OVERLAY")
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
@@ -2789,15 +2789,15 @@ local function InitBuffBarsPage(
                     end
                     iLbl:SetText(displayName)
 
-                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local iHl = item:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
 
-                    local delBtn = CreateFrame("Button", nil, itemInfo)
+                    local delBtn = CreateFrame("Button", nil, item)
                     delBtn:SetSize(ICON_SZ, ICON_SZ)
-                    delBtn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                    delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+                    delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                     local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                     delIcon:SetSize(ICON_SZ, ICON_SZ)
                     delIcon:SetPoint("CENTER")
@@ -2815,10 +2815,10 @@ local function InitBuffBarsPage(
                     -- it has one. The sound menu repaints it through item._sndPaint.
                     local soundable = BarTakesSound(b)
                     if soundable then
-                        local sndBtn = CreateFrame("Button", nil, itemInfo)
+                        local sndBtn = CreateFrame("Button", nil, item)
                         sndBtn:SetSize(ICON_SZ, ICON_SZ)
                         sndBtn:SetPoint("RIGHT", delBtn, "LEFT", -6, 0)
-                        sndBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                        sndBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                         local sndIcon = sndBtn:CreateTexture(nil, "OVERLAY")
                         sndIcon:SetAllPoints()
                         sndIcon:SetAtlas(CludesUI.SOUND_ICON_ATLAS)
@@ -2829,7 +2829,7 @@ local function InitBuffBarsPage(
                         local function RestAlpha()
                             return HasSound() and 0.8 or 0.3
                         end
-                        itemInfo._sndPaint = function()
+                        item._sndPaint = function()
                             if not sndBtn:IsMouseOver() then
                                 sndBtn:SetAlpha(RestAlpha())
                             end
@@ -2848,7 +2848,7 @@ local function InitBuffBarsPage(
                         sndBtn:SetScript("OnLeave", function(self)
                             CludesUI.HideWidgetTooltip()
                             self:SetAlpha(RestAlpha())
-                            if itemInfo:IsMouseOver() then
+                            if item:IsMouseOver() then
                                 return
                             end
                             iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
@@ -2856,7 +2856,7 @@ local function InitBuffBarsPage(
                         end)
                         -- The bar menu stays open underneath, as with the row right-click.
                         sndBtn:SetScript("OnClick", function()
-                            OpenBarSoundMenu(idx, itemInfo)
+                            OpenBarSoundMenu(idx, item)
                         end)
                         iLbl:SetPoint("RIGHT", sndBtn, "LEFT", -4, 0)
                     end
@@ -2867,7 +2867,7 @@ local function InitBuffBarsPage(
                         iHl:SetAlpha(hlA)
                     end)
                     delBtn:SetScript("OnLeave", function()
-                        if itemInfo:IsMouseOver() then
+                        if item:IsMouseOver() then
                             return
                         end
                         delBtn:SetAlpha(0.75)
@@ -2888,24 +2888,24 @@ local function InitBuffBarsPage(
                         })
                     end)
 
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                         delBtn:SetAlpha(1)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
                         delBtn:SetAlpha(0.75)
                     end)
-                    itemInfo:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-                    itemInfo:SetScript("OnClick", function(_, mouseButton)
+                    item:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+                    item:SetScript("OnClick", function(_, mouseButton)
                         if mouseButton == "RightButton" then
                             if not soundable then
                                 return
                             end
                             -- The bar menu stays open underneath, like the CDM icon menu.
-                            OpenBarSoundMenu(idx, itemInfo)
+                            OpenBarSoundMenu(idx, item)
                             return
                         end
                         dropMenu:Hide()
@@ -2920,8 +2920,8 @@ local function InitBuffBarsPage(
                     end)
 
                     -- Drag to move between groups or reorder within one (drop handled by zone under the cursor at release).
-                    itemInfo:RegisterForDrag("LeftButton")
-                    itemInfo:SetScript("OnDragStart", function()
+                    item:RegisterForDrag("LeftButton")
+                    item:SetScript("OnDragStart", function()
                         dropMenu._dragActive = true
                         dragState.idx = idx
                         dragState.name = displayName
@@ -2931,7 +2931,7 @@ local function InitBuffBarsPage(
                         g:Show()
                         g:SetScript("OnUpdate", GhostUpdate)
                     end)
-                    itemInfo:SetScript("OnDragStop", function()
+                    item:SetScript("OnDragStop", function()
                         local moveIdx = dragState.idx
                         local z, f = HoveredZone()
                         local place = ReorderTarget(z, f)
@@ -2944,36 +2944,36 @@ local function InitBuffBarsPage(
                         end
                     end)
                     mH = mH + ITEM_H
-                    return itemInfo
+                    return item
                 end
 
                 local function AddActionItem(textValue, indent, onClick)
-                    local itemInfo = CreateFrame("Button", nil, inner)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local labelFS = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local item = CreateFrame("Button", nil, inner)
+                    item:SetHeight(ITEM_H)
+                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local labelFS = item:CreateFontString(nil, "OVERLAY")
                     labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    labelFS:SetPoint("LEFT", itemInfo, "LEFT", 10 + (indent or 0), 0)
+                    labelFS:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
                     labelFS:SetJustifyH("LEFT")
                     labelFS:SetText(textValue)
                     labelFS:SetTextColor(ar, ag, ab, 0.85)
-                    local highlight = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local highlight = item:CreateTexture(nil, "ARTWORK")
                     highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 1)
                     highlight:SetAlpha(0)
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         labelFS:SetTextColor(1, 1, 1, 1)
                         highlight:SetAlpha(hlA)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         labelFS:SetTextColor(ar, ag, ab, 0.85)
                         highlight:SetAlpha(0)
                     end)
-                    itemInfo:SetScript("OnClick", onClick)
+                    item:SetScript("OnClick", onClick)
                     mH = mH + ITEM_H
-                    return itemInfo
+                    return item
                 end
 
                 -- A freshly created bar has no buff yet: select it and open the buff picker right away so add-and-assign is one flow.
@@ -3002,9 +3002,9 @@ local function InitBuffBarsPage(
                     zone.frames[#zone.frames + 1] = zone.head
                     for idx, b in ipairs(t.bars) do
                         if mod.TBBBarGroupID(b) == groupId then
-                            local rowFrame = AddBarItem(idx, b, 8)
-                            zone.frames[#zone.frames + 1] = rowFrame
-                            zone.rows[#zone.rows + 1] = { frame = rowFrame, idx = idx }
+                            local row = AddBarItem(idx, b, 8)
+                            zone.frames[#zone.frames + 1] = row
+                            zone.rows[#zone.rows + 1] = { frame = row, idx = idx }
                         end
                     end
                     zone.tail = AddActionItem(CludesUI.L("+ Add Bar to Group"), 8, function()
@@ -3308,7 +3308,7 @@ local function InitBuffBarsPage(
                         cancelText = "Cancel",
                         reload = true,
                         onConfirm = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if p and p.cdmBars then
                                 p.cdmBars.useBlizzardBuffBars = true
                             end
@@ -3440,7 +3440,7 @@ local function InitBuffBarsPage(
 
             -- Live reads: label/menu/apply buttons all pull from the current preset list so saves/renames/deletes never go stale.
             local function SelectedPresetName()
-                local p = SavedDB()
+                local p = DB()
                 local sel = p and p.tbbSelectedStylePreset
                 if sel and mod.FindTBBStylePreset and mod.FindTBBStylePreset(sel) then
                     return sel
@@ -3660,7 +3660,7 @@ local function InitBuffBarsPage(
                         itm._editBtn:SetAlpha(0.4)
                         itm:SetScript("OnClick", function()
                             prMenu:Hide()
-                            local p = SavedDB()
+                            local p = DB()
                             if p then
                                 p.tbbSelectedStylePreset = capName
                             end
@@ -3844,7 +3844,7 @@ local function InitBuffBarsPage(
                                 nm = UniqueTBBPresetName()
                             end
                             if mod.SaveTBBStylePreset and mod.SaveTBBStylePreset(nm, source) then
-                                local p = SavedDB()
+                                local p = DB()
                                 if p then
                                     p.tbbSelectedStylePreset = nm
                                 end
@@ -4424,7 +4424,7 @@ local function InitBuffBarsPage(
             end
         end
 
-        local function AddTBBTextSwatch(rowFrame, regionFrame, prefixText)
+        local function AddTBBTextSwatch(row, regionFrame, prefixText)
             local ctrl = regionFrame._control
             local function GetColor()
                 local bd = SelectedTBB()
@@ -4451,7 +4451,7 @@ local function InitBuffBarsPage(
             end
             local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                 regionFrame,
-                rowFrame:GetFrameLevel() + 3,
+                row:GetFrameLevel() + 3,
                 GetColor,
                 function(r, g, b, a)
                     local bd = SelectedTBB()
@@ -4470,11 +4470,11 @@ local function InitBuffBarsPage(
             Pix.Point(colorSwatch, "RIGHT", regionFrame._lastInline or ctrl, "LEFT", -8, 0)
             regionFrame._lastInline = colorSwatch
 
-            local blockData = CreateFrame("Frame", nil, colorSwatch)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, colorSwatch)
+            block:SetAllPoints()
+            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 local bd = SelectedTBB()
                 local tipText
                 if prefixText == "name" and bd and bd.verticalOrientation then
@@ -4486,7 +4486,7 @@ local function InitBuffBarsPage(
                 end
                 CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(tipText))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
 
@@ -4511,9 +4511,9 @@ local function InitBuffBarsPage(
                 end
                 colorSwatch:SetAlpha(enabled and 1 or 0.3)
                 if enabled then
-                    blockData:Hide()
+                    block:Hide()
                 else
-                    blockData:Show()
+                    block:Show()
                 end
             end
 
@@ -6038,29 +6038,29 @@ local function InitBuffBarsPage(
             Pix.Point(valBox, "RIGHT", ctrl, "LEFT", -6, 0)
             Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -8, 0)
             -- Disable block
-            local blockData = CreateFrame("Frame", nil, trackFrame)
-            blockData:SetPoint("TOPLEFT", trackFrame, "TOPLEFT", -4, 4)
-            blockData:SetPoint("BOTTOMRIGHT", valBox, "BOTTOMRIGHT", 4, -4)
-            blockData:SetFrameLevel(trackFrame:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, trackFrame)
+            block:SetPoint("TOPLEFT", trackFrame, "TOPLEFT", -4, 4)
+            block:SetPoint("BOTTOMRIGHT", valBox, "BOTTOMRIGHT", 4, -4)
+            block:SetFrameLevel(trackFrame:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(trackFrame, CludesUI.DisabledTooltip("Max Stacks"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateMaxSliderState()
-                local offset = maxStacksOff()
-                trackFrame:SetAlpha(offset and 0.3 or 1)
-                valBox:SetAlpha(offset and 0.3 or 1)
-                valBox:EnableMouse(not offset)
+                local off = maxStacksOff()
+                trackFrame:SetAlpha(off and 0.3 or 1)
+                valBox:SetAlpha(off and 0.3 or 1)
+                valBox:EnableMouse(not off)
                 if slThumb then
-                    slThumb._sliderDisabled = offset
+                    slThumb._sliderDisabled = off
                 end
-                if offset then
-                    blockData:Show()
+                if off then
+                    block:Show()
                 else
-                    blockData:Hide()
+                    block:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(UpdateMaxSliderState)
@@ -6085,21 +6085,21 @@ local function InitBuffBarsPage(
             local INPUT_W = 70
             local INPUT_H = 26
 
-            local boxFrame = CreateFrame("EditBox", nil, rgn)
-            Pix.Size(boxFrame, INPUT_W, INPUT_H)
-            Pix.Point(boxFrame, "RIGHT", rgn, "RIGHT", -SIDE_PAD, 0)
-            boxFrame:SetFrameLevel(rgn:GetFrameLevel() + 2)
-            boxFrame:SetAutoFocus(false)
-            boxFrame:SetJustifyH("CENTER")
-            boxFrame:SetFont(FONT, 13, "")
-            boxFrame:SetTextColor(
+            local box = CreateFrame("EditBox", nil, rgn)
+            Pix.Size(box, INPUT_W, INPUT_H)
+            Pix.Point(box, "RIGHT", rgn, "RIGHT", -SIDE_PAD, 0)
+            box:SetFrameLevel(rgn:GetFrameLevel() + 2)
+            box:SetAutoFocus(false)
+            box:SetJustifyH("CENTER")
+            box:SetFont(FONT, 13, "")
+            box:SetTextColor(
                 CludesUI.TEXT_DIM_R or 0.75,
                 CludesUI.TEXT_DIM_G or 0.75,
                 CludesUI.TEXT_DIM_B or 0.75,
                 CludesUI.TEXT_DIM_A or 1
             )
             -- Background matching slider input box
-            local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+            local backdrop = box:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(
                 CludesUI.SL_INPUT_R or 0.08,
@@ -6109,7 +6109,7 @@ local function InitBuffBarsPage(
             )
             -- Border matching slider input box (rounded, as its value box is)
             CludesUI.MakeRoundedBorder(
-                boxFrame,
+                box,
                 CludesUI.BORDER_R,
                 CludesUI.BORDER_G,
                 CludesUI.BORDER_B,
@@ -6117,7 +6117,7 @@ local function InitBuffBarsPage(
                 backdrop
             )
 
-            boxFrame:SetScript("OnEnterPressed", function(self)
+            box:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
                 local bd = SelectedTBB()
                 if bd then
@@ -6125,7 +6125,7 @@ local function InitBuffBarsPage(
                     RefreshTBB()
                 end
             end)
-            boxFrame:SetScript("OnEscapePressed", function(self)
+            box:SetScript("OnEscapePressed", function(self)
                 self:ClearFocus()
                 local bd = SelectedTBB()
                 self:SetText(bd and bd.stackThresholdTicks or "")
@@ -6134,7 +6134,7 @@ local function InitBuffBarsPage(
             -- Inline swatch for tick mark color (left of the input box)
             local tickSwatch, updateTickSwatch = CludesUI.BuildColorSwatch(
                 rgn,
-                boxFrame:GetFrameLevel() + 1,
+                box:GetFrameLevel() + 1,
                 function()
                     local bd = SelectedTBB()
                     if not bd then
@@ -6161,7 +6161,7 @@ local function InitBuffBarsPage(
                 true,
                 20
             )
-            Pix.Point(tickSwatch, "RIGHT", boxFrame, "LEFT", -8, 0)
+            Pix.Point(tickSwatch, "RIGHT", box, "LEFT", -8, 0)
             local tickBlock = CreateFrame("Frame", nil, tickSwatch)
             tickBlock:SetAllPoints()
             tickBlock:SetFrameLevel(tickSwatch:GetFrameLevel() + 10)
@@ -6175,11 +6175,11 @@ local function InitBuffBarsPage(
 
             local function UpdateTicksInput()
                 local bd = SelectedTBB()
-                boxFrame:SetText(bd and bd.stackThresholdTicks or "")
-                local offset = maxStacksOff()
-                boxFrame:SetAlpha(offset and 0.3 or 1)
-                boxFrame:EnableMouse(not offset)
-                if offset then
+                box:SetText(bd and bd.stackThresholdTicks or "")
+                local off = maxStacksOff()
+                box:SetAlpha(off and 0.3 or 1)
+                box:EnableMouse(not off)
+                if off then
                     tickSwatch:SetAlpha(0.3)
                     tickBlock:Show()
                 else
@@ -6318,8 +6318,8 @@ local function InitBuffBarsPage(
                 local enabled = bd and bd.stackThresholdEnabled
                 -- The swatch edits the single threshold color, so multi masks it
                 -- the same way it masks the slider.
-                local offset = not enabled or (bd.stackThresholdMulti and true or false)
-                if offset then
+                local off = not enabled or (bd.stackThresholdMulti and true or false)
+                if off then
                     threshSwatch:SetAlpha(0.3)
                     threshBlock:Show()
                 else

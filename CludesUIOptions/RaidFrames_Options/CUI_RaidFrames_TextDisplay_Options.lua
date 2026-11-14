@@ -111,7 +111,7 @@ end
 -- Builds the tiles at y under the Text Display header. opts.page: the page
 -- being built (cache check); opts.party: the Party tab (its textDisplay keys).
 -- Returns y and the first row.
-function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
+function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
     -- The text files did not load: no text section, the page still builds.
     if not (mod.RF_TEXTS and mod.RF_TEXT_POSITIONS and mod.RF_TextShown and mod.RF_TEXT_SIG_KEYS) then
         return posY
@@ -235,8 +235,8 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
     -- The cog (nearest the dropdown), the swatches left of it (Custom first,
     -- then Class, Accent, Power) and the colour mode accessor of one shown
     -- text. The level is drawn in the name's colour: no swatches of its own.
-    local function Decorate(region, cellFrame)
-        local t = cellFrame.text
+    local function Decorate(region, cell)
+        local t = cell.text
         local rowList = {
             {
                 type = "slider",
@@ -336,7 +336,7 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
         })
         if t.kind ~= "level" then
             local modeKey = t.cm
-            local function AddSwatch(getColor, setColor, modeName, opensPicker, tooltip)
+            local function AddSwatch(getColor, setColor, mode, opensPicker, tooltip)
                 local sw = CludesUI.BuildColorSwatch(
                     region,
                     region:GetFrameLevel() + 5,
@@ -349,10 +349,10 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
                 region._lastInline = sw
                 sw._eabOrigClick = sw:GetScript("OnClick")
                 sw:SetScript("OnClick", function(self)
-                    if SVal(modeKey, "custom") ~= modeName then
+                    if SVal(modeKey, "custom") ~= mode then
                         -- Attribution read before the write: the rebuild dresses the swatch again.
                         local snap = CludesUI._SOAttribution(self)
-                        environ.SSet(modeKey, modeName)
+                        environ.SSet(modeKey, mode)
                         CludesUI._NotifySettingWrite(self, snap)
                         CludesUI:RefreshPage()
                         return
@@ -368,7 +368,7 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function vis()
-                    sw:SetAlpha(SVal(modeKey, "custom") == modeName and 1 or 0.3)
+                    sw:SetAlpha(SVal(modeKey, "custom") == mode and 1 or 0.3)
                 end
                 CludesUI.RegisterWidgetRefresh(vis)
                 vis()
@@ -446,11 +446,11 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
     local kit = mod.RF_OptPartyKit()
     local cells = {}
     for jdx = 1, #isShown do
-        local cellFrame = isShown[jdx]
-        local t = cellFrame.text
+        local cell = isShown[jdx]
+        local t = cell.text
         local conf = {
             type = "dropdown",
-            text = POS[cellFrame.pos] or cellFrame.pos,
+            text = POS[cell.pos] or cell.pos,
             order = MODE_ORDER[t.kind],
             getValue = function()
                 return ModeOf(t)
@@ -473,8 +473,8 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
                 Apply()
             end)
         end or nil)
-        cellFrame.cfg = conf
-        cells[#cells + 1] = cellFrame
+        cell.cfg = conf
+        cells[#cells + 1] = cell
     end
 
     -- "+ Add Text": every hidden text; the Custom texts as one entry (the next free
@@ -557,13 +557,13 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
         return c.cfg or c
     end
     local firstRow
-    local function Finish(rowFrame, sideName, cellFrame)
-        if not cellFrame then
+    local function Finish(row, side, cell)
+        if not cell then
             return
         end
-        firstRow = firstRow or rowFrame
-        local region = rowFrame[sideName]
-        if cellFrame == addCfg then
+        firstRow = firstRow or row
+        local region = row[side]
+        if cell == addCfg then
             if not CludesUI._prebuilding then
                 addOpen = CludesUI.AttachButtonMenu(region._control, {
                     width = 220,
@@ -581,7 +581,7 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
         if CludesUI._prebuilding then
             return
         end
-        local t = cellFrame.text
+        local t = cell.text
         -- Spec Overrides name a captured write after the text, not its position
         -- (several texts may share one).
         if region._captureCfg then
@@ -598,7 +598,7 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
             end,
             tooltip = "Choose this text's position.",
         })
-        Decorate(region, cellFrame)
+        Decorate(region, cell)
         if t.kind == "custom" then
             CustomText.AddAccessor(region, t.label, t.fmt)
         end
@@ -611,10 +611,10 @@ function mod.RFO_BuildTextDisplay(Widgets, hostFrame, posY, options)
         end
     end
     for idx = 1, #cells, 2 do
-        local rowFrame, hgt = Widgets:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
+        local row, hgt = W:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
         posY = posY - hgt
-        Finish(rowFrame, "_leftRegion", cells[idx])
-        Finish(rowFrame, "_rightRegion", cells[idx + 1])
+        Finish(row, "_leftRegion", cells[idx])
+        Finish(row, "_rightRegion", cells[idx + 1])
     end
 
     if not CludesUI._prebuilding and options.page then

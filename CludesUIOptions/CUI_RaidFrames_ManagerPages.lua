@@ -130,7 +130,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
         return fallback
     end
     local values, sequence = CludesUI.GetBorderTextureDropdown()
-    local rowFrame, hgt = W:DualRow(
+    local row, hgt = W:DualRow(
         hostFrame,
         posY,
         {
@@ -152,9 +152,9 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
                 set("TextureShiftX", nil)
                 set("TextureShiftY", nil)
                 set("Color", color)
-                local dim = CludesUI.GetBorderDefaultSize("unitframes", val)
-                if dim then
-                    set("Size", dim)
+                local size = CludesUI.GetBorderDefaultSize("unitframes", val)
+                if size then
+                    set("Size", size)
                 end
                 set("SizePx", false)
                 apply()
@@ -186,8 +186,8 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
     )
     posY = posY - hgt
     if not CludesUI._prebuilding then
-        local region = rowFrame._rightRegion
-        local swatch, refresh = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local region = row._rightRegion
+        local swatch, refresh = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = Val("Color", {})
             return c.r or 0, c.g or 0, c.b or 0, c.a or 1
         end, function(r, g, b, a)
@@ -266,7 +266,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
                 end,
             }
         end
-        CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        CludesUI.BuildInlineCog(row._leftRegion, {
             title = "Border Options",
             rows = rowList,
             disabled = disabled,
@@ -590,11 +590,11 @@ local TILE_LANE_ITEMS = {
 -- `show`, the hide lane in `owner.neg`, and the dispel / nonplayer flavors
 -- are global (dm). Checking one lane clears the other.
 local function DmSetLane(show, ownerFrame, dm, k, val, neg)
-    local category, modeKey, modeName = k, nil, nil
+    local category, modeKey, mode = k, nil, nil
     if k == "dispel_you" or k == "dispel_typed" then
-        category, modeKey, modeName = "dispel", "dispelMode", (k == "dispel_typed") and "typed" or "you"
+        category, modeKey, mode = "dispel", "dispelMode", (k == "dispel_typed") and "typed" or "you"
     elseif k == "nonplayer" or k == "anyplayer" then
-        category, modeKey, modeName = "nonplayer", "nonplayerMode", (k == "anyplayer") and "any" or nil
+        category, modeKey, mode = "nonplayer", "nonplayerMode", (k == "anyplayer") and "any" or nil
     end
     if neg and val then
         ownerFrame.neg = ownerFrame.neg or {}
@@ -612,7 +612,7 @@ local function DmSetLane(show, ownerFrame, dm, k, val, neg)
         end
     end
     if val and modeKey then
-        dm[modeKey] = modeName
+        dm[modeKey] = mode
     end
 end
 -- Match Mode rows (a radio pair over t.match, nil = Match Any = the union),
@@ -684,18 +684,18 @@ local function WithOwnerHints(itemList, t)
             ownerFrame = Earlier(claimsAll)
         end
         if ownerFrame then
-            local rowFrame = CopyTable(it)
+            local row = CopyTable(it)
             if it.key == TILE_CA_ALL then
-                rowFrame.dimFn = function()
+                row.dimFn = function()
                     return true
                 end
             else
-                rowFrame.dimFn = function()
+                row.dimFn = function()
                     return not mod.DM_TileMatchOn(t)
                 end
             end
-            rowFrame.dimTooltip = CludesUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
-            result[#result + 1] = rowFrame
+            row.dimTooltip = CludesUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
+            result[#result + 1] = row
         else
             result[#result + 1] = it
         end
@@ -897,8 +897,8 @@ local function BuildFxEffects(widget, sy, fxOwner)
         end, "glow", "engine", DmApply)
         -- The half next to Filters is too narrow for the color swatches.
         glowDesc.colorInCog = true
-        local rowFrame
-        rowFrame, hh = W:DualRow(widget, sy, {
+        local row
+        row, hh = W:DualRow(widget, sy, {
             type = "dropdown",
             text = "Filters",
             values = { __placeholder = "..." },
@@ -915,9 +915,9 @@ local function BuildFxEffects(widget, sy, fxOwner)
             if not e.filters then
                 e.filters = {}
             end
-            BuildFilterCBDropdown(rowFrame._leftRegion, e.filters, DmTable() or {})
+            BuildFilterCBDropdown(row._leftRegion, e.filters, DmTable() or {})
         end
-        GO.AttachInline(rowFrame._rightRegion, glowDesc)
+        GO.AttachInline(row._rightRegion, glowDesc)
 
         -- Row 2: Border (+ swatch, the DISPLAY-section Border style) | Size
         -- (icon size for the matched filters; 0 = the grid's own size).
@@ -2717,8 +2717,8 @@ function mod.DMP_RefreshPreview()
     local tileScale = pv._bmPvS and (mod._partyIndicatorScale or 1) or 1
     local Pix = CludesUI.PanelPP or CludesUI.PP
     local fontFile = pv._dmFontPath or (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    local healthBar = pv._health
-    local hostRegion = (mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, p)) or healthBar
+    local health = pv._health
+    local host = (mod.RF_AnchorHost and mod.RF_AnchorHost(health, p)) or health
     local allVis = mod._dmAllVisible
     -- The EDITED view's tiles: inherited group tiles first (concrete spec
     -- views only, that spec's per-spec disables applied), then the bucket's
@@ -2797,7 +2797,7 @@ function mod.DMP_RefreshPreview()
         iIdx = iIdx + 1
         local fr = icons[iIdx]
         if not fr then
-            fr = CreateFrame("Frame", nil, healthBar)
+            fr = CreateFrame("Frame", nil, health)
             -- Live parity: aura icons render in the aura band (frame +
             -- LVL_AURA = 13), above the +8 border and the +12 text band
             -- (matches the BM preview pool and live frames).
@@ -2843,7 +2843,7 @@ function mod.DMP_RefreshPreview()
         sIdx = sIdx + 1
         local fr = shapes[sIdx]
         if not fr then
-            fr = CreateFrame("Frame", nil, healthBar)
+            fr = CreateFrame("Frame", nil, health)
             -- Bars render in the aura band like live (BM bars ride button + LVL_AURA).
             fr:SetFrameLevel(pv:GetFrameLevel() + (mod.LVL_AURA or 13))
             local bgTex = fr:CreateTexture(nil, "BACKGROUND")
@@ -2878,12 +2878,12 @@ function mod.DMP_RefreshPreview()
             return
         end
         local sv = conf.sv or p
-        local anchorFrame = string.upper(conf.pos or "center")
+        local anchor = string.upper(conf.pos or "center")
         local sz = conf.size or 18
         local gap = conf.spacing or 1
         local dir = conf.grow or "LEFT"
         local cursor = 0
-        local selfPoint = anchorFrame
+        local selfPoint = anchor
         -- Grid wrap preview: >= 2 wraps lines exactly like live (base rows
         -- follow debuffWrapDirection, tiles the anchored-edge rule -- both
         -- arrive here as cfg.wrapV/cfg.wrapH from the caller).
@@ -2940,7 +2940,7 @@ function mod.DMP_RefreshPreview()
                 cursor = cursor + sz + gap
                 gx = (conf.wrapH == "LEFT") and -lineOff or lineOff
             end
-            fr:SetPoint(selfPoint, hostRegion, anchorFrame, (conf.offX or 0) + gx, (conf.offY or 0) + gy)
+            fr:SetPoint(selfPoint, host, anchor, (conf.offX or 0) + gx, (conf.offY or 0) + gy)
             if conf.color then
                 -- Square grid tiles: flat color blocks instead of icons.
                 fr._tex:SetColorTexture(
@@ -3119,7 +3119,7 @@ function mod.DMP_RefreshPreview()
                 local wid = t.width or 60
                 local hh2 = t.height or 5
                 local isVert = (t.orientation or "HORIZONTAL") == "VERTICAL"
-                local anchorFrame = string.upper(t.position or "bottom")
+                local anchor = string.upper(t.position or "bottom")
                 local fullW, fullH
                 if isVert then
                     fullW, fullH = t.barFullHeight, t.barFullWidth
@@ -3128,23 +3128,23 @@ function mod.DMP_RefreshPreview()
                 end
                 fr:ClearAllPoints()
                 if fullW and fullH then
-                    fr:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 0, 0)
-                    fr:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", 0, 0)
+                    fr:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
+                    fr:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, 0)
                 elseif fullW then
-                    local vEdge = (anchorFrame:find("BOTTOM", 1, true) and "BOTTOM")
-                        or (anchorFrame:find("TOP", 1, true) and "TOP")
+                    local vEdge = (anchor:find("BOTTOM", 1, true) and "BOTTOM")
+                        or (anchor:find("TOP", 1, true) and "TOP")
                         or ""
                     local oy = t.offsetY or 0
-                    fr:SetPoint(vEdge .. "LEFT", hostRegion, vEdge .. "LEFT", 0, oy)
-                    fr:SetPoint(vEdge .. "RIGHT", hostRegion, vEdge .. "RIGHT", 0, oy)
+                    fr:SetPoint(vEdge .. "LEFT", host, vEdge .. "LEFT", 0, oy)
+                    fr:SetPoint(vEdge .. "RIGHT", host, vEdge .. "RIGHT", 0, oy)
                     fr:SetHeight(isVert and wid or hh2)
                 elseif fullH then
-                    local hEdge = (anchorFrame:find("RIGHT", 1, true) and "RIGHT")
-                        or (anchorFrame:find("LEFT", 1, true) and "LEFT")
+                    local hEdge = (anchor:find("RIGHT", 1, true) and "RIGHT")
+                        or (anchor:find("LEFT", 1, true) and "LEFT")
                         or ""
                     local ox = t.offsetX or 0
-                    fr:SetPoint("TOP" .. hEdge, hostRegion, "TOP" .. hEdge, ox, 0)
-                    fr:SetPoint("BOTTOM" .. hEdge, hostRegion, "BOTTOM" .. hEdge, ox, 0)
+                    fr:SetPoint("TOP" .. hEdge, host, "TOP" .. hEdge, ox, 0)
+                    fr:SetPoint("BOTTOM" .. hEdge, host, "BOTTOM" .. hEdge, ox, 0)
                     fr:SetWidth(isVert and hh2 or wid)
                 else
                     if isVert then
@@ -3152,15 +3152,15 @@ function mod.DMP_RefreshPreview()
                     else
                         fr:SetSize(wid, hh2)
                     end
-                    fr:SetPoint(anchorFrame, hostRegion, anchorFrame, t.offsetX or 0, t.offsetY or 0)
+                    fr:SetPoint(anchor, host, anchor, t.offsetX or 0, t.offsetY or 0)
                 end
                 local c = t.color or { r = 0.25, g = 0.8, b = 0.45 }
                 local bgc = t.barBgColor or { r = 0, g = 0, b = 0 }
                 fr._bgTex:SetColorTexture(bgc.r or 0, bgc.g or 0, bgc.b or 0, (t.barBgOpacity or 50) / 100)
                 fr._bgTex:Show()
                 -- 60% sample fill along the fill axis, reverse-aware.
-                local sw = (fullW and (hostRegion:GetWidth() or wid)) or (isVert and hh2 or wid)
-                local sh = (fullH and (hostRegion:GetHeight() or hh2)) or (isVert and wid or hh2)
+                local sw = (fullW and (host:GetWidth() or wid)) or (isVert and hh2 or wid)
+                local sh = (fullH and (host:GetHeight() or hh2)) or (isVert and wid or hh2)
                 fr._tex:ClearAllPoints()
                 if isVert then
                     local edge = t.reverseFill and "TOP" or "BOTTOM"
@@ -3183,15 +3183,15 @@ function mod.DMP_RefreshPreview()
                     if not hc then
                         -- BM parity: ARTWORK sublevel 2 over the FILL texture
                         -- only, so it tints just the filled portion.
-                        hc = healthBar:CreateTexture(nil, "ARTWORK", nil, 2)
-                        local fillTex = healthBar.GetStatusBarTexture and healthBar:GetStatusBarTexture()
-                        hc:SetAllPoints(fillTex or healthBar)
+                        hc = health:CreateTexture(nil, "ARTWORK", nil, 2)
+                        local fill = health.GetStatusBarTexture and health:GetStatusBarTexture()
+                        hc:SetAllPoints(fill or health)
                         pv._dmHC = hc
                     end
                     local c = t.color or { r = 1, g = 0.25, b = 0.25 }
                     mod.RF_TintOverBarFill(
                         hc,
-                        healthBar,
+                        health,
                         c.r or 1,
                         c.g or 0.25,
                         c.b or 0.25,
@@ -3791,7 +3791,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     local picked, negPicked = {}, nil
                     local caAll = dialog._dmFilters[TILE_CA_ALL] and true or false
                     local caDur = dialog._dmFilters[TILE_CA_DUR] and true or false
-                    local modeName
+                    local mode
                     for k in pairs(dialog._dmFilters) do
                         if k ~= TILE_CA_ALL and k ~= TILE_CA_DUR then
                             local category, isNeg = k, false
@@ -3801,10 +3801,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             end
                             if category == "dispel_you" then
                                 category = "dispel"
-                                modeName = "you"
+                                mode = "you"
                             elseif category == "dispel_typed" then
                                 category = "dispel"
-                                modeName = "typed"
+                                mode = "typed"
                             end
                             if isNeg then
                                 negPicked = negPicked or {}
@@ -3817,10 +3817,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     local t = mod.DM_AddTile and mod.DM_AddTile(dmSelType, dmSpecSel)
                     dialog:Hide()
                     if t then
-                        if modeName then
+                        if mode then
                             local dm2 = DmTable()
                             if dm2 then
-                                dm2.dispelMode = modeName
+                                dm2.dispelMode = mode
                             end
                         end
                         -- Every tile type takes the full picked set now
@@ -4290,9 +4290,9 @@ function mod.BMP_ShowFilterEditor(show, hide)
     local ppScale = CludesUI.GetPopupScale() or 1
     dialog:SetScale(ppScale)
 
-    local titleText = CludesUI.MakeFont(dialog, 16, "", 1, 1, 1)
-    titleText:SetPoint("TOP", dialog, "TOP", 0, -18)
-    titleText:SetText(CludesUI.L("Edit Filters"))
+    local title = CludesUI.MakeFont(dialog, 16, "", 1, 1, 1)
+    title:SetPoint("TOP", dialog, "TOP", 0, -18)
+    title:SetText(CludesUI.L("Edit Filters"))
 
     -- Close button (top-right): the borderless X (the boxed close-popup
     -- variant reads as a framed button here).
@@ -4405,23 +4405,23 @@ function mod.BMP_ShowFilterEditor(show, hide)
 
     -- RIGHT: filter list (dropdown-item styling: hover wash, accent-washed
     -- selected row)
-    local sideName = CreateFrame("Frame", nil, dialog)
-    sideName:SetWidth(SIDE_W)
+    local side = CreateFrame("Frame", nil, dialog)
+    side:SetWidth(SIDE_W)
     -- Flush with the popup's right edge and bottom.
-    sideName:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, -44)
-    sideName:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", 0, 0)
-    sideName:SetFrameLevel(dialog:GetFrameLevel() + 1)
-    local sideBg = CludesUI.SolidTex(sideName, "BACKGROUND", 0, 0, 0, 0.35)
+    side:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, -44)
+    side:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", 0, 0)
+    side:SetFrameLevel(dialog:GetFrameLevel() + 1)
+    local sideBg = CludesUI.SolidTex(side, "BACKGROUND", 0, 0, 0, 0.35)
     sideBg:SetAllPoints()
     -- Flush with the popup's bottom-right corner: same shape, rows clipped to it.
-    CludesUI.MakeRoundedBorder(sideName, 1, 1, 1, 0.10, sideBg, nil, true)
+    CludesUI.MakeRoundedBorder(side, 1, 1, 1, 0.10, sideBg, nil, true)
 
     -- Sidebar content scrolls when it outgrows the popup (standard smooth
     -- scroll + thin custom bar; bar shows only on overflow).
-    local sideScroll = CreateFrame("ScrollFrame", nil, sideName)
-    sideScroll:SetPoint("TOPLEFT", sideName, "TOPLEFT", 1, -1)
-    sideScroll:SetPoint("BOTTOMRIGHT", sideName, "BOTTOMRIGHT", -1, 1)
-    sideScroll:SetFrameLevel(sideName:GetFrameLevel() + 1)
+    local sideScroll = CreateFrame("ScrollFrame", nil, side)
+    sideScroll:SetPoint("TOPLEFT", side, "TOPLEFT", 1, -1)
+    sideScroll:SetPoint("BOTTOMRIGHT", side, "BOTTOMRIGHT", -1, 1)
+    sideScroll:SetFrameLevel(side:GetFrameLevel() + 1)
     local sideChild = CreateFrame("Frame", nil, sideScroll)
     sideChild:SetWidth(SIDE_W - 2)
     sideScroll:SetScrollChild(sideChild)
@@ -4802,22 +4802,22 @@ function mod.BMP_ShowFilterEditor(show, hide)
         local highlight = srow:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0)
-        local boxFrame = CreateFrame("Frame", nil, srow)
-        boxFrame:SetSize(16, 16)
-        boxFrame:SetPoint("LEFT", srow, "LEFT", 6, 0)
-        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("Frame", nil, srow)
+        box:SetSize(16, 16)
+        box:SetPoint("LEFT", srow, "LEFT", 6, 0)
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
-        local chk = boxFrame:CreateTexture(nil, "ARTWORK")
-        chk:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 2, -2)
-        chk:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -2, 2)
+        local boxBrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+        local chk = box:CreateTexture(nil, "ARTWORK")
+        chk:SetPoint("TOPLEFT", box, "TOPLEFT", 2, -2)
+        chk:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -2, 2)
         chk:SetColorTexture(eg.r, eg.g, eg.b, 1)
-        CludesUI.RoundBody(boxFrame, chk, 2)
+        CludesUI.RoundBody(box, chk, 2)
         local on = sel.spells[ident] and true or false
         local ico = srow:CreateTexture(nil, "ARTWORK")
         ico:SetSize(22, 22)
-        ico:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
+        ico:SetPoint("LEFT", box, "RIGHT", 6, 0)
         local texture = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident)
         if texture then
             ico:SetTexture(texture)
@@ -4902,11 +4902,11 @@ function mod.BMP_ShowFilterEditor(show, hide)
         local heading = CludesUI.MakeFont(childFrame, 14, nil, 0.5, 0.5, 0.5)
         heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 2, cy - 10)
         heading:SetText(textValue)
-        local lineTex = childFrame:CreateTexture(nil, "ARTWORK")
-        lineTex:SetHeight(1)
-        lineTex:SetPoint("LEFT", heading, "RIGHT", 6, 0)
-        lineTex:SetPoint("RIGHT", childFrame, "RIGHT", -10, 0)
-        lineTex:SetColorTexture(0.3, 0.3, 0.3, 0.5)
+        local line = childFrame:CreateTexture(nil, "ARTWORK")
+        line:SetHeight(1)
+        line:SetPoint("LEFT", heading, "RIGHT", 6, 0)
+        line:SetPoint("RIGHT", childFrame, "RIGHT", -10, 0)
+        line:SetColorTexture(0.3, 0.3, 0.3, 0.5)
         cy = cy - 30
     end
     -- Custom leads (the user's own additions), then All Classes, then the class groups.
@@ -4967,8 +4967,8 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
     _r, hh = W:SectionHeader(hostFrame, "ASSIGNED BUFFS", sy)
     sy = sy - hh
 
-    local rowFrame
-    rowFrame, hh = W:DualRow(hostFrame, sy, {
+    local row
+    row, hh = W:DualRow(hostFrame, sy, {
         type = "dropdown",
         text = "Filters",
         values = { __placeholder = "..." },
@@ -4996,7 +4996,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
     -- dropped from the resolved union in BM2_ResolveSpellsOwn; direct Extra
     -- Spells win over the hide lane). Lanes are mutually exclusive per filter.
     do
-        local region = rowFrame._leftRegion
+        local region = row._leftRegion
         if region._control then
             region._control:Hide()
         end
@@ -5078,7 +5078,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
     -- rides the menu as a pinned top action above the search bar
     -- (ns.BM2_SpellIdAction).
     do
-        local region = rowFrame._rightRegion
+        local region = row._rightRegion
         if region._control then
             region._control:Hide()
         end

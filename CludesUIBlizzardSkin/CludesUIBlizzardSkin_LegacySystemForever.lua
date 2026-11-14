@@ -102,10 +102,10 @@ do
         end
         FadeArt(f, 0)
         Skin.CloseButton(f.CloseButton or _G.LegacySystemFrameCloseButton)
-        local titleText = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LegacySystemFrameTitleText
-        if titleText then
-            Skin.Font(titleText)
-            Skin.White(titleText)
+        local title = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LegacySystemFrameTitleText
+        if title then
+            Skin.Font(title)
+            Skin.White(title)
         end
         for _, tn in ipairs(SIDE_TABS) do
             Skin.SideTab(f[tn])

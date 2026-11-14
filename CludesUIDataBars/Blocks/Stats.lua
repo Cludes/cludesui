@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -16,20 +16,20 @@ local GetTime = GetTime
 local format = string.format
 local tsort = table.sort
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  FPS + MS (separate block types built on one single-line stat renderer)
@@ -77,8 +77,8 @@ end
 --   suffix()   -> display suffix string
 --   tooltip(inst, skipScan)  owned-tooltip builder
 --   click(inst, isOverFn)    optional OnClick factory
-local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+local function MakeStatBlock(blockCfg, slot, contentFrame, barCtx, options)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local function D()
@@ -98,10 +98,10 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
     -- Icon is optional: blocks without opts.hasIcon are text-only.
-    local glyph
+    local icon
     if options.hasIcon then
-        glyph = widget:CreateTexture(nil, "OVERLAY")
-        glyph:SetPoint("LEFT")
+        icon = widget:CreateTexture(nil, "OVERLAY")
+        icon:SetPoint("LEFT")
     end
     local textValue = widget:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, textValue)
@@ -119,12 +119,12 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
             r, g, b = BlockColorOf(blockCfg)
         end
         textValue:SetTextColor(r, g, b, 1)
-        if glyph then
+        if icon then
             if mouseOver then
-                glyph:SetVertexColor(r, g, b, 1)
+                icon:SetVertexColor(r, g, b, 1)
             else
                 local ir, ig, ib = IconColorOf(blockCfg)
-                glyph:SetVertexColor(ir, ig, ib, 1)
+                icon:SetVertexColor(ir, ig, ib, 1)
             end
         end
     end
@@ -133,7 +133,7 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
         local barCfg = BC()
         local barH = barCtx.GetThickness()
         -- 0.4333 = 13px at the 30 base (1px under the standard 0.46 block text).
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local d = D()
         local gap = ICON_GAP
         local isSide = barCtx.IsVertical()
@@ -143,10 +143,10 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
         local str = lastVal .. options.suffix()
 
         local iconSz = 0
-        if glyph then
-            Keys.SetBlockIcon(glyph, blockCfg)
+        if icon then
+            K.SetBlockIcon(icon, blockCfg)
         end
-        if glyph and d.showIcon ~= false then
+        if icon and d.showIcon ~= false then
             iconSz = fontSize + (options.iconExtra or 0)
         end
 
@@ -157,42 +157,42 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
         ApplyColors()
 
         if iconSz > 0 then
-            glyph:SetSize(iconSz, iconSz)
-            glyph:Show()
-        elseif glyph then
-            glyph:Hide()
+            icon:SetSize(iconSz, iconSz)
+            icon:Show()
+        elseif icon then
+            icon:Hide()
         end
 
         if InCombatLockdown() then
             return
         end
 
-        local lineH = upper(fontSize + 4, iconSz)
+        local lineH = max(fontSize + 4, iconSz)
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(36, slotW - 8)
+            local innerW = max(36, slotW - 8)
             widget:SetSize(innerW, lineH)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
             if iconSz > 0 then
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
                 textValue:ClearAllPoints()
-                textValue:SetPoint("LEFT", glyph, "RIGHT", gap, 0)
-                mod.SetWrappedText(textValue, upper(16, innerW - iconSz - gap - 2), "LEFT")
+                textValue:SetPoint("LEFT", icon, "RIGHT", gap, 0)
+                mod.SetWrappedText(textValue, max(16, innerW - iconSz - gap - 2), "LEFT")
             else
                 textValue:ClearAllPoints()
                 textValue:SetPoint("CENTER", widget, "CENTER", 0, 0)
                 mod.SetWrappedText(textValue, innerW, "CENTER")
             end
-            contentFrame:SetSize(slotW, upper(lineH + 8, barH))
+            contentFrame:SetSize(slotW, max(lineH + 8, barH))
         else
             mod.ResetInlineText(textValue, "LEFT")
             local iconPad = 0
             if iconSz > 0 then
                 iconPad = iconSz + gap
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
             end
             textValue:ClearAllPoints()
             textValue:SetPoint("LEFT", widget, "LEFT", iconPad, 0)
@@ -327,9 +327,9 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 40)
+            return max(contentFrame:GetHeight() or 40, 40)
         end
-        return upper(contentFrame:GetWidth() or 70, 40)
+        return max(contentFrame:GetWidth() or 70, 40)
     end
 
     function instance:Destroy()
@@ -341,7 +341,7 @@ local function MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, options)
     return instance
 end
 
-mod.BlockFactories.fps = function(blockCfg, slotIndex, contentFrame, barCtx)
+mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
     local function FpsTooltip(instance, skipMemoryScan)
         local ar, ag, ab = 1, 1, 1
         mod.Tip_Begin(contentFrame)
@@ -397,7 +397,7 @@ mod.BlockFactories.fps = function(blockCfg, slotIndex, contentFrame, barCtx)
         mod.Tip_Show()
     end
 
-    return MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, {
+    return MakeStatBlock(blockCfg, slot, contentFrame, barCtx, {
         hbPrefix = "fps",
         interval = 3,
         sample = function()
@@ -447,8 +447,8 @@ function mod.LatencyMode(s)
     return "home"
 end
 
-mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
@@ -496,7 +496,7 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
     function instance:Refresh()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local showIcon = D().showIcon == true
         local m = mod.LatencyMode(D())
@@ -534,7 +534,7 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
                 s.text:SetTextColor(tr, tg, tb, 1)
                 s.text:Show()
                 if showIcon then
-                    Keys.SetBlockIcon(s.icon, blockCfg, itemLink)
+                    K.SetBlockIcon(s.icon, blockCfg, itemLink)
                     s.icon:SetVertexColor(ir, ig, ib, 1)
                     s.icon:SetSize(iconSz, iconSz)
                     s.icon:Show()
@@ -547,17 +547,17 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
             end
         end
 
-        local lineH = upper(fontSize + 4, iconSz)
+        local lineH = max(fontSize + 4, iconSz)
         if isSide then
             -- Stack the links, each a centred "icon value" line.
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             local posY = -4
             for idx = 1, num do
                 local s = seg[idx]
                 local tw = mod.SnapToPixelGrid(s.text:GetStringWidth())
                 local grpW = (showIcon and (iconSz + ICON_GAP) or 0) + tw
-                local x0 = upper(0, floor((innerW - grpW) / 2))
+                local x0 = max(0, floor((innerW - grpW) / 2))
                 s.icon:ClearAllPoints()
                 s.text:ClearAllPoints()
                 if showIcon then
@@ -568,7 +568,7 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
                 end
                 posY = posY - lineH - 2
             end
-            local totalH = upper(-posY + 2, barH)
+            local totalH = max(-posY + 2, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -587,7 +587,7 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
                     posX = posX + segGap
                 end
             end
-            local totalW = upper(posX + 4, 10)
+            local totalW = max(posX + 4, 10)
             contentFrame:SetSize(totalW, barH)
             btnFrame:SetSize(totalW, barH)
         end
@@ -629,9 +629,9 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
     end
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
     function instance:Destroy()
         self._dead = true
@@ -641,7 +641,7 @@ mod.BlockFactories.ms = function(blockCfg, slotIndex, contentFrame, barCtx)
     return instance
 end
 
-mod.BlockFactories.durability = function(blockCfg, slotIndex, contentFrame, barCtx)
+mod.BlockFactories.durability = function(blockCfg, slot, contentFrame, barCtx)
     -- Same reading as the Chat sidebar's durability icon: the LOWEST percent across equipped slots 1-18.
     local function SampleDurability()
         local lowest = 100
@@ -655,7 +655,7 @@ mod.BlockFactories.durability = function(blockCfg, slotIndex, contentFrame, barC
             end
         end
         local pct = floor(lowest)
-        Keys.lastDurabilityPct = pct
+        K.lastDurabilityPct = pct
         return pct
     end
 
@@ -670,7 +670,7 @@ mod.BlockFactories.durability = function(blockCfg, slotIndex, contentFrame, barC
         mod.Tip_Show()
     end
 
-    return MakeStatBlock(blockCfg, slotIndex, contentFrame, barCtx, {
+    return MakeStatBlock(blockCfg, slot, contentFrame, barCtx, {
         hbPrefix = "durability",
         hasIcon = true,
         iconExtra = 7,
@@ -689,8 +689,8 @@ mod.BlockFactories.durability = function(blockCfg, slotIndex, contentFrame, barC
     })
 end
 
-mod.BlockFactories.combat = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = { "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
 
@@ -710,7 +710,7 @@ mod.BlockFactories.combat = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     local mouseOver = false
     local lastValue = -1
-    local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+    local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
 
     local function D()
         return blockCfg.settings or {}
@@ -767,14 +767,14 @@ mod.BlockFactories.combat = function(blockCfg, slotIndex, contentFrame, barCtx)
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(36, slotW - 8)
+            local innerW = max(36, slotW - 8)
             widget:SetSize(innerW, fontSize + 4)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
             textValue:ClearAllPoints()
             textValue:SetPoint("CENTER", widget, "CENTER", 0, 0)
             mod.SetWrappedText(textValue, innerW, "CENTER")
-            contentFrame:SetSize(slotW, upper(fontSize + 12, barH))
+            contentFrame:SetSize(slotW, max(fontSize + 12, barH))
         else
             local align = blockCfg.align or "CENTER"
             mod.ResetInlineText(textValue, align)
@@ -786,7 +786,7 @@ mod.BlockFactories.combat = function(blockCfg, slotIndex, contentFrame, barCtx)
             measureFS:SetText(CludesUI.L(CombatLabel(0)))
             local wOut = measureFS:GetStringWidth() or 30
             measureFS:SetText(CludesUI.L(CombatLabel(1)))
-            local width = upper(30, mod.SnapToPixelGrid(upper(wOut, measureFS:GetStringWidth() or 30)) + 2)
+            local width = max(30, mod.SnapToPixelGrid(max(wOut, measureFS:GetStringWidth() or 30)) + 2)
             textValue:SetWidth(width)
             widget:SetSize(width, barH)
             widget:ClearAllPoints()
@@ -846,9 +846,9 @@ mod.BlockFactories.combat = function(blockCfg, slotIndex, contentFrame, barCtx)
             return 0
         end
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 40)
+            return max(contentFrame:GetHeight() or 40, 40)
         end
-        return upper(contentFrame:GetWidth() or 70, 40)
+        return max(contentFrame:GetWidth() or 70, 40)
     end
 
     function instance:Destroy()

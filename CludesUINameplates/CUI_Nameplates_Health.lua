@@ -407,9 +407,9 @@ function NameplateFrame:UpdateHealthValues()
                     lg[idx]:SetVertexColor(0, 0, 0, 1)
                 end
             else
-                local success, column = pcall(UnitHealthPercent, unitToken, true, curve)
-                if success and column and column.GetRGBA then
-                    local r, g, b, a = column:GetRGBA()
+                local success, col = pcall(UnitHealthPercent, unitToken, true, curve)
+                if success and col and col.GetRGBA then
+                    local r, g, b, a = col:GetRGBA()
                     for idx = 1, #lg do
                         lg[idx]:SetVertexColor(r, g, b, a)
                     end

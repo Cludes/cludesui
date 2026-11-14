@@ -232,13 +232,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         local function Refresh()
             if disabled then
-                local offset = disabled()
+                local off = disabled()
                 -- Mouse stays on so the disabled tooltip can show; OnClick refuses.
-                btn:SetAlpha(offset and 0.3 or 1)
+                btn:SetAlpha(off and 0.3 or 1)
                 if hostFrame._label then
-                    hostFrame._label:SetAlpha(offset and 0.3 or 1)
+                    hostFrame._label:SetAlpha(off and 0.3 or 1)
                 end
-                if offset and listening then
+                if off and listening then
                     Stop()
                 end
             end
@@ -597,13 +597,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if not conf.disabled then
                     return
                 end
-                local offset = conf.disabled()
-                labelText:SetAlpha(offset and 0.3 or 1)
+                local off = conf.disabled()
+                labelText:SetAlpha(off and 0.3 or 1)
                 if regionFrame._hint then
-                    regionFrame._hint:SetAlpha(offset and 0.3 or 0.85)
+                    regionFrame._hint:SetAlpha(off and 0.3 or 0.85)
                 end
                 if controlFrame then
-                    if offset then
+                    if off then
                         controlFrame:EnableMouse(false)
                         controlFrame:SetAlpha(0.3)
                     else
@@ -640,24 +640,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 AddControlDisabledTooltip(trackFrame, conf)
                 RegisterWidgetRefresh(function()
                     if conf.disabled then
-                        local offset = conf.disabled()
-                        labelText:SetAlpha(offset and 0.3 or 1)
-                        trackFrame:SetAlpha(offset and 0.3 or 1)
-                        valBox:EnableMouse(not offset)
-                        valBox:SetAlpha(offset and 0.3 or 1)
+                        local off = conf.disabled()
+                        labelText:SetAlpha(off and 0.3 or 1)
+                        trackFrame:SetAlpha(off and 0.3 or 1)
+                        valBox:EnableMouse(not off)
+                        valBox:SetAlpha(off and 0.3 or 1)
                         if slThumb then
-                            slThumb._sliderDisabled = offset
+                            slThumb._sliderDisabled = off
                         end
                     end
                 end)
                 if conf.disabled then
-                    local offset = conf.disabled()
-                    labelText:SetAlpha(offset and 0.3 or 1)
-                    trackFrame:SetAlpha(offset and 0.3 or 1)
-                    valBox:EnableMouse(not offset)
-                    valBox:SetAlpha(offset and 0.3 or 1)
+                    local off = conf.disabled()
+                    labelText:SetAlpha(off and 0.3 or 1)
+                    trackFrame:SetAlpha(off and 0.3 or 1)
+                    valBox:EnableMouse(not off)
+                    valBox:SetAlpha(off and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = offset
+                        slThumb._sliderDisabled = off
                     end
                 end
                 AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
@@ -797,7 +797,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
-                        local offset = conf.disabled()
+                        local off = conf.disabled()
                         labelText:SetAlpha(1)
                     end
                     RegisterWidgetRefresh(function()
@@ -974,47 +974,47 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- cfg.placeholder ghost text while empty.
                 local isPopupStyle = conf.inputStyle == "popup"
                 local boxW = conf.inputWidth or 64
-                local boxFrame = CreateFrame("EditBox", nil, regionFrame)
-                boxFrame:SetSize(boxW, isPopupStyle and 28 or 22)
-                Pix.Point(boxFrame, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
-                boxFrame:SetAutoFocus(false)
-                boxFrame:SetTextColor(1, 1, 1, 0.9)
-                local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+                local box = CreateFrame("EditBox", nil, regionFrame)
+                box:SetSize(boxW, isPopupStyle and 28 or 22)
+                Pix.Point(box, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
+                box:SetAutoFocus(false)
+                box:SetTextColor(1, 1, 1, 0.9)
+                local boxBg = box:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 if isPopupStyle then
                     -- cfg.inputJustify == "CENTER" centers the text and placeholder (default left).
                     local centered = conf.inputJustify == "CENTER"
-                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
-                    boxFrame:SetJustifyH(centered and "CENTER" or "LEFT")
-                    boxFrame:SetTextInsets(10, 10, 0, 0)
+                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
+                    box:SetJustifyH(centered and "CENTER" or "LEFT")
+                    box:SetTextInsets(10, 10, 0, 0)
                     boxBg:SetColorTexture(0, 0, 0, 0.5)
-                    MakeRoundedBorder(boxFrame, 1, 1, 1, 0.2, boxBg)
+                    MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg)
                     if conf.placeholder then
-                        local ph = boxFrame:CreateFontString(nil, "ARTWORK")
+                        local ph = box:CreateFontString(nil, "ARTWORK")
                         ph:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
                         ph:SetTextColor(0.7, 0.7, 0.7, 0.45)
                         if centered then
-                            ph:SetPoint("CENTER", boxFrame, "CENTER", 0, 0)
+                            ph:SetPoint("CENTER", box, "CENTER", 0, 0)
                         else
-                            ph:SetPoint("LEFT", boxFrame, "LEFT", 10, 0)
+                            ph:SetPoint("LEFT", box, "LEFT", 10, 0)
                         end
                         ph:SetText(CludesUI.L(conf.placeholder))
-                        boxFrame:SetScript("OnTextChanged", function(self)
+                        box:SetScript("OnTextChanged", function(self)
                             ph:SetShown((self:GetText() or "") == "")
                         end)
                     end
                 else
-                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
-                    boxFrame:SetJustifyH("CENTER")
-                    boxFrame:SetTextInsets(4, 4, 0, 0)
+                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
+                    box:SetJustifyH("CENTER")
+                    box:SetTextInsets(4, 4, 0, 0)
                     boxBg:SetColorTexture(0.12, 0.12, 0.12, 0.85)
-                    CludesUI.RoundBody(boxFrame, boxBg)
+                    CludesUI.RoundBody(box, boxBg)
                 end
                 local function RefreshInput()
-                    if boxFrame:HasFocus() then
+                    if box:HasFocus() then
                         return
                     end
-                    boxFrame:SetText((conf.getValue and conf.getValue()) or "")
+                    box:SetText((conf.getValue and conf.getValue()) or "")
                 end
                 local committing = false
                 -- A setter that rebuilds the page can dress this box again for
@@ -1026,19 +1026,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         return
                     end
                     committing = true
-                    local gen = PoolGen(boxFrame)
-                    boxFrame:ClearFocus()
+                    local gen = PoolGen(box)
+                    box:ClearFocus()
                     if conf.setValue then
-                        conf.setValue(boxFrame:GetText())
+                        conf.setValue(box:GetText())
                     end
-                    if PoolGen(boxFrame) == gen then
+                    if PoolGen(box) == gen then
                         RefreshInput()
                     end
                     committing = false
                 end
-                boxFrame:SetScript("OnEnterPressed", CommitInput)
-                boxFrame:SetScript("OnEditFocusLost", CommitInput)
-                boxFrame:SetScript("OnEscapePressed", function(self)
+                box:SetScript("OnEnterPressed", CommitInput)
+                box:SetScript("OnEditFocusLost", CommitInput)
+                box:SetScript("OnEscapePressed", function(self)
                     local gen = PoolGen(self)
                     self:ClearFocus()
                     if PoolGen(self) == gen then
@@ -1046,9 +1046,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end)
                 RefreshInput()
-                controlFrame = boxFrame
-                controlAnchor = boxFrame
-                AddControlDisabledTooltip(boxFrame, conf)
+                controlFrame = box
+                controlAnchor = box
+                AddControlDisabledTooltip(box, conf)
                 RegisterWidgetRefresh(function()
                     RefreshInput()
                     ApplyDisabledState()
@@ -1205,10 +1205,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if not conf.disabled then
                     return
                 end
-                local offset = conf.disabled()
-                labelText:SetAlpha(offset and 0.3 or 1)
+                local off = conf.disabled()
+                labelText:SetAlpha(off and 0.3 or 1)
                 if controlFrame then
-                    if offset then
+                    if off then
                         controlFrame:EnableMouse(false)
                         controlFrame:SetAlpha(0.3)
                     else
@@ -1243,24 +1243,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
                 RegisterWidgetRefresh(function()
                     if conf.disabled then
-                        local offset = conf.disabled()
-                        labelText:SetAlpha(offset and 0.3 or 1)
-                        trackFrame:SetAlpha(offset and 0.3 or 1)
-                        valBox:EnableMouse(not offset)
-                        valBox:SetAlpha(offset and 0.3 or 1)
+                        local off = conf.disabled()
+                        labelText:SetAlpha(off and 0.3 or 1)
+                        trackFrame:SetAlpha(off and 0.3 or 1)
+                        valBox:EnableMouse(not off)
+                        valBox:SetAlpha(off and 0.3 or 1)
                         if slThumb then
-                            slThumb._sliderDisabled = offset
+                            slThumb._sliderDisabled = off
                         end
                     end
                 end)
                 if conf.disabled then
-                    local offset = conf.disabled()
-                    labelText:SetAlpha(offset and 0.3 or 1)
-                    trackFrame:SetAlpha(offset and 0.3 or 1)
-                    valBox:EnableMouse(not offset)
-                    valBox:SetAlpha(offset and 0.3 or 1)
+                    local off = conf.disabled()
+                    labelText:SetAlpha(off and 0.3 or 1)
+                    trackFrame:SetAlpha(off and 0.3 or 1)
+                    valBox:EnableMouse(not off)
+                    valBox:SetAlpha(off and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = offset
+                        slThumb._sliderDisabled = off
                     end
                 end
                 AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
@@ -1344,7 +1344,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
-                        local offset = conf.disabled()
+                        local off = conf.disabled()
                         labelText:SetAlpha(1)
                         -- Gray the button label when the current value is disabled,
                         -- through the text colour's alpha (the label's resting alpha);
@@ -1408,12 +1408,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 btn:SetAllPoints(regionFrame)
                 btn:SetFrameLevel(widget:GetFrameLevel() + 2)
 
-                local boxFrame, check, boxBorder, cbApply =
-                    BuildCheckboxControl(btn, widget:GetFrameLevel() + 2)
-                boxFrame:SetPoint("LEFT", btn, "LEFT", SIDE_PAD, 0)
+                local box, check, boxBorder, cbApply = BuildCheckboxControl(btn, widget:GetFrameLevel() + 2)
+                box:SetPoint("LEFT", btn, "LEFT", SIDE_PAD, 0)
 
                 local cbLabel = MakeFont(btn, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
-                cbLabel:SetPoint("LEFT", boxFrame, "RIGHT", 10, 0)
+                cbLabel:SetPoint("LEFT", box, "RIGHT", 10, 0)
                 cbLabel:SetText(CludesUI.L(conf.text or ""))
 
                 local isHovering = false
@@ -1589,8 +1588,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 RegisterWidgetRefresh(function()
                     updateSwatch()
-                    local offset = sc.disabled()
-                    if offset then
+                    local off = sc.disabled()
+                    if off then
                         colorSwatch:SetAlpha(0.3)
                         swatchBlock:Show()
                     else
@@ -1598,8 +1597,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         swatchBlock:Hide()
                     end
                 end)
-                local offset = sc.disabled()
-                if offset then
+                local off = sc.disabled()
+                if off then
                     colorSwatch:SetAlpha(0.3)
                     swatchBlock:Show()
                 else
@@ -1699,10 +1698,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if not dropdownCfg.disabled then
                 return
             end
-            local offset = dropdownCfg.disabled()
-            ddLabel:SetAlpha(offset and 0.3 or 1)
-            ddBtn:EnableMouse(not offset)
-            ddBtn:SetAlpha(offset and 0.3 or 1)
+            local off = dropdownCfg.disabled()
+            ddLabel:SetAlpha(off and 0.3 or 1)
+            ddBtn:EnableMouse(not off)
+            ddBtn:SetAlpha(off and 0.3 or 1)
         end
 
         -- Right half: X and Y mini-sliders on one line
@@ -1754,24 +1753,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             RegisterWidgetRefresh(function()
                 if slCfg.disabled then
-                    local offset = slCfg.disabled()
-                    axisLabel:SetAlpha(offset and 0.2 or 0.6)
-                    trackFrame:SetAlpha(offset and 0.3 or 1)
-                    valBox:EnableMouse(not offset)
-                    valBox:SetAlpha(offset and 0.3 or 1)
+                    local off = slCfg.disabled()
+                    axisLabel:SetAlpha(off and 0.2 or 0.6)
+                    trackFrame:SetAlpha(off and 0.3 or 1)
+                    valBox:EnableMouse(not off)
+                    valBox:SetAlpha(off and 0.3 or 1)
                     if slThumb then
-                        slThumb._sliderDisabled = offset
+                        slThumb._sliderDisabled = off
                     end
                 end
             end)
             if slCfg.disabled then
-                local offset = slCfg.disabled()
-                axisLabel:SetAlpha(offset and 0.2 or 0.6)
-                trackFrame:SetAlpha(offset and 0.3 or 1)
-                valBox:EnableMouse(not offset)
-                valBox:SetAlpha(offset and 0.3 or 1)
+                local off = slCfg.disabled()
+                axisLabel:SetAlpha(off and 0.2 or 0.6)
+                trackFrame:SetAlpha(off and 0.3 or 1)
+                valBox:EnableMouse(not off)
+                valBox:SetAlpha(off and 0.3 or 1)
                 if slThumb then
-                    slThumb._sliderDisabled = offset
+                    slThumb._sliderDisabled = off
                 end
             end
         end
@@ -1888,7 +1887,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- build makes none.
     function WidgetFactory:WideDropdown(
         hostFrame,
-        titleText,
+        title,
         yOffset,
         values,
         getValue,
@@ -1903,7 +1902,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local widget = CreateFrame("Frame", nil, hostFrame)
         Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-        TagOptionRow(widget, hostFrame, titleText)
+        TagOptionRow(widget, hostFrame, title)
         local titleLabel = MakeFont(
             widget,
             13,
@@ -1914,7 +1913,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             CludesUI.TEXT_SECTION_A
         )
         Pix.Point(titleLabel, "TOP", widget, "TOP", 0, 0)
-        titleLabel:SetText(CludesUI.L(titleText))
+        titleLabel:SetText(CludesUI.L(title))
         local ddBtn = CreateFrame("Button", nil, widget)
         Pix.Size(ddBtn, btnWidth, BTN_H)
         Pix.Point(ddBtn, "TOP", titleLabel, "BOTTOM", 0, -GAP)
@@ -1987,7 +1986,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local totalW = DD_W * 3 + TRIPLE_GAP * 2
         local startX = (frameW - totalW) / 2
         for position, conf in ipairs(configs) do
-            local column = startX + (position - 1) * (DD_W + TRIPLE_GAP)
+            local col = startX + (position - 1) * (DD_W + TRIPLE_GAP)
             local titleLbl = MakeFont(
                 widget,
                 11,
@@ -1997,7 +1996,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 CludesUI.TEXT_SECTION_B,
                 CludesUI.TEXT_SECTION_A
             )
-            Pix.Point(titleLbl, "TOP", widget, "TOPLEFT", column + DD_W / 2, 0)
+            Pix.Point(titleLbl, "TOP", widget, "TOPLEFT", col + DD_W / 2, 0)
             titleLbl:SetText(CludesUI.L(conf.title))
             local ddBtn, ddLbl = BuildDropdownControl(
                 widget,
@@ -2008,7 +2007,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 conf.getValue,
                 conf.setValue
             )
-            Pix.Point(ddBtn, "TOPLEFT", widget, "TOPLEFT", column, -(TITLE_H + GAP_Y))
+            Pix.Point(ddBtn, "TOPLEFT", widget, "TOPLEFT", col, -(TITLE_H + GAP_Y))
             RegisterWidgetRefresh(function()
                 ddLbl:SetText(DDResolveLabel(conf.values, conf.order or {}, conf.getValue()))
             end)
@@ -2028,7 +2027,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local totalW = SL_W * 3 + TRIPLE_GAP * 2
         local startX = (frameW - totalW) / 2
         for position, conf in ipairs(configs) do
-            local column = startX + (position - 1) * (SL_W + TRIPLE_GAP)
+            local col = startX + (position - 1) * (SL_W + TRIPLE_GAP)
             local minVal = conf.minVal or 16
             local maxVal = conf.maxVal or 40
             local step = conf.step or 1
@@ -2036,7 +2035,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local TRACK_W = SL_W - INPUT_W - 16
             local slRow = CreateFrame("Frame", nil, widget)
             Pix.Size(slRow, SL_W, SL_H)
-            Pix.Point(slRow, "TOPLEFT", widget, "TOPLEFT", column, -((ROW_H - SL_H) / 2))
+            Pix.Point(slRow, "TOPLEFT", widget, "TOPLEFT", col, -((ROW_H - SL_H) / 2))
             slRow:SetFrameLevel(widget:GetFrameLevel() + 1)
             local trackFrame, valBox = BuildSliderCore(
                 slRow,

@@ -577,13 +577,13 @@ end
 -- size (optional): the size to set; otherwise the string keeps its own (12 if none).
 -- A string already on one of our font families keeps it (WSkin.FontFamily), so a
 -- region walk never pins a name text that took a family.
-function Skin.Font(fontStr, r, g, b, dim)
+function Skin.Font(fontStr, r, g, b, size)
     if not fontStr or not fontStr.GetFont or (fontStr.IsForbidden and fontStr:IsForbidden()) then
         return
     end
     local fo = fontStr.GetFontObject and fontStr:GetFontObject()
     if fo and CUI._fontFamilySet[fo] then
-        return Skin.FontFamily(fontStr, r, g, b, dim)
+        return Skin.FontFamily(fontStr, r, g, b, size)
     end
     local _, current = fontStr:GetFont()
     if current and issecretvalue(current) then
@@ -592,7 +592,7 @@ function Skin.Font(fontStr, r, g, b, dim)
     -- 12.0.7: shadows only render from a FontObject, never from instance
     -- SetShadowOffset. Prime BEFORE SetFont (SetFont then restores the face).
     CUI.PrimeFontShadow(fontStr, Theme.fontShadow)
-    fontStr:SetFont(Theme.fontPath, dim or current or 12, Theme.fontFlag or "")
+    fontStr:SetFont(Theme.fontPath, size or current or 12, Theme.fontFlag or "")
     if r then
         fontStr:SetTextColor(r, g, b or r)
     end
@@ -602,7 +602,7 @@ end
 -- comments): the house font as a font family, which draws the scripts that font
 -- lacks. A string given a family takes every later font write through here,
 -- never through WSkin.Font (a plain SetFont pins the face for good).
-function Skin.FontFamily(fontStr, r, g, b, dim)
+function Skin.FontFamily(fontStr, r, g, b, size)
     if not fontStr or not fontStr.GetFont or (fontStr.IsForbidden and fontStr:IsForbidden()) then
         return
     end
@@ -610,7 +610,7 @@ function Skin.FontFamily(fontStr, r, g, b, dim)
     if current and issecretvalue(current) then
         return
     end
-    CUI.SetFontFamily(fontStr, Theme.fontPath, dim or current or 12, Theme.fontFlag or "", Theme.fontShadow)
+    CUI.SetFontFamily(fontStr, Theme.fontPath, size or current or 12, Theme.fontFlag or "", Theme.fontShadow)
     if r then
         fontStr:SetTextColor(r, g, b or r)
     end
@@ -661,13 +661,13 @@ local function ApplyButton(button, d, keepKeys)
         end
     end
 
-    local fillTex = d.bg
-    if not fillTex then
-        fillTex = button:CreateTexture(nil, "BACKGROUND")
-        d.bg = fillTex
+    local fill = d.bg
+    if not fill then
+        fill = button:CreateTexture(nil, "BACKGROUND")
+        d.bg = fill
     end
-    fillTex:SetColorTexture(Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fillTex:SetAllPoints(button)
+    fill:SetColorTexture(Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fill:SetAllPoints(button)
     AddBorder(button)
 
     local hover = d.hover
@@ -763,9 +763,9 @@ function Skin.EditBox(eb, options)
     if options and options.padInput and CludesUI._WSkinPadInput then
         CludesUI._WSkinPadInput(eb)
     end
-    local fillTex = SolidTex(eb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fillTex:SetAllPoints(eb)
-    d.bg = fillTex
+    local fill = SolidTex(eb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fill:SetAllPoints(eb)
+    d.bg = fill
     -- Same border as WSkin.Button (theme defaults).
     if not (options and options.noBorder) then
         AddBorder(eb)
@@ -807,10 +807,10 @@ function Skin.Checkbox(cb, options)
             r:SetAlpha(0)
         end
     end
-    local fillTex = SolidTex(cb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fillTex:SetPoint("TOPLEFT", 4, -4)
-    fillTex:SetPoint("BOTTOMRIGHT", -4, 4)
-    d.bg = fillTex
+    local fill = SolidTex(cb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fill:SetPoint("TOPLEFT", 4, -4)
+    fill:SetPoint("BOTTOMRIGHT", -4, 4)
+    d.bg = fill
     if options and options.hover then
         local hover = SolidTex(cb, "HIGHLIGHT", 1, 1, 1, options.hover)
         hover:SetPoint("TOPLEFT", 4, -4)
@@ -862,9 +862,9 @@ function Skin.Dropdown(dropdown)
     if dropdown.Texture then
         dropdown.Texture:SetAlpha(0)
     end
-    local fillTex = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fillTex:SetAllPoints(dropdown)
-    d.bg = fillTex
+    local fill = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fill:SetAllPoints(dropdown)
+    d.bg = fill
     AddBorder(dropdown, 0.25, 0.25, 0.25, 1)
     -- Slight lighten on hover.
     local hover = SolidTex(dropdown, "HIGHLIGHT", 1, 1, 1, 0.05)
@@ -913,37 +913,37 @@ function Skin.SortHeaderBar(entries)
     end
     local children = { hc:GetChildren() }
     for idx = 1, #children do
-        local column = children[idx]
-        if column and column.GetObjectType and column:GetObjectType() == "Button" then
-            local hd = GetFFD(column)
+        local col = children[idx]
+        if col and col.GetObjectType and col:GetObjectType() == "Button" then
+            local hd = GetFFD(col)
             if not hd.bg then
                 for _, k2 in ipairs({ "Left", "Middle", "Right" }) do
-                    local t2 = column[k2]
+                    local t2 = col[k2]
                     if t2 and t2.SetTexture then
                         t2:SetTexture("")
                     end
                 end
-                Skin.FadeRegions(column)
-                local backdrop = SolidTex(column, "BACKGROUND", 0.02, 0.02, 0.02, 0)
+                Skin.FadeRegions(col)
+                local backdrop = SolidTex(col, "BACKGROUND", 0.02, 0.02, 0.02, 0)
                 backdrop:SetPoint("TOPLEFT", 1, -1)
                 backdrop:SetPoint("BOTTOMRIGHT", -1, 1)
                 hd.bg = backdrop
-                local hov = SolidTex(column, "HIGHLIGHT", 1, 1, 1, 0.1)
-                hov:SetAllPoints(column)
+                local hov = SolidTex(col, "HIGHLIGHT", 1, 1, 1, 0.1)
+                hov:SetAllPoints(col)
                 hd.hover = hov
             end
-            local fontStr = column.GetFontString and column:GetFontString()
+            local fontStr = col.GetFontString and col:GetFontString()
             if fontStr then
                 Skin.White(fontStr)
             end
             local strip = sd.strip
             if hd.hover and strip and strip.GetTop then
                 local st, sbot = strip:GetTop(), strip:GetBottom()
-                local ct, cbot = column:GetTop(), column:GetBottom()
+                local ct, cbot = col:GetTop(), col:GetBottom()
                 if st and sbot and ct and cbot then
                     hd.hover:ClearAllPoints()
-                    hd.hover:SetPoint("TOPLEFT", column, "TOPLEFT", 0, st - ct)
-                    hd.hover:SetPoint("BOTTOMRIGHT", column, "BOTTOMRIGHT", 0, sbot - cbot)
+                    hd.hover:SetPoint("TOPLEFT", col, "TOPLEFT", 0, st - ct)
+                    hd.hover:SetPoint("BOTTOMRIGHT", col, "BOTTOMRIGHT", 0, sbot - cbot)
                 end
             end
         end
@@ -1052,7 +1052,7 @@ end
 -- uitools-icon-close above the dropdown border (white 0.9->1 on hover).
 -- `host` = the dropdown it rides (frame-level layering); idempotent via FFD.x.
 -- The window packs' filter dropdowns and the Group Finder's search filter.
-function Skin.FilterResetX(rb, hostRegion)
+function Skin.FilterResetX(rb, host)
     if not rb or rb:IsForbidden() then
         return
     end
@@ -1073,8 +1073,8 @@ function Skin.FilterResetX(rb, hostRegion)
             t:SetAlpha(0)
         end
     end
-    if hostRegion then
-        rb:SetFrameLevel(hostRegion:GetFrameLevel() + 5)
+    if host then
+        rb:SetFrameLevel(host:GetFrameLevel() + 5)
     end
     local posX = rb:CreateTexture(nil, "OVERLAY", nil, 7)
     posX:SetAtlas("uitools-icon-close", false)
@@ -1138,7 +1138,7 @@ local PAGE_ARROWS = {
     ["<"] = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-left.png",
     [">"] = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-right.png",
 }
-function Skin.PageButton(button, ch, dim)
+function Skin.PageButton(button, ch, size)
     if not button or button:IsForbidden() then
         return
     end
@@ -1162,14 +1162,14 @@ function Skin.PageButton(button, ch, dim)
     if texture then
         local arrow = button:CreateTexture(nil, "OVERLAY")
         arrow:SetTexture(texture)
-        local s = dim or 14
+        local s = size or 14
         arrow:SetSize(s, s)
         arrow:SetPoint("CENTER")
         arrow:SetAlpha(0.9)
         d.arrow = arrow
     else
         local fontStr = button:CreateFontString(nil, "OVERLAY")
-        fontStr:SetFont(Theme.fontPath, dim or 14, Theme.fontFlag or "")
+        fontStr:SetFont(Theme.fontPath, size or 14, Theme.fontFlag or "")
         fontStr:SetPoint("CENTER")
         fontStr:SetText(ch)
         fontStr:SetTextColor(1, 1, 1, 0.9)
@@ -1218,12 +1218,12 @@ function Skin.BorderRegion(hostFrame, regionFrame)
         return
     end
     d.bordered = true
-    local function lineTex()
+    local function line()
         local t = hostFrame:CreateTexture(nil, "OVERLAY")
         t:SetColorTexture(0, 0, 0, 1)
         return t
     end
-    local t, b, l, r = lineTex(), lineTex(), lineTex(), lineTex()
+    local t, b, l, r = line(), line(), line(), line()
     t:SetPoint("TOPLEFT", regionFrame, "TOPLEFT", -1, 1)
     t:SetPoint("TOPRIGHT", regionFrame, "TOPRIGHT", 1, 1)
     t:SetHeight(1)
@@ -1291,8 +1291,8 @@ local _qTiles = setmetatable({}, { __mode = "k" })
 local _qHooked = false
 
 local function PaintQuality(button)
-    local hostRegion = _qTiles[button]
-    if not hostRegion then
+    local host = _qTiles[button]
+    if not host then
         return
     end
     local Pix = CUI and (CUI.PanelPP or CUI.PP)
@@ -1311,7 +1311,7 @@ local function PaintQuality(button)
     -- No rarity -> BLACK, not hidden: every other icon in the suite carries a
     -- 1px black edge, so a common drop should look like the rest of them
     -- rather than like a tile that lost its border.
-    Pix.SetBorderColor(hostRegion, r or 0, g or 0, b or 0, 1)
+    Pix.SetBorderColor(host, r or 0, g or 0, b or 0, 1)
 end
 
 -- Runs inside Blizzard's call stack, from bag and bank updates as well as ours.
@@ -1359,36 +1359,36 @@ function Skin.QualityBorder(ownerFrame, icon, r, g, b)
         return
     end
     local d = GetFFD(ownerFrame)
-    local hostRegion = d.qBorder
-    if not hostRegion then
+    local host = d.qBorder
+    if not host then
         -- Its OWN frame, anchored to the ICON rather than the button: the
         -- button rect is larger than its icon on most of these templates, and
         -- PP.CreateBorder spans whatever frame it is handed.
-        hostRegion = CreateFrame("Frame", nil, ownerFrame)
+        host = CreateFrame("Frame", nil, ownerFrame)
         -- ONE PIXEL OUTSIDE the icon, not on its edge. Sitting exactly on the
         -- rect put the strips on the same pixels the icon draws, so the icon
         -- won and the border looked like it was being clipped through --
         -- visible on any icon with light content at the edge. Outset by 1 it
         -- rings the icon and nothing can overlap it.
-        hostRegion:SetPoint("TOPLEFT", icon, "TOPLEFT", -1, 1)
-        hostRegion:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1)
+        host:SetPoint("TOPLEFT", icon, "TOPLEFT", -1, 1)
+        host:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1)
         -- ...and well clear of the button's own layers. Item buttons stack
         -- icon, overlays, quest markers and an alert frame, and some templates
         -- raise their own level (trade calls RaiseFrameLevelByTwo).
         if ownerFrame.GetFrameLevel then
-            hostRegion:SetFrameLevel(ownerFrame:GetFrameLevel() + 6)
+            host:SetFrameLevel(ownerFrame:GetFrameLevel() + 6)
         end
-        Pix.CreateBorder(hostRegion, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        d.qBorder = hostRegion
+        Pix.CreateBorder(host, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        d.qBorder = host
     end
     if r then
         _qTiles[ownerFrame] = nil
         if Pix.SetBorderColor then
-            Pix.SetBorderColor(hostRegion, r, g, b, 1)
+            Pix.SetBorderColor(host, r, g, b, 1)
         end
         return
     end
-    _qTiles[ownerFrame] = hostRegion
+    _qTiles[ownerFrame] = host
 
     -- TWO ways Blizzard sets a quality, and one of them the global hook below
     -- cannot see.
@@ -1717,38 +1717,38 @@ local _skinnedTabs = setmetatable({}, { __mode = "k" })
 local TAB_BG = { 0.068, 0.056, 0.052 }
 local TAB_BG_DARK = { 0.03, 0.03, 0.03 }
 
-local function TabIsSelected(tabButton)
+local function TabIsSelected(tab)
     -- FFD override first: windows with nonstandard tab systems (auction house
     -- displayMode) sync selection into FFD themselves -- never onto the Blizzard tab.
-    local od = FFD[tabButton]
+    local od = FFD[tab]
     if od and od.selOverride ~= nil then
         return od.selOverride
     end
     -- The tab system's selectedTabID is authoritative. Pool-rebuilt tab rows
     -- (housing content tabs) can carry a stale isSelected=false after their
     -- system re-inits them, so the per-button flag is only a fallback.
-    local hostFrame = tabButton:GetParent()
-    if hostFrame and hostFrame.selectedTabID ~= nil and tabButton.tabID ~= nil then
-        return hostFrame.selectedTabID == tabButton.tabID
+    local hostFrame = tab:GetParent()
+    if hostFrame and hostFrame.selectedTabID ~= nil and tab.tabID ~= nil then
+        return hostFrame.selectedTabID == tab.tabID
     end
-    if tabButton.isSelected ~= nil then
-        return tabButton.isSelected and true or false
+    if tab.isSelected ~= nil then
+        return tab.isSelected and true or false
     end
-    if hostFrame and PanelTemplates_GetSelectedTab and tabButton.GetID then
+    if hostFrame and PanelTemplates_GetSelectedTab and tab.GetID then
         local success, s = pcall(PanelTemplates_GetSelectedTab, hostFrame)
         if success and s ~= nil then
-            return s == tabButton:GetID()
+            return s == tab:GetID()
         end
     end
     return false
 end
 
-local function UpdateTabVisual(tabButton)
-    local d = FFD[tabButton]
+local function UpdateTabVisual(tab)
+    local d = FFD[tab]
     if not d or not d.underline then
         return
     end
-    local sel = TabIsSelected(tabButton)
+    local sel = TabIsSelected(tab)
     if d.label then
         d.label:SetTextColor(1, 1, 1, sel and 1 or 0.5)
     end
@@ -1765,9 +1765,9 @@ local function UpdateTabVisual(tabButton)
 end
 
 local function UpdateAllTabs()
-    for tabButton in pairs(_skinnedTabs) do
-        if not tabButton:IsForbidden() then
-            UpdateTabVisual(tabButton)
+    for tab in pairs(_skinnedTabs) do
+        if not tab:IsForbidden() then
+            UpdateTabVisual(tab)
         end
     end
 end
@@ -1775,12 +1775,12 @@ Skin.UpdateAllTabs = UpdateAllTabs
 
 -- Visual selection only; nil returns to the native tab system's selection.
 -- Keep the override outside the frame so Blizzard's tab state stays untouched.
-function Skin.SetTabSelection(tabButton, selected)
-    if not tabButton or tabButton:IsForbidden() then
+function Skin.SetTabSelection(tab, selected)
+    if not tab or tab:IsForbidden() then
         return
     end
-    GetFFD(tabButton).selOverride = selected
-    UpdateTabVisual(tabButton)
+    GetFFD(tab).selOverride = selected
+    UpdateTabVisual(tab)
 end
 
 local _tabHooked = false
@@ -1802,16 +1802,16 @@ end
 -- dark block, our own 11px label mirroring Blizzard's text, a faint additive
 -- wash + a pixel-perfect full-width accent underline on the active tab.
 -- Works for PanelTabButtonTemplate and TabSystem buttons.
-function Skin.Tab(tabButton, options)
-    if not tabButton or tabButton:IsForbidden() then
+function Skin.Tab(tab, options)
+    if not tab or tab:IsForbidden() then
         return
     end
-    local d = GetFFD(tabButton)
+    local d = GetFFD(tab)
     if options and options.darkActive then
         d.darkActive = true
     end
     if d.bg then
-        UpdateTabVisual(tabButton)
+        UpdateTabVisual(tab)
         if d.label and d.blizLabel and d.blizLabel.GetText then
             d.label:SetText(d.blizLabel:GetText() or "")
         end
@@ -1824,7 +1824,7 @@ function Skin.Tab(tabButton, options)
     -- selectedTabID field TabIsSelected reads). Hook it once per tab system so the
     -- underline tracks selection from every path (field report: swapping PlayerSpells
     -- tabs via keybind while the frame was open left the underline on the old tab).
-    local sys = tabButton:GetParent()
+    local sys = tab:GetParent()
     if sys and not sys:IsForbidden() and type(sys.SetTabVisuallySelected) == "function" then
         local sd = GetFFD(sys)
         if not sd.visSelHooked then
@@ -1833,10 +1833,10 @@ function Skin.Tab(tabButton, options)
         end
     end
     -- Icon tabs carry their label in Icon; retain its clipping mask as well.
-    local regions = { tabButton:GetRegions() }
+    local regions = { tab:GetRegions() }
     for jdx = 1, #regions do
         local r = regions[jdx]
-        if r and r ~= tabButton.Icon and r ~= tabButton.IconMask and r:IsObjectType("Texture") then
+        if r and r ~= tab.Icon and r ~= tab.IconMask and r:IsObjectType("Texture") then
             r:SetTexture("")
             if r.SetAtlas then
                 r:SetAtlas("")
@@ -1844,37 +1844,37 @@ function Skin.Tab(tabButton, options)
         end
     end
     for _, k in ipairs({ "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }) do
-        if tabButton[k] and tabButton[k].SetTexture then
-            tabButton[k]:SetTexture("")
+        if tab[k] and tab[k].SetTexture then
+            tab[k]:SetTexture("")
         end
     end
-    local highlight = tabButton.GetHighlightTexture and tabButton:GetHighlightTexture()
+    local highlight = tab.GetHighlightTexture and tab:GetHighlightTexture()
     if highlight then
         highlight:SetTexture("")
     end
 
-    d.bg = SolidTex(tabButton, "BACKGROUND", 0.068, 0.056, 0.052, 1)
+    d.bg = SolidTex(tab, "BACKGROUND", 0.068, 0.056, 0.052, 1)
     d.bg:SetAllPoints()
 
-    local activeHL = tabButton:CreateTexture(nil, "ARTWORK", nil, -6)
+    local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
     activeHL:SetAllPoints()
     activeHL:SetColorTexture(1, 1, 1, 0.02)
     activeHL:SetBlendMode("ADD")
     activeHL:Hide()
     d.activeHL = activeHL
 
-    local blizLabel = tabButton.Text or (tabButton.GetFontString and tabButton:GetFontString())
+    local blizLabel = tab.Text or (tab.GetFontString and tab:GetFontString())
     local labelText = (blizLabel and blizLabel.GetText and blizLabel:GetText()) or ""
     if blizLabel and blizLabel.SetTextColor then
         blizLabel:SetTextColor(0, 0, 0, 0)
     end
-    if tabButton.SetPushedTextOffset then
-        tabButton:SetPushedTextOffset(0, 0)
+    if tab.SetPushedTextOffset then
+        tab:SetPushedTextOffset(0, 0)
     end
 
-    local label = tabButton:CreateFontString(nil, "OVERLAY")
+    local label = tab:CreateFontString(nil, "OVERLAY")
     label:SetFont(Theme.fontPath, 11, Theme.fontFlag or "")
-    label:SetPoint("CENTER", tabButton, "CENTER", 0, 0)
+    label:SetPoint("CENTER", tab, "CENTER", 0, 0)
     label:SetText(labelText)
     d.label = label
     d.blizLabel = blizLabel
@@ -1887,7 +1887,7 @@ function Skin.Tab(tabButton, options)
             d.label:SetText(d.blizLabel:GetText() or "")
         end
     end
-    hooksecurefunc(tabButton, "SetText", SyncLabel)
+    hooksecurefunc(tab, "SetText", SyncLabel)
     if blizLabel then
         hooksecurefunc(blizLabel, "SetText", SyncLabel)
         if blizLabel.SetFormattedText then
@@ -1895,15 +1895,15 @@ function Skin.Tab(tabButton, options)
         end
     end
 
-    local underline = tabButton:CreateTexture(nil, "OVERLAY", nil, 6)
+    local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
     if CUI and CUI.PanelPP and CUI.PanelPP.DisablePixelSnap then
         CUI.PanelPP.DisablePixelSnap(underline)
         underline:SetHeight(CUI.PanelPP.mult or 1)
     else
         underline:SetHeight(1)
     end
-    underline:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 0, 0)
-    underline:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+    underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
+    underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
     -- Color resolves from the Global Options accent-bar setting; the engine's
     -- looks refresh (not per-texture accent registration) keeps it current.
     local ur, ug, ub = Skin.AccentBarColor()
@@ -1911,18 +1911,18 @@ function Skin.Tab(tabButton, options)
     underline:Hide()
     d.underline = underline
 
-    _skinnedTabs[tabButton] = true
+    _skinnedTabs[tab] = true
     EnsureTabHooks()
     -- TabSystem buttons do not flow through PanelTemplates_SetTab; refresh all
     -- skinned tabs one frame after any tab click.
-    tabButton:HookScript("OnClick", function()
+    tab:HookScript("OnClick", function()
         if C_Timer then
             C_Timer.After(0, UpdateAllTabs)
         else
             UpdateAllTabs()
         end
     end)
-    UpdateTabVisual(tabButton)
+    UpdateTabVisual(tab)
 end
 
 -- Force a row of skinned tabs to a uniform one-physical-pixel seam. Each Blizzard tab
@@ -2023,9 +2023,9 @@ end
 function Skin.AccentBarColor()
     local c = CludesUIDB and CludesUIDB.blizzWinAccentBar
     if c and c.useCustom then
-        local column = c.color
-        if column then
-            return column.r or 1, column.g or 1, column.b or 1
+        local col = c.color
+        if col then
+            return col.r or 1, col.g or 1, col.b or 1
         end
         return 1, 1, 1
     end
@@ -2036,9 +2036,9 @@ function Skin.BarFillColor()
     local c = CludesUIDB and CludesUIDB.blizzWinBarFill
     local a = (c and c.alpha) or 0.95
     if c and c.useCustom then
-        local column = c.color
-        if column then
-            return column.r or 1, column.g or 1, column.b or 1, a
+        local col = c.color
+        if col then
+            return col.r or 1, col.g or 1, col.b or 1, a
         end
         return 1, 1, 1, a
     end
@@ -2049,9 +2049,9 @@ end
 function Skin.LinkColor()
     local c = CludesUIDB and CludesUIDB.blizzWinLinks
     if c and c.useCustom then
-        local column = c.color
-        if column then
-            return column.r or 1, column.g or 1, column.b or 1
+        local col = c.color
+        if col then
+            return col.r or 1, col.g or 1, col.b or 1
         end
         return 1, 1, 1
     end
@@ -2075,13 +2075,13 @@ local _fillBars = setmetatable({}, { __mode = "k" })
 local _extUnderlines = setmetatable({}, { __mode = "k" })
 local _lookCallbacks = {}
 
-function Skin.ApplyBarFill(barFrame)
-    if not barFrame or not barFrame.SetStatusBarColor then
+function Skin.ApplyBarFill(bar)
+    if not bar or not bar.SetStatusBarColor then
         return
     end
-    _fillBars[barFrame] = true
+    _fillBars[bar] = true
     local r, g, b, a = Skin.BarFillColor()
-    barFrame:SetStatusBarColor(r, g, b, a)
+    bar:SetStatusBarColor(r, g, b, a)
 end
 
 function Skin.RegisterAccentUnderline(texture)
@@ -2096,22 +2096,22 @@ end
 
 function Skin.RefreshLooks()
     local ur, ug, ub = Skin.AccentBarColor()
-    for tabButton in pairs(_skinnedTabs) do
-        local d = FFD[tabButton]
+    for tab in pairs(_skinnedTabs) do
+        local d = FFD[tab]
         if d and d.underline then
             d.underline:SetColorTexture(ur, ug, ub, 1)
         end
-        if not tabButton:IsForbidden() then
-            UpdateTabVisual(tabButton)
+        if not tab:IsForbidden() then
+            UpdateTabVisual(tab)
         end
     end
     for texture in pairs(_extUnderlines) do
         texture:SetColorTexture(ur, ug, ub, 1)
     end
     local br, bgr, bb, ba = Skin.BarFillColor()
-    for barFrame in pairs(_fillBars) do
-        if barFrame.SetStatusBarColor and not barFrame:IsForbidden() then
-            barFrame:SetStatusBarColor(br, bgr, bb, ba)
+    for bar in pairs(_fillBars) do
+        if bar.SetStatusBarColor and not bar:IsForbidden() then
+            bar:SetStatusBarColor(br, bgr, bb, ba)
         end
     end
     for _, func in ipairs(_lookCallbacks) do
@@ -2412,15 +2412,15 @@ function Skin.CommonChrome(widget, prefixText, explicitControls)
     -- true center. Center it on the shell top bar instead. One-shot.
     local d = GetFFD(widget)
     if not d.titleCentered and d.topBar then
-        local titleText = (widget.TitleContainer and widget.TitleContainer.TitleText)
+        local title = (widget.TitleContainer and widget.TitleContainer.TitleText)
             or widget.TitleText
             or (prefixText and _G[prefixText .. "TitleText"])
-        if titleText and titleText.ClearAllPoints then
+        if title and title.ClearAllPoints then
             d.titleCentered = true
-            titleText:ClearAllPoints()
-            titleText:SetPoint("CENTER", d.topBar, "CENTER", 0, 0)
-            if titleText.SetJustifyH then
-                titleText:SetJustifyH("CENTER")
+            title:ClearAllPoints()
+            title:SetPoint("CENTER", d.topBar, "CENTER", 0, 0)
+            if title.SetJustifyH then
+                title:SetJustifyH("CENTER")
             end
         end
     end
@@ -2439,23 +2439,23 @@ end
 -- A common-sidetab side tab (the WoW Forever Looking For Group and Progress
 -- Legacy windows): the gold frame and glow go, the icon stays. A black copy of
 -- the hover art is the idle border; hover (gold) and active (soft white) draw over it.
-function Skin.SideTab(tabButton)
-    if not tabButton then
+function Skin.SideTab(tab)
+    if not tab then
         return
     end
-    if tabButton.Background then
-        tabButton.Background:SetAlpha(0)
+    if tab.Background then
+        tab.Background:SetAlpha(0)
     end
-    if tabButton.TabGlow then
-        tabButton.TabGlow:SetAlpha(0)
+    if tab.TabGlow then
+        tab.TabGlow:SetAlpha(0)
     end
-    local st = tabButton.SelectedTexture
+    local st = tab.SelectedTexture
     if not st then
         return
     end
-    local d = GetFFD(tabButton)
+    local d = GetFFD(tab)
     if not d.tabBorder then
-        local b = tabButton:CreateTexture(nil, "OVERLAY", nil, -1)
+        local b = tab:CreateTexture(nil, "OVERLAY", nil, -1)
         b:SetAtlas("common-sidetab-hover")
         b:SetAllPoints(st)
         b:SetVertexColor(0, 0, 0)

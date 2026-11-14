@@ -194,53 +194,53 @@ function EAB_VTABLE.Hover.RefreshCustomFadeBar(barId, animate, force)
 
     -- Visibility's Mouseover mode parks the real Bar Opacity in _savedBarAlpha
     -- (mouseoverAlpha reads 0 then), so that is the resting alpha to start from.
-    local baseValue
+    local base
     if s.mouseoverEnabled and s._savedBarAlpha ~= nil then
-        baseValue = s._savedBarAlpha
+        base = s._savedBarAlpha
     else
-        baseValue = s.mouseoverAlpha or 1
+        base = s.mouseoverAlpha or 1
     end
 
-    local targetUnit = baseValue
+    local target = base
     if EAB_VTABLE.Hover.CustomFadeConditionMet(barId, s) then
-        targetUnit = s.fadeMaxAlpha
-        if targetUnit == nil then
-            targetUnit = 1
+        target = s.fadeMaxAlpha
+        if target == nil then
+            target = 1
         end
     end
     if hoverHidden then
-        targetUnit = 0
+        target = 0
     end
-    if targetUnit < 0 then
-        targetUnit = 0
-    elseif targetUnit > 1 then
-        targetUnit = 1
+    if target < 0 then
+        target = 0
+    elseif target > 1 then
+        target = 1
     end
 
-    if status and not force and status.customFadeTarget == targetUnit then
+    if status and not force and status.customFadeTarget == target then
         return true
     end
     if status then
-        status.customFadeTarget = targetUnit
+        status.customFadeTarget = target
     end
 
     local current = _fadeAlpha[widget] or 1
-    if current == targetUnit then
+    if current == target then
         return true
     end
     StopFade(widget, current)
-    if animate and abs(current - targetUnit) >= 0.01 then
+    if animate and abs(current - target) >= 0.01 then
         local duration = hoverHidden and (s.mouseoverSpeed or 0.15)
-            or ((targetUnit > current) and (s.fadeInSpeed or 0.15) or (s.fadeOutSpeed or 0.15))
+            or ((target > current) and (s.fadeInSpeed or 0.15) or (s.fadeOutSpeed or 0.15))
         if duration < 0.01 then
             duration = 0.01
         end
-        FadeTo(widget, targetUnit, duration)
+        FadeTo(widget, target, duration)
     else
-        StopFade(widget, targetUnit)
+        StopFade(widget, target)
     end
     if barId == "MainBar" then
-        SyncPagingAlpha(targetUnit)
+        SyncPagingAlpha(target)
     end
     return true
 end
@@ -307,24 +307,24 @@ function EAB_VTABLE.Hover.ReleaseAdvancedFadeBar(barId)
     if not over and ABAR.db.profile.mouseoverShowAll then
         over = mod.AnyMouseoverBarHovered()
     end
-    local targetUnit, wantsHover = EAB_VTABLE.Hover.RestingAlpha(barId, s)
+    local target, wantsHover = EAB_VTABLE.Hover.RestingAlpha(barId, s)
     if wantsHover and over then
-        targetUnit = s._savedBarAlpha or 1
+        target = s._savedBarAlpha or 1
     end
 
-    StopFade(widget, targetUnit)
+    StopFade(widget, target)
     if status then
         status.customFadeTarget = nil
         if s.mouseoverEnabled and over then
             status.fadeDir = "in"
-        elseif s.mouseoverEnabled and targetUnit == 0 then
+        elseif s.mouseoverEnabled and target == 0 then
             status.fadeDir = "out"
         else
             status.fadeDir = nil
         end
     end
     if barId == "MainBar" then
-        SyncPagingAlpha(targetUnit)
+        SyncPagingAlpha(target)
     end
 end
 

@@ -511,15 +511,15 @@ function ERF:OnEnable()
                 tracker:UnregisterEvent(evt)
             end
         end
-        local Xfer = mod._XF
-        if Xfer then
-            for i = 1, #Xfer.trackers do
-                local b = Xfer.buttons[i]
+        local XF = mod._XF
+        if XF then
+            for i = 1, #XF.trackers do
+                local b = XF.buttons[i]
                 local unitToken = b and b:IsShown() and b:GetAttribute("unit")
                 if wanted and unitToken then
-                    Xfer.trackers[i]:RegisterUnitEvent(evt, unitToken)
+                    XF.trackers[i]:RegisterUnitEvent(evt, unitToken)
                 elseif not wanted then
-                    Xfer.trackers[i]:UnregisterEvent(evt)
+                    XF.trackers[i]:UnregisterEvent(evt)
                 end
             end
         end
@@ -859,14 +859,14 @@ do
         collect = function()
             wipe(partyList)
             wipe(partyGroups)
-            local boxFrame = mod._partyContainerFrame
-            if boxFrame and boxFrame:IsVisible() then
+            local box = mod._partyContainerFrame
+            if box and box:IsVisible() then
                 AddShown(mod._partyHeader, partyList)
                 local scrollBar = mod._partySelfButton
                 if scrollBar and scrollBar:IsVisible() then
                     partyList[#partyList + 1] = scrollBar
                 end
-                partyGroup.pivot = boxFrame
+                partyGroup.pivot = box
                 partyGroups[1] = partyGroup
             end
             return partyGroups

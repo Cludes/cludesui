@@ -621,8 +621,8 @@ function CHAT.ApplyScrollButtonPosition()
 end
 
 -- Animate alpha toward target
-local function _SetAlphaTarget(targetUnit)
-    _chatAlphaTarget = targetUnit
+local function _SetAlphaTarget(target)
+    _chatAlphaTarget = target
     _chatFadeFrame:Show()
 end
 

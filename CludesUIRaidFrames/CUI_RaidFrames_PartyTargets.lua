@@ -15,7 +15,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local upper = math.max
+local max = math.max
 local ipairs = ipairs
 local wipe = wipe
 local UnitName = UnitName
@@ -184,10 +184,10 @@ do
     end
 
     -- The Classic gradient at the unit's current health (the engine evaluates the curve, secret-safe).
-    local function PT_PaintClassic(healthBar, u)
+    local function PT_PaintClassic(health, u)
         local c = UnitHealthPercent(u, true, GetClassicHealthCurve())
         if c and c.GetRGB then
-            healthBar:SetStatusBarColor(c:GetRGB())
+            health:SetStatusBarColor(c:GetRGB())
         end
     end
 
@@ -201,31 +201,31 @@ do
             return
         end
         widget._nameText:SetText(UnitName(u))
-        local healthBar, backdrop, modeName = widget._health, widget._bg, PT.mode
-        local fillTex = healthBar:GetStatusBarTexture()
-        if modeName == "dark" then
+        local health, backdrop, mode = widget._health, widget._bg, PT.mode
+        local fill = health:GetStatusBarTexture()
+        if mode == "dark" then
             local r, g, b, a = CUI.GetDarkModeFill()
-            healthBar:SetStatusBarColor(r, g, b, 1)
-            if fillTex then
-                fillTex:SetAlpha(a)
+            health:SetStatusBarColor(r, g, b, 1)
+            if fill then
+                fill:SetAlpha(a)
             end
             backdrop:SetColorTexture(CUI.GetDarkModeBg())
         else
-            if fillTex then
-                fillTex:SetAlpha(1)
+            if fill then
+                fill:SetAlpha(1)
             end
             local success, r, g, b = false
-            if (modeName ~= "classic" and modeName ~= "custom") or PT.bgClass then
+            if (mode ~= "classic" and mode ~= "custom") or PT.bgClass then
                 success, r, g, b = PT_ClassRGB(u, widget)
             end
-            if modeName == "classic" then
-                PT_PaintClassic(healthBar, u)
-            elseif modeName == "custom" then
-                healthBar:SetStatusBarColor(PT.fr, PT.fg, PT.fb, 1)
+            if mode == "classic" then
+                PT_PaintClassic(health, u)
+            elseif mode == "custom" then
+                health:SetStatusBarColor(PT.fr, PT.fg, PT.fb, 1)
             elseif success then
-                healthBar:SetStatusBarColor(r, g, b, 1)
+                health:SetStatusBarColor(r, g, b, 1)
             else
-                healthBar:SetStatusBarColor(0.5, 0.5, 0.5, 1)
+                health:SetStatusBarColor(0.5, 0.5, 0.5, 1)
             end
             if success and PT.bgClass then
                 backdrop:SetColorTexture(r, g, b, PT.bgA)
@@ -233,21 +233,21 @@ do
                 backdrop:SetColorTexture(PT.br, PT.bgg, PT.bb, PT.bgA)
             end
         end
-        healthBar:SetValue(GetSafeHealthPercent(u))
+        health:SetValue(GetSafeHealthPercent(u))
     end
 
     -- Value paint (the ticker and your target's health events), smoothed per Smooth Bars; the Classic
     -- gradient follows the value.
     local function PT_PaintValue(widget, u)
-        local healthBar = widget._health
+        local health = widget._health
         local smooth = PT.smooth
         if smooth then
-            healthBar:SetValue(GetSafeHealthPercent(u), smooth)
+            health:SetValue(GetSafeHealthPercent(u), smooth)
         else
-            healthBar:SetValue(GetSafeHealthPercent(u))
+            health:SetValue(GetSafeHealthPercent(u))
         end
         if PT.mode == "classic" then
-            PT_PaintClassic(healthBar, u)
+            PT_PaintClassic(health, u)
         end
     end
 
@@ -433,32 +433,32 @@ do
     -- takes, whatever is stored.
     local function PT_Side(s, auto)
         local place = (not auto and s.partyTargetPosition) or (s.partyHorizontal and "bottom" or "right")
-        local sideName = (place == "top" and "above")
+        local side = (place == "top" and "above")
             or (place == "bottom" and "below")
             or (place == "left" and "left")
             or "right"
-        local vert = sideName == "above" or sideName == "below"
+        local vert = side == "above" or side == "below"
         local extra = 0
         if (vert and not s.partyHorizontal) or (not vert and s.partyHorizontal) then
-            if sideName == "above" and mod.RF_PartyKit() then
+            if side == "above" and mod.RF_PartyKit() then
                 local _, _, cs = mod.RF_PartyDims(s)
                 extra = cs - (s.partyKitSpacing or mod.RF_KIT_SPACING)
                 if extra < 0 then
                     extra = 0
                 end
             end
-            return sideName, extra, false
+            return side, extra, false
         end
         if mod.RF_PartyKit() then
-            local before = sideName == "left" or sideName == "above"
+            local before = side == "left" or side == "above"
             before, extra = mod.RF_KitAttach(s, before)
             if s.partyHorizontal then
-                sideName = before and "above" or "below"
+                side = before and "above" or "below"
             else
-                sideName = before and "left" or "right"
+                side = before and "left" or "right"
             end
         end
-        return sideName, extra, true
+        return side, extra, true
     end
 
     -- The gap to the frame: the party frames' spacing (under the kit its frame gap, without the buff
@@ -477,17 +477,17 @@ do
     -- the kit's clearance (the caller adds it) and any Beside Owner pets. Along the stack:
     -- how far they overhang the party frame's edge (a Width or Height past the frame's, an offset).
     local function PT_ReserveOf(st, horizontal, before)
-        local sideName, r = st.side, 0
+        local side, r = st.side, 0
         if st.across then
             if horizontal then
-                if before and sideName == "above" then
+                if before and side == "above" then
                     r = st.h + st.gap + st.y
-                elseif not before and sideName == "below" then
+                elseif not before and side == "below" then
                     r = st.h + st.gap - st.y
                 end
-            elseif before and sideName == "left" then
+            elseif before and side == "left" then
                 r = st.w + st.gap - st.x
-            elseif not before and sideName == "right" then
+            elseif not before and side == "right" then
                 r = st.w + st.gap + st.x
             end
         elseif horizontal then
@@ -518,8 +518,8 @@ do
     -- (beside stacked frames, below horizontal ones, then that kit move); the dropdown stores a pick
     -- of it as unset, so the default keeps following the orientation and the frame style.
     function mod.PT_ShownSide(auto)
-        local sideName = PT_Side(saved.profile, auto)
-        return (sideName == "above" and "top") or (sideName == "below" and "bottom") or sideName
+        local side = PT_Side(saved.profile, auto)
+        return (side == "above" and "top") or (side == "below" and "bottom") or side
     end
 
     function mod.PT_PositionAlongStack(position, horizontal)
@@ -545,16 +545,16 @@ do
     end
 
     -- One target frame on its side of owner o: off from the owner's edge, then the offsets.
-    local function PT_Place(widget, o, sideName, offset, posX, posY)
+    local function PT_Place(widget, o, side, off, posX, posY)
         widget:ClearAllPoints()
-        if sideName == "left" then
-            widget:SetPoint("RIGHT", o, "LEFT", posX - offset, posY)
-        elseif sideName == "below" then
-            widget:SetPoint("TOP", o, "BOTTOM", posX, posY - offset)
-        elseif sideName == "above" then
-            widget:SetPoint("BOTTOM", o, "TOP", posX, posY + offset)
+        if side == "left" then
+            widget:SetPoint("RIGHT", o, "LEFT", posX - off, posY)
+        elseif side == "below" then
+            widget:SetPoint("TOP", o, "BOTTOM", posX, posY - off)
+        elseif side == "above" then
+            widget:SetPoint("BOTTOM", o, "TOP", posX, posY + off)
         else
-            widget:SetPoint("LEFT", o, "RIGHT", posX + offset, posY)
+            widget:SetPoint("LEFT", o, "RIGHT", posX + off, posY)
         end
     end
 
@@ -597,13 +597,13 @@ do
         pw, ph = PixelSnap(pw), PixelSnap(ph)
         local horiz = s.partyHorizontal and true or false
         local gap = PixelSnap(PT_Gap(s))
-        local sideName, extra, across = PT_Side(s)
-        local offset = gap + PixelSnap(extra)
+        local side, extra, across = PT_Side(s)
+        local off = gap + PixelSnap(extra)
         -- Beside Owner pets on this side of the stack: after them (their gap already clears the kit).
         local popFrame = mod._PF
-        if across and popFrame.ownerActive and popFrame.ownerSideCur == sideName then
-            offset = popFrame.ownerGap
-                + ((sideName == "above" or sideName == "below") and popFrame.ownerH or popFrame.ownerW)
+        if across and popFrame.ownerActive and popFrame.ownerSideCur == side then
+            off = popFrame.ownerGap
+                + ((side == "above" or side == "below") and popFrame.ownerH or popFrame.ownerW)
                 + gap
         end
         local resized = wid ~= PT.w or hgt ~= PT.h
@@ -611,7 +611,7 @@ do
         -- horizontal ones the height and Y offset, and along the stack the party frame's size too. A
         -- full layout (PT.w cleared) re-pins the attached groups, which read none meanwhile.
         local reserve = PT.w == nil
-            or sideName ~= PT.side
+            or side ~= PT.side
             or across ~= PT.across
             or gap ~= PT.gap
             or horiz ~= PT.horiz
@@ -623,19 +623,19 @@ do
             end
         end
         PT.pw, PT.ph, PT.horiz = pw, ph, horiz
-        if not (reserve or resized) and offset == PT.off and posX == PT.x and posY == PT.y then
+        if not (reserve or resized) and off == PT.off and posX == PT.x and posY == PT.y then
             return
         end
         PT.w, PT.h, PT.side, PT.gap, PT.off, PT.across, PT.x, PT.y =
-            wid, hgt, sideName, gap, offset, across, posX, posY
+            wid, hgt, side, gap, off, across, posX, posY
         local sizeVisuals = mod._FB.SizeVisuals
         for _, widget in ipairs(mod._partyTargetFrames) do
             if resized then
                 widget:SetSize(wid, hgt)
                 sizeVisuals(widget, wid, hgt)
-                widget._nameText:SetWidth(upper(1, wid - 6))
+                widget._nameText:SetWidth(max(1, wid - 6))
             end
-            PT_Place(widget, widget._ptOwner, sideName, offset, posX, posY)
+            PT_Place(widget, widget._ptOwner, side, off, posX, posY)
         end
         if reserve then
             PT_NotifyReserve()
@@ -713,17 +713,17 @@ do
             local nameSize = s.nameSize or 10
             local styleBorder = mod._FB.StyleBorder
             for _, widget in ipairs(mod._partyTargetFrames) do
-                local healthBar, backdrop = widget._health, widget._bg
-                healthBar:SetStatusBarTexture(texPath)
-                local texture = healthBar:GetStatusBarTexture()
+                local health, backdrop = widget._health, widget._bg
+                health:SetStatusBarTexture(texPath)
+                local texture = health:GetStatusBarTexture()
                 backdrop:ClearAllPoints()
                 if texture then
                     texture:SetHorizTile(false)
                     -- The background covers the missing health only, off the fill's far edge.
                     backdrop:SetPoint("TOPLEFT", texture, "TOPRIGHT", 0, 0)
-                    backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+                    backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
                 else
-                    backdrop:SetAllPoints(healthBar)
+                    backdrop:SetAllPoints(health)
                 end
                 ApplyFont(widget._nameText, nameSize)
                 styleBorder(widget)
@@ -1025,28 +1025,26 @@ do
         local wid, hgt = PixelSnap(s.partyTargetWidth or 70), PixelSnap(s.partyTargetHeight or 33)
         local posX, posY = PixelSnap(s.partyTargetOffsetX or 0), PixelSnap(s.partyTargetOffsetY or 0)
         local gap = PixelSnap(PT_Gap(s))
-        local sideName, extra, across = PT_Side(s)
-        local offset = gap + PixelSnap(extra)
-        if across and petSpec and petSpec.owner and petSpec.side == sideName then
-            offset = petSpec.gap
-                + ((sideName == "above" or sideName == "below") and petSpec.h or petSpec.w)
-                + gap
+        local side, extra, across = PT_Side(s)
+        local off = gap + PixelSnap(extra)
+        if across and petSpec and petSpec.owner and petSpec.side == side then
+            off = petSpec.gap + ((side == "above" or side == "below") and petSpec.h or petSpec.w) + gap
         end
         t.w, t.h, t.x, t.y, t.gap, t.off, t.side, t.across, t.pw, t.ph =
-            wid, hgt, posX, posY, gap, offset, sideName, across, pw, ph
+            wid, hgt, posX, posY, gap, off, side, across, pw, ph
         -- The frame's box from its party frame's centre.
         local l, b
-        if sideName == "left" then
-            l, b = posX - offset - pw / 2 - wid, posY - hgt / 2
-        elseif sideName == "right" then
-            l, b = posX + offset + pw / 2, posY - hgt / 2
-        elseif sideName == "below" then
-            l, b = posX - wid / 2, posY - offset - ph / 2 - hgt
+        if side == "left" then
+            l, b = posX - off - pw / 2 - wid, posY - hgt / 2
+        elseif side == "right" then
+            l, b = posX + off + pw / 2, posY - hgt / 2
+        elseif side == "below" then
+            l, b = posX - wid / 2, posY - off - ph / 2 - hgt
         else
-            l, b = posX - wid / 2, posY + offset + ph / 2
+            l, b = posX - wid / 2, posY + off + ph / 2
         end
-        t.padL, t.padR = upper(0, -pw / 2 - l), upper(0, l + wid - pw / 2)
-        t.padB, t.padT = upper(0, -ph / 2 - b), upper(0, b + hgt - ph / 2)
+        t.padL, t.padR = max(0, -pw / 2 - l), max(0, l + wid - pw / 2)
+        t.padB, t.padT = max(0, -ph / 2 - b), max(0, b + hgt - ph / 2)
         return t
     end
 
@@ -1079,33 +1077,33 @@ do
         f:SetSize(wid, hgt)
         FB.SizeVisuals(f, wid, hgt)
         local st = PT_Source()
-        local healthBar, backdrop, name = f._health, f._bg, f._nameText
-        healthBar:SetStatusBarTexture(ResolveHealthTexture(st))
-        local texture = healthBar:GetStatusBarTexture()
+        local health, backdrop, name = f._health, f._bg, f._nameText
+        health:SetStatusBarTexture(ResolveHealthTexture(st))
+        local texture = health:GetStatusBarTexture()
         backdrop:ClearAllPoints()
         if texture then
             texture:SetHorizTile(false)
             backdrop:SetPoint("TOPLEFT", texture, "TOPRIGHT", 0, 0)
-            backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+            backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
         else
-            backdrop:SetAllPoints(healthBar)
+            backdrop:SetAllPoints(health)
         end
         ApplyFont(name, st.nameSize or 10)
-        name:SetWidth(upper(1, wid - 6))
+        name:SetWidth(max(1, wid - 6))
         FB.StyleBorder(f)
         local mock = PT.PV[i]
-        healthBar:SetMinMaxValues(0, 100)
-        healthBar:SetValue(mock.hp)
+        health:SetMinMaxValues(0, 100)
+        health:SetValue(mock.hp)
         name:SetText(mock.name)
-        local modeName = s.partyTargetHealthColorMode or "class"
+        local mode = s.partyTargetHealthColorMode or "class"
         mod.RF_TexBgLayer(
-            healthBar,
+            health,
             backdrop,
-            (modeName ~= "dark" or mod.RF_TexBgOpaque(st, true)) and mod.RF_TexBgPath(st) or nil
+            (mode ~= "dark" or mod.RF_TexBgOpaque(st, true)) and mod.RF_TexBgPath(st) or nil
         )
-        if modeName == "dark" then
+        if mode == "dark" then
             local r, g, b, a = CUI.GetDarkModeFill()
-            healthBar:SetStatusBarColor(r, g, b, 1)
+            health:SetStatusBarColor(r, g, b, 1)
             if texture then
                 texture:SetAlpha(a)
             end
@@ -1115,19 +1113,14 @@ do
                 texture:SetAlpha(1)
             end
             local rc = FACTION_BAR_COLORS[mock.re]
-            if modeName == "classic" then
+            if mode == "classic" then
                 local p = mock.hp / 100
-                healthBar:SetStatusBarColor(
-                    p < 0.5 and 1 or (1 - (p - 0.5) * 2),
-                    p > 0.5 and 1 or (p * 2),
-                    0,
-                    1
-                )
-            elseif modeName == "custom" then
+                health:SetStatusBarColor(p < 0.5 and 1 or (1 - (p - 0.5) * 2), p > 0.5 and 1 or (p * 2), 0, 1)
+            elseif mode == "custom" then
                 local c = s.partyTargetCustomFillColor or PT.DEF_FILL
-                healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+                health:SetStatusBarColor(c.r, c.g, c.b, 1)
             else
-                healthBar:SetStatusBarColor(rc.r, rc.g, rc.b, 1)
+                health:SetStatusBarColor(rc.r, rc.g, rc.b, 1)
             end
             local a = (s.partyTargetBgDarkness or 50) / 100
             if s.partyTargetBgClassColored then

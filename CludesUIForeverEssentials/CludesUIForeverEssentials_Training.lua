@@ -60,8 +60,8 @@ end
 --- the missing spell comes from somewhere else (a talent, a quest, a spell
 --- every character starts with), since the trainer cannot sell it.
 function mod.TrainingPlan()
-    local _, classFile = UnitClass("player")
-    local payload = mod.TrainingData and mod.TrainingData[classFile]
+    local _, class = UnitClass("player")
+    local payload = mod.TrainingData and mod.TrainingData[class]
     local plan = { now = {}, coming = {}, levels = {}, blocked = {}, nowCost = 0 }
     if not payload then
         return plan

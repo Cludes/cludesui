@@ -244,25 +244,25 @@ function mod.RegionID()
     return GetCurrentRegion and GetCurrentRegion() or 1
 end
 
-local group, byKey, realmOf
+local set, byKey, realmOf
 local function Set()
-    if group ~= nil then
-        return group or nil
+    if set ~= nil then
+        return set or nil
     end
-    group = SETS[mod.RegionID()] or false
-    if group then
+    set = SETS[mod.RegionID()] or false
+    if set then
         byKey, realmOf = {}, {}
-        for _, d in ipairs(group.list) do
+        for _, d in ipairs(set.list) do
             d.flag = FLAG_DIR .. d.key .. ".png"
             byKey[d.key] = d
         end
-        for k, realms in pairs(group.realms) do
+        for k, realms in pairs(set.realms) do
             for _, r in ipairs(realms) do
                 realmOf[r] = k
             end
         end
     end
-    return group or nil
+    return set or nil
 end
 
 -- the filter's list for this region, nil where there's none

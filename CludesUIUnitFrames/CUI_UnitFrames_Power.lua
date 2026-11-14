@@ -114,12 +114,12 @@ function mod.UpdatePowerSeam(power, s, stock, preview)
             border and math.min(border:GetFrameLevel() + 1, ownerFrame:GetFrameLevel() + 11) or 0
         )
     )
-    local key, dim = b.borderTexture, sizeOverride or b.borderSize or 1
+    local key, size = b.borderTexture, sizeOverride or b.borderSize or 1
     local px
     if not sizeOverride then
-        px = CludesUI.BorderPx(b.borderSizePx, dim, key)
+        px = CludesUI.BorderPx(b.borderSizePx, size, key)
     end
-    seam._key, seam._step, seam._px, seam._path = key, dim, px, filePath
+    seam._key, seam._step, seam._px, seam._path = key, size, px, filePath
     seam._above = (s.powerPosition == "above")
     local c = b.borderColor
     seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, b.borderAlpha or 1)
@@ -177,15 +177,15 @@ end
 -- Attached portrait divider: reuse the border style's vertical companion art.
 -- A sibling of the portrait avoids clipping the strip where it crosses into the
 -- bars. Built only on opt-in; layout and colour updates use existing passes.
-function mod.UpdatePortraitSeparator(widget, portrait, s, sideName, attached, stock, preview, borderSettings)
+function mod.UpdatePortraitSeparator(widget, portrait, s, side, attached, stock, preview, borderSettings)
     local seam = widget._portraitSeparator
     local power = widget.Power or widget._power
     local powerSeam = power and power._pbSeam
     local sizeOverride = borderSettings and s.borderSizeOverride
     local b = borderSettings or s
-    local dim = sizeOverride or b.borderSize or 1
+    local size = sizeOverride or b.borderSize or 1
     local filePath
-    if s.portraitSeparator and attached and portrait and portrait:IsShown() and not stock and dim > 0 then
+    if s.portraitSeparator and attached and portrait and portrait:IsShown() and not stock and size > 0 then
         filePath = CludesUI.GetBorderCompanion(b.borderTexture or "solid", "sepV")
     end
     if not filePath then
@@ -210,12 +210,12 @@ function mod.UpdatePortraitSeparator(widget, portrait, s, sideName, attached, st
     seam:SetFrameLevel(
         math.max(widget:GetFrameLevel() + (preview and 4 or 9), border and border:GetFrameLevel() + 1 or 0)
     )
-    seam._key, seam._step = b.borderTexture, dim
+    seam._key, seam._step = b.borderTexture, size
     seam._px = nil
     if not sizeOverride then
-        seam._px = CludesUI.BorderPx(b.borderSizePx, dim, seam._key)
+        seam._px = CludesUI.BorderPx(b.borderSizePx, size, seam._key)
     end
-    seam._right = sideName == "right"
+    seam._right = side == "right"
     local c = b.borderColor
     seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, b.borderAlpha or 1)
     mod.UF_LayoutPortraitSeparator(seam)
@@ -251,11 +251,11 @@ function mod.UpdatePowerBorder(power, prefs)
     local place = mod.UF_PowerPos(prefs)
     local isDet = (place == "detached_top" or place == "detached_bottom")
     local isAttached = (place == "above" or place == "below")
-    local dim = prefs.powerBorderSize or 0
+    local size = prefs.powerBorderSize or 0
     local border = power._pbBorder
     if not border then
         -- Nothing to render and nothing to hide: stay lazy.
-        if not ((isDet or isAttached) and dim > 0) then
+        if not ((isDet or isAttached) and size > 0) then
             return
         end
         -- Options frame pool: a real frame for a live bar (see UpdatePowerSeam).
@@ -272,25 +272,25 @@ function mod.UpdatePowerBorder(power, prefs)
     local alpha = prefs.powerBorderAlpha or 1
     -- Attached bars are always Solid; their unused edges are hidden below so only
     -- the health/power seam stays visible.
-    local look = isAttached and "solid" or (prefs.powerBorderStyle or "solid")
+    local style = isAttached and "solid" or (prefs.powerBorderStyle or "solid")
     -- Exact size (nil = the legacy path), resolved against the style actually
     -- painted: an attached bar is forced Solid, so a value paired with a textured
     -- style stands down there.
-    local px = CludesUI.BorderPx(prefs.powerBorderSizePx, dim, look)
+    local px = CludesUI.BorderPx(prefs.powerBorderSizePx, size, style)
     CludesUI.ApplyBorderStyle(
         border,
-        dim,
+        size,
         c.r,
         c.g,
         c.b,
         alpha,
-        look,
+        style,
         prefs.powerBorderOffsetX,
         prefs.powerBorderOffsetY,
         prefs.powerBorderShiftX,
         prefs.powerBorderShiftY,
         "unitframes",
-        dim,
+        size,
         nil,
         px
     )
@@ -300,13 +300,13 @@ function mod.UpdatePowerBorder(power, prefs)
         edges._hideRight = isAttached or nil
         edges._hideTop = (isAttached and place == "above") or nil
         edges._hideBottom = (isAttached and place == "below") or nil
-        Pix.SetBorderSize(border, px or dim)
+        Pix.SetBorderSize(border, px or size)
     end
     local borderLevel = prefs.powerBorderBehind and math.max(0, power:GetFrameLevel() - 1)
         or (power:GetFrameLevel() + 5)
     border:SetFrameLevel(borderLevel)
     -- An attached bar's only strip is the shared edge, which a shown seam replaces.
-    local showBorder = (isDet or isAttached) and dim > 0 and not (isAttached and seamOn)
+    local showBorder = (isDet or isAttached) and size > 0 and not (isAttached and seamOn)
     if showBorder then
         border:Show()
     else
@@ -427,11 +427,11 @@ end
 -- Hide Power Bar change reaches it there). Every other frame, and the
 -- CludesUI look, keeps the element as it is.
 function mod.UF_PowerElementSync(widget)
-    local baseValue = widget._cuiBaseUnit
-    if not widget.Power or not (baseValue == "player" or baseValue == "target" or baseValue == "focus") then
+    local base = widget._cuiBaseUnit
+    if not widget.Power or not (base == "player" or base == "target" or base == "focus") then
         return
     end
-    local wanted = not (mod.UF_Blizz() and mod.UF_PowerPos(GetSettingsForUnit(baseValue)) == "none")
+    local wanted = not (mod.UF_Blizz() and mod.UF_PowerPos(GetSettingsForUnit(base)) == "none")
     if not wanted then
         local zones = widget._cuiTextZones
         if zones then
@@ -449,7 +449,7 @@ function mod.UF_PowerElementSync(widget)
         else
             widget:DisableElement("Power")
         end
-    elseif baseValue == "player" then
+    elseif base == "player" then
         mod.UF_PowerValSync(widget)
     end
 end
@@ -801,7 +801,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- Gray out the power bar for enemy NPCs with no real power (melee mobs); keep
     -- it for player, friendly units, enemy players, bosses, minibosses, casters.
     power._grayedOut = false
-    power.PostUpdate = function(self, u, current, min, upper)
+    power.PostUpdate = function(self, u, current, min, max)
         local s = GetSettingsForUnit(u)
         if not s then
             return
@@ -860,8 +860,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- (e.g. Balance Druid: Astral Power vs Mana). Shadow Priest and Mistweaver Monk
     -- default to Mana; other specs default to UnitPowerType.
     if unitToken == "player" then
-        local _, classFile = UnitClass("player")
-        if PLAYER_POWER_DEFAULT[classFile] or PLAYER_POWER_ALT[classFile] then
+        local _, class = UnitClass("player")
+        if PLAYER_POWER_DEFAULT[class] or PLAYER_POWER_ALT[class] then
             power.displayAltPower = true
             power.GetDisplayPower = function(self, u)
                 local resolved = CludesUI.GetPlayerPowerOverride()

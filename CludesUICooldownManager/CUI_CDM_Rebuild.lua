@@ -99,10 +99,10 @@ local BuildCustomBarSpellSet -- forward declare (defined below)
 --  snapshot or reconcile.
 -------------------------------------------------------------------------------
 BuildCustomBarSpellSet = function()
-    local group = {}
+    local set = {}
     local p = ECME.db and ECME.db.profile
     if not p or not p.cdmBars or not p.cdmBars.bars then
-        return group
+        return set
     end
     for _, edge in ipairs(p.cdmBars.bars) do
         if not MAIN_BAR_KEYS[edge.key] then
@@ -110,13 +110,13 @@ BuildCustomBarSpellSet = function()
             if sd and sd.assignedSpells then
                 for _, spellRef in ipairs(sd.assignedSpells) do
                     if spellRef and spellRef > 0 then
-                        group[spellRef] = true
+                        set[spellRef] = true
                     end
                 end
             end
         end
     end
-    return group
+    return set
 end
 mod.BuildCustomBarSpellSet = BuildCustomBarSpellSet
 
@@ -542,9 +542,9 @@ do
         if ovr and ovr ~= spellId then
             _SetKeybind(ovr, formatted, rank)
         end
-        local baseValue = C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(spellId)
-        if baseValue and baseValue ~= spellId then
-            _SetKeybind(baseValue, formatted, rank)
+        local base = C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(spellId)
+        if base and base ~= spellId then
+            _SetKeybind(base, formatted, rank)
         end
     end
 
@@ -630,8 +630,8 @@ do
     -- slot itself never changing. Parsing the body registers both branches, so
     -- the key sticks to whichever one the CDM icon happens to show.
     local function _RegisterMacroTargets(body, formatted, rank)
-        for lineTex in body:gmatch("[^\r\n]+") do
-            local cmd, args = lineTex:match("^%s*/(%a+)!?%s*(.*)$")
+        for line in body:gmatch("[^\r\n]+") do
+            local cmd, args = line:match("^%s*/(%a+)!?%s*(.*)$")
             if cmd and args ~= "" and _MACRO_CAST_CMDS[cmd:lower()] then
                 -- Each ";"-separated clause is one conditional branch; a
                 -- castsequence packs several targets into one clause via ",".
@@ -655,19 +655,19 @@ do
     -- stable path uses the full body scan above instead.
     local function _RegisterLegacyMacroItem(macroIndex, formatted, rank)
         local body = GetMacroBody and GetMacroBody(macroIndex)
-        local targetUnit = body and body:match("/use!?%s+([^\r\n]+)")
-        if not targetUnit then
+        local target = body and body:match("/use!?%s+([^\r\n]+)")
+        if not target then
             return
         end
-        targetUnit = targetUnit:gsub("^%[.-%]%s*", ""):match("^%s*(.-)%s*$")
-        local itemId = targetUnit:match("^item:(%d+)")
+        target = target:gsub("^%[.-%]%s*", ""):match("^%s*(.-)%s*$")
+        local itemId = target:match("^item:(%d+)")
         itemId = itemId and tonumber(itemId)
-        if not itemId and not tonumber(targetUnit) then
-            itemId = C_Item and C_Item.GetItemInfoInstant and C_Item.GetItemInfoInstant(targetUnit)
+        if not itemId and not tonumber(target) then
+            itemId = C_Item and C_Item.GetItemInfoInstant and C_Item.GetItemInfoInstant(target)
         end
         -- Bare 1..19 is the equipment-slot form (see _RegisterMacroTarget).
         if not itemId then
-            local slotNum = targetUnit:match("^(%d+)$")
+            local slotNum = target:match("^(%d+)$")
             slotNum = slotNum and tonumber(slotNum)
             if slotNum and slotNum >= 1 and slotNum <= 19 then
                 itemId = GetInventoryItemID("player", slotNum)
@@ -680,13 +680,13 @@ do
 
     -- Resolve one action slot under one binding key into cache entries, at the
     -- given priority tier. Pure lookups plus writes into the two cache tables.
-    local function _ResolveSlotBinding(slotIndex, key, tier)
+    local function _ResolveSlotBinding(slot, key, tier)
         local formatted = FormatKeybindKey(key)
         if not formatted then
             return
         end
         local macroRank = tier + _RANK_MACRO_PENALTY
-        local slotType, ident, subType = GetActionInfo(slotIndex)
+        local slotType, ident, subType = GetActionInfo(slot)
         if slotType == "spell" then
             _SetSpellKeybind(ident, formatted, tier)
         elseif slotType == "macro" then
@@ -712,7 +712,7 @@ do
             -- For everything else `id` from GetActionInfo is NOT a reliable
             -- identifier -- resolve the real macro index via its name instead
             -- (same workaround CUI_CDM_HookPressMirror.lua's SlotSpellID already uses).
-            local macroName = GetActionText(slotIndex)
+            local macroName = GetActionText(slot)
             local macroIndex = macroName and GetMacroIndexByName(macroName)
             if macroIndex and macroIndex > 0 then
                 local live = GetMacroSpell(macroIndex)
@@ -843,12 +843,12 @@ do
         if not _stableMode then
             HookBarPageEdges()
         end
-        for _, spec_def in ipairs(_barBindingDefs) do
+        for _, def in ipairs(_barBindingDefs) do
             for idx = 1, 12 do
-                local key = GetBindingKey(spec_def.prefix .. idx)
+                local key = GetBindingKey(def.prefix .. idx)
                 if key then
-                    local slotIndex = spec_def.startSlot + idx - 1
-                    if spec_def.eabButton then
+                    local slot = def.startSlot + idx - 1
+                    if def.eabButton then
                         -- CUI bars 9/10 have no native binding command: their keys
                         -- are routed through the button with SetOverrideBindingClick
                         -- against the custom commands declared in the Action Bars
@@ -857,13 +857,13 @@ do
                         -- button when it exists (custom paging) and only fall back
                         -- to the base page slot when the Action Bars module isn't
                         -- loaded.
-                        local button = _G["EABButton" .. slotIndex]
+                        local button = _G["EABButton" .. slot]
                         local live = button and tonumber(button:GetAttribute("action"))
                         if live then
-                            slotIndex = live
+                            slot = live
                         end
                     end
-                    _ResolveSlotBinding(slotIndex, key, spec_def.tier)
+                    _ResolveSlotBinding(slot, key, def.tier)
                 end
             end
         end
@@ -891,9 +891,9 @@ do
                 return key
             end
         end
-        local baseValue = C_Spell.GetBaseSpell(spellRef)
-        if baseValue and not issecretvalue(baseValue) and baseValue ~= spellRef then
-            key = _cdmKeybindCache[baseValue]
+        local base = C_Spell.GetBaseSpell(spellRef)
+        if base and not issecretvalue(base) and base ~= spellRef then
+            key = _cdmKeybindCache[base]
             if key then
                 return key
             end
@@ -911,10 +911,10 @@ do
     local function ApplyCachedKeybinds()
         for barId, icons in pairs(cdmBarIcons) do
             local edge = barDataByKey[barId]
-            for _, glyph in ipairs(icons) do
-                local ifd = _getFD(glyph)
-                local kbText = ifd and ifd.keybindText or glyph._keybindText
-                local ifc = _ecmeFC[glyph]
+            for _, icon in ipairs(icons) do
+                local ifd = _getFD(icon)
+                local kbText = ifd and ifd.keybindText or icon._keybindText
+                local ifc = _ecmeFC[icon]
                 local spellRef = ifc and ifc.spellID
                 if ifc then
                     ifc.keybindSid = spellRef
@@ -923,13 +923,13 @@ do
                     if edge and edge.showKeybind and spellRef then
                         local key = ResolveCDMKeybind(spellRef)
                         -- Item presets: the resolved display variant first (pot presets may be showing another rank/Fleeting/the swapped-in partner pot), then the static alt ids.
-                        if not key and glyph._isItemPresetFrame and glyph._displayItemID then
-                            key = _cdmKeybindCache[-glyph._displayItemID]
+                        if not key and icon._isItemPresetFrame and icon._displayItemID then
+                            key = _cdmKeybindCache[-icon._displayItemID]
                         end
                         -- Item presets: check alt item IDs (user may have a different rank of the same potion on their bar).
                         -- Blizzard's own row rendering under a preset key (a frame with
                         -- no preset data of its own) walks that preset's ranks the same way.
-                        local pdK = glyph._presetData
+                        local pdK = icon._presetData
                         if not key and not pdK and type(spellRef) == "number" and spellRef < 0 then
                             pdK = mod.ItemPresetForKey(spellRef)
                         end
@@ -942,8 +942,8 @@ do
                             end
                         end
                         -- Trinkets: check by equipped item's action slot
-                        if not key and glyph._isTrinketFrame and glyph._trinketSlot then
-                            local itemId = GetInventoryItemID("player", glyph._trinketSlot)
+                        if not key and icon._isTrinketFrame and icon._trinketSlot then
+                            local itemId = GetInventoryItemID("player", icon._trinketSlot)
                             if itemId then
                                 key = _cdmKeybindCache[-itemId]
                             end
@@ -1129,8 +1129,8 @@ BuildAllCDMBars = function()
             -- Reset cached icon state so textures re-evaluate after a character switch
             local icons = cdmBarIcons[barInfo.key]
             if icons then
-                for _, glyph in ipairs(icons) do
-                    local iifc = FC(glyph)
+                for _, icon in ipairs(icons) do
+                    local iifc = FC(icon)
                     iifc.lastTex = nil
                     iifc.lastDesat = nil
                     iifc.blizzChild = nil

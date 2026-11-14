@@ -87,8 +87,8 @@ mod.WindowCorner = Corner
 local Look = { inset = 0, iconPad = -2, stock = false, menuLook = "meter" }
 mod.Look = Look
 
-function Look.IconSize(dim)
-    return dim
+function Look.IconSize(size)
+    return size
 end
 function Look.WindowBg(texture, r, g, b, a)
     texture:SetColorTexture(r, g, b, a)
@@ -115,11 +115,11 @@ end
 function Look.LockIcon(btn, locked)
     btn.icon:SetTexture(MEDIA .. (locked and "dm_locked.png" or "dm_unlocked.png"))
 end
-function Look.SeatFill(rowFrame, iconWidth)
-    local fillTex = rowFrame.fill
-    fillTex:ClearAllPoints()
-    fillTex:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", iconWidth, 0)
-    fillTex:SetPoint("BOTTOMRIGHT", rowFrame, "BOTTOMRIGHT", 0, 0)
+function Look.SeatFill(row, iconWidth)
+    local fill = row.fill
+    fill:ClearAllPoints()
+    fill:SetPoint("TOPLEFT", row, "TOPLEFT", iconWidth, 0)
+    fill:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     return iconWidth, 0
 end
 function Look.RowBg(texture, r, g, b, a)
@@ -177,10 +177,10 @@ function Blizzard.WindowBg(texture, _, _, _, a)
     local parts = windowArt[texture]
     if not parts then
         local hostFrame = texture:GetParent()
-        local layer, subFrame = texture:GetDrawLayer()
+        local layer, sub = texture:GetDrawLayer()
         parts = {}
         for idx = 1, 2 do
-            parts[idx] = hostFrame:CreateTexture(nil, layer, nil, subFrame)
+            parts[idx] = hostFrame:CreateTexture(nil, layer, nil, sub)
             GradientBase(parts[idx])
         end
         parts[1]:SetPoint("TOPLEFT", texture, "TOPLEFT", 0, 0)
@@ -219,21 +219,21 @@ end
 
 -- The stock track 2px outside the fill and its edge highlight over it, set
 -- up once per row (WoW Forever wears it too: a bar texture, not frame art).
-local function BlizzTrack(rowFrame, art)
-    local fillTex = rowFrame.fill
+local function BlizzTrack(row, art)
+    local fill = row.fill
     if HasAtlas(BLIZZ_TRACK) then
-        local backdrop = rowFrame.bg
+        local backdrop = row.bg
         backdrop:SetAtlas(BLIZZ_TRACK)
         backdrop:SetVertexColor(1, 1, 1, 1)
         backdrop:ClearAllPoints()
-        backdrop:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -2, 2)
-        backdrop:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 2, -2)
+        backdrop:SetPoint("TOPLEFT", fill, "TOPLEFT", -2, 2)
+        backdrop:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 2, -2)
     end
     if HasAtlas(BLIZZ_EDGE) then
-        local edge = fillTex:CreateTexture(nil, "OVERLAY", nil, 6)
+        local edge = fill:CreateTexture(nil, "OVERLAY", nil, 6)
         edge:SetAtlas(BLIZZ_EDGE)
-        edge:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -2, 2)
-        edge:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 2, -2)
+        edge:SetPoint("TOPLEFT", fill, "TOPLEFT", -2, 2)
+        edge:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 2, -2)
         art.edge = edge
     end
 end
@@ -244,13 +244,13 @@ end
 -- sized from the fill's height and re-anchor only when the fill texture
 -- object (a path change can make a new one) or that height changes. The fill
 -- fades by its colour's alpha, so its art fades with it.
-function Blizzard.RowStyled(rowFrame, dm)
-    local fillTex = rowFrame.fill
-    local art = rowArt[rowFrame]
+function Blizzard.RowStyled(row, dm)
+    local fill = row.fill
+    local art = rowArt[row]
     if not art then
         art = {}
         for idx = 1, 4 do
-            art[idx] = fillTex:CreateTexture(nil, "OVERLAY", nil, -3)
+            art[idx] = fill:CreateTexture(nil, "OVERLAY", nil, -3)
             GradientBase(art[idx])
         end
         -- VERTICAL runs bottom to top, HORIZONTAL left to right.
@@ -258,10 +258,10 @@ function Blizzard.RowStyled(rowFrame, dm)
         art[2]:SetGradient("VERTICAL", shade.bottom, shade.clear)
         art[3]:SetGradient("HORIZONTAL", shade.ends, shade.clear)
         art[4]:SetGradient("HORIZONTAL", shade.clear, shade.ends)
-        BlizzTrack(rowFrame, art)
-        rowArt[rowFrame] = art
+        BlizzTrack(row, art)
+        rowArt[row] = art
     end
-    local ft, hgt = fillTex:GetStatusBarTexture(), dm.barHeight
+    local ft, hgt = fill:GetStatusBarTexture(), dm.barHeight
     if ft and (art.tex ~= ft or art.h ~= hgt) then
         art.tex, art.h = ft, hgt
         local topY = math.max(2, math.floor(hgt * 0.2))
@@ -357,8 +357,8 @@ end
 
 local Classic = { inset = 5, iconPad = 2, stock = true }
 
-function Classic.IconSize(dim)
-    return math.floor(dim * 0.85 + 0.5)
+function Classic.IconSize(size)
+    return math.floor(size * 0.85 + 0.5)
 end
 
 -- The window wears the whole box: the tile from under the bevel (the rim's
@@ -428,7 +428,7 @@ function Classic.HeaderIcon(btn)
     PaintArt(btn.icon, art)
 end
 
-function Classic.SeatHeaderIcon(btn, dim)
+function Classic.SeatHeaderIcon(btn, size)
     local art = iconArt[btn]
     if not art then
         return
@@ -436,7 +436,7 @@ function Classic.SeatHeaderIcon(btn, dim)
     local icon, k = btn.icon, art.scale
     icon:ClearAllPoints()
     if k and k < 1 then
-        local inset = dim * (1 - k) / 2
+        local inset = size * (1 - k) / 2
         icon:SetPoint("TOPLEFT", btn, "TOPLEFT", inset, -inset)
         icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -inset, inset)
     else
@@ -515,8 +515,8 @@ local frameKind -- the Damage Meters windows' Border Style ("slim", "textured", 
 -- Always installed; the window pieces go in only with their art (UseForever).
 local Forever = { iconPad = FV.btnPad, titleColor = FV.gold, menuLook = "meterForever" }
 
-function Forever.IconSize(dim)
-    return math.floor(dim * FV.btnScale + 0.5)
+function Forever.IconSize(size)
+    return math.floor(size * FV.btnScale + 0.5)
 end
 
 -- A button's plate in its idle or hover art, set only when it changes.
@@ -574,17 +574,17 @@ end
 -- window scale (set before the art, which reads it).
 local function FrameArt(window)
     local heavy = frameKind == "heavy"
-    local hostRegion = CreateFrame("Frame", nil, window)
+    local host = CreateFrame("Frame", nil, window)
     if heavy then
-        hostRegion:SetScale(CUI.FOREVER_HEAVY.k)
+        host:SetScale(CUI.FOREVER_HEAVY.k)
     end
-    hostRegion:SetFrameLevel(window:GetFrameLevel() + FV.frameLevel)
-    hostRegion:SetAllPoints(window)
+    host:SetFrameLevel(window:GetFrameLevel() + FV.frameLevel)
+    host:SetAllPoints(window)
     if heavy then
-        CUI.ForeverHeavySeat(CUI.ForeverHeavy(hostRegion, "ARTWORK"), window)
+        CUI.ForeverHeavySeat(CUI.ForeverHeavy(host, "ARTWORK"), window)
         return
     end
-    CUI.ForeverBorderSeat(CUI.ForeverBorder(hostRegion, nil, nil, nil, frameKind), window)
+    CUI.ForeverBorderSeat(CUI.ForeverBorder(host, nil, nil, nil, frameKind), window)
 end
 
 -- The window wears its frame over a flat black body spanning it (from the
@@ -614,12 +614,12 @@ local function FvHeaderBg(texture, _, _, _, a)
         local details = C_Texture.GetAtlasInfo(FV.header)
         local l, t = details.leftTexCoord, details.topTexCoord
         local wid, hgt = details.rightTexCoord - l, details.bottomTexCoord - t
-        local c, e, headerFrame = FV.hdrCut, FV.hdrReach, texture:GetParent()
+        local c, e, header = FV.hdrCut, FV.hdrReach, texture:GetParent()
         texture:SetTexture(details.file or details.filename)
         texture:SetTexCoord(l + wid * c[1], l + wid * c[2], t + hgt * c[3], t + hgt * c[4])
         texture:ClearAllPoints()
-        texture:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", -e, 0)
-        texture:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", e, 0)
+        texture:SetPoint("TOPLEFT", header, "TOPLEFT", -e, 0)
+        texture:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", e, 0)
         hdrCut[texture] = true
     end
     texture:SetVertexColor(1, 1, 1, a)
@@ -718,9 +718,9 @@ local function HeaderClick(btn)
 end
 
 local function NewHeaderButton(surface, key, tooltip)
-    local headerFrame = surface.header
-    local btn = CreateFrame("Button", nil, headerFrame)
-    btn:SetFrameLevel(headerFrame:GetFrameLevel() + 2)
+    local header = surface.header
+    local btn = CreateFrame("Button", nil, header)
+    btn:SetFrameLevel(header:GetFrameLevel() + 2)
     btn.key, btn.tooltip = key, tooltip
     btn:SetScript("OnEnter", HeaderEnter)
     btn:SetScript("OnLeave", HeaderLeave)
@@ -753,24 +753,24 @@ end
 -- Lays out the shown header buttons at `size`, raised by `lift` (nil = 0);
 -- returns the leftmost one (the title runs up to it), or nil when none is
 -- shown.
-function mod.LayoutHeaderButtons(surface, dim, lift)
-    local headerFrame, pad = surface.header, Look.iconPad
+function mod.LayoutHeaderButtons(surface, size, lift)
+    local header, pad = surface.header, Look.iconPad
     local used, num, leftmost = 0, 0, nil
     local entries = surface.hdrBtns
     for idx = 1, #entries do
         local btn = entries[idx]
         if btn:IsShown() then
             num = num + 1
-            local width = dim
+            local width = size
             if btn.isText then
                 width = math.ceil(btn.label:GetStringWidth() or 0) + 12
             end
-            btn:SetSize(width, dim)
+            btn:SetSize(width, size)
             if not btn.isText then
-                Look.SeatHeaderIcon(btn, dim)
+                Look.SeatHeaderIcon(btn, size)
             end
             btn:ClearAllPoints()
-            btn:SetPoint("RIGHT", headerFrame, "RIGHT", -(used + pad * num + 2), lift or 0)
+            btn:SetPoint("RIGHT", header, "RIGHT", -(used + pad * num + 2), lift or 0)
             used = used + width
             leftmost = btn
         end
@@ -927,14 +927,14 @@ end
 --  Locked: no header drag and no grip. Every driver is a frame hidden while
 --  idle, and the hover poll runs only while the pointer is over the window.
 -------------------------------------------------------------------------------
-function mod.AttachChrome(widget, hostRegion)
+function mod.AttachChrome(widget, host)
     local Pix = CUI.PP
-    local headerFrame = widget.header
+    local header = widget.header
     local level = widget:GetFrameLevel()
     local chrome = { resizing = false }
-    local locked = hostRegion.IsLocked()
+    local locked = host.IsLocked()
     local hovered = false
-    headerFrame:EnableMouse(true)
+    header:EnableMouse(true)
 
     local grip = CreateFrame("Button", nil, widget)
     grip:SetSize(18, 18)
@@ -997,7 +997,7 @@ function mod.AttachChrome(widget, hostRegion)
     end)
     lock:SetScript("OnClick", function(self)
         locked = not locked
-        hostRegion.SetLocked(locked)
+        host.SetLocked(locked)
         UpdateLockIcon()
         grip:SetAlpha(locked and 0 or Resting())
         self:SetAlpha(Resting())
@@ -1006,7 +1006,7 @@ function mod.AttachChrome(widget, hostRegion)
     end)
 
     function chrome.SyncLock()
-        locked = hostRegion.IsLocked()
+        locked = host.IsLocked()
         UpdateLockIcon()
         grip:SetAlpha((hovered and not locked) and 0.3 or 0)
         lock:SetAlpha(Resting())
@@ -1065,7 +1065,7 @@ function mod.AttachChrome(widget, hostRegion)
         end
     end
     widget:HookScript("OnEnter", StartPoll)
-    headerFrame:HookScript("OnEnter", StartPoll)
+    header:HookScript("OnEnter", StartPoll)
     grip:HookScript("OnEnter", StartPoll)
     lock:HookScript("OnEnter", StartPoll)
     widget:HookScript("OnHide", function()
@@ -1076,7 +1076,7 @@ function mod.AttachChrome(widget, hostRegion)
         lock:SetAlpha(0)
         -- A menu opened from this window's header closes with it.
         local ownerFrame = CUI.ContextMenuOwner()
-        if ownerFrame and ownerFrame:GetParent() == headerFrame then
+        if ownerFrame and ownerFrame:GetParent() == header then
             CUI.CloseContextMenu()
         end
     end)
@@ -1088,7 +1088,7 @@ function mod.AttachChrome(widget, hostRegion)
     end
 
     local function CanStart()
-        return not locked and hostRegion.CanMove() and not CUI.InProtectedInstance()
+        return not locked and host.CanMove() and not CUI.InProtectedInstance()
     end
 
     local snapOff, cursorX, cursorY, startL, startT
@@ -1117,7 +1117,7 @@ function mod.AttachChrome(widget, hostRegion)
         leftX, topY = Pix.Snap(leftX), Pix.Snap(topY)
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
-        hostRegion.SaveMove(leftX, topY)
+        host.SaveMove(leftX, topY)
     end
     dragger:SetScript("OnUpdate", function()
         if not IsMouseButtonDown("LeftButton") then
@@ -1143,7 +1143,7 @@ function mod.AttachChrome(widget, hostRegion)
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
     end)
-    headerFrame:SetScript("OnMouseDown", function(_, btnFrame)
+    header:SetScript("OnMouseDown", function(_, btnFrame)
         if btnFrame ~= "LeftButton" or not CanStart() then
             return
         end
@@ -1154,11 +1154,11 @@ function mod.AttachChrome(widget, hostRegion)
         cursorX, cursorY = Cursor()
         startL, startT = leftX, topY
         moved, lastL, lastT = false, nil, nil
-        snapOff = hostRegion.SnapDisabled()
+        snapOff = host.SnapDisabled()
         GatherTargets(widget)
         dragger:Show()
     end)
-    headerFrame:SetScript("OnMouseUp", function(_, btnFrame)
+    header:SetScript("OnMouseUp", function(_, btnFrame)
         if btnFrame == "LeftButton" and dragger:IsShown() then
             EndDrag()
         end
@@ -1175,8 +1175,8 @@ function mod.AttachChrome(widget, hostRegion)
         sizer:Hide()
         wipe(targets)
         chrome.resizing = false
-        hostRegion.SaveSize(math.floor(widget:GetWidth() + 0.5), math.floor(widget:GetHeight() + 0.5))
-        hostRegion.PinPosition(Corner(widget))
+        host.SaveSize(math.floor(widget:GetWidth() + 0.5), math.floor(widget:GetHeight() + 0.5))
+        host.PinPosition(Corner(widget))
     end
     sizer:SetScript("OnUpdate", function()
         if not IsMouseButtonDown("LeftButton") then
@@ -1228,13 +1228,13 @@ function mod.AttachChrome(widget, hostRegion)
         end
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
-        hostRegion.PinPosition(leftX, topY)
+        host.PinPosition(leftX, topY)
         pinL, pinT = leftX, topY
         cursorX, cursorY = Cursor()
         startW, startH = widget:GetWidth(), widget:GetHeight()
         axis, shiftWas = nil, false
         lastW, lastH = nil, nil
-        snapOff = hostRegion.SnapDisabled()
+        snapOff = host.SnapDisabled()
         GatherTargets(widget)
         chrome.resizing = true
         sizer:Show()

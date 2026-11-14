@@ -333,14 +333,14 @@ do
     -- gradient modes read as damage states, and many NPCs carry real class tokens (a friendly add can
     -- come out yellow).
     FB.PaintBarColor = function(b, ownerFrame, s)
-        local healthBar = b._health
+        local health = b._health
         local fbc = (ownerFrame.ColorSettings or ownerFrame.Settings)()
         fbc = fbc and fbc.healthColor
-        local fillTex = healthBar:GetStatusBarTexture()
-        if fillTex then
-            fillTex:SetAlpha(1)
+        local fill = health:GetStatusBarTexture()
+        if fill then
+            fill:SetAlpha(1)
         end
-        healthBar:SetStatusBarColor(
+        health:SetStatusBarColor(
             fbc and fbc.r or 23 / 255,
             fbc and fbc.g or 172 / 255,
             fbc and fbc.b or 49 / 255,
@@ -367,9 +367,9 @@ do
     -- and name events only, so Custom's power, absorb, group and target tags refresh here, not on
     -- their own events. No level and no Power Text here (no power bar).
     FB.PaintHealth = function(b, unitToken, s, full)
-        local healthBar = b._health
+        local health = b._health
         local pct = GetSafeHealthPercent(unitToken)
-        healthBar:SetMinMaxValues(0, 100)
+        health:SetMinMaxValues(0, 100)
         local smooth = s.smoothBars
             and Enum
             and Enum.StatusBarInterpolation
@@ -378,13 +378,13 @@ do
         -- the texts keep the current-health pct. Dead units are not special-cased: there
         -- is no status colour here, so a full bar is what tells a dead unit apart.
         local barPct = pct
-        if healthBar._cuiInv then
+        if health._cuiInv then
             barPct = GetSafeHealthPercent(unitToken, true)
         end
         if smooth then
-            healthBar:SetValue(barPct, smooth)
+            health:SetValue(barPct, smooth)
         else
-            healthBar:SetValue(barPct)
+            health:SetValue(barPct)
         end
 
         local st = FB.txs[b]
@@ -441,22 +441,22 @@ do
         end
         b._bg = backdrop
 
-        local healthBar = CreateFrame("StatusBar", nil, b)
-        healthBar:SetFrameLevel(b:GetFrameLevel() + 2)
-        healthBar:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
-        healthBar:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+        local health = CreateFrame("StatusBar", nil, b)
+        health:SetFrameLevel(b:GetFrameLevel() + 2)
+        health:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+        health:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
         if Pix then
-            Pix.DisablePixelSnap(healthBar)
+            Pix.DisablePixelSnap(health)
         end
-        healthBar:SetMinMaxValues(0, 100)
-        healthBar:SetValue(100)
-        b._health = healthBar
+        health:SetMinMaxValues(0, 100)
+        health:SetValue(100)
+        b._health = health
 
         local carrier = CreateFrame("Frame", nil, b)
-        carrier:SetAllPoints(healthBar)
+        carrier:SetAllPoints(health)
         carrier:SetFrameLevel(b:GetFrameLevel() + mod.LVL_TEXT)
         if texts then
-            FB.txs[b] = { textCarrier = carrier, _txHost = healthBar, _txFB = true }
+            FB.txs[b] = { textCarrier = carrier, _txHost = health, _txFB = true }
         else
             local nameFS = carrier:CreateFontString(nil, "OVERLAY")
             nameFS:SetWordWrap(false)
@@ -678,15 +678,15 @@ do
         for idx, b in ipairs(ownerFrame.buttons) do
             b:SetSize(wid, hgt)
             b:ClearAllPoints()
-            local offset = idx - 1
+            local off = idx - 1
             if grow == "UP" then
-                b:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, offset * stepH)
+                b:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, off * stepH)
             elseif grow == "LEFT" then
-                b:SetPoint("TOPRIGHT", ownerFrame.container, "TOPRIGHT", -offset * stepW, 0)
+                b:SetPoint("TOPRIGHT", ownerFrame.container, "TOPRIGHT", -off * stepW, 0)
             elseif grow == "RIGHT" then
-                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", offset * stepW, 0)
+                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", off * stepW, 0)
             else -- DOWN
-                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -offset * stepH)
+                b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -off * stepH)
             end
 
             FB.StyleVisuals(b, s, wid, hgt, texPath, bgc)
@@ -760,7 +760,7 @@ do
     -- position at the container's own scale, or every border inside it blurs. A CENTER pin snaps
     -- with the container's size so odd-pixel dimensions still put both edges on whole pixels.
     FB.FreePin = function(c, anchorPoint, posX, posY)
-        local Prm = CludesUI.PP
+        local P = CludesUI.PP
         local ux, uy = UIParent:GetCenter()
         if ux then
             local es = c:GetEffectiveScale()
@@ -773,11 +773,11 @@ do
                 if issecretvalue(hgt) then
                     hgt = nil
                 end
-                posX = Prm.SnapCenterForDim(ux + posX, wid, es) - ux
-                posY = Prm.SnapCenterForDim(uy + posY, hgt, es) - uy
+                posX = P.SnapCenterForDim(ux + posX, wid, es) - ux
+                posY = P.SnapCenterForDim(uy + posY, hgt, es) - uy
             else
-                posX = Prm.SnapForES(ux + posX, es) - ux
-                posY = Prm.SnapForES(uy + posY, es) - uy
+                posX = P.SnapForES(ux + posX, es) - ux
+                posY = P.SnapForES(uy + posY, es) - uy
             end
         end
         FB.Pin(c, anchorPoint, UIParent, "CENTER", posX, posY)
@@ -955,15 +955,15 @@ do
                     FB.occ = occupied
                 end
                 for ri = 1, GetNumGroupMembers() or 0 do
-                    local _, _, subFrame = GetRaidRosterInfo(ri)
-                    if subFrame then
-                        occupied[subFrame] = true
+                    local _, _, sub = GetRaidRosterInfo(ri)
+                    if sub then
+                        occupied[sub] = true
                     end
                 end
                 local first, last
                 local groupOrder = s.customGroupOrder and mod._RFValidatedGroupOrder(s.groupOrder)
-                for slotIndex = 1, 8 do
-                    local gi = groupOrder and groupOrder[slotIndex] or slotIndex
+                for slot = 1, 8 do
+                    local gi = groupOrder and groupOrder[slot] or slot
                     if vg[gi] ~= false and separatedHdrs[gi] and occupied[gi] then
                         if not first then
                             first = separatedHdrs[gi]
@@ -972,8 +972,8 @@ do
                     end
                 end
                 if not first then
-                    for slotIndex = 1, 8 do
-                        local gi = groupOrder and groupOrder[slotIndex] or slotIndex
+                    for slot = 1, 8 do
+                        local gi = groupOrder and groupOrder[slot] or slot
                         if vg[gi] ~= false and separatedHdrs[gi] then
                             if not first then
                                 first = separatedHdrs[gi]
@@ -1166,8 +1166,8 @@ do
 
     -- The shared mover's drag stop, for corner-pinned owners: the dropped rect, relative to UIParent's
     -- centre, into set.freeRect.
-    FB.SaveMoverRect = function(mover, group)
-        if not group then
+    FB.SaveMoverRect = function(mover, set)
+        if not set then
             return
         end
         local ux, uy = UIParent:GetCenter()
@@ -1175,7 +1175,7 @@ do
         if not (ux and l) then
             return
         end
-        group.freeRect = { left = l - ux, right = l + mw - ux, bottom = b - uy, top = b + mh - uy }
+        set.freeRect = { left = l - ux, right = l + mw - ux, bottom = b - uy, top = b + mh - uy }
     end
 
     -- Free Move drag overlay (unlock-mode look, TOOLTIP strata so it floats above the options panel).
@@ -1235,9 +1235,9 @@ do
                 local cx, cy = self:GetCenter()
                 local ux, uy = UIParent:GetCenter()
                 if cx and ux then
-                    local group = (ownerFrame.MoverSettings or ownerFrame.Settings)()
-                    if group then
-                        group.freePos = {
+                    local set = (ownerFrame.MoverSettings or ownerFrame.Settings)()
+                    if set then
+                        set.freePos = {
                             x = math.floor(cx - ux + 0.5),
                             y = math.floor(cy - uy + 0.5),
                         }

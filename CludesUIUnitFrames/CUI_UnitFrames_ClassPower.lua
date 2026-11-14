@@ -96,7 +96,7 @@ local function DestroyCustomClassPower()
     end
 end
 
-local function CreateCustomClassPower(playerFrame, look)
+local function CreateCustomClassPower(playerFrame, style)
     local _, playerClass = UnitClass("player")
     local record = ClassPowerEntry(playerClass)
     if not record then
@@ -176,8 +176,8 @@ local function CreateCustomClassPower(playerFrame, look)
         end
     end
 
-    local isModern = (look == "modern")
-    local isCircle = (look == "circles")
+    local isModern = (style == "modern")
+    local isCircle = (style == "circles")
     local sizeAdj = saved.profile.player.classPowerSize or 8
     local spacingAdj = saved.profile.player.classPowerSpacing or 2
     local pipSize = isModern and sizeAdj or (isCircle and (sizeAdj + 6) or (sizeAdj + 12))
@@ -278,24 +278,24 @@ local function CreateCustomClassPower(playerFrame, look)
 
     -- The pip at this index from the pool (built on first use), configured for
     -- this build as a new one starts: shown, fill shown, no secret overlay up.
-    local function MakePip(hostFrame, slotPos)
-        local pipTex = cpPipPool[slotPos]
-        if not pipTex then
-            pipTex = CreateFrame("Frame", nil, hostFrame)
-            pipTex._empty = pipTex:CreateTexture(nil, "ARTWORK", nil, 0)
-            pipTex._empty:SetAllPoints()
-            pipTex._fill = pipTex:CreateTexture(nil, "ARTWORK", nil, 1)
-            pipTex._fill:SetAllPoints()
-            cpPipPool[slotPos] = pipTex
+    local function MakePip(hostFrame, index)
+        local pip = cpPipPool[index]
+        if not pip then
+            pip = CreateFrame("Frame", nil, hostFrame)
+            pip._empty = pip:CreateTexture(nil, "ARTWORK", nil, 0)
+            pip._empty:SetAllPoints()
+            pip._fill = pip:CreateTexture(nil, "ARTWORK", nil, 1)
+            pip._fill:SetAllPoints()
+            cpPipPool[index] = pip
         end
-        pipTex:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
-        Pix.Size(pipTex, pipSize, pipH)
-        local posX = (slotPos - 1) * (pipSize + gap) + pad / 2
-        pipTex:ClearAllPoints()
-        Pix.Point(pipTex, "LEFT", hostFrame, "LEFT", posX, 0)
+        pip:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+        Pix.Size(pip, pipSize, pipH)
+        local posX = (index - 1) * (pipSize + gap) + pad / 2
+        pip:ClearAllPoints()
+        Pix.Point(pip, "LEFT", hostFrame, "LEFT", posX, 0)
 
         -- Empty bar color (visible when pip is not filled)
-        local pipEmpty = pipTex._empty
+        local pipEmpty = pip._empty
         if isCircle then
             pipEmpty:SetTexture("Interface\\COMMON\\Indicator-Gray")
             pipEmpty:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
@@ -305,7 +305,7 @@ local function CreateCustomClassPower(playerFrame, look)
         end
 
         -- Fill color (on top of empty)
-        local pipFill = pipTex._fill
+        local pipFill = pip._fill
         if isCircle then
             pipFill:SetTexture("Interface\\COMMON\\Indicator-Gray")
             pipFill:SetVertexColor(cr, cg, cb, 1)
@@ -315,13 +315,13 @@ local function CreateCustomClassPower(playerFrame, look)
         end
         pipFill:Show()
 
-        local scrollBar = pipTex._secretBar
+        local scrollBar = pip._secretBar
         if scrollBar then
-            scrollBar:SetFrameLevel(pipTex:GetFrameLevel() + 1)
+            scrollBar:SetFrameLevel(pip:GetFrameLevel() + 1)
             scrollBar:Hide()
         end
-        pipTex:Show()
-        return pipTex
+        pip:Show()
+        return pip
     end
 
     local pips = {}
@@ -433,16 +433,16 @@ local function CreateCustomClassPower(playerFrame, look)
             end
             return
         end
-        local current, upper
+        local current, max
         if isCustom then
             -- Custom resource: use CludesUI tracker functions
             if powerType == "SOUL_FRAGMENTS_VENGEANCE" then
                 current = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
-                upper = 6
+                max = 6
             elseif powerType == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-                current, upper = CludesUI.GetMaelstromWeapon()
+                current, max = CludesUI.GetMaelstromWeapon()
             elseif powerType == "TIP_OF_THE_SPEAR" and CludesUI and CludesUI.GetTipOfTheSpear then
-                current, upper = CludesUI.GetTipOfTheSpear()
+                current, max = CludesUI.GetTipOfTheSpear()
             elseif powerType == "WHIRLWIND_STACKS" or powerType == "SWEEPING_STRIKES" then
                 -- Engine slot owns the display (CludesUI_WarriorCharges):
                 -- the true count fills the overlay bar C-side; legacy pips
@@ -465,12 +465,12 @@ local function CreateCustomClassPower(playerFrame, look)
                         end
                     end
                 end
-                current, upper = total, 5
+                current, max = total, 5
             else
-                current, upper = 0, maxPower
+                current, max = 0, maxPower
             end
-            if not upper or upper <= 0 then
-                upper = maxPower
+            if not max or max <= 0 then
+                max = maxPower
             end
         else
             -- Forever combo points belong to the target, and UnitPower still
@@ -483,12 +483,12 @@ local function CreateCustomClassPower(playerFrame, look)
             else
                 current = UnitPower("player", powerType) or 0
             end
-            upper = UnitPowerMax("player", powerType) or maxPower
+            max = UnitPowerMax("player", powerType) or maxPower
 
             -- Handle runes specially (count available runes)
             if powerType == Enum.PowerType.Runes then
                 current = 0
-                for i = 1, upper do
+                for i = 1, max do
                     local start, duration, ready = GetRuneCooldown(i)
                     if ready then
                         current = current + 1
@@ -501,13 +501,13 @@ local function CreateCustomClassPower(playerFrame, look)
         -- #pips only ever grows (hidden pips stay in the table), so it stops
         -- matching once max shrinks and regrows to a previously-seen value,
         -- leaving the high pips stuck hidden and the container stuck narrow.
-        if upper ~= shownPipCount and upper > 0 then
+        if max ~= shownPipCount and max > 0 then
             for _, p in ipairs(pips) do
                 p:Hide()
             end
-            local newTotalW = upper * pipSize + (upper - 1) * gap + pad
+            local newTotalW = max * pipSize + (max - 1) * gap + pad
             boxHolder:SetWidth(newTotalW)
-            for i = 1, upper do
+            for i = 1, max do
                 if not pips[i] then
                     pips[i] = MakePip(boxHolder, i)
                 end
@@ -517,7 +517,7 @@ local function CreateCustomClassPower(playerFrame, look)
                 Pix.Size(pips[i], pipSize, pipH)
                 pips[i]:Show()
             end
-            shownPipCount = upper
+            shownPipCount = max
             -- Only "above" stretches the row across the health bar (see
             -- PositionClassPowerBar); every other position keeps the natural pip
             -- width laid out just above.
@@ -672,7 +672,7 @@ local function CreateCustomClassPower(playerFrame, look)
     -- power identity, style gate and the resolved look, so the sync adapter
     -- never re-derives them.
     boxHolder._powerType = powerType
-    boxHolder._style = look
+    boxHolder._style = style
     boxHolder._cpR, boxHolder._cpG, boxHolder._cpB = cr, cg, cb
     boxHolder._emptyCol = emptyCol
     boxHolder._sepCol = bgCol

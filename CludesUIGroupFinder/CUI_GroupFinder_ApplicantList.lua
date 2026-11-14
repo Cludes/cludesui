@@ -119,11 +119,11 @@ local function AnySecret()
                 return true
             end
             for k = 1, details.numMembers or 0 do
-                local name, classFile, _, _, ilvl, _, tank, healer, damage, role, _, score, pvpIlvl, _, _, specID =
+                local name, class, _, _, ilvl, _, tank, healer, damage, role, _, score, pvpIlvl, _, _, specID =
                     C_LFGList.GetApplicantMemberInfo(ident, k)
                 if
                     Secret(name)
-                    or Secret(classFile)
+                    or Secret(class)
                     or Secret(ilvl)
                     or Secret(tank)
                     or Secret(healer)
@@ -239,9 +239,9 @@ local function SquareButton(hostFrame, atlas, onClick)
     local button = CreateFrame("Button", nil, hostFrame)
     button:SetMotionScriptsWhileDisabled(true)
     local skin = CUI._ModuleNS and CUI._ModuleNS.CludesUIBlizzardSkin
-    local Stl = skin and skin.WSkin
-    if Stl and Stl.Button then
-        Stl.Button(button)
+    local S = skin and skin.WSkin
+    if S and S.Button then
+        S.Button(button)
     else
         local backdrop = button:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -295,12 +295,12 @@ local function WhisperLink(name)
     DEFAULT_CHAT_FRAME:AddMessage(CludesUI.Lf("Click to whisper the applicant: %1$s", itemLink), 1, 0.82, 0)
 end
 
-local function LineMenu(lineTex)
-    local ident = lineTex:GetParent().applicantID
-    if not ident or lineTex:GetParent().preview then
+local function LineMenu(line)
+    local ident = line:GetParent().applicantID
+    if not ident or line:GetParent().preview then
         return
     end
-    local name = C_LFGList.GetApplicantMemberInfo(ident, lineTex.memberIdx)
+    local name = C_LFGList.GetApplicantMemberInfo(ident, line.memberIdx)
     if Secret(name) then
         name = nil
     end
@@ -309,7 +309,7 @@ local function LineMenu(lineTex)
     -- names shown: blizzard's tagged menu, so other add-ons' entries (raider.io's
     -- copy link and so on) still show. names hidden: ours, they'd show the name
     if not hidden then
-        MenuUtil.CreateContextMenu(lineTex, function(_, root)
+        MenuUtil.CreateContextMenu(line, function(_, root)
             root:SetTag("MENU_LFG_FRAME_MEMBER_APPLY")
             root:CreateTitle(name or "")
             local wid = root:CreateButton(WHISPER or "Whisper", function()
@@ -329,7 +329,7 @@ local function LineMenu(lineTex)
         end)
         return
     end
-    CUI.ShowContextMenu(lineTex, {
+    CUI.ShowContextMenu(line, {
         {
             text = WHISPER or "Whisper",
             noLoc = true,
@@ -362,17 +362,17 @@ local function LineMenu(lineTex)
 end
 
 -- blizzard's would show what's hidden, this one only has what's still allowed
-local function PrivateTooltip(lineTex, ident)
-    local k = lineTex.memberIdx
-    local name, classFile, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID =
+local function PrivateTooltip(line, ident)
+    local k = line.memberIdx
+    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID =
         C_LFGList.GetApplicantMemberInfo(ident, k)
-    local cc = classFile and RAID_CLASS_COLORS[classFile]
+    local cc = class and RAID_CLASS_COLORS[class]
     local r, g, b = 1, 1, 1
     if cc then
         r, g, b = cc.r, cc.g, cc.b
     end
-    GameTooltip:SetOwner(lineTex, "ANCHOR_NONE")
-    GameTooltip:SetPoint("BOTTOMLEFT", lineTex, "TOPLEFT", 105, 0)
+    GameTooltip:SetOwner(line, "ANCHOR_NONE")
+    GameTooltip:SetPoint("BOTTOMLEFT", line, "TOPLEFT", 105, 0)
     local isShown = mod.OwnListGet("streamerNames") and localClass or name
     GameTooltip:SetText(isShown or " ", r, g, b)
     if not mod.OwnListGet("streamerSpec") and type(specID) == "number" and specID > 0 then
@@ -423,26 +423,26 @@ local function Rio()
 end
 
 -- the hovered applicant's name and realm, nil when hidden or unreadable
-local function RioWho(lineTex)
+local function RioWho(line)
     if mod.OwnListGet("streamerNames") or mod.OwnListGet("streamerRating") then
         return
     end
-    local ident = lineTex:GetParent().applicantID
+    local ident = line:GetParent().applicantID
     if not ident or Secret(ident) then
         return
     end
-    local full, classFile = C_LFGList.GetApplicantMemberInfo(ident, lineTex.memberIdx)
+    local full, class = C_LFGList.GetApplicantMemberInfo(ident, line.memberIdx)
     if type(full) ~= "string" or Secret(full) or full == "" then
         return
     end
     local name, realm = strsplit("-", full, 2)
-    return name, realm or GetNormalizedRealmName(), not Secret(classFile) and classFile or nil
+    return name, realm or GetNormalizedRealmName(), not Secret(class) and class or nil
 end
 
-local function RioLines(lineTex)
+local function RioLines(line)
     local api = Rio()
-    local name, realm = RioWho(lineTex)
-    if not (api and name and GameTooltip:IsOwned(lineTex)) then
+    local name, realm = RioWho(line)
+    if not (api and name and GameTooltip:IsOwned(line)) then
         return
     end
     local success, altered = pcall(api.ShowProfile, GameTooltip, name, realm)
@@ -452,9 +452,9 @@ local function RioLines(lineTex)
 end
 
 local function RioPanel()
-    local api, name, realm, classFile = Rio(), nil, nil, nil
+    local api, name, realm, class = Rio(), nil, nil, nil
     if rioLine and rioLine:IsVisible() and IsShiftKeyDown() then
-        name, realm, classFile = RioWho(rioLine)
+        name, realm, class = RioWho(rioLine)
     end
     if not (api and name) then
         if rioTip then
@@ -464,11 +464,11 @@ local function RioPanel()
     end
     rioTip = rioTip
         or CreateFrame("GameTooltip", "CludesUIGroupFinderRioTip", UIParent, "SharedTooltipTemplate")
-    local anchorFrame = PVEFrame or AV
-    rioTip:SetOwner(anchorFrame, "ANCHOR_NONE")
+    local anchor = PVEFrame or AV
+    rioTip:SetOwner(anchor, "ANCHOR_NONE")
     rioTip:ClearAllPoints()
-    rioTip:SetPoint("TOPLEFT", anchorFrame, "TOPRIGHT", 4, 0)
-    local cc = classFile and CUI.GetClassColor(classFile)
+    rioTip:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 4, 0)
+    local cc = class and CUI.GetClassColor(class)
     rioTip:SetText(name, cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1)
     local success, altered = pcall(api.ShowProfile, rioTip, name, realm)
     if success and altered then
@@ -479,11 +479,11 @@ local function RioPanel()
 end
 
 -- shift is only watched while an applicant is hovered
-local function RioEnter(lineTex)
+local function RioEnter(line)
     if not Rio() then
         return
     end
-    rioLine = lineTex
+    rioLine = line
     if not rioWatch then
         rioWatch = CreateFrame("Frame")
         rioWatch:SetScript("OnEvent", RioPanel)
@@ -505,11 +505,11 @@ end
 local PvTip -- the settings preview's tooltip (below)
 
 -- blizzard's own applicant tooltip unless something's hidden
-local function LineEnter(lineTex)
-    if lineTex:GetParent().preview then
-        return PvTip(lineTex)
+local function LineEnter(line)
+    if line:GetParent().preview then
+        return PvTip(line)
     end
-    local ident = lineTex:GetParent().applicantID
+    local ident = line:GetParent().applicantID
     -- values can go secret between repaints, the next one hands over to blizzard's list
     if not (ident and LFGListApplicantMember_OnEnter) or AnySecret() then
         return
@@ -520,12 +520,12 @@ local function LineEnter(lineTex)
         or mod.OwnListGet("streamerRating")
         or mod.OwnListGet("streamerSpec")
     then
-        PrivateTooltip(lineTex, ident)
+        PrivateTooltip(line, ident)
     else
-        pcall(LFGListApplicantMember_OnEnter, lineTex)
+        pcall(LFGListApplicantMember_OnEnter, line)
     end
-    RioLines(lineTex)
-    RioEnter(lineTex)
+    RioLines(line)
+    RioEnter(line)
 end
 
 local function LineLeave()
@@ -630,9 +630,9 @@ local function MakeLine(b, k)
             end
         end)
         rb:SetScript("OnEnter", function(self)
-            local lineTex = self:GetParent()
-            lineTex:LockHighlight()
-            LineEnter(lineTex)
+            local line = self:GetParent()
+            line:LockHighlight()
+            LineEnter(line)
         end)
         rb:SetScript("OnLeave", function(self)
             self:GetParent():UnlockHighlight()
@@ -723,17 +723,17 @@ local function PlaceCells(l)
         fontStr:Hide()
     end
     for c = #cols, 1, -1 do
-        local column = cols[c]
-        posX = posX - column.w
-        local fontStr = l.cells[column.key]
+        local col = cols[c]
+        posX = posX - col.w
+        local fontStr = l.cells[col.key]
         if fontStr then
             fontStr:Show()
             fontStr:ClearAllPoints()
             fontStr:SetPoint("LEFT", l, "RIGHT", posX, 0)
-            fontStr:SetWidth(column.w)
-        elseif column == ROLE_COL then
+            fontStr:SetWidth(col.w)
+        elseif col == ROLE_COL then
             l.roleX = posX
-        elseif column == SPEC_COL then
+        elseif col == SPEC_COL then
             l.specX = posX
         end
     end
@@ -741,15 +741,15 @@ local function PlaceCells(l)
     l.nameRight = posX
 end
 
-local function FontSize(fontStr, dim)
+local function FontSize(fontStr, size)
     local success, filePath, _, flags = pcall(fontStr.GetFont, fontStr)
     if success and filePath then
-        fontStr:SetFont(filePath, dim, flags or "")
+        fontStr:SetFont(filePath, size, flags or "")
     end
 end
 
 -- icon when we know the spec, else the class like the results list
-local function PaintSpec(l, classFile, specID, grey)
+local function PaintSpec(l, class, specID, grey)
     local t, ring, bf = l.spec, l.specRing, l.specBorder
     ring:Hide()
     bf:Hide()
@@ -766,19 +766,19 @@ local function PaintSpec(l, classFile, specID, grey)
     t:SetPoint("CENTER", l, "RIGHT", l.specX + SPEC_COL.w / 2, 0)
     t:SetTexCoord(0, 1, 0, 1)
     local square = mod.OwnListGet("iconShape") == "square"
-    local glyph = type(specID) == "number" and specID > 0 and select(4, GetSpecializationInfoByID(specID))
-    if glyph then
-        t:SetTexture(glyph)
+    local icon = type(specID) == "number" and specID > 0 and select(4, GetSpecializationInfoByID(specID))
+    if icon then
+        t:SetTexture(icon)
         t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     elseif square then
-        local cc = classFile and C_ClassColor and C_ClassColor.GetClassColor(classFile)
+        local cc = class and C_ClassColor and C_ClassColor.GetClassColor(class)
         if cc then
             t:SetColorTexture(cc.r * 0.75, cc.g * 0.75, cc.b * 0.75, 1)
         else
             t:SetColorTexture(0.3, 0.3, 0.3, 1)
         end
-    elseif classFile then
-        t:SetAtlas("groupfinder-icon-class-color-" .. classFile)
+    elseif class then
+        t:SetAtlas("groupfinder-icon-class-color-" .. class)
     else
         t:SetColorTexture(0.3, 0.3, 0.3, 1)
     end
@@ -794,7 +794,7 @@ local function PaintSpec(l, classFile, specID, grey)
             end
             bf:Show()
         end
-    elseif glyph then
+    elseif icon then
         t:AddMaskTexture(l.specMask)
         l.specMasked = true
         if bpx > 0 then
@@ -809,11 +809,11 @@ local function PaintSpec(l, classFile, specID, grey)
 end
 
 -- the results list's colored role tile
-local function PaintRole(rb, role, classFile)
+local function PaintRole(rb, role, class)
     rb.bg:Show()
     -- the applicant's class color when asked, else the role's
-    if classFile and not Secret(classFile) and mod.OwnListGet("roleClassColors") then
-        local cc = CUI.GetClassColor(classFile)
+    if class and not Secret(class) and mod.OwnListGet("roleClassColors") then
+        local cc = CUI.GetClassColor(class)
         rb.bg:SetColorTexture(cc.r, cc.g, cc.b, 1)
     else
         local c = mod.RaidRoleColors[role]
@@ -865,23 +865,17 @@ local function After(l, texture, isShown, posX)
     if not isShown then
         return
     end
-    local anchorFrame = l.markPrev
+    local anchor = l.markPrev
     texture:ClearAllPoints()
-    texture:SetPoint(
-        "LEFT",
-        anchorFrame,
-        anchorFrame == l and "LEFT" or "RIGHT",
-        anchorFrame == l and posX or 1,
-        0
-    )
+    texture:SetPoint("LEFT", anchor, anchor == l and "LEFT" or "RIGHT", anchor == l and posX or 1, 0)
     l.markPrev = texture
 end
 
 local function FillLine(l, ident, k, grey, noTouch)
-    local name, classFile, localClass, _, ilvl, _, tank, healer, damage, assigned, relation, score, pvpIlvl, _, _, specID, leaver =
+    local name, class, localClass, _, ilvl, _, tank, healer, damage, assigned, relation, score, pvpIlvl, _, _, specID, leaver =
         source.member(ident, k)
     PlaceCells(l)
-    PaintSpec(l, classFile, specID, grey)
+    PaintSpec(l, class, specID, grey)
     -- the applicant's name: a font family (ns.OwnListNameFont), never FontSize
     mod.OwnListNameFont(l.name, mod.OwnListSize("titleSize"))
     for _, fontStr in pairs(l.cells) do
@@ -892,7 +886,7 @@ local function FillLine(l, ident, k, grey, noTouch)
     l.markPrev = l
     After(l, l.leaver, not Secret(leaver) and leaver, posX)
     After(l, l.friend, not Secret(relation) and relation, posX)
-    local anchorFrame = l.markPrev
+    local anchor = l.markPrev
     -- region under the name when the row has the height for it
     local tag, tr, tg, tb, flag
     if not grey and mod.RegionTagOfName then
@@ -903,13 +897,7 @@ local function FillLine(l, ident, k, grey, noTouch)
         tag = nil
     end
     local nameY = tag and math.ceil((lineSize + 2) / 2) or 0
-    l.name:SetPoint(
-        "LEFT",
-        anchorFrame,
-        anchorFrame == l and "LEFT" or "RIGHT",
-        anchorFrame == l and posX or 2,
-        nameY
-    )
+    l.name:SetPoint("LEFT", anchor, anchor == l and "LEFT" or "RIGHT", anchor == l and posX or 2, nameY)
     l.name:SetPoint("RIGHT", l, "RIGHT", l.nameRight - 2, nameY)
     if mod.OwnListGet("streamerNames") then
         l.name:SetText(localClass or "")
@@ -932,7 +920,7 @@ local function FillLine(l, ident, k, grey, noTouch)
             l.regionFlag:SetTexture(flag)
         end
     end
-    local cc = classFile and RAID_CLASS_COLORS[classFile]
+    local cc = class and RAID_CLASS_COLORS[class]
     if grey or not cc then
         l.name:SetTextColor(0.6, 0.6, 0.6)
     else
@@ -960,7 +948,7 @@ local function FillLine(l, ident, k, grey, noTouch)
         rb:SetShown(role ~= nil and not grey)
         rb.role = role
         if role then
-            PaintRole(rb, role, classFile)
+            PaintRole(rb, role, class)
             rb:SetAlpha(role == assigned and 1 or 0.3)
             rb:SetEnabled(not noTouch and role ~= assigned)
             rb:ClearAllPoints()
@@ -1223,12 +1211,12 @@ end
 
 -- a title's width, so narrow columns never cut it off
 local ruler
-local function TitleWidth(titleText)
+local function TitleWidth(title)
     if not ruler then
         ruler = head:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         ruler:SetAlpha(0)
     end
-    ruler:SetText(titleText)
+    ruler:SetText(title)
     return math.ceil(ruler:GetStringWidth() or 24) + 4
 end
 
@@ -1255,8 +1243,8 @@ local function PaintHeader()
     end
     local posX, used = 0, 0
     for c = #cols, 1, -1 do
-        local column = cols[c]
-        posX = posX - column.w
+        local col = cols[c]
+        posX = posX - col.w
         used = used + 1
         local fontStr = head.titles[used]
         if not fontStr then
@@ -1267,24 +1255,24 @@ local function PaintHeader()
         end
         fontStr:ClearAllPoints()
         fontStr:SetPoint("LEFT", head, "RIGHT", posX, 0)
-        fontStr:SetWidth(column.w)
-        fontStr:SetText(column.title)
+        fontStr:SetWidth(col.w)
+        fontStr:SetText(col.title)
         fontStr:Show()
     end
 end
 
 -- the listing's columns minus what streamer mode hides
 local visibleCols = {}
-VisibleCols = function(baseValue, result)
+VisibleCols = function(base, result)
     local noSpec, noRating = mod.OwnListGet("streamerSpec"), mod.OwnListGet("streamerRating")
     if not (noSpec or noRating) then
-        return baseValue
+        return base
     end
     result = result or visibleCols
     wipe(result)
-    for _, column in ipairs(baseValue) do
-        if not ((noSpec and column == SPEC_COL) or (noRating and column == RATING_COL)) then
-            result[#result + 1] = column
+    for _, col in ipairs(base) do
+        if not ((noSpec and col == SPEC_COL) or (noRating and col == RATING_COL)) then
+            result[#result + 1] = col
         end
     end
     return result
@@ -1365,19 +1353,19 @@ local function MakeRaidRoles(hostFrame)
     rr.parts = {}
     for k = 1, 3 do
         local backdrop = rr:CreateTexture(nil, "ARTWORK", nil, 1)
-        local maskTex = rr:CreateMaskTexture()
-        maskTex:SetTexture(
+        local mask = rr:CreateMaskTexture()
+        mask:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
-        maskTex:SetAllPoints(backdrop)
-        local glyph = rr:CreateTexture(nil, "ARTWORK", nil, 3)
-        glyph:SetPoint("CENTER", backdrop)
+        mask:SetAllPoints(backdrop)
+        local icon = rr:CreateTexture(nil, "ARTWORK", nil, 3)
+        icon:SetPoint("CENTER", backdrop)
         local count = rr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         count:SetJustifyH("CENTER")
         count:SetPoint("BOTTOM", backdrop, "TOP", 0, 1)
-        rr.parts[k] = { bg = backdrop, mask = maskTex, icon = glyph, count = count }
+        rr.parts[k] = { bg = backdrop, mask = mask, icon = icon, count = count }
     end
     return rr
 end
@@ -1480,27 +1468,27 @@ end
 -- a black bar over blizzard's text, the mouse stops there so its tooltip can't show either
 local censor = {}
 local function CensorBar(key, fontStr, enabled, maxW, hgt)
-    local barFrame = censor[key]
-    if not barFrame then
+    local bar = censor[key]
+    if not bar then
         if not enabled then
             return
         end
-        barFrame = CreateFrame("Frame", nil, AV)
-        barFrame:SetFrameLevel(AV:GetFrameLevel() + 30)
-        barFrame:EnableMouse(true)
-        local texture = barFrame:CreateTexture(nil, "ARTWORK")
+        bar = CreateFrame("Frame", nil, AV)
+        bar:SetFrameLevel(AV:GetFrameLevel() + 30)
+        bar:EnableMouse(true)
+        local texture = bar:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         texture:SetColorTexture(0, 0, 0, 1)
-        censor[key] = barFrame
+        censor[key] = bar
     end
-    barFrame:SetShown(enabled and true or false)
+    bar:SetShown(enabled and true or false)
     if not enabled then
         return
     end
     local wid = math.max(40, math.min(fontStr:GetStringWidth() or maxW, maxW))
-    barFrame:ClearAllPoints()
-    barFrame:SetPoint("LEFT", fontStr, "LEFT", -2, 0)
-    barFrame:SetSize(wid + 4, hgt)
+    bar:ClearAllPoints()
+    bar:SetPoint("LEFT", fontStr, "LEFT", -2, 0)
+    bar:SetSize(wid + 4, hgt)
 end
 
 local function PaintCensor()
@@ -1659,9 +1647,9 @@ local apv = { blocks = {}, scroll = 0, ids = {}, data = {} }
 
 -- names: the suite's preview roster (CludesUI.PREVIEW_ROSTER), one of the
 -- member's class first
-local function PvNames(kindOf)
+local function PvNames(kind)
     local roster = mod.PreviewRoster or CludesUI.PREVIEW_ROSTER
-    local used, start = {}, kindOf == "raid" and 7 or 0
+    local used, start = {}, kind == "raid" and 7 or 0
     local function Take(cls)
         for pass = 1, 2 do
             for idx = 0, #roster - 1 do
@@ -1675,12 +1663,12 @@ local function PvNames(kindOf)
         end
         return "Applicant"
     end
-    local baseValue = select(2, GetAverageItemLevel()) or 0
+    local base = select(2, GetAverageItemLevel()) or 0
     local ids, payload = apv.ids, apv.data
     wipe(ids)
     wipe(payload)
-    for idx, a in ipairs(PV_APPS[kindOf]) do
-        local ident = kindOf .. idx
+    for idx, a in ipairs(PV_APPS[kind]) do
+        local ident = kind .. idx
         local m = {}
         for k, d in ipairs(a.members) do
             m[k] = {
@@ -1689,7 +1677,7 @@ local function PvNames(kindOf)
                 spec = d[2],
                 roles = d[3],
                 assigned = d[4],
-                ilvl = math.max(1, baseValue + d[5]),
+                ilvl = math.max(1, base + d[5]),
                 score = d[6],
                 best = d[7] and { bestRunLevel = d[7], finishedSuccess = d[8] },
             }
@@ -1746,16 +1734,16 @@ local PREVIEW = {
 }
 
 -- what the settings allow: name or class, spec, item level, rating, the note
-PvTip = function(lineTex)
-    local ident = lineTex:GetParent().applicantID
-    local name, classFile, localClass, _, ilvl, _, _, _, _, _, _, score, _, _, _, specID =
-        PREVIEW.member(ident, lineTex.memberIdx)
+PvTip = function(line)
+    local ident = line:GetParent().applicantID
+    local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, _, _, _, specID =
+        PREVIEW.member(ident, line.memberIdx)
     if not name then
         return
     end
-    local cc = CUI.GetClassColor(classFile)
-    GameTooltip:SetOwner(lineTex, "ANCHOR_NONE")
-    GameTooltip:SetPoint("BOTTOMLEFT", lineTex, "TOPLEFT", 105, 0)
+    local cc = CUI.GetClassColor(class)
+    GameTooltip:SetOwner(line, "ANCHOR_NONE")
+    GameTooltip:SetPoint("BOTTOMLEFT", line, "TOPLEFT", 105, 0)
     GameTooltip:SetText(mod.OwnListGet("streamerNames") and localClass or name, cc.r, cc.g, cc.b)
     local specName = not mod.OwnListGet("streamerSpec") and select(2, GetSpecializationInfoByID(specID))
     GameTooltip:AddLine(specName and (specName .. " " .. localClass) or localClass, 1, 1, 1)
@@ -1764,7 +1752,7 @@ PvTip = function(lineTex)
         GameTooltip:AddDoubleLine(RATING or "Rating", score, 1, 0.82, 0, 1, 1, 1)
     end
     local comment = PREVIEW.info(ident).comment
-    if comment ~= "" and lineTex.memberIdx == 1 and not mod.OwnListGet("streamerNote") then
+    if comment ~= "" and line.memberIdx == 1 and not mod.OwnListGet("streamerNote") then
         GameTooltip:AddLine(" ")
         local fc = LFG_LIST_COMMENT_FONT_COLOR
         GameTooltip:AddLine(
@@ -1808,9 +1796,9 @@ local function PvPosition()
     end
 end
 
-local function PvBuild(hostRegion)
-    local f = CreateFrame("Frame", nil, hostRegion)
-    f:SetAllPoints(hostRegion)
+local function PvBuild(host)
+    local f = CreateFrame("Frame", nil, host)
+    f:SetAllPoints(host)
     apv.frame = f
     apv.head = CreateFrame("Frame", nil, f)
     apv.head.titles = {}
@@ -1851,8 +1839,8 @@ local function PutBack()
 end
 
 local pvCols = {}
-local function PvPaint(kindOf, wid, hgt)
-    PvNames(kindOf)
+local function PvPaint(kind, wid, hgt)
+    PvNames(kind)
     source, head, body, raidRoles = PREVIEW, apv.head, apv.body, apv.raidRoles
     rowH = tonumber(mod.OwnListGet("applicantRowHeight")) or 36
     btnSize = math.max(18, math.min(rowH - 8, 24))
@@ -1862,12 +1850,12 @@ local function PvPaint(kindOf, wid, hgt)
     local most = MostRoles(apv.ids)
     SPEC_COL.w = math.max(TitleWidth(SPEC_COL.title), iconPx) + 6
     ROLE_COL.w = math.max(TitleWidth(ROLE_COL.title), iconPx * most + ROLE_GAP * (most - 1)) + 6
-    entryActivity = PV_ACT[kindOf]
-    baseCols = kindOf == "dungeon" and COLS_KEYS or COLS_BASE
+    entryActivity = PV_ACT[kind]
+    baseCols = kind == "dungeon" and COLS_KEYS or COLS_BASE
     cols = VisibleCols(baseCols, pvCols)
     -- a raid's header is tall enough for the counts' numbers over their circles
     local headH = 24
-    if kindOf == "raid" then
+    if kind == "raid" then
         headH =
             math.max(24, mod.OwnListIconSize(mod.OwnListRowHeight()) + 2 * mod.OwnListSize("scoreSize") + 6)
     end
@@ -1880,17 +1868,17 @@ local function PvPaint(kindOf, wid, hgt)
     PaintHeader()
     -- the counts sit left of the column titles
     local colsW = 0
-    for _, column in ipairs(cols) do
-        colsW = colsW + column.w
+    for _, col in ipairs(cols) do
+        colsW = colsW + col.w
     end
     apv.raidRoles:ClearAllPoints()
     apv.raidRoles:SetPoint("RIGHT", apv.head, "RIGHT", -colsW - 8, 0)
     PaintRaidRoles()
-    local upper = entryActivity.maxNumPlayers
+    local max = entryActivity.maxNumPlayers
     for idx, ident in ipairs(apv.ids) do
         local b = apv.blocks[idx] or MakeBlock(idx, apv.body, apv.blocks)
         b.preview = true
-        b.h = FillBlock(b, ident, upper, 1, 0)
+        b.h = FillBlock(b, ident, max, 1, 0)
     end
     for idx = #apv.ids + 1, #apv.blocks do
         apv.blocks[idx].applicantID = nil
@@ -1900,22 +1888,22 @@ end
 
 -- draws the sample applicants for a key ("dungeon") or a raid into host,
 -- w by h; kind nil hides them
-function mod.ApplicantPreviewPaint(hostRegion, kindOf, wid, hgt)
-    if not kindOf then
+function mod.ApplicantPreviewPaint(host, kind, wid, hgt)
+    if not kind then
         if apv.frame then
             apv.frame:Hide()
         end
         return
     end
     if not apv.frame then
-        PvBuild(hostRegion)
+        PvBuild(host)
     end
-    if apv.kind ~= kindOf then
-        apv.kind, apv.scroll = kindOf, 0
+    if apv.kind ~= kind then
+        apv.kind, apv.scroll = kind, 0
     end
     apv.frame:Show()
     Keep()
-    local success, err = pcall(PvPaint, kindOf, wid, hgt)
+    local success, err = pcall(PvPaint, kind, wid, hgt)
     PutBack()
     if not success then
         geterrorhandler()(err)

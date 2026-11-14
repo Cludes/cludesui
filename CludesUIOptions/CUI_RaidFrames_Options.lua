@@ -64,14 +64,14 @@ end
 -- overlay; allowed(), whether it can open (Free Move chosen, out of combat); optional enabled()
 -- with enabledTip, the group's own switch, which also dims rgn's plain label while off. Nothing is
 -- built during the search prebuild; returns the button.
-function mod.RF_OptMoveFramesButton(rowFrame, region, options)
+function mod.RF_OptMoveFramesButton(row, region, options)
     if CludesUI._prebuilding then
         return
     end
-    local button = CreateFrame("Button", nil, rowFrame)
+    local button = CreateFrame("Button", nil, row)
     button:SetSize(140, 26)
     button:SetPoint("RIGHT", region, "RIGHT", -20, 0)
-    button:SetFrameLevel(rowFrame:GetFrameLevel() + 5)
+    button:SetFrameLevel(row:GetFrameLevel() + 5)
     local bbg = button:CreateTexture(nil, "BACKGROUND")
     bbg:SetAllPoints()
     bbg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
@@ -124,7 +124,7 @@ end
 -- the Art Style alone (2D or class art). `PSSet` is the Party page's setter
 -- (the full party pass, for the box-width changes); every other setting
 -- takes the light path. Returns the new y.
-function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
+function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
     local db = mod.db
     local kit = mod.RF_OptPartyKit() -- build time only (the page rebuilds)
     local _, hgt
@@ -160,11 +160,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
             end
         end)
     end
-    local function IsInside(sideName)
-        return sideName == "insideleft" or sideName == "insideright" or sideName == "insidecenter"
+    local function IsInside(side)
+        return side == "insideleft" or side == "insideright" or side == "insidecenter"
     end
 
-    _, hgt = Widgets:SectionHeader(hostFrame, "PORTRAIT", posY)
+    _, hgt = W:SectionHeader(hostFrame, "PORTRAIT", posY)
     posY = posY - hgt
 
     -- An Art Style pick, with the side effects of leaving and entering 3D
@@ -233,7 +233,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
     -- Row 1: Portrait Mode | Art Style. A mode change can widen the frame
     -- (the full party pass) and shows or hides the rows below (a rebuild).
     local modeRow
-    modeRow, hgt = Widgets:DualRow(
+    modeRow, hgt = W:DualRow(
         hostFrame,
         posY,
         mod.RF_PartyKitGate({
@@ -387,7 +387,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
 
     -- Row 2: Size | Position.
     local sizePosRow
-    sizePosRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    sizePosRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Size",
         min = -50,
@@ -545,7 +545,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, Widgets, PSSet)
 
     -- Row 3 (Detached): Shape | Shape Border (custom colour or class coloured).
     local shapeRow
-    shapeRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    shapeRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Shape",
         values = {
@@ -663,10 +663,10 @@ end
 -- Width | Height and Position (offsets cog). Party-only keys on db.profile;
 -- each setter takes the runtime's own light path (restyle, layout or the
 -- include edge), never a party reload. Returns the new y.
-function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
+function mod.RF_BuildPartyTargets(hostFrame, posY, W)
     local db = mod.db
     local BLANK = CludesUI.BlankRowCfg
-    local _, hgt, rowFrame
+    local _, hgt, row
     local function PV(k, d)
         local v = db.profile[k]
         if v == nil then
@@ -695,13 +695,13 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
     local DARK_TIP =
         "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
 
-    _, hgt = Widgets:SectionHeader(hostFrame, "PARTY TARGETS", posY)
+    _, hgt = W:SectionHeader(hostFrame, "PARTY TARGETS", posY)
     posY = posY - hgt
 
     -- Row 1: Enable | Include Own Target. The rows below are HIDDEN while
     -- off, so the flip rebuilds the page.
     local on = db.profile.partyShowTargets == true -- build time (the page rebuilds)
-    _, hgt = Widgets:DualRow(hostFrame, posY, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Party Targets",
         tooltip = "Show a smaller secure target button beside each party frame. Left-click a button to target that party member's current target.",
@@ -749,7 +749,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
 
     -- Row 2: Fill Color | Background (the Health Bar row's controls on the
     -- target frames' own keys).
-    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Fill Color",
         values = { class = "Class Color", dark = "Dark Mode", classic = "Classic", custom = "Custom Color" },
@@ -783,8 +783,8 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
     posY = posY - hgt
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.
     if not CludesUI._prebuilding then
-        local region = rowFrame._leftRegion
-        local colorSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local region = row._leftRegion
+        local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = db.profile.partyTargetCustomFillColor
             if c then
                 return c.r, c.g, c.b, 1
@@ -796,23 +796,23 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
-        local blockData = CreateFrame("Frame", nil, colorSwatch)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, colorSwatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color")
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSwatchVis()
             if PV("partyTargetHealthColorMode", "class") == "custom" then
                 colorSwatch:SetAlpha(1)
-                blockData:Hide()
+                block:Hide()
             else
                 colorSwatch:SetAlpha(0.3)
-                blockData:Show()
+                block:Show()
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateSwatchVis)
@@ -820,9 +820,9 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
     end
     -- Background Custom + Class swatch pair: clicking either toggles partyTargetBgClassColored, the inactive one dims (mirrors the fill picker).
     if not CludesUI._prebuilding then
-        local region = rowFrame._rightRegion
+        local region = row._rightRegion
         -- Class swatch shows the player's class color and is not editable.
-        local bgClassSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, ct = UnitClass("player")
             local cc = ct and CludesUI.GetClassColor(ct)
             if cc then
@@ -843,7 +843,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
         bgClassSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local bgSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = db.profile.partyTargetCustomBgColor
             if c then
                 return c.r, c.g, c.b, 1
@@ -900,7 +900,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
     end
 
     -- Row 3: Width | Height (absolute, not scaled with the party frames).
-    _, hgt = Widgets:DualRow(hostFrame, posY, {
+    _, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Width",
         min = 20,
@@ -932,7 +932,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
     -- the side an unset Position shows (the kit's move included) is stored
     -- as unset, so it keeps following the layout and the frame style.
     -- Under the Party Frames kit the stacked frames' buff side is taken.
-    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Position",
         tooltip = "Right by default, or Bottom with Horizontal Frames. With Frame Style: Party Frames, the side holding the buffs is not available.",
@@ -969,7 +969,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, Widgets)
         end,
     }, BLANK())
     posY = posY - hgt
-    CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+    CludesUI.BuildInlineCog(row._leftRegion, {
         title = "Target Position Offsets",
         rows = {
             {
@@ -1567,18 +1567,18 @@ initFrame:SetScript("OnEvent", function(self)
             -- Override-preview chrome lives on a SEPARATE gold border host: the control's own border is re-asserted by its hover scripts, so never recolor it directly (same pattern as the overrides UI slot marks).
             do
                 local gold = CludesUI._SPECOV_GOLD or { 199 / 255, 166 / 255, 90 / 255 }
-                local hostRegion = CreateFrame("Frame", nil, ddCtrl)
-                hostRegion:SetAllPoints(ddCtrl)
-                hostRegion:SetFrameLevel(ddCtrl:GetFrameLevel() + 30)
-                CludesUI.MakeRoundedBorder(hostRegion, gold[1], gold[2], gold[3], 0.9)
-                hostRegion:Hide()
+                local host = CreateFrame("Frame", nil, ddCtrl)
+                host:SetAllPoints(ddCtrl)
+                host:SetFrameLevel(ddCtrl:GetFrameLevel() + 30)
+                CludesUI.MakeRoundedBorder(host, gold[1], gold[2], gold[3], 0.9)
+                host:Hide()
                 if not CludesUI._prebuilding then
                     local e = pvModeCtrls[pvCtx]
                     if not e then
                         e = {}
                         pvModeCtrls[pvCtx] = e
                     end
-                    e.ctrl, e.gold, e.gen = ddCtrl, hostRegion, PoolGen(ddCtrl)
+                    e.ctrl, e.gold, e.gen = ddCtrl, host, PoolGen(ddCtrl)
                 end
             end
             if mod._UpdatePvModeChrome then
@@ -1592,7 +1592,7 @@ initFrame:SetScript("OnEvent", function(self)
         ---------------------------------------------------------------------------
         --  Visual settings sections (shared by raid + party pages)
         ---------------------------------------------------------------------------
-        local function BuildVisualSections(hostFrame, posY, Widgets, onSection)
+        local function BuildVisualSections(hostFrame, posY, W, onSection)
             -- Eyeball handles are per-context (raid vs party) so the two page builds don't clobber each other's eye-icon refreshers. Animation start/stop stay on ns: one shared ticker resolves the active preview at call time via ns.PvActiveFrames.
             local _eyeCtx = optionState._partyCtx and "party" or "raid"
             mod._eye = mod._eye or {}
@@ -1603,11 +1603,11 @@ initFrame:SetScript("OnEvent", function(self)
             -- Dispels reuses the Health Bar custom-border gates.
             local CustomBorderOff, CustomBorderOffTip
             posY, CustomBorderOff, CustomBorderOffTip =
-                mod.RFO_BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
+                mod.RFO_BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             posY = mod.RFO_BuildVisualIndicators(
                 hostFrame,
                 posY,
-                Widgets,
+                W,
                 onSection,
                 EYE,
                 CustomBorderOff,
@@ -1681,8 +1681,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local activePage = CludesUI:GetActivePage()
             if activePage == PAGE_MAIN then
-                local modeName = db.profile.previewMode or "overlay"
-                if modeName ~= "none" and mod.ShowPreview then
+                local mode = db.profile.previewMode or "overlay"
+                if mode ~= "none" and mod.ShowPreview then
                     C_Timer.After(0, function()
                         if mod.ShowPreview then
                             mod.ShowPreview()
@@ -1718,13 +1718,13 @@ initFrame:SetScript("OnEvent", function(self)
             -- checkbox with its mark, each Edit button's background and label.
             local fonts, checks, editParts = {}, {}, {}
 
-            local function MakeFont(p, dim, r, g, b, a)
+            local function MakeFont(p, size, r, g, b, a)
                 local fontStr = p:CreateFontString(nil, "OVERLAY")
                 CludesUI.PrimeFontShadow(fontStr, true)
-                fontStr:SetFont(fontFile, dim, "")
+                fontStr:SetFont(fontFile, size, "")
                 fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
                 fonts[#fonts + 1] = fontStr
-                fonts[#fonts + 1] = dim
+                fonts[#fonts + 1] = size
                 return fontStr
             end
 
@@ -1735,11 +1735,11 @@ initFrame:SetScript("OnEvent", function(self)
                 local labelFS = MakeFont(panelFrame, 11, 1, 1, 1, 0.75)
                 labelFS:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
                 labelFS:SetText(CludesUI.L(textValue))
-                local lineTex = panelFrame:CreateTexture(nil, "ARTWORK")
-                lineTex:SetHeight(1)
-                lineTex:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
-                lineTex:SetPoint("RIGHT", panelFrame, "RIGHT", -PAD, 0)
-                lineTex:SetColorTexture(1, 1, 1, 0.06)
+                local line = panelFrame:CreateTexture(nil, "ARTWORK")
+                line:SetHeight(1)
+                line:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
+                line:SetPoint("RIGHT", panelFrame, "RIGHT", -PAD, 0)
+                line:SetColorTexture(1, 1, 1, 0.06)
                 cy = cy - 15
             end
 
@@ -1750,14 +1750,14 @@ initFrame:SetScript("OnEvent", function(self)
             local editGlow, glowR, glowG, glowB
 
             local function CheckboxRow(labelText, getVal, setVal, editTarget)
-                local rowFrame = CreateFrame("Frame", nil, panelFrame)
-                rowFrame:SetSize(PANEL_W - PAD * 2, ROW_H)
-                rowFrame:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
-                rowFrame:SetFrameLevel(panelFrame:GetFrameLevel() + 1)
+                local row = CreateFrame("Frame", nil, panelFrame)
+                row:SetSize(PANEL_W - PAD * 2, ROW_H)
+                row:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
+                row:SetFrameLevel(panelFrame:GetFrameLevel() + 1)
 
-                local cb = CreateFrame("CheckButton", nil, rowFrame)
+                local cb = CreateFrame("CheckButton", nil, row)
                 cb:SetSize(18, 18)
-                cb:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+                cb:SetPoint("LEFT", row, "LEFT", 0, 0)
 
                 local cbBg = cb:CreateTexture(nil, "BACKGROUND")
                 cbBg:SetAllPoints()
@@ -1793,9 +1793,9 @@ initFrame:SetScript("OnEvent", function(self)
                 cb:SetScript("OnClick", DoToggle)
 
                 -- Label is clickable and toggles the checkbox.
-                local lblBtn = CreateFrame("Button", nil, rowFrame)
+                local lblBtn = CreateFrame("Button", nil, row)
                 lblBtn:SetPoint("LEFT", cb, "RIGHT", 8, 0)
-                lblBtn:SetPoint("RIGHT", rowFrame, "RIGHT", -50, 0)
+                lblBtn:SetPoint("RIGHT", row, "RIGHT", -50, 0)
                 lblBtn:SetHeight(ROW_H)
                 lblBtn:SetScript("OnClick", DoToggle)
                 local labelFS = MakeFont(lblBtn, 11, 1, 1, 1, 0.85)
@@ -1803,10 +1803,10 @@ initFrame:SetScript("OnEvent", function(self)
                 labelFS:SetText(CludesUI.L(labelText))
 
                 if editTarget then
-                    local editBtn = CreateFrame("Button", nil, rowFrame)
+                    local editBtn = CreateFrame("Button", nil, row)
                     editBtn:SetSize(43, 22)
-                    editBtn:SetPoint("RIGHT", rowFrame, "RIGHT", 0, 0)
-                    editBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
+                    editBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+                    editBtn:SetFrameLevel(row:GetFrameLevel() + 1)
                     local eBg = editBtn:CreateTexture(nil, "BACKGROUND")
                     eBg:SetAllPoints()
                     eBg:SetColorTexture(1, 1, 1, 0.05)
@@ -1830,16 +1830,16 @@ initFrame:SetScript("OnEvent", function(self)
                             -- Scroll to + highlight the target row once the page builds.
                             if editTarget.key then
                                 C_Timer.After(0.1, function()
-                                    local targetUnit = mod._editTargets and mod._editTargets[editTarget.key]
-                                    if not targetUnit then
+                                    local target = mod._editTargets and mod._editTargets[editTarget.key]
+                                    if not target then
                                         return
                                     end
                                     -- A row the page rebuilt since is dressed again (maybe as
                                     -- another row): the glow below is for this dress only.
-                                    local targetGen = PoolGen(targetUnit)
+                                    local targetGen = PoolGen(target)
                                     local scrollFrame = CludesUI._scrollFrame
                                     if scrollFrame then
-                                        local _, _, _, _, rowY = targetUnit:GetPoint(1)
+                                        local _, _, _, _, rowY = target:GetPoint(1)
                                         if rowY then
                                             local scrollPos = math.max(0, math.abs(rowY) - 40)
                                             if CludesUI.SmoothScrollTo then
@@ -1848,7 +1848,7 @@ initFrame:SetScript("OnEvent", function(self)
                                         end
                                     end
                                     C_Timer.After(0.15, function()
-                                        if PoolGen(targetUnit) ~= targetGen or not targetUnit:IsShown() then
+                                        if PoolGen(target) ~= targetGen or not target:IsShown() then
                                             return
                                         end
                                         local eg = CludesUI.CLUDES_GREEN
@@ -1861,7 +1861,7 @@ initFrame:SetScript("OnEvent", function(self)
                                             glowR, glowG, glowB = eg.r, eg.g, eg.b
                                             editGlow = CludesUI.MakeSettingGlow({ color = eg })
                                         end
-                                        editGlow(targetUnit)
+                                        editGlow(target)
                                     end)
                                 end)
                             end
@@ -1871,7 +1871,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 cy = cy - ROW_H
                 allRefreshFns[#allRefreshFns + 1] = Refresh
-                return cb, Refresh, rowFrame
+                return cb, Refresh, row
             end
 
             local nonIndicatorRows = {}
@@ -2506,33 +2506,33 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Drop the BM / DM / CC roots when switching away.
                 DropManagerRoots(pageName)
                 if pageName == PAGE_MAIN then
-                    local modeName = db.profile.previewMode or "overlay"
+                    local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore keeps real party frames hidden under the preview so they don't flash on return to the party tab; restore only for "none", where real frames are meant to be visible.
                     if mod.HidePartyPreview then
-                        mod.HidePartyPreview(modeName ~= "none")
+                        mod.HidePartyPreview(mode ~= "none")
                     end
-                    if modeName ~= "none" and mod.ShowPreview then
+                    if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
                             if mod.ShowPreview then
                                 mod.ShowPreview()
                             end
                         end)
-                    elseif modeName == "none" and mod.HidePreview then
+                    elseif mode == "none" and mod.HidePreview then
                         mod.HidePreview()
                     end
                 elseif pageName == PAGE_PARTY then
-                    local modeName = db.profile.previewMode or "overlay"
+                    local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
                     if mod.HidePreview then
-                        mod.HidePreview(modeName ~= "none")
+                        mod.HidePreview(mode ~= "none")
                     end
-                    if modeName ~= "none" and mod.ShowPartyPreview then
+                    if mode ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
                             if mod.ShowPartyPreview then
                                 mod.ShowPartyPreview()
                             end
                         end)
-                    elseif modeName == "none" and mod.HidePartyPreview then
+                    elseif mode == "none" and mod.HidePartyPreview then
                         mod.HidePartyPreview()
                     end
                 else
@@ -2580,33 +2580,33 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                 end
                 if pageName == PAGE_MAIN then
-                    local modeName = db.profile.previewMode or "overlay"
+                    local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore; see buildPage.
                     if mod.HidePartyPreview then
-                        mod.HidePartyPreview(modeName ~= "none")
+                        mod.HidePartyPreview(mode ~= "none")
                     end
-                    if modeName ~= "none" and mod.ShowPreview then
+                    if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
                             if mod.ShowPreview then
                                 mod.ShowPreview()
                             end
                         end)
-                    elseif modeName == "none" and mod.HidePreview then
+                    elseif mode == "none" and mod.HidePreview then
                         mod.HidePreview()
                     end
                 elseif pageName == PAGE_PARTY then
-                    local modeName = db.profile.previewMode or "overlay"
+                    local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
                     if mod.HidePreview then
-                        mod.HidePreview(modeName ~= "none")
+                        mod.HidePreview(mode ~= "none")
                     end
-                    if modeName ~= "none" and mod.ShowPartyPreview then
+                    if mode ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
                             if mod.ShowPartyPreview then
                                 mod.ShowPartyPreview()
                             end
                         end)
-                    elseif modeName == "none" and mod.HidePartyPreview then
+                    elseif mode == "none" and mod.HidePartyPreview then
                         mod.HidePartyPreview()
                     end
                 elseif pageName == PAGE_BUFFS then
@@ -2688,13 +2688,13 @@ initFrame:SetScript("OnEvent", function(self)
             if CludesUI:GetActiveModule() == "CludesUIRaidFrames" then
                 local page = CludesUI:GetActivePage()
                 if page == PAGE_MAIN then
-                    local modeName = db.profile.previewMode or "overlay"
-                    if modeName ~= "none" and mod.ShowPreview then
+                    local mode = db.profile.previewMode or "overlay"
+                    if mode ~= "none" and mod.ShowPreview then
                         mod.ShowPreview()
                     end
                 elseif page == PAGE_PARTY then
-                    local modeName = db.profile.previewMode or "overlay"
-                    if modeName ~= "none" and mod.ShowPartyPreview then
+                    local mode = db.profile.previewMode or "overlay"
+                    if mode ~= "none" and mod.ShowPartyPreview then
                         mod.ShowPartyPreview()
                     end
                 elseif page == PAGE_BUFFS then
@@ -2891,8 +2891,8 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
                 if pageName == PAGE_MAIN then
-                    local modeName = db.profile.previewMode or "overlay"
-                    if modeName ~= "none" and mod.ShowPreview then
+                    local mode = db.profile.previewMode or "overlay"
+                    if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
                             if mod.ShowPreview then
                                 mod.ShowPreview()

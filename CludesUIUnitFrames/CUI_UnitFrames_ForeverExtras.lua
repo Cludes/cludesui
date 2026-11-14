@@ -172,18 +172,18 @@ function mod.UF_ComboGate(hostFrame, wid, hgt)
     local g = CreateFrame("StatusBar", nil, hostFrame)
     g:SetSize(wid, hgt)
     g:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fillTex = g:GetStatusBarTexture()
-    fillTex:SetAlpha(0)
+    local fill = g:GetStatusBarTexture()
+    fill:SetAlpha(0)
     g:SetMinMaxValues(0, 1)
     g:SetValue(0)
     local m = g:CreateMaskTexture()
     m:SetTexture("Interface\\Buttons\\WHITE8x8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
     m:SetSize(wid, hgt)
-    m:SetPoint("RIGHT", fillTex, "RIGHT", 0, 0)
+    m:SetPoint("RIGHT", fill, "RIGHT", 0, 0)
     return g, m
 end
-function mod.UF_BuildComboArc(hostRegion)
-    local arc = CreateFrame("Frame", nil, hostRegion)
+function mod.UF_BuildComboArc(host)
+    local arc = CreateFrame("Frame", nil, host)
     -- Spans every slot's textures (the arc gate's payload).
     arc:SetSize(82, 72)
     arc._gate, arc._mask = mod.UF_ComboGate(arc, 82, 72)
@@ -191,36 +191,36 @@ function mod.UF_BuildComboArc(hostRegion)
     local file = mod.UF_COMBO_FILE
     local pips, gates = {}, {}
     for key = 1, 9 do
-        local pipTex = CreateFrame("Frame", nil, arc)
-        pipTex:SetSize(12, 12)
+        local pip = CreateFrame("Frame", nil, arc)
+        pip:SetSize(12, 12)
         if key >= 7 then
-            pipTex:SetAlpha(0.6)
+            pip:SetAlpha(0.6)
         end
-        local baseValue = pipTex:CreateTexture(nil, "BACKGROUND")
-        baseValue:SetTexture(file)
-        baseValue:SetTexCoord(0, 0.375, 0, 1)
-        baseValue:SetSize(12, 16)
-        baseValue:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 0)
-        local highlight = pipTex:CreateTexture(nil, "ARTWORK")
+        local base = pip:CreateTexture(nil, "BACKGROUND")
+        base:SetTexture(file)
+        base:SetTexCoord(0, 0.375, 0, 1)
+        base:SetSize(12, 16)
+        base:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 0)
+        local highlight = pip:CreateTexture(nil, "ARTWORK")
         highlight:SetTexture(file)
         highlight:SetTexCoord(0.375, 0.5625, 0, 1)
         highlight:SetSize(8, 16)
-        highlight:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 2, 0)
+        highlight:SetPoint("TOPLEFT", pip, "TOPLEFT", 2, 0)
         highlight:SetAlpha(0)
-        local shine = pipTex:CreateTexture(nil, "OVERLAY")
+        local shine = pip:CreateTexture(nil, "OVERLAY")
         shine:SetTexture(file)
         shine:SetTexCoord(0.5625, 1, 0, 1)
         shine:SetSize(14, 16)
-        shine:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 4)
+        shine:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 4)
         shine:SetBlendMode("ADD")
         shine:SetAlpha(0)
         -- The pip's own gate spans its three textures (the shine rides 4 up).
-        local g, m = mod.UF_ComboGate(pipTex, 14, 20)
-        g:SetPoint("TOPLEFT", pipTex, "TOPLEFT", 0, 4)
+        local g, m = mod.UF_ComboGate(pip, 14, 20)
+        g:SetPoint("TOPLEFT", pip, "TOPLEFT", 0, 4)
         highlight:AddMaskTexture(m)
         shine:AddMaskTexture(m)
         -- A newly filled point: the highlight fades in, then the shine flashes.
-        local ag = pipTex:CreateAnimationGroup()
+        local ag = pip:CreateAnimationGroup()
         ag:SetToFinalAlpha(true)
         local a = ag:CreateAnimation("Alpha")
         a:SetTarget(highlight)
@@ -240,9 +240,8 @@ function mod.UF_BuildComboArc(hostRegion)
         a:SetToAlpha(0)
         a:SetDuration(0.4)
         a:SetOrder(3)
-        pipTex._base, pipTex._hl, pipTex._shine, pipTex._mask, pipTex._anim =
-            baseValue, highlight, shine, m, ag
-        pips[key], gates[key] = pipTex, g
+        pip._base, pip._hl, pip._shine, pip._mask, pip._anim = base, highlight, shine, m, ag
+        pips[key], gates[key] = pip, g
     end
     arc._pips, arc._gates = pips, gates
     -- The arc fades in when its first point lands.
@@ -287,13 +286,13 @@ end
 -- player's 60 at TOPLEFT 24,-19) moves every slot by the gap between the two
 -- centres, in the slots' own frame before the mirror; 0,0 on the target kit.
 function mod.UF_ComboRingShift(G)
-    local Prm = G and G.portrait
-    if not (Prm and Prm.size) then
+    local P = G and G.portrait
+    if not (P and P.size) then
         return 0, 0
     end
-    local r = Prm.size / 2
-    local cx = (Prm.point == "TOPLEFT") and -(Prm.x + r) or (Prm.x - r)
-    return cx + 55, Prm.y - r + 48
+    local r = P.size / 2
+    local cx = (P.point == "TOPLEFT") and -(P.x + r) or (P.x - r)
+    return cx + 55, P.y - r + 48
 end
 -- Which slots the arc uses (from the point cap, as the stock frame lays it
 -- out) and which empty pips show with the arc; re-run only on a cap or
@@ -322,23 +321,23 @@ function mod.UF_ComboArcLayout(arc)
     arc._max, arc._start, arc._cb = mx, start, cb
     local pips, gates = arc._pips, arc._gates
     for key = 1, 9 do
-        local pipTex = pips[key]
+        local pip = pips[key]
         local idx = key - start + 1
         if idx >= 1 and idx <= mx then
             gates[key]:SetMinMaxValues(idx - 1, idx)
             -- The empty pip shows with the arc, or only while filled (the
             -- extra points; every point in colourblind mode).
-            local wanted = (cb or idx >= extra) and pipTex._mask or arc._mask
-            if pipTex._baseMask ~= wanted then
-                if pipTex._baseMask then
-                    pipTex._base:RemoveMaskTexture(pipTex._baseMask)
+            local wanted = (cb or idx >= extra) and pip._mask or arc._mask
+            if pip._baseMask ~= wanted then
+                if pip._baseMask then
+                    pip._base:RemoveMaskTexture(pip._baseMask)
                 end
-                pipTex._base:AddMaskTexture(wanted)
-                pipTex._baseMask = wanted
+                pip._base:AddMaskTexture(wanted)
+                pip._baseMask = wanted
             end
-            pipTex:Show()
+            pip:Show()
         else
-            pipTex:Hide()
+            pip:Hide()
         end
     end
 end
@@ -365,10 +364,10 @@ function mod.UF_ComboArcRefresh(arc, evt, _, powerType)
             arc._fade:Stop()
             arc:SetAlpha(1)
             for key = 1, 9 do
-                local pipTex = pips[key]
-                pipTex._anim:Stop()
-                pipTex._hl:SetAlpha(1)
-                pipTex._shine:SetAlpha(0)
+                local pip = pips[key]
+                pip._anim:Stop()
+                pip._hl:SetAlpha(1)
+                pip._shine:SetAlpha(0)
             end
         end
         return
@@ -383,19 +382,19 @@ function mod.UF_ComboArcRefresh(arc, evt, _, powerType)
     end
     local start = arc._start
     for idx = 1, arc._max do
-        local pipTex = pips[start + idx - 1]
-        if not pipTex then
+        local pip = pips[start + idx - 1]
+        if not pip then
             break
         end
         if idx > num then
-            pipTex._anim:Stop()
-            pipTex._hl:SetAlpha(0)
-            pipTex._shine:SetAlpha(0)
+            pip._anim:Stop()
+            pip._hl:SetAlpha(0)
+            pip._shine:SetAlpha(0)
         elseif idx > last then
-            pipTex._anim:Stop()
-            pipTex._hl:SetAlpha(0)
-            pipTex._shine:SetAlpha(0)
-            pipTex._anim:Play()
+            pip._anim:Stop()
+            pip._hl:SetAlpha(0)
+            pip._shine:SetAlpha(0)
+            pip._anim:Play()
         end
     end
 end
@@ -412,17 +411,17 @@ function mod.UF_ApplyForeverComboArc()
         return
     end
     local arc, ev = mod._ufComboArc, mod._ufComboEv
-    local hostRegion
+    local host
     if mod.UF_Forever() and saved.profile.player.classPowerStyle == "blizzard" and mod.UF_ComboClass() then
         -- Combo Points belongs to our player frame: without one (its Frame
         -- Source Blizzard or Hidden) it reads as the stock spot, so nothing
         -- is taken down and no choice is stranded.
         local loc = frameList.player and mod.UF_ComboLocation() or "target"
         if loc == "target" then
-            hostRegion = frameList.target
+            host = frameList.target
         else
             if loc == "player" then
-                hostRegion = frameList.player
+                host = frameList.player
             end
             -- Blizzard's own goes to the hidden parent out of combat and
             -- outside Edit Mode (a skipped pass retries on the next one). The
@@ -438,33 +437,33 @@ function mod.UF_ApplyForeverComboArc()
             end
         end
     end
-    if not hostRegion then
+    if not host then
         ev:UnregisterAllEvents()
         if arc then
             arc:Hide()
         end
         return
     end
-    arc = arc or mod.UF_BuildComboArc(hostRegion)
+    arc = arc or mod.UF_BuildComboArc(host)
     -- Re-seated only when the host, its kit or its side changed (Portrait
     -- Side swaps the kit).
-    local G = mod.UF_BlizzGeom(hostRegion)
+    local G = mod.UF_BlizzGeom(host)
     local mirror = (G and G.side == "left") or nil
-    if arc._host ~= hostRegion or arc._kit ~= G or arc._mirror ~= mirror then
-        arc._host, arc._kit, arc._mirror = hostRegion, G, mirror
-        if arc:GetParent() ~= hostRegion then
-            arc:SetParent(hostRegion)
+    if arc._host ~= host or arc._kit ~= G or arc._mirror ~= mirror then
+        arc._host, arc._kit, arc._mirror = host, G, mirror
+        if arc:GetParent() ~= host then
+            arc:SetParent(host)
         end
         local dx, dy = mod.UF_ComboRingShift(G)
         arc:ClearAllPoints()
-        mod.UF_BlizzPoint(arc, "TOPRIGHT", hostRegion, "TOPRIGHT", 4 + dx, dy, mirror)
+        mod.UF_BlizzPoint(arc, "TOPRIGHT", host, "TOPRIGHT", 4 + dx, dy, mirror)
         local slots, pips = mod.UF_COMBO_SLOTS, arc._pips
         for key = 1, 9 do
             pips[key]:ClearAllPoints()
             mod.UF_BlizzPoint(
                 pips[key],
                 "TOPRIGHT",
-                hostRegion,
+                host,
                 "TOPRIGHT",
                 slots[key][1] + dx,
                 slots[key][2] + dy,
@@ -474,9 +473,9 @@ function mod.UF_ApplyForeverComboArc()
     end
     -- Over the art, portrait and bars, one level above the level host (its
     -- level and PvP badges), as Blizzard's own draws over its frame's badges.
-    local clip = hostRegion._barClip
-    arc:SetFrameStrata((clip and clip:GetFrameStrata()) or hostRegion:GetFrameStrata())
-    arc:SetFrameLevel(((clip and clip:GetFrameLevel()) or hostRegion:GetFrameLevel()) + 13)
+    local clip = host._barClip
+    arc:SetFrameStrata((clip and clip:GetFrameStrata()) or host:GetFrameStrata())
+    arc:SetFrameLevel(((clip and clip:GetFrameLevel()) or host:GetFrameLevel()) + 13)
     ev:RegisterEvent("PLAYER_TARGET_CHANGED")
     -- Points moving to a new target keep their count, so no power event fires.
     ev:RegisterEvent("COMBO_TARGET_CHANGED")

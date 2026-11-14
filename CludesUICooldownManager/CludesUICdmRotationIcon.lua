@@ -21,7 +21,7 @@ end
 -- RotationSpellsUpdated). A form change resets the manager's last value
 -- before its next read, so a change to no recommendation fires nothing
 -- there: UPDATE_SHAPESHIFT_FORM stays.
-local widget, glyph, textOverlay, keybind, gcd, driver
+local widget, icon, textOverlay, keybind, gcd, driver
 local isActive, live, watching, preview, inCombat = false, false, false, false, false
 local gcdArmed, gcdStamp = false, nil
 -- Paint stamps: the texture and label on screen (nil / false = repaint).
@@ -109,7 +109,7 @@ local function ArmGCD(on)
     end
     if not gcd then
         gcd = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
-        gcd:SetAllPoints(glyph)
+        gcd:SetAllPoints(icon)
         gcd:SetFrameLevel(widget:GetFrameLevel() + 1)
         gcd:EnableMouse(false)
         gcd:SetDrawSwipe(true)
@@ -189,7 +189,7 @@ local function Update()
     end
     if texture ~= paintedTexture then
         paintedTexture = texture
-        glyph:SetTexture(texture)
+        icon:SetTexture(texture)
     end
     local key = conf.showKeybind and spellId and mod.ResolveCDMKeybind(spellId) or nil
     if key ~= paintedKey then
@@ -328,9 +328,9 @@ local function CreateIcon()
     widget:SetFrameStrata("MEDIUM")
     widget:Hide()
     local level = widget:GetFrameLevel()
-    glyph = widget:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints()
-    glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    icon = widget:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     -- Levels above the icon: GCD swipe +1, the 1px black rim +2 (its pixel
     -- border +3), the keybind badge +4/+5 (StyleCDMKeybind), the label +6.
     local rim = CreateFrame("Frame", nil, widget)
@@ -369,8 +369,8 @@ function mod.RefreshRotationAssistIcon()
     if not widget then
         CreateIcon()
     end
-    local dim = conf.iconSize or 48
-    CludesUI.PP.Size(widget, dim, dim)
+    local size = conf.iconSize or 48
+    CludesUI.PP.Size(widget, size, size)
     mod.StyleCDMKeybind(keybind, conf, textOverlay, CludesUI.PP.mult, mod.GetCDMFont())
     -- Settings edge: the next pass repaints the texture and the label.
     paintedTexture, paintedKey = nil, false

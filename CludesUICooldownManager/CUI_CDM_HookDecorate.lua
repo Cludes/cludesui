@@ -334,8 +334,8 @@ local function DecorateFrame(widget, barInfo)
             if fd._parkGuard then
                 return
             end
-            local anchorFrame = fd._cdmAnchor
-            if not anchorFrame then
+            local anchor = fd._cdmAnchor
+            if not anchor then
                 -- Not yet claimed by our bar system: re-blank so it does not flash at
                 -- the viewer's position before CollectAndReanchor claims it.
                 if fd.decorated then
@@ -349,7 +349,7 @@ local function DecorateFrame(widget, barInfo)
                 return
             end
             -- relativeTo == our bar container: our own LayoutCDMBar SetPoint.
-            if relativeTo == anchorFrame[2] then
+            if relativeTo == anchor[2] then
                 return
             end
             QueueViewerAnchor(widget)
@@ -458,16 +458,16 @@ local function DecorateFrame(widget, barInfo)
                     -- bar first decorated this frame.
                     local bdB = bkB and barDataByKey and barDataByKey[bkB]
                     local alpha = (bdB and bdB.swipeAlpha) or barInfo.swipeAlpha or 0.7
-                    local modeName = ssB and ssB.cdSwipeColor
-                    if modeName == "class" then
+                    local mode = ssB and ssB.cdSwipeColor
+                    if mode == "class" then
                         local _, ct = UnitClass("player")
                         local cc = ct and RAID_CLASS_COLORS[ct]
                         if cc then
                             sr, sg, scrollBar = cc.r, cc.g, cc.b
                         end
-                    elseif modeName == "custom" then
+                    elseif mode == "custom" then
                         sr, sg, scrollBar = ssB.cdSwipeColorR, ssB.cdSwipeColorG, ssB.cdSwipeColorB
-                    elseif modeName == "none" then
+                    elseif mode == "none" then
                         alpha = 0 -- fully hide the swipe (alpha 0, geometry still valid)
                     end
                     cd:SetSwipeColor(sr or 0, sg or 0, scrollBar or 0, alpha)
@@ -1645,11 +1645,11 @@ local function DecorateFrame(widget, barInfo)
                         -- them (only a Blackout, on its own overlay, shows
                         -- beside them) and records the glow as owed instead.
                         if fd.glowOverlay and not fd._cdStateGlowOn then
-                            local look = mod.CdReadyGlowStyle(glow, ss2)
-                            local cr, cg, cb = mod.CdReadyGlowColor(look, ss2)
+                            local style = mod.CdReadyGlowStyle(glow, ss2)
+                            local cr, cg, cb = mod.CdReadyGlowColor(style, ss2)
                             fd._cdStateGlowOn = mod.StartCdGlow(
                                 fd,
-                                look,
+                                style,
                                 cr,
                                 cg,
                                 cb,
@@ -1736,11 +1736,11 @@ local function DecorateFrame(widget, barInfo)
                                 -- shared overlay: ns.StartCdGlow lights only a
                                 -- Blackout beside it.
                                 if fd.glowOverlay and not fd._cdStateGlowOn then
-                                    local look = mod.CdReadyGlowStyle(self.cse, self.ss2)
-                                    local cr, cg, cb = mod.CdReadyGlowColor(look, self.ss2)
+                                    local style = mod.CdReadyGlowStyle(self.cse, self.ss2)
+                                    local cr, cg, cb = mod.CdReadyGlowColor(style, self.ss2)
                                     fd._cdStateGlowOn = mod.StartCdGlow(
                                         fd,
-                                        look,
+                                        style,
                                         cr,
                                         cg,
                                         cb,

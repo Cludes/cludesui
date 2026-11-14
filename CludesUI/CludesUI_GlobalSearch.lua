@@ -24,12 +24,12 @@ local BREADCRUMB_ARROW = " |TInterface\\AddOns\\CludesUI\\media\\icons\\cui-arro
 -- Display name of a registered module. Plugin modules read as
 -- "Section > Module" so results name the plugin they belong to.
 local function ModuleLabel(config, folder)
-    local titleText = CludesUI.L(config.title or folder)
+    local title = CludesUI.L(config.title or folder)
     if config._pluginLabel then
-        return CludesUI.L(config._pluginLabel) .. BREADCRUMB_ARROW .. titleText,
-            config._pluginLabel .. " " .. titleText
+        return CludesUI.L(config._pluginLabel) .. BREADCRUMB_ARROW .. title,
+            config._pluginLabel .. " " .. title
     end
-    return titleText, titleText
+    return title, title
 end
 
 -- A page's name as its tab shows it (CUI_NS.GetTabLabel), localized.
@@ -873,7 +873,7 @@ function AbsorberW:WideTripleButton(
 end
 function AbsorberW:WideDropdown(
     hostFrame,
-    titleText,
+    title,
     yOffset,
     values,
     getValue,
@@ -882,7 +882,7 @@ function AbsorberW:WideDropdown(
     btnWidth,
     disabledValuesFn
 )
-    AbsorberRegister(titleText, nil)
+    AbsorberRegister(title, nil)
     return NewAbsorber(), 40
 end
 function AbsorberW:TripleDropdown(hostFrame, configs, yOffset)
@@ -1269,49 +1269,43 @@ local function EnsureSearchUI()
 
     resultRows = {}
     for idx = 1, MAX_VISIBLE_RESULTS do
-        local rowFrame = CreateFrame("Button", nil, resultsFrame)
-        rowFrame:SetHeight(RESULT_ROW_H)
-        rowFrame:SetPoint("TOPLEFT", resultsFrame, "TOPLEFT", 1, -(idx - 1) * (RESULT_ROW_H + RESULT_ROW_GAP))
-        rowFrame:SetPoint(
-            "TOPRIGHT",
-            resultsFrame,
-            "TOPRIGHT",
-            -1,
-            -(idx - 1) * (RESULT_ROW_H + RESULT_ROW_GAP)
-        )
+        local row = CreateFrame("Button", nil, resultsFrame)
+        row:SetHeight(RESULT_ROW_H)
+        row:SetPoint("TOPLEFT", resultsFrame, "TOPLEFT", 1, -(idx - 1) * (RESULT_ROW_H + RESULT_ROW_GAP))
+        row:SetPoint("TOPRIGHT", resultsFrame, "TOPRIGHT", -1, -(idx - 1) * (RESULT_ROW_H + RESULT_ROW_GAP))
 
-        local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+        local highlight = row:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0)
 
-        local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+        local labelFS = row:CreateFontString(nil, "OVERLAY")
         CludesUI.PrimeFontShadow(labelFS, true)
         labelFS:SetFont(fontFile, 14, "")
         labelFS:SetTextColor(0.85, 0.85, 0.88, 1)
-        labelFS:SetPoint("LEFT", rowFrame, "LEFT", 8, 8)
-        labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", -8, 8)
+        labelFS:SetPoint("LEFT", row, "LEFT", 8, 8)
+        labelFS:SetPoint("RIGHT", row, "RIGHT", -8, 8)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
 
-        local subFrame = rowFrame:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(subFrame, true)
-        subFrame:SetFont(fontFile, 12, "")
-        subFrame:SetTextColor(1, 1, 1, 0.45)
-        subFrame:SetPoint("LEFT", rowFrame, "LEFT", 8, -9)
-        subFrame:SetJustifyH("LEFT")
+        local sub = row:CreateFontString(nil, "OVERLAY")
+        CludesUI.PrimeFontShadow(sub, true)
+        sub:SetFont(fontFile, 12, "")
+        sub:SetTextColor(1, 1, 1, 0.45)
+        sub:SetPoint("LEFT", row, "LEFT", 8, -9)
+        sub:SetJustifyH("LEFT")
 
-        rowFrame:SetScript("OnEnter", function()
+        row:SetScript("OnEnter", function()
             Wash(highlight, true)
         end)
-        rowFrame:SetScript("OnLeave", function()
+        row:SetScript("OnLeave", function()
             Wash(highlight, (idx == selIdx and results[idx]) and true or false)
         end)
 
-        rowFrame._hl = highlight
-        rowFrame._label = labelFS
-        rowFrame._sub = subFrame
-        rowFrame:Hide()
-        resultRows[idx] = rowFrame
+        row._hl = highlight
+        row._label = labelFS
+        row._sub = sub
+        row:Hide()
+        resultRows[idx] = row
     end
 
     local function SetSelected(idx)
@@ -1358,44 +1352,44 @@ local function EnsureSearchUI()
         -- search, so a live accent change is picked up on the next keystroke.
         local ACC = CludesUI.CLUDES_GREEN
         local accentHex = ACC and CludesUI.HexColor(ACC.r, ACC.g, ACC.b) or CludesUI.COLOR_CODES.WHITE
-        for idx, rowFrame in ipairs(resultRows) do
+        for idx, row in ipairs(resultRows) do
             local record = results[idx]
             if record then
                 if record.kind == "page" then
                     -- Coarse whole-page result: prefixed like sections so it
                     -- reads as "go to this page", not a specific option on it.
-                    rowFrame._label:SetText(accentHex .. CludesUI.L("Page") .. ":|r " .. record.displayLabel)
-                    rowFrame._sub:SetText(record.moduleLabel)
+                    row._label:SetText(accentHex .. CludesUI.L("Page") .. ":|r " .. record.displayLabel)
+                    row._sub:SetText(record.moduleLabel)
                 elseif record.isSection then
                     local name = TitleCaseSection(record.label)
                     if record.labelLoc then
                         name = name .. "  (" .. TitleCaseSection(record.labelLoc) .. ")"
                     end
-                    rowFrame._label:SetText(accentHex .. CludesUI.L("Section") .. ":|r " .. name)
-                    rowFrame._sub:SetText(
+                    row._label:SetText(accentHex .. CludesUI.L("Section") .. ":|r " .. name)
+                    row._sub:SetText(
                         JoinBreadcrumb(
                             GetModuleDisplayName(record.module),
                             PageLabel(record.module, record.page)
                         )
                     )
                 else
-                    rowFrame._label:SetText(
+                    row._label:SetText(
                         record.labelLoc and (record.label .. "  (" .. record.labelLoc .. ")") or record.label
                     )
-                    rowFrame._sub:SetText(
+                    row._sub:SetText(
                         JoinBreadcrumb(
                             GetModuleDisplayName(record.module),
                             PageLabel(record.module, record.page)
                         )
                     )
                 end
-                rowFrame:SetScript("OnClick", function()
+                row:SetScript("OnClick", function()
                     JumpToResult(record, sidebarSearchBox)
                 end)
-                rowFrame:EnableMouse(true)
-                rowFrame:Show()
+                row:EnableMouse(true)
+                row:Show()
             else
-                rowFrame:Hide()
+                row:Hide()
             end
         end
         SetSelected(1)
@@ -1403,14 +1397,14 @@ local function EnsureSearchUI()
         if isShown == 0 and indexReady and query:match("%S") then
             -- Inert "No results" row instead of an empty popup. Pipes are
             -- shown literally so the query cannot inject escape codes.
-            local rowFrame = resultRows[1]
+            local row = resultRows[1]
             local q = query:gsub("||", "|"):gsub("|", "||")
-            rowFrame._label:SetText(CludesUI.Lf("No results for %s", '"' .. q .. '"'))
-            rowFrame._sub:SetText(CludesUI.L("Check the spelling or try a different word"))
-            rowFrame._hl:SetColorTexture(1, 1, 1, 0)
-            rowFrame:SetScript("OnClick", nil)
-            rowFrame:EnableMouse(false)
-            rowFrame:Show()
+            row._label:SetText(CludesUI.Lf("No results for %s", '"' .. q .. '"'))
+            row._sub:SetText(CludesUI.L("Check the spelling or try a different word"))
+            row._hl:SetColorTexture(1, 1, 1, 0)
+            row:SetScript("OnClick", nil)
+            row:EnableMouse(false)
+            row:Show()
             isShown = 1
         end
         if isShown > 0 then

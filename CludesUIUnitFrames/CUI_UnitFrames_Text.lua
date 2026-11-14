@@ -89,8 +89,8 @@ do
             return
         end
         -- Engine.ElementOn, inlined on this per-tick path.
-        local offset = widget._cuiElementsOff
-        if offset and offset.Health then
+        local off = widget._cuiElementsOff
+        if off and off.Health then
             return
         end
         -- Bar bounds ride the max-health/identity events (Blizzard's own
@@ -170,15 +170,15 @@ do
         if element._manaRegenSpark then
             CludesUI.ManaRegenSpark.SetMana("uf", not issecretvalue(pnum) and pnum == Enum.PowerType.Mana)
         end
-        local upper = UnitPowerMax(unitToken, pnum)
-        element:SetMinMaxValues(0, upper)
+        local max = UnitPowerMax(unitToken, pnum)
+        element:SetMinMaxValues(0, max)
         local current
         if UnitIsConnected(unitToken) then
             current = UnitPower(unitToken, pnum)
             element:SetValue(current, element.smoothing)
         else
-            current = upper
-            element:SetValue(upper, element.smoothing)
+            current = max
+            element:SetValue(max, element.smoothing)
         end
         if element.colorPower then
             local color = mod.Colors.power[pnum] or (ptoken and mod.Colors.power[ptoken])
@@ -190,7 +190,7 @@ do
             element:PostUpdateColor(unitToken)
         end
         if element.PostUpdate then
-            element:PostUpdate(unitToken, current, 0, upper)
+            element:PostUpdate(unitToken, current, 0, max)
         end
     end
     mod.Engine.SetPainter("power", PaintPower)
@@ -1130,19 +1130,19 @@ end
 -------------------------------------------------------------------------------
 do
     local scrollFrame = string.format
-    local Prm = {}
-    mod.TextPieces = Prm
+    local P = {}
+    mod.TextPieces = P
 
     -- Function-registered tag methods are shared directly: one body, no drift.
-    Prm.curhpshort = TagFns.curhpshort
-    Prm.healthshort = TagFns.healthshort
-    Prm.maxhpshort = TagFns.maxhpshort
-    Prm.perhp = TagFns.perhp
-    Prm.perhpnosign = TagFns.perhpnosign
-    Prm.level = TagFns.level
+    P.curhpshort = TagFns.curhpshort
+    P.healthshort = TagFns.healthshort
+    P.maxhpshort = TagFns.maxhpshort
+    P.perhp = TagFns.perhp
+    P.perhpnosign = TagFns.perhpnosign
+    P.level = TagFns.level
     -- Level in Blizzard's difficulty colors (Level Difficulty Color). A secret
     -- level passes through raw and uncolored, same rule as P.level.
-    Prm.levelcol = function(u)
+    P.levelcol = function(u)
         local l = TagFns.level(u)
         if issecretvalue(l) or l == "" then
             return l
@@ -1151,7 +1151,7 @@ do
         return CludesUI.ColorText(l, r, g, b)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
-    Prm.levelcolall = function(u)
+    P.levelcolall = function(u)
         local l = TagFns.level(u)
         if issecretvalue(l) or l == "" then
             return l
@@ -1159,29 +1159,29 @@ do
         local r, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
         return CludesUI.ColorText(l, r, g, b)
     end
-    Prm.name = TagFns.name
-    Prm.tgtcol = TagFns.tgtcol
-    Prm.tgtname = TagFns.tgtname
+    P.name = TagFns.name
+    P.tgtcol = TagFns.tgtcol
+    P.tgtname = TagFns.tgtname
 
     -- String-compiled tag methods get real equivalents (same logic, same
     -- _CUI_ globals; the compiled strings stay registered only while the tag
     -- engine still runs).
-    Prm.perpp = function(u)
+    P.perpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return scrollFrame("%d", UnitPowerPercent(u, pType, true, CurveConstants.ScaleTo100))
     end
-    Prm.curpp = function(u)
+    P.curpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return AbbreviateNumbers(UnitPower(u, pType))
     end
-    Prm.maxpp = function(u)
+    P.maxpp = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return AbbreviateNumbers(UnitPowerMax(u, pType))
     end
     -- Full numbers for the custom text tags ([hp], [hp:max], [pp], [pp:max]).
     -- %d formats a secret value like P.perpp does; [hp] names the status as
     -- curhpshort does.
-    Prm.curhp = function(u)
+    P.curhp = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
@@ -1193,21 +1193,21 @@ do
         end
         return scrollFrame("%d", UnitHealth(u) or 0)
     end
-    Prm.maxhp = function(u)
+    P.maxhp = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
         return scrollFrame("%d", UnitHealthMax(u) or 0)
     end
-    Prm.curppfull = function(u)
+    P.curppfull = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return scrollFrame("%d", UnitPower(u, pType))
     end
-    Prm.maxppfull = function(u)
+    P.maxppfull = function(u)
         local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
         return scrollFrame("%d", UnitPowerMax(u, pType))
     end
-    Prm.absorb = function(u)
+    P.absorb = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
@@ -1219,19 +1219,19 @@ do
         local conf = _G._CUI_AbbrevDecimalCfg
         return conf and AbbreviateNumbers(val, conf) or mod.AbbreviateValue(val, "absorb")
     end
-    Prm.absorbshort = function(u)
+    P.absorbshort = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
         return AbbrevAbsorb(UnitGetTotalAbsorbs(u) or 0)
     end
-    Prm.healabsorb = function(u)
+    P.healabsorb = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
         return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalHealAbsorbs(u) or 0))
     end
-    Prm.healabsorbshort = function(u)
+    P.healabsorbshort = function(u)
         if not u or not UnitExists(u) then
             return ""
         end
@@ -1252,9 +1252,9 @@ do
             return AbbrevAbsorb(val)
         end
     end
-    Prm.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
-    Prm.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
-    Prm.group = function(u)
+    P.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
+    P.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
+    P.group = function(u)
         if not IsInRaid() then
             return ""
         end
@@ -1373,81 +1373,81 @@ do
     -- listed (the target pieces and separators, the Name Format twins) makes
     -- its zone repaint on every value event.
     local PIECE_READS = {
-        [Prm.perhp] = "hp",
-        [Prm.perhpnosign] = "hp",
-        [Prm.curhpshort] = "hp",
-        [Prm.healthshort] = "hp",
-        [Prm.maxhpshort] = "hp",
-        [Prm.curhp] = "hp",
-        [Prm.maxhp] = "hp",
-        [Prm.perpp] = "pp",
-        [Prm.curpp] = "pp",
-        [Prm.maxpp] = "pp",
-        [Prm.curppfull] = "pp",
-        [Prm.maxppfull] = "pp",
-        [Prm.absorb] = "abs",
-        [Prm.absorbshort] = "abs",
-        [Prm.healabsorb] = "habs",
-        [Prm.healabsorbshort] = "habs",
-        [Prm.absorbshorttag] = "abs",
-        [Prm.healabsorbshorttag] = "habs",
-        [Prm.name] = "id",
-        [Prm.level] = "id",
-        [Prm.levelcol] = "id",
-        [Prm.levelcolall] = "id",
-        [Prm.group] = "roster",
+        [P.perhp] = "hp",
+        [P.perhpnosign] = "hp",
+        [P.curhpshort] = "hp",
+        [P.healthshort] = "hp",
+        [P.maxhpshort] = "hp",
+        [P.curhp] = "hp",
+        [P.maxhp] = "hp",
+        [P.perpp] = "pp",
+        [P.curpp] = "pp",
+        [P.maxpp] = "pp",
+        [P.curppfull] = "pp",
+        [P.maxppfull] = "pp",
+        [P.absorb] = "abs",
+        [P.absorbshort] = "abs",
+        [P.healabsorb] = "habs",
+        [P.healabsorbshort] = "habs",
+        [P.absorbshorttag] = "abs",
+        [P.healabsorbshorttag] = "habs",
+        [P.name] = "id",
+        [P.level] = "id",
+        [P.levelcol] = "id",
+        [P.levelcolall] = "id",
+        [P.group] = "roster",
     }
     -- The tags' Name Format modifiers ([name:abbr]): they shape the plain name,
     -- whatever the slot's own Name Format says. [name:last] and [target:last]
     -- show nothing for your own unit while your name is your first name alone
     -- (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
-    local function Shaped(piece, modeName, ofTarget)
-        if modeName ~= "last" then
+    local function Shaped(piece, mode, ofTarget)
+        if mode ~= "last" then
             return function(unitToken)
-                return CludesUI.ShortName(piece(unitToken), modeName)
+                return CludesUI.ShortName(piece(unitToken), mode)
             end
         end
         return function(unitToken)
             if CludesUI.OwnSurnameHidden(ofTarget and unitToken and (unitToken .. "target") or unitToken) then
                 return ""
             end
-            return CludesUI.ShortName(piece(unitToken), modeName)
+            return CludesUI.ShortName(piece(unitToken), mode)
         end
     end
-    for _, modeName in ipairs({ "first", "last", "abbr" }) do
-        Prm["name" .. modeName] = Shaped(Prm.name, modeName)
-        Prm["tgt" .. modeName] = Shaped(Prm.tgtname, modeName, true)
-        PIECE_READS[Prm["name" .. modeName]] = "id"
+    for _, mode in ipairs({ "first", "last", "abbr" }) do
+        P["name" .. mode] = Shaped(P.name, mode)
+        P["tgt" .. mode] = Shaped(P.tgtname, mode, true)
+        PIECE_READS[P["name" .. mode]] = "id"
     end
 
     -- Custom content: the slot's own format string (<prefix>CustomFormat),
     -- parsed by CludesUI.TextTags against this binding of the unit schema.
     -- Options, preview and the width estimate read the same catalog.
     local TAG_CATALOG = CludesUI.TextTags.Bind(CludesUI.TextTags.UNIT, {
-        ["hp"] = Prm.curhp,
-        ["hp:abr"] = Prm.curhpshort,
-        ["hp:max"] = Prm.maxhp,
-        ["hp:max:abr"] = Prm.maxhpshort,
-        ["hp:pct"] = Prm.perhp,
-        ["pp"] = Prm.curppfull,
-        ["pp:abr"] = Prm.curpp,
-        ["pp:max"] = Prm.maxppfull,
-        ["pp:max:abr"] = Prm.maxpp,
-        ["pp:pct"] = Prm.perpp,
-        ["absorb"] = Prm.absorb,
-        ["absorb:abr"] = Prm.absorbshorttag,
-        ["healabsorb"] = Prm.healabsorb,
-        ["healabsorb:abr"] = Prm.healabsorbshorttag,
-        ["name"] = Prm.name,
-        ["name:first"] = Prm.namefirst,
-        ["name:last"] = Prm.namelast,
-        ["name:abbr"] = Prm.nameabbr,
-        ["target"] = Prm.tgtname,
-        ["target:first"] = Prm.tgtfirst,
-        ["target:last"] = Prm.tgtlast,
-        ["target:abbr"] = Prm.tgtabbr,
-        ["level"] = Prm.level,
-        ["group"] = Prm.group,
+        ["hp"] = P.curhp,
+        ["hp:abr"] = P.curhpshort,
+        ["hp:max"] = P.maxhp,
+        ["hp:max:abr"] = P.maxhpshort,
+        ["hp:pct"] = P.perhp,
+        ["pp"] = P.curppfull,
+        ["pp:abr"] = P.curpp,
+        ["pp:max"] = P.maxppfull,
+        ["pp:max:abr"] = P.maxpp,
+        ["pp:pct"] = P.perpp,
+        ["absorb"] = P.absorb,
+        ["absorb:abr"] = P.absorbshorttag,
+        ["healabsorb"] = P.healabsorb,
+        ["healabsorb:abr"] = P.healabsorbshorttag,
+        ["name"] = P.name,
+        ["name:first"] = P.namefirst,
+        ["name:last"] = P.namelast,
+        ["name:abbr"] = P.nameabbr,
+        ["target"] = P.tgtname,
+        ["target:first"] = P.tgtfirst,
+        ["target:last"] = P.tgtlast,
+        ["target:abbr"] = P.tgtabbr,
+        ["level"] = P.level,
+        ["group"] = P.group,
     })
     mod.UF_TextTags = TAG_CATALOG
 
@@ -1464,7 +1464,7 @@ do
             for i = 1, #keyList do
                 local key = keyList[i]
                 if key == "level" and lvlCol then
-                    pieces[i] = prefs.levelDifficultyColorFriendly and Prm.levelcolall or Prm.levelcol
+                    pieces[i] = prefs.levelDifficultyColorFriendly and P.levelcolall or P.levelcol
                 else
                     pieces[i] = map[key]
                 end
@@ -1480,7 +1480,7 @@ do
             return parsed.fmt, pieces, static
         end
         if contentFrame == "nametotarget" then
-            return "%s%s%s%s", { Prm.name, mod.MakeTgtSepPiece(prefixText, prefs), Prm.tgtcol, Prm.tgtname }
+            return "%s%s%s%s", { P.name, mod.MakeTgtSepPiece(prefixText, prefs), P.tgtcol, P.tgtname }
         end
         -- Target: the unit's target name alone, after the slot's Prefix
         -- (nil = "T:", "" = none) in the Indicator Color. The target's colour
@@ -1496,25 +1496,25 @@ do
                 pieces[1] = mod.MakeTgtSepPiece(prefixText, prefs, pre .. " ")
             end
             if prefs[prefixText .. "ClassColor"] then
-                pieces[#pieces + 1] = Prm.tgtcol
+                pieces[#pieces + 1] = P.tgtcol
             end
-            pieces[#pieces + 1] = Prm.tgtname
+            pieces[#pieces + 1] = P.tgtname
             return string.rep("%s", #pieces), pieces
         end
-        local spec_def = ZONE_STATIC[contentFrame]
-        if not spec_def then
+        local def = ZONE_STATIC[contentFrame]
+        if not def then
             return nil
         end
         local pieces = {}
         local lvlCol = prefs and prefs.levelDifficultyColor
-        for i = 2, #spec_def do
-            local key = spec_def[i]
+        for i = 2, #def do
+            local key = def[i]
             if key == "level" and lvlCol then
                 key = prefs.levelDifficultyColorFriendly and "levelcolall" or "levelcol"
             end
-            pieces[#pieces + 1] = Prm[key]
+            pieces[#pieces + 1] = P[key]
         end
-        return spec_def[1], pieces, ZONE_IDENTITY[contentFrame] or nil
+        return def[1], pieces, ZONE_IDENTITY[contentFrame] or nil
     end
 
     -- Name Format: a slot set to one (<prefix>NameFormat) gets short-name twins
@@ -1527,24 +1527,24 @@ do
     -- shows (WoW Forever: First / Last Name leave a non-player's name whole).
     do
         local short, unitMode = CludesUI.ShortName, CludesUI.UnitNameFormat
-        local nameFn, tgtFn = Prm.name, Prm.tgtname
+        local nameFn, tgtFn = P.name, P.tgtname
         local twinsByMode = {}
-        local baseValue = mod.ContentToZone
+        local base = mod.ContentToZone
         function mod.ContentToZone(contentFrame, prefixText, prefs)
-            local fmt, pieces, static = baseValue(contentFrame, prefixText, prefs)
-            local modeName = fmt and prefs and prefs[prefixText .. "NameFormat"]
-            if modeName and CludesUI.IsNameFormat(modeName) then
-                local twins = twinsByMode[modeName]
+            local fmt, pieces, static = base(contentFrame, prefixText, prefs)
+            local mode = fmt and prefs and prefs[prefixText .. "NameFormat"]
+            if mode and CludesUI.IsNameFormat(mode) then
+                local twins = twinsByMode[mode]
                 if not twins then
                     twins = {
                         [nameFn] = function(u)
-                            return short(nameFn(u), unitMode(modeName, u))
+                            return short(nameFn(u), unitMode(mode, u))
                         end,
                         [tgtFn] = function(u)
-                            return short(tgtFn(u), unitMode(modeName, u and (u .. "target")))
+                            return short(tgtFn(u), unitMode(mode, u and (u .. "target")))
                         end,
                     }
-                    twinsByMode[modeName] = twins
+                    twinsByMode[mode] = twins
                 end
                 for i = 1, #pieces do
                     pieces[i] = twins[pieces[i]] or pieces[i]

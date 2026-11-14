@@ -163,11 +163,11 @@ local function MinimapDriverString(p, vm)
     if vm then
         return CludesUI.BuildVisibilityDriverString("", vm)
     end
-    local modeName = p.visibility
-    if modeName == "in_combat" then
+    local mode = p.visibility
+    if mode == "in_combat" then
         return "[combat] show; hide"
     end
-    if modeName == "out_of_combat" then
+    if mode == "out_of_combat" then
         return "[nocombat] show; hide"
     end
     return nil
@@ -357,15 +357,15 @@ do
         end)
 
         local posY = -PADDING
-        for _, itemInfo in ipairs(menuItems) do
-            if itemInfo.divider then
+        for _, item in ipairs(menuItems) do
+            if item.divider then
                 local div = menuFrame:CreateTexture(nil, "ARTWORK")
                 div:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, posY - 4)
                 div:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, posY - 4)
                 div:SetHeight(1)
                 div:SetColorTexture(0.3, 0.3, 0.3, 0.6)
                 posY = posY - DIVIDER_H
-            elseif itemInfo.fn then
+            elseif item.fn then
                 -- Plain button (no secure template needed)
                 local button = CreateFrame("Button", nil, menuFrame)
                 button:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, posY)
@@ -381,9 +381,9 @@ do
                 labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(itemInfo.text))
+                labelText:SetText(CludesUI.L(item.text))
 
-                local itemFn = itemInfo.fn
+                local itemFn = item.fn
                 button:SetScript("OnClick", function()
                     SetMenuVisible(false)
                     itemFn()
@@ -392,8 +392,8 @@ do
                 posY = posY - BUTTON_H
             else
                 -- Secure click passthrough to a Blizzard MicroButton
-                local microRef = itemInfo.microButton and _G[itemInfo.microButton]
-                local btnName = "CUI_MicroMenu_" .. itemInfo.text:gsub("%s", "")
+                local microRef = item.microButton and _G[item.microButton]
+                local btnName = "CUI_MicroMenu_" .. item.text:gsub("%s", "")
                 local button = CreateFrame(
                     "Button",
                     btnName,
@@ -408,7 +408,7 @@ do
                 -- crashes on a Blizzard typo (SecureTemplates:564); MicroButtons are globally named so the macro reaches them directly.
                 local secureType = "macro"
                 if microRef then
-                    button:SetAttribute("*macrotext1", "/click " .. itemInfo.microButton)
+                    button:SetAttribute("*macrotext1", "/click " .. item.microButton)
                 end
                 button:SetAttribute("useOnKeyDown", false)
                 button:SetAttribute("*type1", secureType)
@@ -441,7 +441,7 @@ do
                 labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(itemInfo.text))
+                labelText:SetText(CludesUI.L(item.text))
 
                 button:HookScript("OnClick", function()
                     C_Timer.After(0, function()
@@ -503,22 +503,22 @@ end
 -- unlock mode too, so a drag measures from the same edges as the apply.
 -- Chained in front of any provider installed before this file loaded.
 local prevExtent = CludesUI._GetAnchorTargetExtent
-CludesUI._GetAnchorTargetExtent = function(targetKey, sideName)
+CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
         local l, r, t, b = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        if sideName == "LEFT" then
+        if side == "LEFT" then
             return (Minimap:GetLeft() + l) * ratio
-        elseif sideName == "RIGHT" then
+        elseif side == "RIGHT" then
             return (Minimap:GetRight() - r) * ratio
-        elseif sideName == "TOP" then
+        elseif side == "TOP" then
             return (Minimap:GetTop() - t) * ratio
-        elseif sideName == "BOTTOM" then
+        elseif side == "BOTTOM" then
             return (Minimap:GetBottom() + b) * ratio
         end
     end
     if prevExtent then
-        return prevExtent(targetKey, sideName)
+        return prevExtent(targetKey, side)
     end
     return nil
 end
@@ -748,9 +748,9 @@ do
             end
 
             -- Square border host (solid strips or textured backdrop)
-            local hostRegion = GetFFD(Minimap).borderHost
-            if hostRegion then
-                hostRegion:SetAlpha(alpha)
+            local host = GetFFD(Minimap).borderHost
+            if host then
+                host:SetAlpha(alpha)
             end
 
             -- WoW Forever look's Forever Square frame (the apply pass never sets

@@ -23,7 +23,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function SavedDB()
+    local function DB()
         return _G.CludesUITitleLineDB or {}
     end
 
@@ -33,14 +33,14 @@ initFrame:SetScript("OnEvent", function(self)
             text = textValue,
             tooltip = tooltip,
             getValue = function()
-                local val = SavedDB()[key]
+                local val = DB()[key]
                 if val == nil then
                     return default and true or false
                 end
                 return val and true or false
             end,
             setValue = function(val)
-                SavedDB()[key] = val and true or false
+                DB()[key] = val and true or false
             end,
         }
     end
@@ -51,11 +51,11 @@ initFrame:SetScript("OnEvent", function(self)
             type = "toggle",
             text = "Show the " .. tier.label .. " Line",
             getValue = function()
-                local hidden = SavedDB().hidden
+                local hidden = DB().hidden
                 return not (hidden and hidden[tier.key])
             end,
             setValue = function(val)
-                local saved = SavedDB()
+                local saved = DB()
                 saved.hidden = saved.hidden or {}
                 saved.hidden[tier.key] = (not val) or nil
                 if mod.Graph and mod.Graph.Refresh then
@@ -94,10 +94,10 @@ initFrame:SetScript("OnEvent", function(self)
             step = 5,
             tooltip = "The size of the graph window, in percent.",
             getValue = function()
-                return math.floor((SavedDB().scale or 1.15) * 100 + 0.5)
+                return math.floor((DB().scale or 1.15) * 100 + 0.5)
             end,
             setValue = function(val)
-                SavedDB().scale = math.floor(val + 0.5) / 100
+                DB().scale = math.floor(val + 0.5) / 100
                 if mod.Graph and mod.Graph.ApplyScale then
                     mod.Graph:ApplyScale()
                 end

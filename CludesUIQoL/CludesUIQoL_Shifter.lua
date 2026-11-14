@@ -294,9 +294,9 @@ end
 -- Offset from one point of a w x h box to another: a mover saves where one
 -- point of its box is, and the frame it places may hang from another (so a
 -- frame that grows keeps that edge where the player put it).
-local function AnchorShift(anchorPoint, anchorFrame, wid, hgt)
+local function AnchorShift(anchorPoint, anchor, wid, hgt)
     local px, py = PointFrac(anchorPoint)
-    local ax, ay = PointFrac(anchorFrame)
+    local ax, ay = PointFrac(anchor)
     return (ax - px) * wid, (ay - py) * hgt
 end
 
@@ -365,8 +365,8 @@ local function ApplyScale(widget, name)
         return
     end
     local ffd = GetFFD(widget)
-    local targetUnit = tempScale[widget] or GetSavedScale(name)
-    if targetUnit then
+    local target = tempScale[widget] or GetSavedScale(name)
+    if target then
         if ffd._shOrigScale == nil then
             ffd._shOrigScale = widget:GetScale()
         end
@@ -375,16 +375,16 @@ local function ApplyScale(widget, name)
         if not (ffd._shScaled and ffd._shOrigScale) then
             return
         end
-        targetUnit = ffd._shOrigScale
+        target = ffd._shOrigScale
         ffd._shScaled = nil
     end
-    if math.abs(widget:GetScale() - targetUnit) < 0.001 then
+    if math.abs(widget:GetScale() - target) < 0.001 then
         return
     end
-    SetShifterScale(widget, targetUnit)
+    SetShifterScale(widget, target)
 end
 
-local function ApplyScaleStep(widget, name, delta, modeName)
+local function ApplyScaleStep(widget, name, delta, mode)
     if InCombatLockdown() and Secured(widget) then
         return
     end
@@ -425,7 +425,7 @@ local function ApplyScaleStep(widget, name, delta, modeName)
         local ues = UIParent:GetEffectiveScale()
         return (fcx * es - ucx * ues) / es, (fcy * es - ucy * ues) / es
     end
-    if modeName == "save" then
+    if mode == "save" then
         SaveScale(name, new)
         tempScale[widget] = nil
         local saved = GetSavedPos(name)
@@ -649,7 +649,7 @@ secureDragUpdater:SetScript("OnUpdate", function()
     ffd._shIgnoreSP = false
 end)
 
-local function StartSecureDrag(widget, name, modeName)
+local function StartSecureDrag(widget, name, mode)
     local fcx, fcy = widget:GetCenter()
     if not fcx then
         return
@@ -657,7 +657,7 @@ local function StartSecureDrag(widget, name, modeName)
     local es = widget:GetEffectiveScale()
     secureDrag.frame = widget
     secureDrag.name = name
-    secureDrag.mode = modeName
+    secureDrag.mode = mode
     secureDrag.cursorX, secureDrag.cursorY = GetCursorPosition()
     secureDrag.startX, secureDrag.startY = fcx * es, fcy * es
     secureDrag.curX, secureDrag.curY = nil, nil
@@ -752,18 +752,18 @@ local function HookFrame(widget, name)
                 return
             end
             local noShift = CludesUIDB and CludesUIDB.shifterNoShift
-            local modeName
+            local mode
             if IsShiftKeyDown() or noShift then
-                modeName = "save"
+                mode = "save"
             elseif IsControlKeyDown() then
-                modeName = "temp"
+                mode = "temp"
             else
                 return
             end
             if Secured(widget) then
-                StartSecureDrag(widget, name, modeName)
+                StartSecureDrag(widget, name, mode)
             else
-                dragging = modeName
+                dragging = mode
                 widget:StartMoving()
             end
         end)
@@ -1234,10 +1234,10 @@ local function LootPlacer(details)
             if not place then
                 return nil
             end
-            local anchorFrame = details.anchor
-            if anchorFrame then
-                local dx, dy = AnchorShift(place.point, anchorFrame, details.defW, details.defH)
-                return anchorFrame, UIParent, place.relPoint, place.x + dx, place.y + dy
+            local anchor = details.anchor
+            if anchor then
+                local dx, dy = AnchorShift(place.point, anchor, details.defW, details.defH)
+                return anchor, UIParent, place.relPoint, place.x + dx, place.y + dy
             end
             return place.point, UIParent, place.relPoint, place.x, place.y
         end

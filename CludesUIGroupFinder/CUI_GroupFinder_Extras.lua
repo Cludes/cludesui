@@ -74,28 +74,28 @@ end
 local MASK = "Interface\\AddOns\\" .. FOLDER .. "\\media\\masks\\rounded.png"
 
 -- an atlas name, or a spell's texture (cropped to lose its built-in border)
-local function PaintIcon(ic, glyph)
-    if type(glyph) == "number" then
-        ic:SetTexture(glyph)
+local function PaintIcon(ic, icon)
+    if type(icon) == "number" then
+        ic:SetTexture(icon)
         ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
-        ic:SetAtlas(glyph)
+        ic:SetAtlas(icon)
     end
 end
 
 -- rounded icon after the text
-local function RoundIcon(hostFrame, glyph, after)
+local function RoundIcon(hostFrame, icon, after)
     local ic = hostFrame:CreateTexture(nil, "OVERLAY")
     ic:SetSize(12, 12)
     ic:SetPoint("LEFT", after, "RIGHT", 4, 0)
-    if glyph then
-        PaintIcon(ic, glyph)
+    if icon then
+        PaintIcon(ic, icon)
     end
-    local maskTex = hostFrame:CreateMaskTexture()
-    maskTex:SetTexture(MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    maskTex:SetAllPoints(ic)
-    ic:AddMaskTexture(maskTex)
-    ic.mask = maskTex
+    local mask = hostFrame:CreateMaskTexture()
+    mask:SetTexture(MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(ic)
+    ic:AddMaskTexture(mask)
+    ic.mask = mask
     return ic
 end
 
@@ -115,9 +115,9 @@ local function ArrowButton(ownerFrame, K)
     btn.IconMask = btn.Icon.mask
     btn.Icon:Hide()
     local skin = CM._ModuleNS and CM._ModuleNS.CludesUIBlizzardSkin
-    local Stl = skin and skin.WSkin
-    if Stl and Stl.Button then
-        Stl.Button(btn, { "Arrow", "Label", "Hint", "Icon", "IconMask" })
+    local S = skin and skin.WSkin
+    if S and S.Button then
+        S.Button(btn, { "Arrow", "Label", "Hint", "Icon", "IconMask" })
     else
         local backdrop = btn:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -154,16 +154,16 @@ end
 local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     local btn = ArrowButton(ownerFrame, K)
     function btn:ShowMode()
-        local modeName = modes[Get()] or modes[1]
-        self.Label:SetText(modeName.button or modeName.label)
-        if modeName.button then
+        local mode = modes[Get()] or modes[1]
+        self.Label:SetText(mode.button or mode.label)
+        if mode.button then
             self.Label:SetTextColor(1, 1, 1, 1)
         else
             self.Label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
         end
-        self.Hint:SetText(modeName.hint or "")
-        if modeName.icon then
-            PaintIcon(self.Icon, modeName.icon)
+        self.Hint:SetText(mode.hint or "")
+        if mode.icon then
+            PaintIcon(self.Icon, mode.icon)
             self.Icon:Show()
         else
             self.Icon:Hide()
@@ -181,16 +181,16 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     lbg:SetColorTexture(0, 0, 0, 1)
     CM.MakeBorder(entries, K.ThemeBorder())
     entries.items = {}
-    for idx, modeName in ipairs(modes) do
+    for idx, mode in ipairs(modes) do
         local it = CreateFrame("Button", nil, entries)
         it:SetHeight(K.ITEM_H)
         it:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, -(2 + (idx - 1) * K.ITEM_H))
         it:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, -(2 + (idx - 1) * K.ITEM_H))
         it.text, it.hint = TwoPart(it, K)
-        it.text:SetText(modeName.label)
-        it.hint:SetText(modeName.hint or "")
-        if modeName.icon then
-            RoundIcon(it, modeName.icon, it.text)
+        it.text:SetText(mode.label)
+        it.hint:SetText(mode.hint or "")
+        if mode.icon then
+            RoundIcon(it, mode.icon, it.text)
         end
         local ihl = it:CreateTexture(nil, "HIGHLIGHT")
         ihl:SetAllPoints()
@@ -339,14 +339,14 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
             t:SetChecked(t.any == any)
         end
     end
-    for _, modeName in ipairs(MATCH) do
-        local t = K.MenuItem(pop, py, modeName.label, function()
-            K.Cfg().extraRolesAny = modeName.any or nil
+    for _, mode in ipairs(MATCH) do
+        local t = K.MenuItem(pop, py, mode.label, function()
+            K.Cfg().extraRolesAny = mode.any or nil
             PaintMatch()
             K.Refilter()
             K.Paint()
         end)
-        t.any = modeName.any
+        t.any = mode.any
         local _, cb = t.label:GetPoint(1)
         t.label:ClearAllPoints()
         t.label:SetPoint("LEFT", cb, "RIGHT", 7, 0)
@@ -354,9 +354,9 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
         K.Font(hint, K.ITEM_FONT)
         hint:SetPoint("LEFT", t.label, "RIGHT", 3, 0)
         hint:SetTextColor(HINT_GREY, HINT_GREY, HINT_GREY, 1)
-        hint:SetText(modeName.hint)
+        hint:SetText(mode.hint)
         t:HookScript("OnEnter", function(self)
-            K.Tip(self, modeName.tip)
+            K.Tip(self, mode.tip)
         end)
         t:HookScript("OnLeave", K.Untip)
         toggles[#toggles + 1] = t
@@ -455,8 +455,8 @@ local function ScrollStrip(s, step)
     end -- recolor the squares now in view
 end
 
-local function StripArrow(s, rowFrame, file, step)
-    local b = CreateFrame("Button", nil, rowFrame)
+local function StripArrow(s, row, file, step)
+    local b = CreateFrame("Button", nil, row)
     b.tex = b:CreateTexture(nil, "OVERLAY")
     b.tex:SetTexture(ARROW_DIR .. file)
     b.tex:SetSize(16, 16)
@@ -476,19 +476,19 @@ local function StripArrow(s, rowFrame, file, step)
 end
 
 -- one strip. key = the square's data field, fill dresses a square
-local function NewStrip(key, fillTex)
+local function NewStrip(key, fill)
     local s = { offset = 0 }
-    return function(entries, squares, Make, dim, after, show, cols, slots, rowFrame, gap, paint)
+    return function(entries, squares, Make, size, after, show, cols, slots, row, gap, paint)
         s.paint = paint
         if not s.clip then
-            s.clip = CreateFrame("Frame", nil, rowFrame)
+            s.clip = CreateFrame("Frame", nil, row)
             s.clip:SetClipsChildren(true)
             s.clip:EnableMouseWheel(true)
             s.clip:SetScript("OnMouseWheel", function(_, delta)
                 ScrollStrip(s, delta > 0 and -1 or 1)
             end)
-            s.left = StripArrow(s, rowFrame, "cui-arrow-left.png", -1)
-            s.right = StripArrow(s, rowFrame, "cui-arrow-right.png", 1)
+            s.left = StripArrow(s, row, "cui-arrow-left.png", -1)
+            s.right = StripArrow(s, row, "cui-arrow-right.png", 1)
         end
         if not show or #entries == 0 or not after then
             for _, sq in ipairs(squares) do
@@ -501,7 +501,7 @@ local function NewStrip(key, fillTex)
             s.list = nil
             return 1
         end
-        local per = dim + gap
+        local per = size + gap
         local startX = gap + (slots - cols) * per
         local room = cols * per - gap
         local fits = #entries * per - gap <= room
@@ -509,8 +509,8 @@ local function NewStrip(key, fillTex)
         s.clip:ClearAllPoints()
         s.left:ClearAllPoints()
         s.right:ClearAllPoints()
-        s.left:SetSize(ARROW_W, dim)
-        s.right:SetSize(ARROW_W, dim)
+        s.left:SetSize(ARROW_W, size)
+        s.right:SetSize(ARROW_W, size)
         if fits then
             s.left:Hide()
             s.right:Hide()
@@ -523,12 +523,12 @@ local function NewStrip(key, fillTex)
         -- scrolling: runs to the row's right edge
         local clipW = vis * per - gap
         if fits then
-            s.clip:SetSize(clipW, dim)
+            s.clip:SetSize(clipW, size)
         else
-            s.right:SetPoint("RIGHT", rowFrame, "RIGHT", 4, 0) -- a touch wider so the last border isn't clipped
+            s.right:SetPoint("RIGHT", row, "RIGHT", 4, 0) -- a touch wider so the last border isn't clipped
             s.right:Show()
             s.clip:SetPoint("RIGHT", s.right, "LEFT", -gap, 0)
-            s.clip:SetHeight(dim)
+            s.clip:SetHeight(size)
             clipW = room + 4 - 2 * (ARROW_W + gap)
         end
         s.clip:Show()
@@ -542,14 +542,14 @@ local function NewStrip(key, fillTex)
                 sq:SetParent(s.clip)
             end
             sq[key] = d
-            fillTex(sq, d)
-            sq:SetSize(dim, dim)
+            fill(sq, d)
+            sq:SetSize(size, size)
         end
         for idx = #entries + 1, #squares do
             squares[idx][key] = nil
             squares[idx]:Hide()
         end
-        s.list, s.squares, s.size, s.gap, s.clipW = entries, squares, dim, gap, clipW
+        s.list, s.squares, s.size, s.gap, s.clipW = entries, squares, size, gap, clipW
         PlaceStrip(s)
         return 1
     end
@@ -566,10 +566,10 @@ GFNS.ExtraDelveStrip = NewStrip("delve", function(sq, d)
 end)
 
 -- filters menu spans search box to refresh
-GFNS.ExtraWidenMenu = function(m, anchorFrame, gap, right)
+GFNS.ExtraWidenMenu = function(m, anchor, gap, right)
     local sp = LFGListFrame and LFGListFrame.SearchPanel
     local leftX = sp and (sp.SearchBox or sp.BackButton)
-    if not (leftX and leftX:IsVisible() and leftX:GetLeft() and anchorFrame:GetLeft()) then
+    if not (leftX and leftX:IsVisible() and leftX:GetLeft() and anchor:GetLeft()) then
         return
     end
     -- split evenly
@@ -582,13 +582,10 @@ GFNS.ExtraWidenMenu = function(m, anchorFrame, gap, right)
         end
     end
     local sideW = m.side and m.side:GetWidth() or 0
-    local dx = (
-        leftX:GetLeft() * leftX:GetEffectiveScale()
-        - anchorFrame:GetLeft() * anchorFrame:GetEffectiveScale()
-    )
+    local dx = (leftX:GetLeft() * leftX:GetEffectiveScale() - anchor:GetLeft() * anchor:GetEffectiveScale())
             / m:GetEffectiveScale()
         + sideW
-    m:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", dx, -gap)
+    m:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", dx, -gap)
 end
 
 -------------------------------------------------------------------------------
@@ -661,18 +658,18 @@ local CLASS_ROWS = {
 }
 
 -- the row's keys on this tab
-local function Keys(rowFrame, raids)
-    if raids and rowFrame.raidKey then
-        return rowFrame.raidKey, rowFrame.raidPick
+local function Keys(row, raids)
+    if raids and row.raidKey then
+        return row.raidKey, row.raidPick
     end
-    return rowFrame.key, rowFrame.pick
+    return row.key, row.pick
 end
 
-local function Missing(c, rowFrame, raids)
-    local _, pick = Keys(rowFrame, raids)
+local function Missing(c, row, raids)
+    local _, pick = Keys(row, raids)
     local val = c[pick]
     if val == nil then
-        return rowFrame.missingDefault == true
+        return row.missingDefault == true
     end
     return val == true
 end
@@ -690,19 +687,19 @@ GFNS.ExtraClassRows = function(m, posY, K)
     local roleG, miscG = Block(m, posY), Block(m, posY + K.ITEM_H)
     m.extraClassGrp, m.extraMiscGrp = roleG, miscG
     local ry, my = 0, 0
-    for _, rowFrame in ipairs(CLASS_ROWS) do
+    for _, row in ipairs(CLASS_ROWS) do
         local function ShowTip(self)
             if self.list and self.list:IsShown() then
                 return
             end
-            local titleText, lines = rowFrame.Tip(K)
-            K.Tip(self, titleText, unpack(lines))
+            local title, lines = row.Tip(K)
+            K.Tip(self, title, unpack(lines))
         end
-        local inRoles = rowFrame.key == "extraMyClass"
-        local key, pick = Keys(rowFrame, raids)
-        local has, missing = rowFrame.has, rowFrame.missing
+        local inRoles = row.key == "extraMyClass"
+        local key, pick = Keys(row, raids)
+        local has, missing = row.has, row.missing
         local hasBtn, missingBtn
-        local glyph = rowFrame.spell and C_Spell.GetSpellTexture(rowFrame.spell)
+        local icon = row.spell and C_Spell.GetSpellTexture(row.spell)
         if inRoles then
             local name, file = MyClass()
             local cls = (name and file) and K.ClassLine(file, name) or name or CludesUI.L("Class")
@@ -710,21 +707,21 @@ GFNS.ExtraClassRows = function(m, posY, K)
             -- full alpha so the class color shows, has / no greyed by hand
             hasBtn, missingBtn =
                 DIM_HEX .. CludesUI.L("Has") .. "|r " .. cls, DIM_HEX .. CludesUI.L("No") .. "|r " .. cls
-            glyph = file and ("classicon-" .. file:lower())
+            icon = file and ("classicon-" .. file:lower())
         end
-        local itemInfo = K.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
+        local item = K.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
             local c = K.Cfg()
             c[key] = (not c[key]) or nil
             K.Refilter()
             K.Paint()
         end)
-        m.items["flag_" .. key] = itemInfo
-        itemInfo.label:Hide()
-        local btn = Dropdown(itemInfo, K, {
-            { label = has, button = hasBtn, icon = glyph },
-            { label = missing, button = missingBtn, icon = glyph },
+        m.items["flag_" .. key] = item
+        item.label:Hide()
+        local btn = Dropdown(item, K, {
+            { label = has, button = hasBtn, icon = icon },
+            { label = missing, button = missingBtn, icon = icon },
         }, function()
-            return Missing(K.Cfg(), rowFrame, raids) and 2 or 1
+            return Missing(K.Cfg(), row, raids) and 2 or 1
         end, function(idx)
             -- picking turns the class row on; lust / brez leave the box alone
             local c = K.Cfg()
@@ -734,8 +731,8 @@ GFNS.ExtraClassRows = function(m, posY, K)
             end
         end)
         btn:SetHeight(K.ITEM_H - 2)
-        btn:SetPoint("LEFT", itemInfo, "LEFT", 8 + K.CHECK_SZ + 7, 0)
-        btn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
+        btn:SetPoint("LEFT", item, "LEFT", 8 + K.CHECK_SZ + 7, 0)
+        btn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
         btn:SetScript("OnEnter", ShowTip)
         if inRoles then
             ry = ry + K.ITEM_H
@@ -778,8 +775,8 @@ GFNS.ExtraClassKeep = function(ident, details, c, raids)
             end
         end
     end
-    for _, rowFrame in ipairs(CLASS_ROWS) do
-        if c[Keys(rowFrame, raids)] and have[rowFrame.key] == Missing(c, rowFrame, raids) then
+    for _, row in ipairs(CLASS_ROWS) do
+        if c[Keys(row, raids)] and have[row.key] == Missing(c, row, raids) then
             return false
         end
     end
@@ -950,10 +947,10 @@ local function RowArt(record, p)
         p.art = record:CreateTexture(nil, "BACKGROUND", nil, 7)
         p.art:SetAlpha(ART_ALPHA)
         -- curved fade so the art's own frame never shows
-        local maskTex = record:CreateMaskTexture()
-        maskTex:SetTexture(FADE_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        maskTex:SetAllPoints(p.art)
-        p.art:AddMaskTexture(maskTex)
+        local mask = record:CreateMaskTexture()
+        mask:SetTexture(FADE_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetAllPoints(p.art)
+        p.art:AddMaskTexture(mask)
     end
     p.art:SetTexture(art)
     p.art:SetTexCoord(unpack(ART_CROP))
@@ -981,16 +978,16 @@ local function TagEntry(record)
         return
     end
     local play = record.Playstyle
-    local success, _, dim = pcall(play.GetFont, play)
-    if success and type(dim) == "number" and not Secret(dim) and dim > 0 then
+    local success, _, size = pcall(play.GetFont, play)
+    if success and type(size) == "number" and not Secret(size) and size > 0 then
         for _, fontStr in ipairs({ p.sep, p.tag }) do
             local filePath, _, flags = fontStr:GetFont()
             if filePath then
-                fontStr:SetFont(filePath, dim, flags or "")
+                fontStr:SetFont(filePath, size, flags or "")
             end
         end
     else
-        dim = 10
+        size = 10
     end
     local okText, textValue = pcall(play.GetText, play)
     local hasPlay = okText and type(textValue) == "string" and not Secret(textValue) and textValue ~= ""
@@ -1009,7 +1006,7 @@ local function TagEntry(record)
     local art = d.flag
     if art then
         p.flag:SetTexture(art)
-        p.flag:SetSize(math.floor(dim * 4 / 3 + 0.5), dim)
+        p.flag:SetSize(math.floor(size * 4 / 3 + 0.5), size)
         p.flag:ClearAllPoints()
         p.flag:SetPoint("LEFT", p.tag, "RIGHT", 4, 0)
         p.flag:Show()
@@ -1018,9 +1015,9 @@ end
 
 local function RetagRows()
     local sp = LFGListFrame and LFGListFrame.SearchPanel
-    local boxFrame = sp and sp.ScrollBox
-    if boxFrame and boxFrame.ForEachFrame then
-        boxFrame:ForEachFrame(TagEntry)
+    local box = sp and sp.ScrollBox
+    if box and box.ForEachFrame then
+        box:ForEachFrame(TagEntry)
     end
     -- our results list too
     if mod.OwnListRefresh then
@@ -1048,37 +1045,37 @@ mod.SORT_MODES = {
 }
 
 -- a menu row: label + dropdown
-local function ChoiceItem(column, posY, specInfo, G, up)
-    local itemInfo = CreateFrame("Frame", nil, column)
-    itemInfo:SetHeight(G.ITEM_H)
-    itemInfo:SetPoint("TOPLEFT", column, "TOPLEFT", 1, -posY)
-    itemInfo:SetPoint("TOPRIGHT", column, "TOPRIGHT", -1, -posY)
-    itemInfo.label = itemInfo:CreateFontString(nil, "OVERLAY")
-    G.Font(itemInfo.label, G.ITEM_FONT)
-    itemInfo.label:SetPoint("LEFT", itemInfo, "LEFT", 9, 0)
-    itemInfo.label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
-    itemInfo.label:SetText(specInfo.label)
+local function ChoiceItem(col, posY, specInfo, G, up)
+    local item = CreateFrame("Frame", nil, col)
+    item:SetHeight(G.ITEM_H)
+    item:SetPoint("TOPLEFT", col, "TOPLEFT", 1, -posY)
+    item:SetPoint("TOPRIGHT", col, "TOPRIGHT", -1, -posY)
+    item.label = item:CreateFontString(nil, "OVERLAY")
+    G.Font(item.label, G.ITEM_FONT)
+    item.label:SetPoint("LEFT", item, "LEFT", 9, 0)
+    item.label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    item.label:SetText(specInfo.label)
     local modes = specInfo.choice
     local function Get()
         local val = G.Cfg()[specInfo.key]
-        for idx, modeName in ipairs(modes) do
-            if modeName.key == val then
+        for idx, mode in ipairs(modes) do
+            if mode.key == val then
                 return idx
             end
         end
         return 1
     end
-    local btn = Dropdown(itemInfo, G, modes, Get, function(idx)
+    local btn = Dropdown(item, G, modes, Get, function(idx)
         G.Cfg()[specInfo.key] = modes[idx].key
     end, up)
     btn:SetHeight(G.ITEM_H - 2)
-    btn:SetPoint("LEFT", itemInfo.label, "RIGHT", 10, 0)
-    btn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
-    itemInfo.btn = btn
-    function itemInfo:Paint()
+    btn:SetPoint("LEFT", item.label, "RIGHT", 10, 0)
+    btn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+    item.btn = btn
+    function item:Paint()
         self.btn:ShowMode()
     end
-    return itemInfo
+    return item
 end
 
 -------------------------------------------------------------------------------
@@ -1102,7 +1099,7 @@ for _, d in ipairs(mod.RegionList() or {}) do
 end
 
 -- misc in two columns, lined up with the side panel
-local function LayoutMisc(dropMenu, sideName)
+local function LayoutMisc(dropMenu, side)
     local roleG, miscG, sg = dropMenu.extraClassGrp, dropMenu.extraMiscGrp, dropMenu.extraSpecGrp
     if not (roleG and miscG and sg and dropMenu.extraRolesEnd) then
         return
@@ -1110,7 +1107,7 @@ local function LayoutMisc(dropMenu, sideName)
     local posY = dropMenu.extraRolesEnd
     PlaceBlock(sg, dropMenu, posY)
     posY = posY + sg:GetHeight()
-    local miscY, rowsY = sideName and sideName.extraMiscY, sideName and sideName.extraMiscRowsY
+    local miscY, rowsY = side and side.extraMiscY, side and side.extraMiscRowsY
     if miscY and rowsY and miscY >= posY then
         Divider(dropMenu, miscY)
         posY = rowsY
@@ -1124,12 +1121,12 @@ local function LayoutMisc(dropMenu, sideName)
     -- sort by under your class, its list opening upwards
     local K = dropMenu.extraK
     if K then
-        local rowFrame = CreateFrame("Frame", nil, dropMenu)
-        rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -posY)
-        rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", 0, -posY)
-        rowFrame:SetHeight(K.ITEM_H)
+        local row = CreateFrame("Frame", nil, dropMenu)
+        row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -posY)
+        row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", 0, -posY)
+        row:SetHeight(K.ITEM_H)
         ChoiceItem(
-            rowFrame,
+            row,
             0,
             { key = "extraSortBy", label = CludesUI.L("Sort By"), choice = mod.SORT_MODES },
             K,
@@ -1137,33 +1134,33 @@ local function LayoutMisc(dropMenu, sideName)
         )
         posY = posY + K.ITEM_H
     end
-    local hgt = math.max(sideName and sideName.extraEndY and (sideName.extraEndY + 3) or 0, posY + 3)
+    local hgt = math.max(side and side.extraEndY and (side.extraEndY + 3) or 0, posY + 3)
     dropMenu:SetHeight(hgt)
-    if sideName then
-        sideName:SetHeight(hgt)
+    if side then
+        side:SetHeight(hgt)
     end
 end
 
-GFNS.ExtraDecorateMenu = function(dropMenu, sideName)
+GFNS.ExtraDecorateMenu = function(dropMenu, side)
     if dropMenu then
-        LayoutMisc(dropMenu, sideName)
+        LayoutMisc(dropMenu, side)
     end
-    for _, ownerFrame in ipairs({ dropMenu, sideName }) do
+    for _, ownerFrame in ipairs({ dropMenu, side }) do
         local itemList = ownerFrame and ownerFrame.items
         if itemList then
             for key, art in pairs(ICONS) do
-                local itemInfo = itemList[key]
-                if itemInfo and itemInfo.label and not itemInfo.extraIcon then
-                    local _, cb = itemInfo.label:GetPoint(1)
+                local item = itemList[key]
+                if item and item.label and not item.extraIcon then
+                    local _, cb = item.label:GetPoint(1)
                     if cb then
-                        local texture = itemInfo:CreateTexture(nil, "OVERLAY")
+                        local texture = item:CreateTexture(nil, "OVERLAY")
                         texture:SetTexture(art[1])
                         texture:SetSize(art[2], art[3])
                         texture:SetPoint("LEFT", cb, "RIGHT", 6, 0)
-                        itemInfo.label:ClearAllPoints()
-                        itemInfo.label:SetPoint("LEFT", texture, "RIGHT", 5, 0)
-                        itemInfo.label:SetPoint("RIGHT", itemInfo, "RIGHT", -4, 0)
-                        itemInfo.extraIcon = texture
+                        item.label:ClearAllPoints()
+                        item.label:SetPoint("LEFT", texture, "RIGHT", 5, 0)
+                        item.label:SetPoint("RIGHT", item, "RIGHT", -4, 0)
+                        item.extraIcon = texture
                     end
                 end
             end

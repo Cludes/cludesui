@@ -31,12 +31,12 @@ mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX = POSITIONS, POS_INDEX
 -- One text: kind, label, and its keys. mode: the mode key (Health, Power, Heal
 -- Absorb); fmt: the template key (Custom); above: Show Above Icons (unset: as the
 -- name's). The level is drawn in the name's colour.
-local function Text(ident, kindOf, labelText, prefixText, modeName)
+local function Text(ident, kind, labelText, prefixText, mode)
     return {
         id = ident,
-        kind = kindOf,
+        kind = kind,
         label = labelText,
-        mode = modeName and (prefixText .. "Mode") or nil,
+        mode = mode and (prefixText .. "Mode") or nil,
         pos = prefixText .. "Position",
         x = prefixText .. "OffsetX",
         y = prefixText .. "OffsetY",

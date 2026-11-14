@@ -30,7 +30,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function SavedDB()
+    local function DB()
         local d = _G._CUCHAT_DB
         if d and d.profile and d.profile.chat then
             return d.profile.chat
@@ -38,10 +38,10 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return SavedDB()[k]
+        return DB()[k]
     end
     local function Set(k, val)
-        SavedDB()[k] = val
+        DB()[k] = val
     end
 
     local function RefreshAll()
@@ -104,7 +104,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Row 1: Visibility (one control; no mouseover for chat frames) | Lock Main Chat Size
             _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
-                getStore = SavedDB,
+                getStore = DB,
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
                 onChanged = function()
@@ -501,8 +501,8 @@ initFrame:SetScript("OnEvent", function(self)
                 if not CludesUI._prebuilding then
                     local region = borderRow._rightRegion
                     local ctrl = region._control
-                    local function ApplyMode(modeName)
-                        Set("panelBorderColorMode", modeName)
+                    local function ApplyMode(mode)
+                        Set("panelBorderColorMode", mode)
                         if CHAT.ApplyExtendedBackground then
                             CHAT.ApplyExtendedBackground()
                         end
@@ -513,8 +513,8 @@ initFrame:SetScript("OnEvent", function(self)
                         region,
                         borderRow:GetFrameLevel() + 3,
                         function()
-                            local _, classFile = UnitClass("player")
-                            local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                            local _, class = UnitClass("player")
+                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                             return c and c.r or 1, c and c.g or 1, c and c.b or 1
                         end,
                         function() end,
@@ -587,10 +587,10 @@ initFrame:SetScript("OnEvent", function(self)
                         refreshCustom()
                         refreshAccent()
                         refreshClass()
-                        local modeName = Cfg("panelBorderColorMode") or "custom"
-                        customSwatch:SetAlpha(modeName == "custom" and 1 or 0.3)
-                        accentSwatch:SetAlpha(modeName == "accent" and 1 or 0.3)
-                        classSwatch:SetAlpha(modeName == "class" and 1 or 0.3)
+                        local mode = Cfg("panelBorderColorMode") or "custom"
+                        customSwatch:SetAlpha(mode == "custom" and 1 or 0.3)
+                        accentSwatch:SetAlpha(mode == "accent" and 1 or 0.3)
+                        classSwatch:SetAlpha(mode == "class" and 1 or 0.3)
                     end
                     CludesUI.RegisterWidgetRefresh(RefreshBorderSwatches)
                     RefreshBorderSwatches()
@@ -1252,8 +1252,8 @@ initFrame:SetScript("OnEvent", function(self)
                 local fallback = isActive and { r = 1, g = 1, b = 1, a = 1 }
                     or { r = 1, g = 1, b = 1, a = 0.65 }
                 if isActive then
-                    local function SetMode(modeName)
-                        Set("tabFontColorActiveMode", modeName)
+                    local function SetMode(mode)
+                        Set("tabFontColorActiveMode", mode)
                         if CHAT.ApplyTabAppearance then
                             CHAT.ApplyTabAppearance()
                         end
@@ -1305,8 +1305,8 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Class Color",
                             hasAlpha = false,
                             getValue = function()
-                                local _, classFile = UnitClass("player")
-                                local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                                local _, class = UnitClass("player")
+                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                                 return c and c.r or 1, c and c.g or 1, c and c.b or 1
                             end,
                             setValue = function() end,
@@ -1319,8 +1319,8 @@ initFrame:SetScript("OnEvent", function(self)
                         },
                     }
                 end
-                local function SetMode(modeName)
-                    Set("tabFontColorMode", modeName)
+                local function SetMode(mode)
+                    Set("tabFontColorMode", mode)
                     if CHAT.ApplyTabAppearance then
                         CHAT.ApplyTabAppearance()
                     end
@@ -1372,8 +1372,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Class Color",
                         hasAlpha = false,
                         getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                            local _, class = UnitClass("player")
+                            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                             return c and c.r or 1, c and c.g or 1, c and c.b or 1
                         end,
                         setValue = function() end,
@@ -1429,8 +1429,8 @@ initFrame:SetScript("OnEvent", function(self)
                     local key = "tabBackgroundColorActive"
                     local modeKey = "tabBackgroundColorActiveMode"
                     local fallback = TAB_BG_FALLBACK[true]
-                    local function SetMode(modeName)
-                        Set(modeKey, modeName)
+                    local function SetMode(mode)
+                        Set(modeKey, mode)
                         if CHAT.ApplyTabAppearance then
                             CHAT.ApplyTabAppearance()
                         end
@@ -1484,8 +1484,8 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Class Color",
                             hasAlpha = false,
                             getValue = function()
-                                local _, classFile = UnitClass("player")
-                                local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                                local _, class = UnitClass("player")
+                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                                 return c and c.r or 1, c and c.g or 1, c and c.b or 1
                             end,
                             setValue = function() end,
@@ -1544,10 +1544,10 @@ initFrame:SetScript("OnEvent", function(self)
                 posY = posY - hgt
 
                 local function UnderlineMode()
-                    local modeName = Cfg("activeUnderlineColorMode") or "accent"
+                    local mode = Cfg("activeUnderlineColorMode") or "accent"
                     -- Legacy "border" profiles render and display as Custom,
                     -- without rewriting the saved profile during initialization.
-                    return modeName == "border" and "custom" or modeName
+                    return mode == "border" and "custom" or mode
                 end
                 local function UnderlineSwatches()
                     return {
@@ -1754,14 +1754,14 @@ initFrame:SetScript("OnEvent", function(self)
                             if Cfg("tabBorderThicknessPx") then
                                 Set("tabBorderThicknessPx", false)
                             end
-                            local spec_def = CludesUI.GetBorderDefaultSize("chat", val)
+                            local def = CludesUI.GetBorderDefaultSize("chat", val)
                                 or CludesUI.GetBorderTextureDefaultThickness(val)
                             -- Unregistered SharedMedia borders default to the NUMBER 1; this key stores labels.
-                            if type(spec_def) == "number" then
-                                spec_def = CludesUI.BORDER_LABEL_OF_STEP[spec_def] or "thin"
+                            if type(def) == "number" then
+                                def = CludesUI.BORDER_LABEL_OF_STEP[def] or "thin"
                             end
-                            if spec_def then
-                                Set("tabBorderThickness", spec_def)
+                            if def then
+                                Set("tabBorderThickness", def)
                             end
                             if CHAT.ApplyTabBorders then
                                 CHAT.ApplyTabBorders()
@@ -1908,11 +1908,11 @@ initFrame:SetScript("OnEvent", function(self)
 
                 if not CludesUI._prebuilding then
                     local region, ctrl = borderRow._rightRegion, borderRow._rightRegion._control
-                    local function SetMode(modeName)
+                    local function SetMode(mode)
                         if tabBordersDisabled() then
                             return
                         end
-                        Set("tabBorderColorMode", modeName)
+                        Set("tabBorderColorMode", mode)
                         CHAT.ApplyTabBorders()
                         CludesUI:RefreshPage()
                     end
@@ -1978,10 +1978,10 @@ initFrame:SetScript("OnEvent", function(self)
                         refreshClass()
                         refreshAccent()
                         refreshCustom()
-                        local offset, modeName = tabBordersDisabled(), Cfg("tabBorderColorMode") or "custom"
-                        customSw:SetAlpha(offset and 0.15 or (modeName == "custom" and 1 or 0.3))
-                        accentSw:SetAlpha(offset and 0.15 or (modeName == "accent" and 1 or 0.3))
-                        classSw:SetAlpha(offset and 0.15 or (modeName == "class" and 1 or 0.3))
+                        local off, mode = tabBordersDisabled(), Cfg("tabBorderColorMode") or "custom"
+                        customSw:SetAlpha(off and 0.15 or (mode == "custom" and 1 or 0.3))
+                        accentSw:SetAlpha(off and 0.15 or (mode == "accent" and 1 or 0.3))
+                        classSw:SetAlpha(off and 0.15 or (mode == "class" and 1 or 0.3))
                     end
                     CludesUI.RegisterWidgetRefresh(Refresh)
                     Refresh()
@@ -2032,8 +2032,8 @@ initFrame:SetScript("OnEvent", function(self)
                     colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                     local function RefreshActiveSwatch()
                         refreshSwatch()
-                        local offset = tabBordersDisabled() or Cfg("activeTabBorder") == false
-                        colorSwatch:SetAlpha(offset and 0.3 or 1)
+                        local off = tabBordersDisabled() or Cfg("activeTabBorder") == false
+                        colorSwatch:SetAlpha(off and 0.3 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(RefreshActiveSwatch)
                     RefreshActiveSwatch()
@@ -2114,11 +2114,11 @@ initFrame:SetScript("OnEvent", function(self)
                         if Cfg("editBoxFontSize") then
                             return Cfg("editBoxFontSize")
                         end
-                        local dim
+                        local size
                         if FCF_GetChatWindowInfo then
-                            dim = select(2, FCF_GetChatWindowInfo(1))
+                            size = select(2, FCF_GetChatWindowInfo(1))
                         end
-                        return dim or 12
+                        return size or 12
                     end,
                     setValue = function(val)
                         Set("editBoxFontSize", val)
@@ -2261,11 +2261,11 @@ initFrame:SetScript("OnEvent", function(self)
             if not CludesUI._prebuilding then
                 local region = extrasBorderRow._leftRegion
                 local ctrl = region._control
-                local function SetInnerMode(modeName)
+                local function SetInnerMode(mode)
                     if Cfg("hideBorders") then
                         return
                     end
-                    Set("innerBorderColorMode", modeName)
+                    Set("innerBorderColorMode", mode)
                     if CHAT.ApplyBorders then
                         CHAT.ApplyBorders()
                     end
@@ -2339,10 +2339,10 @@ initFrame:SetScript("OnEvent", function(self)
                 local function RefreshInner()
                     refreshSwatch()
                     refreshAccent()
-                    local offset = Cfg("hideBorders") or STOCK
-                    local modeName = Cfg("innerBorderColorMode") or "custom"
-                    colorSwatch:SetAlpha(offset and 0.3 or (modeName == "custom" and 1 or 0.3))
-                    accentSw:SetAlpha(offset and 0.3 or (modeName == "accent" and 1 or 0.3))
+                    local off = Cfg("hideBorders") or STOCK
+                    local mode = Cfg("innerBorderColorMode") or "custom"
+                    colorSwatch:SetAlpha(off and 0.3 or (mode == "custom" and 1 or 0.3))
+                    accentSw:SetAlpha(off and 0.3 or (mode == "accent" and 1 or 0.3))
                 end
                 CludesUI.RegisterWidgetRefresh(RefreshInner)
                 RefreshInner()

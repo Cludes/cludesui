@@ -7,27 +7,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local ADDON_NAME, mod = ...
 local L = mod.L
 local MEDIA = mod.MEDIA
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local _G = _G
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 local floor = math.floor
-local upper = math.max
+local max = math.max
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
-local ParkSecureFrame = Keys.ParkSecureFrame
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
+local ParkSecureFrame = K.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  PROFESSION (SECURE right-click passthrough to ProfessionMicroButton)
@@ -79,9 +79,9 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
         -- returned by GetProfessions (First Aid need not occupy the sixth slot).
         local total = secondary and select("#", ...) or 2
         for i = 1, total do
-            local slotPos = select(i, ...)
-            if slotPos then
-                local name, glyph, rank, maxRank, _, _, ident = GetProfessionInfo(slotPos)
+            local index = select(i, ...)
+            if index then
+                local name, icon, rank, maxRank, _, _, ident = GetProfessionInfo(index)
                 local slotIndex = i
                 if secondary then
                     slotIndex = SECONDARY_SLOT[ident]
@@ -90,8 +90,8 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                 local record = slotIndex and entries[slotIndex]
                 if record then
                     local payload = record.data
-                    payload.idx = slotPos
-                    payload.name, payload.icon, payload.id = name or "", glyph, ident
+                    payload.idx = index
+                    payload.name, payload.icon, payload.id = name or "", icon, ident
                     payload.rank, payload.maxRank = rank or 0, maxRank or 0
                 end
             end
@@ -105,7 +105,7 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
         end
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local iconSize = fontSize + 8
         local isSide = barCtx.IsVertical()
         local s = blockCfg.settings or {}
@@ -124,7 +124,7 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
         if custom then
             profIcon:SetTexCoord(0, 1, 0, 1)
         else
-            Keys.CropStockIcon(profIcon)
+            K.CropStockIcon(profIcon)
         end
         if showIcon then
             profIcon:SetSize(iconSize, iconSize)
@@ -145,7 +145,7 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
 
         if isSide then
             local frameW = VSlotW(instance)
-            local innerW = upper(30, frameW - 8)
+            local innerW = max(30, frameW - 8)
             local totalH = 8 + iconSize + 2
 
             profIcon:ClearAllPoints()
@@ -180,7 +180,7 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                 profBar:Hide()
             end
 
-            profFrame:SetSize(frameW, upper(totalH, barH))
+            profFrame:SetSize(frameW, max(totalH, barH))
             profFrame:Show()
         else
             mod.ResetInlineText(profText, "LEFT")
@@ -212,8 +212,8 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                 profBarBg:SetColorTexture(0.15, 0.15, 0.15, 0.6)
                 -- Icon left; text top-right; bar bottom-right, sharing the text's
                 -- left edge and tracking TEXT width, bottom-aligned to the icon (same recipe as xprep).
-                local textW = upper(profText:GetStringWidth(), 20)
-                local bH = upper(2, iconSize - fontSize - 3)
+                local textW = max(profText:GetStringWidth(), 20)
+                local bH = max(2, iconSize - fontSize - 3)
                 profBar:SetSize(textW, bH)
                 profBar:ClearAllPoints()
                 if showIcon then
@@ -222,7 +222,7 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                     profBar:SetPoint("BOTTOMLEFT", profFrame, "LEFT", 0, -halfBand)
                 end
             end
-            local textW = upper(profText:GetStringWidth(), 20)
+            local textW = max(profText:GetStringWidth(), 20)
             local effIcon = showIcon and (iconSize + ICON_GAP) or 0
             profFrame:SetSize(effIcon + textW, barH)
             profFrame:Show()
@@ -268,13 +268,13 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                 f:SetAttribute("*type2", "click")
                 f:SetAttribute("*clickbutton2", _G.ProfessionMicroButton)
             end
-            local glyph = f:CreateTexture(nil, "OVERLAY")
+            local icon = f:CreateTexture(nil, "OVERLAY")
             local textValue = f:CreateFontString(nil, "OVERLAY")
-            local barFrame = CreateFrame("StatusBar", nil, f)
-            barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-            local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+            local bar = CreateFrame("StatusBar", nil, f)
+            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+            local backdrop = bar:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
-            return f, glyph, textValue, barFrame, backdrop
+            return f, icon, textValue, bar, backdrop
         end
 
         for i, record in ipairs(entries) do
@@ -297,13 +297,13 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                     ic:SetVertexColor(ar, ag, ab, 1)
                 end
                 mod.Tip_Begin(f)
-                local titleText
+                local title
                 if secondary then
-                    titleText = SECONDARY_SKILLS or "Secondary Professions"
+                    title = SECONDARY_SKILLS or "Secondary Professions"
                 else
-                    titleText = TRADE_SKILLS or "Professions"
+                    title = TRADE_SKILLS or "Professions"
                 end
-                mod.Tip_AddLine(titleText, 1, 1, 1)
+                mod.Tip_AddLine(title, 1, 1, 1)
                 mod.Tip_AddLine(" ")
                 local function AddLine(p)
                     if not p or not p.name then
@@ -320,9 +320,9 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
                         1
                     )
                 end
-                for _, rowFrame in ipairs(entries) do
-                    if rowFrame.data.idx then
-                        AddLine(rowFrame.data)
+                for _, row in ipairs(entries) do
+                    if row.data.idx then
+                        AddLine(row.data)
                     end
                 end
                 mod.Tip_AddLine(" ")
@@ -412,9 +412,9 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
             end
         end
         if isSide then
-            contentFrame:SetSize(VSlotW(instance), upper(extent, 1))
+            contentFrame:SetSize(VSlotW(instance), max(extent, 1))
         else
-            contentFrame:SetSize(upper(extent, 1), barH)
+            contentFrame:SetSize(max(extent, 1), barH)
         end
         if previous then
             contentFrame:Show()
@@ -447,9 +447,9 @@ local function MakeProfessionBlock(blockCfg, slot, contentFrame, barCtx, seconda
         end
         if barCtx.IsVertical() then
             local barH = barCtx.GetThickness()
-            return upper(contentFrame:GetHeight(), barH, 50)
+            return max(contentFrame:GetHeight(), barH, 50)
         end
-        return upper(contentFrame:GetWidth() or 80, 30)
+        return max(contentFrame:GetWidth() or 80, 30)
     end
 
     function instance:Destroy()

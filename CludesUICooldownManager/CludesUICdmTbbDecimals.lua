@@ -193,7 +193,7 @@ local function AddCooldownInfoIDs(include, conf)
     end
 end
 
-local hostRegion -- shown 1px anchor for the container (alpha 0, mouse-off)
+local host -- shown 1px anchor for the container (alpha 0, mouse-off)
 local boxHolder -- live AuraContainer, or nil
 local signature -- signature string of the live container's slot set
 local boundIndex = {} -- bar index -> slot button (rebuilt per container)
@@ -209,17 +209,17 @@ end
 
 local function UnmarkAll()
     for position in pairs(boundIndex) do
-        local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(position)
-        if barFrame then
-            barFrame._tbbEngineText = nil
-            barFrame._tbbEngineFS = nil
+        local bar = ns.GetTBBFrame and ns.GetTBBFrame(position)
+        if bar then
+            bar._tbbEngineText = nil
+            bar._tbbEngineFS = nil
             -- The mirror gates the timer FS alpha from the secret aura
             -- presence; an unbound bar must never keep a stuck alpha-0 FS.
-            if barFrame._tbbAlphaGated then
-                if barFrame._timerText then
-                    barFrame._timerText:SetAlpha(1)
+            if bar._tbbAlphaGated then
+                if bar._timerText then
+                    bar._timerText:SetAlpha(1)
                 end
-                barFrame._tbbAlphaGated = nil
+                bar._tbbAlphaGated = nil
             end
         end
     end
@@ -316,17 +316,17 @@ local function CollectDesired()
 end
 
 local function BuildContainer(desired)
-    if not hostRegion then
+    if not host then
         -- Shown but invisible: the engine only processes VISIBLE containers,
         -- and the noRegions slot buttons render nothing anyway. Alpha 0 on
         -- the host is belt-and-braces; it does not reach the bound timer
         -- FontStrings (they live on the TBB bars, not in this tree).
-        hostRegion = CreateFrame("Frame", nil, UIParent)
-        hostRegion:SetSize(1, 1)
-        hostRegion:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
-        hostRegion:SetFrameStrata("BACKGROUND")
-        hostRegion:SetAlpha(0)
-        hostRegion:EnableMouse(false)
+        host = CreateFrame("Frame", nil, UIParent)
+        host:SetSize(1, 1)
+        host:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+        host:SetFrameStrata("BACKGROUND")
+        host:SetAlpha(0)
+        host:EnableMouse(false)
     end
 
     AK.styles.tbbDecimalText = AK.styles.tbbDecimalText or { width = 1, height = 1, noRegions = true }
@@ -347,8 +347,8 @@ local function BuildContainer(desired)
                 if not fmt then
                     return
                 end -- rejected: tick keeps its mirror
-                local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
-                if not (barFrame and barFrame._timerText) then
+                local bar = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+                if not (bar and bar._timerText) then
                     return
                 end -- unbound: tick keeps its mirror
                 -- The bound FS MUST be a descendant of the aura button (aspect
@@ -373,8 +373,8 @@ local function BuildContainer(desired)
                 AK.SetDurationTextSafe(btnFrame, fontStr, AK.BuildDurationTextOpts(fmt, nil, 0.05))
                 boundIndex[wanted.index] = btnFrame
                 boundThr[wanted.index] = wanted.thr
-                barFrame._tbbEngineText = btnFrame
-                barFrame._tbbEngineFS = fontStr
+                bar._tbbEngineText = btnFrame
+                bar._tbbEngineFS = fontStr
             end,
         }
     end
@@ -383,8 +383,8 @@ local function BuildContainer(desired)
     -- OnUpdate, and an unanchored container has no renderable rect -- it
     -- builds, binds slots, and then never processes a single aura (silent:
     -- the hidden FS stays empty and the tick falls back to whole seconds).
-    boxHolder = AK.CreateContainer(hostRegion, "player", {
-        point = { "BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 0, 0 },
+    boxHolder = AK.CreateContainer(host, "player", {
+        point = { "BOTTOMLEFT", host, "BOTTOMLEFT", 0, 0 },
         slots = slots,
     })
 end
@@ -413,10 +413,10 @@ function ns.TBBDecimals_Sync()
         for num = 1, #desired do
             local wanted = desired[num]
             local btnFrame = boundIndex[wanted.index]
-            local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
-            if btnFrame and barFrame then
-                barFrame._tbbEngineText = btnFrame
-                if barFrame._tbbEngineFS and boundThr[wanted.index] ~= wanted.thr then
+            local bar = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+            if btnFrame and bar then
+                bar._tbbEngineText = btnFrame
+                if bar._tbbEngineFS and boundThr[wanted.index] ~= wanted.thr then
                     local fmt = GetDecimalFormatter(wanted.thr)
                     if fmt then
                         -- Stamp only on success: SetDurationTextSafe never throws
@@ -424,7 +424,7 @@ function ns.TBBDecimals_Sync()
                         -- stay unstamped so a later Sync retries it.
                         local success = AK.SetDurationTextSafe(
                             btnFrame,
-                            barFrame._tbbEngineFS,
+                            bar._tbbEngineFS,
                             AK.BuildDurationTextOpts(fmt, nil, 0.05)
                         )
                         if success then

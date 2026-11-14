@@ -108,12 +108,12 @@ local _driverAccum = 0
 -- instead of tearing down the still-active engine. A nil kind stays kind-agnostic.
 -- Swap-removes the entry so churn stays O(1); hides the driver when empty.
 -- (Defined above the driver loop: the loop drops forbidden wrappers itself.)
-local function _Unregister(wrapper, kindOf)
+local function _Unregister(wrapper, kind)
     local position = _regIndex[wrapper]
     if not position then
         return
     end
-    if kindOf and _regKind[wrapper] ~= kindOf then
+    if kind and _regKind[wrapper] ~= kind then
         return
     end
     local last = _reg[_regCount]
@@ -213,18 +213,18 @@ end
 -- same wrapper does not duplicate the entry or move the count; it only refreshes
 -- the kind tag (so a style switch is robust even without a Stop first). Arms the
 -- driver on the 0 -> 1 transition.
-local function _Register(wrapper, func, kindOf)
+local function _Register(wrapper, func, kind)
     local i = _regIndex[wrapper]
     if i then
         _regFn[i] = func
-        _regKind[wrapper] = kindOf
+        _regKind[wrapper] = kind
         return
     end
     _regCount = _regCount + 1
     _reg[_regCount] = wrapper
     _regFn[_regCount] = func
     _regIndex[wrapper] = _regCount
-    _regKind[wrapper] = kindOf
+    _regKind[wrapper] = kind
     if _regCount == 1 then
         _Arm()
     end
@@ -1095,14 +1095,14 @@ end
 --  where a SetClipsChildren bound goes dark on secret-derived rects in
 --  restricted content. Dedicated wrappers only: the mask is never removed.
 -------------------------------------------------------------------------------
-local function ApplyMaskWith(wrapper, maskTex)
-    if not (wrapper and maskTex) then
+local function ApplyMaskWith(wrapper, mask)
+    if not (wrapper and mask) then
         return
     end
     for _, r in ipairs({ wrapper:GetRegions() }) do
-        if r.AddMaskTexture and r._cuiTGMask ~= maskTex then
-            r._cuiTGMask = maskTex
-            r:AddMaskTexture(maskTex)
+        if r.AddMaskTexture and r._cuiTGMask ~= mask then
+            r._cuiTGMask = mask
+            r:AddMaskTexture(mask)
         end
     end
 end
@@ -1276,21 +1276,21 @@ end
 
 -- True (after deferring the button's style key to the restriction lift) when
 -- the bound host's button refuses our calls right now.
-local function BoundBlocked(recd)
+local function BoundBlocked(rec)
     local AK = CludesUI.AuraKit
-    if AK.CanTouchButton(recd.button) then
+    if AK.CanTouchButton(rec.button) then
         return false
     end
-    AK.DeferRestyle(recd.d.styleKey)
+    AK.DeferRestyle(rec.d.styleKey)
     return true
 end
 
 -- Makes the button hold exactly _bWant[1..n] of the wrapper's groups (the
 -- others it holds are removed), then kicks when anything is wanted. n = 0
 -- hands every group back. true when all of it landed.
-local function SyncBoundHost(wrapper, recd, num)
+local function SyncBoundHost(wrapper, rec, num)
     local AK = CludesUI.AuraKit
-    local btnFrame, d = recd.button, recd.d
+    local btnFrame, d = rec.button, rec.d
     local success = true
     local a = wrapper._cuiAnimAnts
     if a then
@@ -1328,15 +1328,15 @@ local function StopGlow(wrapper)
     if not wrapper then
         return
     end
-    local recd = BOUND[wrapper]
-    if recd and BoundBlocked(recd) then
+    local rec = BOUND[wrapper]
+    if rec and BoundBlocked(rec) then
         return false
     end
     StopAllGlows(wrapper)
     wrapper._cuiGlowActive = false
     wrapper:SetAlpha(0)
-    if recd then
-        return SyncBoundHost(wrapper, recd, 0)
+    if rec then
+        return SyncBoundHost(wrapper, rec, 0)
     end
 end
 
@@ -1370,16 +1370,16 @@ local function _EnsureAnimAnts(wrapper)
     end
     d = { strips = {}, masks = {}, groups = {}, trs = {}, bgs = {} }
     for i = 1, 4 do
-        local maskTex = wrapper:CreateMaskTexture()
-        maskTex:SetTexture(ANIM_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        local mask = wrapper:CreateMaskTexture()
+        mask:SetTexture(ANIM_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         local strip = wrapper:CreateTexture(nil, "OVERLAY", nil, 7)
-        strip:AddMaskTexture(maskTex)
+        strip:AddMaskTexture(mask)
         strip:Hide()
         local ag = strip:CreateAnimationGroup()
         ag:SetLooping("REPEAT")
         local tr = ag:CreateAnimation("Translation")
         tr:SetSmoothing("NONE")
-        d.masks[i], d.strips[i], d.groups[i], d.trs[i] = maskTex, strip, ag, tr
+        d.masks[i], d.strips[i], d.groups[i], d.trs[i] = mask, strip, ag, tr
     end
     -- Background strips: top, right, bottom, left (same order as the edges).
     d.bgs[1] = _MkAntsBg(wrapper, "TOPLEFT", "TOPRIGHT")
@@ -1406,7 +1406,7 @@ local function StartAnimatedAnts(wrapper, N, th, period, cr, cg, cb, wid, hgt, c
     wid = wid or 36
     hgt = hgt or wid
     local perim = 2 * (wid + hgt)
-    local Prm = perim / N -- pixels per dash cycle
+    local P = perim / N -- pixels per dash cycle
     local step = period / N -- seconds per dash cycle
     local d = _EnsureAnimAnts(wrapper)
     for i = 1, 4 do
@@ -1429,47 +1429,47 @@ local function StartAnimatedAnts(wrapper, N, th, period, cr, cg, cb, wid, hgt, c
     -- edge in place (no per-call tables).
     cr, cg, cb, ca = cr or 1, cg or 1, cb or 1, ca or 1
     for i = 1, 4 do
-        local maskTex, strip, ag, tr = d.masks[i], d.strips[i], d.groups[i], d.trs[i]
+        local mask, strip, ag, tr = d.masks[i], d.strips[i], d.groups[i], d.trs[i]
         ag:Stop()
         strip:SetVertexColor(cr, cg, cb, ca)
-        maskTex:ClearAllPoints()
+        mask:ClearAllPoints()
         strip:ClearAllPoints()
         if i == 1 or i == 3 then
-            local baseValue = 0
+            local base = 0
             if i == 3 then
-                baseValue = (wid + hgt) / Prm
+                base = (wid + hgt) / P
             end
             strip:SetTexture(DASH_H, "REPEAT", "REPEAT")
-            maskTex:SetSize(wid, th)
-            strip:SetSize(wid + Prm, th)
+            mask:SetSize(wid, th)
+            strip:SetSize(wid + P, th)
             if i == 1 then
-                maskTex:SetPoint("TOPLEFT", wrapper, "TOPLEFT", 0, 0)
-                strip:SetPoint("TOPLEFT", wrapper, "TOPLEFT", -Prm, 0)
-                tr:SetOffset(Prm, 0)
+                mask:SetPoint("TOPLEFT", wrapper, "TOPLEFT", 0, 0)
+                strip:SetPoint("TOPLEFT", wrapper, "TOPLEFT", -P, 0)
+                tr:SetOffset(P, 0)
             else
-                maskTex:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, 0)
+                mask:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, 0)
                 strip:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, 0)
-                tr:SetOffset(-Prm, 0)
+                tr:SetOffset(-P, 0)
             end
-            strip:SetTexCoord(baseValue, baseValue + (wid + Prm) / Prm, 0, 1)
+            strip:SetTexCoord(base, base + (wid + P) / P, 0, 1)
         else
-            local baseValue = wid / Prm
+            local base = wid / P
             if i == 4 then
-                baseValue = (wid + hgt + wid) / Prm
+                base = (wid + hgt + wid) / P
             end
             strip:SetTexture(DASH_V, "REPEAT", "REPEAT")
-            maskTex:SetSize(th, hgt)
-            strip:SetSize(th, hgt + Prm)
+            mask:SetSize(th, hgt)
+            strip:SetSize(th, hgt + P)
             if i == 2 then
-                maskTex:SetPoint("TOPRIGHT", wrapper, "TOPRIGHT", 0, 0)
-                strip:SetPoint("TOPRIGHT", wrapper, "TOPRIGHT", 0, Prm)
-                tr:SetOffset(0, -Prm)
+                mask:SetPoint("TOPRIGHT", wrapper, "TOPRIGHT", 0, 0)
+                strip:SetPoint("TOPRIGHT", wrapper, "TOPRIGHT", 0, P)
+                tr:SetOffset(0, -P)
             else
-                maskTex:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, 0)
-                strip:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, -Prm)
-                tr:SetOffset(0, Prm)
+                mask:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, 0)
+                strip:SetPoint("BOTTOMLEFT", wrapper, "BOTTOMLEFT", 0, -P)
+                tr:SetOffset(0, P)
             end
-            strip:SetTexCoord(0, 1, baseValue, baseValue + (hgt + Prm) / Prm)
+            strip:SetTexCoord(0, 1, base, base + (hgt + P) / P)
         end
         strip:Show()
         tr:SetDuration(step)
@@ -1576,31 +1576,31 @@ end
 -- restriction lift while the button refuses our calls (they then return
 -- false). Unbound wrappers run the engine exactly as before.
 local function StartAnimatedAntsPublic(wrapper, ...)
-    local recd = BOUND[wrapper]
-    if not recd then
+    local rec = BOUND[wrapper]
+    if not rec then
         return StartAnimatedAnts(wrapper, ...)
     end
-    if BoundBlocked(recd) then
+    if BoundBlocked(rec) then
         return false
     end
     StartAnimatedAnts(wrapper, ...)
-    return SyncBoundHost(wrapper, recd, EngineGroupsInto(wrapper, 1, _bWant))
+    return SyncBoundHost(wrapper, rec, EngineGroupsInto(wrapper, 1, _bWant))
 end
 
 local function StopAnimatedAntsPublic(wrapper)
-    local recd = BOUND[wrapper]
-    if not recd then
+    local rec = BOUND[wrapper]
+    if not rec then
         return StopAnimatedAnts(wrapper)
     end
     -- Never armed: nothing to stop and nothing registered.
     if not wrapper._cuiAnimAnts then
         return true
     end
-    if BoundBlocked(recd) then
+    if BoundBlocked(rec) then
         return false
     end
     StopAnimatedAnts(wrapper)
-    return SyncBoundHost(wrapper, recd, 0)
+    return SyncBoundHost(wrapper, rec, 0)
 end
 
 CludesUI.Glows = {
@@ -1648,23 +1648,23 @@ do
     local SCALE = 24 / 21
     G.STEALABLE_BORDER = STEALABLE_BORDER
 
-    function G.EnsureStealableBorder(hostRegion)
-        local tex = hostRegion._cuiStealTex
+    function G.EnsureStealableBorder(host)
+        local tex = host._cuiStealTex
         if not tex then
-            tex = hostRegion:CreateTexture(nil, "OVERLAY")
+            tex = host:CreateTexture(nil, "OVERLAY")
             tex:SetTexture(TEX)
             tex:SetBlendMode("ADD")
             tex:SetPoint("CENTER")
             tex:Hide()
-            hostRegion._cuiStealTex = tex
+            host._cuiStealTex = tex
         end
         return tex
     end
 
     -- w/h: the icon's size; nil color = Blizzard's own look. A tint
     -- desaturates first, like the flipbook glows, so the pick reads true.
-    function G.ShowStealableBorder(hostRegion, wid, hgt, cr, cg, cb)
-        local tex = G.EnsureStealableBorder(hostRegion)
+    function G.ShowStealableBorder(host, wid, hgt, cr, cg, cb)
+        local tex = G.EnsureStealableBorder(host)
         wid = wid or 24
         hgt = hgt or wid
         tex:SetSize(wid * SCALE, hgt * SCALE)
@@ -1688,26 +1688,26 @@ do
     local ATLAS = "UI-CooldownManager-PandemicBorder"
     G.PANDEMIC_BORDER = PANDEMIC_BORDER
 
-    function G.EnsurePandemicBorder(hostRegion)
-        local tex = hostRegion._cuiPanTex
+    function G.EnsurePandemicBorder(host)
+        local tex = host._cuiPanTex
         if not tex then
-            tex = hostRegion:CreateTexture(nil, "ARTWORK")
+            tex = host:CreateTexture(nil, "ARTWORK")
             tex:SetAtlas(ATLAS)
             tex:Hide()
-            hostRegion._cuiPanTex = tex
+            host._cuiPanTex = tex
         end
         return tex
     end
 
     -- w/h: the icon's size (the host covers the icon).
-    function G.ShowPandemicBorder(hostRegion, wid, hgt)
-        local tex = G.EnsurePandemicBorder(hostRegion)
+    function G.ShowPandemicBorder(host, wid, hgt)
+        local tex = G.EnsurePandemicBorder(host)
         wid = wid or 24
         hgt = hgt or wid
         local result = floor(min(wid, hgt) * 0.2 + 0.5)
         tex:ClearAllPoints()
-        tex:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", -result, result)
-        tex:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", result, -result)
+        tex:SetPoint("TOPLEFT", host, "TOPLEFT", -result, result)
+        tex:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", result, -result)
         tex:Show()
     end
 end
@@ -1786,7 +1786,7 @@ do
     }
 
     -- Shared index -> renderable shared index, plus whether it had to change.
-    function G.ResolveStyle(position, hostRegion, excludes)
+    function G.ResolveStyle(position, host, excludes)
         position = tonumber(position) or 1
         -- The two static borders are plain textures: every host can show them.
         if position == STEALABLE_BORDER or position == PANDEMIC_BORDER then
@@ -1795,7 +1795,7 @@ do
         if position < 1 or position > #GLOW_STYLES then
             position = 1
         end
-        local caps = G.HOSTS[hostRegion or "icon"] or G.HOSTS.icon
+        local caps = G.HOSTS[host or "icon"] or G.HOSTS.icon
         if caps[position] and not (excludes and excludes[position]) then
             return position, false
         end
@@ -1812,11 +1812,11 @@ do
     -- Color for a mode. nil = the suite default (StartSpecGlow resolves it per
     -- style). A nil mode is a legacy site that never stored one: it reads as
     -- custom with the site's own default, so its look is unchanged.
-    function G.ResolveColor(modeName, r, g, b, defR, defG, defB)
-        if modeName == "default" then
+    function G.ResolveColor(mode, r, g, b, defR, defG, defB)
+        if mode == "default" then
             return nil
         end
-        if modeName == "class" then
+        if mode == "class" then
             -- The palette colour (custom + Class Color Darken); an unknown class is white.
             local c = CludesUI.GetClassColor(CludesUI._playerClass)
             return c.r, c.g, c.b
@@ -1828,9 +1828,9 @@ do
     end
 
     -- Legacy sites store a class-color boolean instead of a mode.
-    function G.DeriveColorMode(modeName, classFlag)
-        if modeName then
-            return modeName
+    function G.DeriveColorMode(mode, classFlag)
+        if mode then
+            return mode
         end
         return classFlag and "class" or "custom"
     end
@@ -1882,11 +1882,11 @@ do
 
     function G.SpecFromPrefix(result, t, p, defR, defG, defB)
         local k = PrefixKeys(p)
-        local look = t and t[k.type] or 0
-        if not look or look == 0 then
+        local style = t and t[k.type] or 0
+        if not style or style == 0 then
             return nil
         end
-        result.style = look
+        result.style = style
         result.r, result.g, result.b =
             G.ResolveColor(G.DeriveColorMode(t[k.mode], t[k.class]), t[k.r], t[k.g], t[k.b], defR, defG, defB)
         result.lines, result.thickness, result.speed = t[k.lines], t[k.th], t[k.speed]
@@ -1933,9 +1933,9 @@ do
         end
         return val
     end
-    function G.SpecFromFlat(result, t, k, modeName, defs)
+    function G.SpecFromFlat(result, t, k, mode, defs)
         local c = FlatVal(t, defs, k.color)
-        result.r, result.g, result.b = G.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
+        result.r, result.g, result.b = G.ResolveColor(mode, c and c.r, c and c.g, c and c.b)
         result.lines = FlatVal(t, defs, k.lines)
         result.thickness = FlatVal(t, defs, k.thickness)
         result.speed = FlatVal(t, defs, k.speed)
@@ -1984,15 +1984,15 @@ do
     -- calls (auras restricted, outside the creation window) a call that would
     -- change anything returns nothing and defers the button's style key to
     -- the restriction lift; an unchanged glow still returns at once.
-    function G.StartSpecGlow(wrapper, specInfo, wid, hgt, hostRegion, extra)
+    function G.StartSpecGlow(wrapper, specInfo, wid, hgt, host, extra)
         if not (wrapper and specInfo) then
             return
         end
-        local position, converted = G.ResolveStyle(specInfo.style, hostRegion, specInfo.excludes)
+        local position, converted = G.ResolveStyle(specInfo.style, host, specInfo.excludes)
         wid = wid or 36
         hgt = hgt or wid
         local s = wrapper._cuiSpecSig
-        local recd = BOUND[wrapper]
+        local rec = BOUND[wrapper]
         -- The static borders: no glow, no parameters. Blizzard Border: nil
         -- color = Blizzard's art. Blizzard Pandemic Border: always untinted.
         if position == STEALABLE_BORDER or position == PANDEMIC_BORDER then
@@ -2000,7 +2000,7 @@ do
             if position == STEALABLE_BORDER then
                 r, g, b = specInfo.r, specInfo.g, specInfo.b
             end
-            if recd and BoundBlocked(recd) then
+            if rec and BoundBlocked(rec) then
                 return
             end
             -- StopGlow leaves the host at alpha 0 and a caller may park it
@@ -2037,19 +2037,19 @@ do
                 G.ShowPandemicBorder(wrapper, wid, hgt)
             end
             -- A static border plays no group: a bound host hands them back.
-            if recd and not SyncBoundHost(wrapper, recd, 0) then
+            if rec and not SyncBoundHost(wrapper, rec, 0) then
                 return position, false
             end
             if not s then
                 s = {}
                 wrapper._cuiSpecSig = s
             end
-            s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, hostRegion, wid, hgt, r, g, b
+            s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, host, wid, hgt, r, g, b
             return position, false
         end
         -- A shown static border needs no separate hide: every start below
         -- runs StopAllGlows first, which hides it and clears the signature.
-        local engineHost = (hostRegion == "engine") or recd ~= nil
+        local engineHost = (host == "engine") or rec ~= nil
         local record = GLOW_STYLES[position]
         local r, g, b = specInfo.r, specInfo.g, specInfo.b
         local isFlip = not (record.procedural or record.buttonGlow or record.autocast or record.shapeGlow)
@@ -2069,7 +2069,7 @@ do
         if bgOn then
             bgR, bgG, bgB = specInfo.bgR or 0, specInfo.bgG or 0, specInfo.bgB or 0
         end
-        local maskTex = extra and extra.maskWith or nil
+        local mask = extra and extra.maskWith or nil
         local maskPath = extra and extra.maskPath or nil
         local shapeMask = extra and extra.shapeMask or nil
 
@@ -2077,7 +2077,7 @@ do
             s
             and wrapper._cuiGlowActive
             and s.idx == position
-            and s.host == hostRegion
+            and s.host == host
             and s.w == wid
             and s.h == hgt
             and s.r == r
@@ -2090,13 +2090,13 @@ do
             and s.bgR == bgR
             and s.bgG == bgG
             and s.bgB == bgB
-            and s.mask == maskTex
+            and s.mask == mask
             and s.maskPath == maskPath
             and s.shapeMask == shapeMask
         then
             return position, converted
         end
-        if recd and BoundBlocked(recd) then
+        if rec and BoundBlocked(rec) then
             return
         end
 
@@ -2110,7 +2110,7 @@ do
         end
         o.untinted = (r == nil) or nil
         o.abgHalo, o.haloR, o.haloG, o.haloB = nil, nil, nil, nil
-        o.maskWith = maskTex
+        o.maskWith = mask
         o.maskPath = maskPath
         o.borderPath = extra and extra.borderPath or nil
         o.shapeMask = shapeMask
@@ -2122,7 +2122,7 @@ do
         end
         -- The start's StopAllGlows left the signature unset, so a failed
         -- registration retries on the next call (at the lift when deferred).
-        if recd and not SyncBoundHost(wrapper, recd, EngineGroupsInto(wrapper, position, _bWant)) then
+        if rec and not SyncBoundHost(wrapper, rec, EngineGroupsInto(wrapper, position, _bWant)) then
             return position, converted
         end
 
@@ -2132,9 +2132,9 @@ do
             s = {}
             wrapper._cuiSpecSig = s
         end
-        s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, hostRegion, wid, hgt, r, g, b
+        s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, host, wid, hgt, r, g, b
         s.N, s.th, s.period = N, th, period
-        s.bg, s.bgR, s.bgG, s.bgB, s.mask = bgOn, bgR, bgG, bgB, maskTex
+        s.bg, s.bgR, s.bgG, s.bgB, s.mask = bgOn, bgR, bgG, bgB, mask
         s.maskPath, s.shapeMask = maskPath, shapeMask
         return position, converted
     end
@@ -2185,13 +2185,13 @@ do
             return false
         end
         local AK = CludesUI.AuraKit
-        local recd = BOUND[wrapper]
-        if not recd then
+        local rec = BOUND[wrapper]
+        if not rec then
             if not (AK and AK.CanRunAnimations(btnFrame)) then
                 return false
             end
-            recd = { button = btnFrame, d = d }
-            BOUND[wrapper] = recd
+            rec = { button = btnFrame, d = d }
+            BOUND[wrapper] = rec
             local s = wrapper._cuiSpecSig
             if s then
                 s.idx = nil

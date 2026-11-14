@@ -12,7 +12,7 @@ local _, mod = ...
 
 local _G = _G
 local ipairs, pairs, type, pcall = ipairs, pairs, type, pcall
-local min, upper = math.min, math.max
+local min, max = math.min, math.max
 local InCombatLockdown = InCombatLockdown
 local RegisterStateDriver = RegisterStateDriver
 
@@ -412,8 +412,8 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
         -- its _childupdate-eab-page sets.
         local curPage = widget._eabPagingConds and tonumber(widget:GetAttribute("state-page"))
         for i = 1, details.count do
-            local slotIndex = slotOffset + i
-            local button = GetOrCreateButton(slotIndex, widget, details, i, skipProtected)
+            local slot = slotOffset + i
+            local button = GetOrCreateButton(slot, widget, details, i, skipProtected)
             if button then
                 -- The bar's key before the first paint below, so the count
                 -- alpha reads this bar's Charge Numbers (LayoutBar stamps the
@@ -422,7 +422,7 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
                 local bindPrefix = BINDING_MAP[key]
                 if not skipProtected then
                     ApplyShapeHitRects(button, buttonShape)
-                    local action = curPage and (i + (curPage - 1) * 12) or slotIndex
+                    local action = curPage and (i + (curPage - 1) * 12) or slot
                     -- Explicit action attr: CalculateAction sees it non-zero
                     -- and returns it directly (path 2).
                     button:SetAttribute("action", action)
@@ -548,8 +548,8 @@ local function CaptureBlizzardDefaults()
     -- Blizzard's stack order, at the stack's left edge plus the bar's own
     -- indent (WoW Forever's default anchors carry one). nil when the bar is
     -- not parked there (moved in Edit Mode, or a layout with no stack).
-    local function StackSlot(barFrame)
-        local pt, rel, rpt, px, py = barFrame:GetPoint(1)
+    local function StackSlot(bar)
+        local pt, rel, rpt, px, py = bar:GetPoint(1)
         if pt ~= "TOPLEFT" or rel ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
             return nil
         end
@@ -573,7 +573,7 @@ local function CaptureBlizzardDefaults()
         local below, listed
         for i = 1, #entries do
             local f = entries[i]
-            if f == barFrame then
+            if f == bar then
                 listed = true
                 break
             end
@@ -594,13 +594,13 @@ local function CaptureBlizzardDefaults()
         end
         below = below or _G.MainActionBar
         local l, t = below and below:GetLeft(), below and below:GetTop()
-        local wid, hgt = barFrame:GetWidth(), barFrame:GetHeight()
+        local wid, hgt = bar:GetWidth(), bar:GetHeight()
         if not (l and t and wid and hgt) then
             return nil
         end
         local kB = below:GetEffectiveScale() / uiScale
-        local k = barFrame:GetEffectiveScale() / uiScale
-        local aB, a = Anchor(below), Anchor(barFrame)
+        local k = bar:GetEffectiveScale() / uiScale
+        local aB, a = Anchor(below), Anchor(bar)
         local leftX = (l - (aB and aB.bottomBarOffsetX or 0)) * kB + (a and a.bottomBarOffsetX or 0) * k
         local bottom = t * kB + (tonumber(_G.BOTTOM_ACTION_BARS_SPACER_Y) or 4) * k
         return leftX + wid * k / 2 - uiW / 2, bottom + hgt * k / 2 - uiH / 2
@@ -611,7 +611,7 @@ local function CaptureBlizzardDefaults()
     local mainActionBar = _G["MainActionBar"]
 
     for _, details in ipairs(BAR_CONFIG) do
-        local barFrame = _G[details.blizzFrame]
+        local bar = _G[details.blizzFrame]
         if details.key == "MainBar" then
             -- MainBar reads Edit Mode settings + position from MainActionBar.
             -- Early disposal reparents it to the full-screen hiddenParent, so
@@ -652,13 +652,13 @@ local function CaptureBlizzardDefaults()
             end
 
             captured["MainBar"] = payload
-        elseif barFrame and barFrame:GetPoint(1) then
+        elseif bar and bar:GetPoint(1) then
             local payload = {}
 
             -- Position: convert to UIParent-relative CENTER coords.
-            local cx, cy = barFrame:GetCenter()
+            local cx, cy = bar:GetCenter()
             if cx and cy then
-                local bScale = barFrame:GetEffectiveScale()
+                local bScale = bar:GetEffectiveScale()
                 cx = cx * bScale / uiScale
                 cy = cy * bScale / uiScale
                 payload.point = "CENTER"
@@ -669,8 +669,8 @@ local function CaptureBlizzardDefaults()
 
             -- A stance or pet bar hidden right now (no forms yet, no pet out)
             -- was never stacked: it takes the slot it gets once it shows.
-            if (details.isStance or details.isPetBar) and not barFrame:IsShown() then
-                local sx, sy = StackSlot(barFrame)
+            if (details.isStance or details.isPetBar) and not bar:IsShown() then
+                local sx, sy = StackSlot(bar)
                 if sx then
                     payload.point, payload.relPoint = "CENTER", "CENTER"
                     payload.x, payload.y, payload.stackSlot = sx, sy, true
@@ -678,41 +678,41 @@ local function CaptureBlizzardDefaults()
             end
 
             -- Number of visible buttons try Edit Mode setting 2 first
-            if barFrame.GetSettingValue then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 2)
+            if bar.GetSettingValue then
+                local success, val = pcall(bar.GetSettingValue, bar, 2)
                 if success and val and val >= 6 and val <= 12 then
                     payload.numIcons = val
                 end
             end
-            if not payload.numIcons and barFrame.numButtonsShowable and barFrame.numButtonsShowable > 0 then
-                payload.numIcons = barFrame.numButtonsShowable
+            if not payload.numIcons and bar.numButtonsShowable and bar.numButtonsShowable > 0 then
+                payload.numIcons = bar.numButtonsShowable
             end
 
             -- Number of rows try Edit Mode setting 1 first
-            if barFrame.GetSettingValue then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 1)
+            if bar.GetSettingValue then
+                local success, val = pcall(bar.GetSettingValue, bar, 1)
                 if success and val and val >= 1 and val <= 4 then
                     payload.numRows = val
                 end
             end
-            if not payload.numRows and barFrame.numRows and barFrame.numRows > 0 then
-                payload.numRows = barFrame.numRows
+            if not payload.numRows and bar.numRows and bar.numRows > 0 then
+                payload.numRows = bar.numRows
             end
 
             -- Orientation
-            if barFrame.isHorizontal ~= nil then
-                payload.orientation = barFrame.isHorizontal and "horizontal" or "vertical"
+            if bar.isHorizontal ~= nil then
+                payload.orientation = bar.isHorizontal and "horizontal" or "vertical"
             end
-            if barFrame.GetSettingValue then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 0)
+            if bar.GetSettingValue then
+                local success, val = pcall(bar.GetSettingValue, bar, 0)
                 if success and val ~= nil then
                     payload.orientation = (val == 0) and "horizontal" or "vertical"
                 end
             end
 
             -- Icon size (Edit Mode setting 3).
-            if barFrame.GetSettingValue then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 3)
+            if bar.GetSettingValue then
+                local success, val = pcall(bar.GetSettingValue, bar, 3)
                 if success and val ~= nil and val > 0 then
                     payload.blizzIconScale = val / 100
                 end
@@ -720,12 +720,12 @@ local function CaptureBlizzardDefaults()
 
             -- Always Show Buttons (setting 9): 0=off, 1=on
             if
-                barFrame.GetSettingValue
+                bar.GetSettingValue
                 and details.key ~= "MainBar"
                 and not details.isStance
                 and not details.isPetBar
             then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 9)
+                local success, val = pcall(bar.GetSettingValue, bar, 9)
                 if success and val ~= nil then
                     payload.alwaysShowButtons = (val == 1)
                 end
@@ -751,10 +751,10 @@ local function CaptureBlizzardDefaults()
             -- 2=OutOfCombat, 3=Hidden. A bar disabled via Gameplay > Action
             -- Bars (CVars) reports IsShown()=false while setting 5 still
             -- claims "Always Visible"; IsShown=false takes priority.
-            if not barFrame:IsShown() then
+            if not bar:IsShown() then
                 payload.visibility = 3
-            elseif barFrame.GetSettingValue and not details.isStance and not details.isPetBar then
-                local success, val = pcall(barFrame.GetSettingValue, barFrame, 5)
+            elseif bar.GetSettingValue and not details.isStance and not details.isPetBar then
+                local success, val = pcall(bar.GetSettingValue, bar, 5)
                 if success and val ~= nil then
                     payload.visibility = val
                 end
@@ -843,7 +843,7 @@ function mod.AB_CaptureCapSpan(captured)
                 local c = cands[i]
                 if not used[c] then
                     local r = c.r
-                    local shade = min(current[3], r[3]) - upper(current[4], r[4])
+                    local shade = min(current[3], r[3]) - max(current[4], r[4])
                     if shade >= 0.5 * min(current[3] - current[4], r[3] - r[4]) then
                         local gap = (dir > 0) and (r[1] - current[2]) or (current[1] - r[2])
                         if gap >= -8 and gap <= 12 and (not bestGap or gap < bestGap) then

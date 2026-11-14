@@ -171,9 +171,9 @@ end
 -- Righteous Fury's state, read only while the aura is readable (outside an aura
 -- restriction nothing is secret).
 local function FvReadFury()
-    local Stl = C_Secrets
-    if Stl and Stl.ShouldSpellAuraBeSecret then
-        local success, secret = pcall(Stl.ShouldSpellAuraBeSecret, FV_FURY)
+    local S = C_Secrets
+    if S and S.ShouldSpellAuraBeSecret then
+        local success, secret = pcall(S.ShouldSpellAuraBeSecret, FV_FURY)
         if not success or issecretvalue(secret) or secret ~= false then
             return
         end
@@ -299,21 +299,12 @@ end
 -- a pet can still change the answer.
 mod._npThreatColorsOn = false
 function mod.NP_RefreshThreatColorFlag()
-    local modeName = p and p.threatColorMode
-    if
-        modeName ~= "never"
-        and modeName ~= "instances"
-        and modeName ~= "always"
-        and modeName ~= "alwaysSolo"
-    then
-        modeName = defaultSet.threatColorMode
+    local mode = p and p.threatColorMode
+    if mode ~= "never" and mode ~= "instances" and mode ~= "always" and mode ~= "alwaysSolo" then
+        mode = defaultSet.threatColorMode
     end
-    threatAll = modeName == "alwaysSolo"
-    mod._npThreatColorsOn = (
-        threatAll
-        or modeName == "always"
-        or (modeName == "instances" and _inThreatContent)
-    )
+    threatAll = mode == "alwaysSolo"
+    mod._npThreatColorsOn = (threatAll or mode == "always" or (mode == "instances" and _inThreatContent))
             and true
         or false
     PetSync(mod._npThreatColorsOn and not threatAll)
@@ -392,7 +383,7 @@ local function ResolveQuestObjectiveType(questID, tooltipText, isOnQuest)
             return nil
         end
         objectives = {}
-        for slotPos, objective in ipairs(result) do
+        for index, objective in ipairs(result) do
             local textValue, objectiveType
             if not issecretvalue(objective) and objective then
                 textValue, objectiveType = objective.text, objective.type
@@ -409,7 +400,7 @@ local function ResolveQuestObjectiveType(questID, tooltipText, isOnQuest)
                     objectiveType = nil
                 end
             end
-            objectives[slotPos] = { text = textValue, type = objectiveType }
+            objectives[index] = { text = textValue, type = objectiveType }
         end
         questObjectiveTypeCache[questID] = objectives
     elseif objectives == false then
@@ -502,17 +493,17 @@ do
         local questID -- id carried by the most recent QuestTitle line
         local isQuest, objText = false, nil
 
-        for _, lineTex in ipairs(details.lines) do
-            local kindOf = lineTex.type
-            if kindOf == LT.QuestTitle then
-                local ident = lineTex.id
+        for _, line in ipairs(details.lines) do
+            local kind = line.type
+            if kind == LT.QuestTitle then
+                local ident = line.id
                 if ident and not (issecretvalue and issecretvalue(ident)) then
                     questID = ident
                 else
                     questID = nil
                 end
-            elseif kindOf == LT.QuestObjective then
-                local done = lineTex.completed
+            elseif kind == LT.QuestObjective then
+                local done = line.completed
                 -- An incomplete objective the player is actually on: their quest log scopes out
                 -- a group member's objectives. Fail open when the id is unreadable so a real
                 -- quest mob is never silently skipped.
@@ -524,7 +515,7 @@ do
                     if onQuestResult then
                         isQuest = true
                         if wantText then
-                            local have, need = lineTex.numFulfilled, lineTex.numRequired
+                            local have, need = line.numFulfilled, line.numRequired
                             if
                                 have
                                 and need
@@ -535,7 +526,7 @@ do
                                 -- real progress lives only in the line text. Show
                                 -- the extracted percent when readable, else the
                                 -- count (real 0/1 kill objectives keep their count).
-                                local lt = lineTex.leftText
+                                local lt = line.leftText
                                 local pct
                                 if
                                     lt
@@ -723,9 +714,9 @@ do
     end
     -- The plate font string key an element renders on (nil for None). slot: the slot
     -- showing it, which picks a custom text's own font string.
-    function mod.NP_ElementFSKey(el, slotIndex)
+    function mod.NP_ElementFSKey(el, slot)
         if el == "custom" then
-            return slotIndex and mod.NP_CustomFSKey[slotIndex]
+            return slot and mod.NP_CustomFSKey[slot]
         end
         if mod.IsNameElement(el) then
             return "name"
@@ -804,10 +795,10 @@ do
         mod._npTgtTexts = (mod._npToTSlot or mod._npCustomTgt) and true or false
         mod._npBottomUsed = (B[1] or B[2]) and true or false
         mod._npTopCornerUsed = (T[1] or T[2]) and true or false
-        for key, modeName in pairs(ownerFrame) do
-            if modeName == "class" then
+        for key, mode in pairs(ownerFrame) do
+            if mode == "class" then
                 L[#L + 1] = key
-            elseif modeName == "level" then
+            elseif mode == "level" then
                 V[#V + 1] = key
                 VC[#V] = COLOR_KEY[ownerSlot[key]]
             end
@@ -1061,7 +1052,7 @@ function mod.ResolveThreatColor(unitToken, status)
     if saved.offTankAggroEnabled ~= nil then
         otE = saved.offTankAggroEnabled
     end
-    local baseValue = _C("tankNoAggro")
+    local base = _C("tankNoAggro")
     local targetRole, roleSecret = "NONE", false
     local unitTarget = unitToken .. "target"
     if UnitExists(unitTarget) then
@@ -1075,7 +1066,7 @@ function mod.ResolveThreatColor(unitToken, status)
     if otE and roleSecret then
         local otc = _C("offTankAggro")
         local folded, fr, fg, fb, fa =
-            mod.ComputeOffTankFold(unitToken, baseValue.r, baseValue.g, baseValue.b, otc.r, otc.g, otc.b)
+            mod.ComputeOffTankFold(unitToken, base.r, base.g, base.b, otc.r, otc.g, otc.b)
         -- Secret when an isTanking read was: those components reach setters only. A
         -- plain fold goes through the caller's memos like any other colour.
         if folded then
@@ -1083,7 +1074,7 @@ function mod.ResolveThreatColor(unitToken, status)
             return fr, fg, fb, (issecretvalue(fr) or issecretvalue(fg) or issecretvalue(fb))
         end
         mod._threatOkA = 0
-        return baseValue.r, baseValue.g, baseValue.b, false
+        return base.r, base.g, base.b, false
     end
     if targetRole == "TANK" then
         -- Co-tank holds it. With Off-Tank Color off there is no signal to show (the health
@@ -1095,7 +1086,7 @@ function mod.ResolveThreatColor(unitToken, status)
         return c.r, c.g, c.b, false
     end
     mod._threatOkA = 0
-    return baseValue.r, baseValue.g, baseValue.b, false
+    return base.r, base.g, base.b, false
 end
 -- castSeen: the plate's Color Casting Enemies memory (plate._castSeen).
 local function GetReactionColor(unitToken, castSeen)
@@ -1306,18 +1297,18 @@ local function GetReactionColor(unitToken, castSeen)
             local c = _C((simple and not mod._inDungeon) and "owBasicColor" or "enemyInCombat")
             return MaybeDarken(c.r, c.g, c.b, UnitAffectingCombat(unitToken))
         end
-        local _, classFile = UnitClass(unitToken)
+        local _, class = UnitClass(unitToken)
         -- A secret class token (identity-restricted, i.e. instanced PvP) cannot key a
         -- plain color table, but C_ClassColor accepts it and returns a color that may only
         -- reach setters. Flag the plate so UpdateHealthColor paints the bar that way. We
         -- still fall through to the reaction color so every plain-number consumer
         -- downstream (the skip-if-unchanged compare, the No Tint overlay tints) keeps
         -- plain numbers.
-        if issecretvalue(classFile) then
+        if issecretvalue(class) then
             mod._reactionMirrorClass = true
-            classFile = nil
+            class = nil
         end
-        local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         if c then
             return c.r, c.g, c.b
         end

@@ -217,22 +217,22 @@ end
 -- Returns a lowercased-name -> registered-key lookup, plus the display names
 -- in their original casing.
 local function BuildSoundIndex(LSM)
-    local slotPos, display = {}, {}
+    local index, display = {}, {}
     if not LSM.List then
-        return slotPos, display
+        return index, display
     end
     local success, entries = pcall(LSM.List, LSM, "sound")
     if not success or type(entries) ~= "table" then
-        return slotPos, display
+        return index, display
     end
     for _, key in ipairs(entries) do
         local plain = StripEscapes(key)
-        if plain ~= "" and not slotPos[plain:lower()] then
-            slotPos[plain:lower()] = key
+        if plain ~= "" and not index[plain:lower()] then
+            index[plain:lower()] = key
             display[#display + 1] = plain
         end
     end
-    return slotPos, display
+    return index, display
 end
 
 -- Sorted, escape-free list of every sound name that can be used.
@@ -564,9 +564,9 @@ function mod.Alert:RefreshFont()
     alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize or 22, mod.FontFlags())
 end
 
-function mod.Alert:SetTextSize(dim)
+function mod.Alert:SetTextSize(size)
     local saved = mod.DB and mod.DB() or {}
-    saved.alertTextSize = math.max(12, math.min(48, tonumber(dim) or 22))
+    saved.alertTextSize = math.max(12, math.min(48, tonumber(size) or 22))
     if alertFrame then
         alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize, mod.FontFlags())
     end

@@ -28,16 +28,16 @@ end
 -- tooltip (req, raw), and enableRow(y, sizeCfg, RefreshTotem) -> row, h: the
 -- first row, whose left slot turns the bar on and whose right slot is sizeCfg
 -- (Icon Size). mapIcon / mapTimer: the preview's click mapping keys.
-local function BuildTotemSection(hostFrame, posY, Stl)
+local function BuildTotemSection(hostFrame, posY, S)
     local environ = mod._CURB_OptEnv
-    local SavedDB = environ.DB
+    local DB = environ.DB
     local _clickMappings = environ._clickMappings
     local W = CludesUI.Widgets
     local _, hgt
 
     local function T()
-        local p = SavedDB()
-        return p and p[Stl.key]
+        local p = DB()
+        return p and p[S.key]
     end
 
     local function RefreshTotem()
@@ -45,29 +45,29 @@ local function BuildTotemSection(hostFrame, posY, Stl)
             _G._CURB_Apply()
         end
         if CludesUI.NotifyElementResized then
-            CludesUI.NotifyElementResized(Stl.unlockKey)
+            CludesUI.NotifyElementResized(S.unlockKey)
         end
         environ.UpdateTotemPreview()
     end
 
-    local totemOff = Stl.off
+    local totemOff = S.off
     local timerOff = function()
         local t = T()
         return totemOff() or (t and not t.showTimer)
     end
-    local req, raw = Stl.req, Stl.raw
+    local req, raw = S.req, S.raw
 
     local section
-    section, hgt = W:SectionHeader(hostFrame, Stl.title, posY)
+    section, hgt = W:SectionHeader(hostFrame, S.title, posY)
     posY = posY - hgt
     CludesUI.BuildSectionUnlockJump(
         section,
-        { key = Stl.unlockKey, disabled = totemOff, disabledTooltip = req, rawTooltip = raw }
+        { key = S.unlockKey, disabled = totemOff, disabledTooltip = req, rawTooltip = raw }
     )
 
     -- Row 1: the section's on switch | Icon Size (+ spacing cog)
     local row1
-    row1, hgt = Stl.enableRow(posY, {
+    row1, hgt = S.enableRow(posY, {
         type = "slider",
         text = "Icon Size",
         min = 16,
@@ -520,8 +520,8 @@ local function BuildTotemSection(hostFrame, posY, Stl)
 
     -- Click mappings for the preview's hit overlays (never from a hidden pre-build)
     if not CludesUI._prebuilding then
-        _clickMappings[Stl.mapIcon] = { section = section, target = row1, slotSide = "right" }
-        _clickMappings[Stl.mapTimer] = { section = section, target = timerRow, slotSide = "left" }
+        _clickMappings[S.mapIcon] = { section = section, target = row1, slotSide = "right" }
+        _clickMappings[S.mapTimer] = { section = section, target = timerRow, slotSide = "left" }
     end
 
     return posY
@@ -530,7 +530,7 @@ end
 -- Totem Bar options page
 function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix = environ.DB, environ.PP
+    local DB, Pix = environ.DB, environ.PP
     local W = CludesUI.Widgets
     local posY = yOffset
     local _, hgt
@@ -555,7 +555,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
         mapIcon = "totemIcon",
         mapTimer = "totemTimer",
         off = function()
-            local p = SavedDB()
+            local p = DB()
             return p and not p.totemBar.enabledClasses
         end,
         req = "Select a class above",
@@ -589,7 +589,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                     leftRgn:GetFrameLevel() + 2,
                     classItems,
                     function(key)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -599,7 +599,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                         return p.totemBar.enabledClasses and p.totemBar.enabledClasses[key] or false
                     end,
                     function(key, val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -619,9 +619,9 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                             for _, scrollFrame in ipairs({ ddMenu:GetChildren() }) do
                                 local sc = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
                                 if sc then
-                                    for _, rowFrame in ipairs({ sc:GetChildren() }) do
-                                        if rowFrame._updateCheck then
-                                            rowFrame._updateCheck()
+                                    for _, row in ipairs({ sc:GetChildren() }) do
+                                        if row._updateCheck then
+                                            row._updateCheck()
                                         end
                                     end
                                 end
@@ -656,7 +656,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
             mapIcon = "callTotemIcon",
             mapTimer = "callTotemTimer",
             off = function()
-                local p = SavedDB()
+                local p = DB()
                 local c = p and p.callTotemBar
                 return not (c and c.enabled)
             end,
@@ -667,12 +667,12 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                     text = "Enable Call Totem Bar",
                     tooltip = "Reskins Blizzard's call totem bar in this look and moves it with Layout Mode instead of Edit Mode.",
                     getValue = function()
-                        local p = SavedDB()
+                        local p = DB()
                         local c = p and p.callTotemBar
                         return c and c.enabled == true or false
                     end,
                     setValue = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         local c = p and p.callTotemBar
                         if not c then
                             return

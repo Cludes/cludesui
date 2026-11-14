@@ -16,12 +16,10 @@ if not Inner or Inner.last ~= "main" then
     return
 end
 
-local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------------------------------------------------
---  Tooltip / Context Menu / Static Popup Skinning
---  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
+local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
 --  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
 -------------------------------------------------------------------------------
-;
+; ------------------------------------------------------------------------------- --  Tooltip / Context Menu / Static Popup Skinning
 (function()
     local _ttSkinned = {}
     local _isSecret = issecretvalue
@@ -62,17 +60,17 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         local saved = CludesUIDB or {}
         local key = saved[prefixText .. "BorderThickness"]
         local sizes = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
-        local dim = key and (sizes[key] or 1) or (legacySize or 1)
+        local size = key and (sizes[key] or 1) or (legacySize or 1)
         key = key
-            or ({ [0] = "none", [1] = "thin", [2] = "normal", [3] = "heavy", [4] = "strong" })[dim]
+            or ({ [0] = "none", [1] = "thin", [2] = "normal", [3] = "heavy", [4] = "strong" })[size]
             or "thin"
-        local modeName = saved[prefixText .. "BorderColorMode"] or "custom"
+        local mode = saved[prefixText .. "BorderColorMode"] or "custom"
         local color
         if colorOverride then
             color = colorOverride
-        elseif modeName == "accent" then
+        elseif mode == "accent" then
             color = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
-        elseif modeName == "class" then
+        elseif mode == "class" then
             local _, class = UnitClass("player")
             color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
         else
@@ -80,9 +78,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         end
         local alpha = saved[prefixText .. "BorderOpacity"]
         if alpha == nil then
-            alpha = (modeName == "custom") and CludesUI.RESKIN.BRD_ALPHA or 0.5
+            alpha = (mode == "custom") and CludesUI.RESKIN.BRD_ALPHA or 0.5
         end
-        return saved, dim, key, color, alpha
+        return saved, size, key, color, alpha
     end
 
     local function _applyConfiguredBorder(ownerFrame, prefixText, legacySize, colorOverride)
@@ -94,7 +92,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         if not okLvl then
             return
         end
-        local saved, dim, key, color, alpha = _resolveConfiguredBorder(prefixText, legacySize, colorOverride)
+        local saved, size, key, color, alpha = _resolveConfiguredBorder(prefixText, legacySize, colorOverride)
         local payload = GetFFD(ownerFrame)
         if not payload.configBorder then
             payload.configBorder = CreateFrame("Frame", nil, ownerFrame, "BackdropTemplate")
@@ -114,10 +112,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         )
         local texture = saved[prefixText .. "BorderTexture"] or "solid"
         -- Exact Border Size (the <prefix>BorderThicknessPx companion); nil = the legacy step above, unchanged.
-        local px = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], dim, texture)
+        local px = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], size, texture)
         CludesUI.ApplyBorderStyle(
             payload.configBorder,
-            dim,
+            size,
             color.r,
             color.g,
             color.b,
@@ -150,21 +148,21 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     -- stays branded green). UNSET resolves to native unless the user had the legacy Accent Colored Elements toggle on, so old choices carry forward with no migration write and a fresh install sees no change.
     local function _elementColorMode()
         local saved = CludesUIDB or {}
-        local modeName = saved.popupMenuButtonTextColorMode
-        if modeName == nil then
-            modeName = saved.accentReskinElements and "accent" or "native"
+        local mode = saved.popupMenuButtonTextColorMode
+        if mode == nil then
+            mode = saved.accentReskinElements and "accent" or "native"
         end
-        return modeName
+        return mode
     end
     CludesUI._getPopupMenuElementMode = _elementColorMode
 
     local function _getElementColor()
         local saved = CludesUIDB or {}
-        local modeName = _elementColorMode()
-        if modeName == "custom" then
+        local mode = _elementColorMode()
+        if mode == "custom" then
             local c = saved.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b
-        elseif modeName == "class" then
+        elseif mode == "class" then
             local _, class = UnitClass("player")
             local c = class and RAID_CLASS_COLORS[class]
             if c then
@@ -785,23 +783,23 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             c:Hide()
             return
         end
-        local dim = saved.tooltipBuffSize or 20
+        local size = saved.tooltipBuffSize or 20
         local perRow = saved.tooltipBuffsPerRow or 8
         local p = _TT_BUFF_POS[saved.tooltipBuffPosition or "bottom"] or _TT_BUFF_POS.bottom
-        local look = AK.styles.ttBuffs
+        local style = AK.styles.ttBuffs
         -- Only a size change restyles, and through the deferred restyle: the
         -- tooltip can be built from tainted code (a unit frame hover) while
         -- auras are secret, when the engine's aura buttons refuse tainted calls,
         -- and the deferred pass holds the restyle until that lifts.
-        if look.width ~= dim or look.height ~= dim then
-            look.width, look.height = dim, dim
+        if style.width ~= size or style.height ~= size then
+            style.width, style.height = size, size
             AK.RestyleSoon("ttBuffs")
         end
         c:SetAuraGroupLayout(
             "buffs",
-            { elementWidth = dim, elementHeight = dim, elementSpacing = 2, lineSpacing = 2 }
+            { elementWidth = size, elementHeight = size, elementSpacing = 2, lineSpacing = 2 }
         )
-        AK.SetContainerRowWidth(c, perRow * dim + (perRow - 1) * 2 + 0.4)
+        AK.SetContainerRowWidth(c, perRow * size + (perRow - 1) * 2 + 0.4)
         c:ClearAllPoints()
         c:SetPoint(
             p[1],
@@ -827,10 +825,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             -- AuraKit keeps the buttons mouse-free through every restyle. Built
             -- at the saved size, so the buttons are decorated in the engine's
             -- creation window and the first show needs no restyle.
-            local dim = saved.tooltipBuffSize or 20
+            local size = saved.tooltipBuffSize or 20
             AK.styles.ttBuffs = {
-                width = dim,
-                height = dim,
+                width = size,
+                height = size,
                 iconCrop = true,
                 hideDurationText = true,
                 noTooltips = true,
@@ -845,8 +843,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 maxFrameCount = 16,
                 style = "ttBuffs",
                 layout = {
-                    elementWidth = dim,
-                    elementHeight = dim,
+                    elementWidth = size,
+                    elementHeight = size,
                     elementSpacing = 2,
                     lineSpacing = 2,
                 },
@@ -1022,21 +1020,21 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             return
         end
         for i = 2, nLines do
-            local lineTex = _G["GameTooltipTextLeft" .. i]
-            local textValue = lineTex and lineTex:GetText()
+            local line = _G["GameTooltipTextLeft" .. i]
+            local textValue = line and line:GetText()
             if textValue and not (_isSecret and _isSecret(textValue)) then
                 if i == levelIdx then
                     -- Compact rewrite, else color the number (or "??") only, leaving text
                     -- another addon already colored.
                     if compact then
-                        lineTex:SetText(compact)
+                        line:SetText(compact)
                     elseif hex and not string.find(textValue, "|c", 1, true) then
                         local newText, num = textValue:gsub("%d+", hex, 1)
                         if num == 0 then
                             newText, num = textValue:gsub("%?%?", hex, 1)
                         end
                         if num > 0 then
-                            lineTex:SetText(newText)
+                            line:SetText(newText)
                         end
                     end
                 elseif
@@ -1044,16 +1042,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                     and (not levelIdx or i < levelIdx)
                     and _isGuildText(textValue, guildName)
                 then
-                    lineTex:SetTextColor(guildColor.r, guildColor.g, guildColor.b)
+                    line:SetTextColor(guildColor.r, guildColor.g, guildColor.b)
                     guildColor = nil
                 elseif _FACTION_CC[textValue] then
                     if saved.tooltipFactionColor then
                         local fc = _FACTION_CC[textValue]
-                        lineTex:SetTextColor(fc.r, fc.g, fc.b)
+                        line:SetTextColor(fc.r, fc.g, fc.b)
                     end
                 -- The spec/class line directly follows the level line on player tooltips.
                 elseif doClass and i == levelIdx + 1 and textValue ~= PVP_ENABLED then
-                    lineTex:SetTextColor(cc.r, cc.g, cc.b)
+                    line:SetTextColor(cc.r, cc.g, cc.b)
                 end
             end
         end
@@ -1158,15 +1156,15 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             then
                 local suffix = " [" .. guildRankName .. "]"
                 for i = 2, nLinesBefore do
-                    local lineTex = _G["GameTooltipTextLeft" .. i]
-                    local textValue = lineTex and lineTex:GetText()
+                    local line = _G["GameTooltipTextLeft" .. i]
+                    local textValue = line and line:GetText()
                     if
                         textValue
                         and not (_isSecret and _isSecret(textValue))
                         and string.find(textValue, guildName, 1, true)
                     then
                         if textValue:sub(-#suffix) ~= suffix then
-                            lineTex:SetText(textValue .. suffix)
+                            line:SetText(textValue .. suffix)
                         end
                         break
                     end
@@ -1214,9 +1212,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 mountName = cached.name
                 mountCollected = cached.collected
             else
-                local nm, column = _getMountedAuraName(unitToken)
+                local nm, col = _getMountedAuraName(unitToken)
                 mountName = nm or false
-                mountCollected = column
+                mountCollected = col
                 -- Expired entries are dropped, so only the last few seconds of hovers stay
                 -- cached and this loop stays tiny; this player's stale entry is refreshed
                 -- in place rather than replaced.
@@ -1885,11 +1883,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         local _, classFile = UnitClass("player")
         local cc = classFile and _RAID_CC and _RAID_CC[classFile]
         local name = UnitName("player") or ""
-        local titleText = (not on or posX.tooltipPlayerTitles) and UnitPVPName("player")
-        if titleText and _isSecret and _isSecret(titleText) then
-            titleText = nil
+        local title = (not on or posX.tooltipPlayerTitles) and UnitPVPName("player")
+        if title and _isSecret and _isSecret(title) then
+            title = nil
         end
-        local line1 = (titleText and titleText ~= "") and titleText or name
+        local line1 = (title and title ~= "") and title or name
         if posX.tooltipAFKTag then
             line1 = line1 .. " " .. GRAY_FONT_COLOR:WrapTextInColorCode(CHAT_FLAG_AFK)
         end
@@ -2178,7 +2176,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             end
             local cr, cg, cb, ca = CludesUI.GetTooltipBg()
             local _, _, _, _, legacySize = CludesUI.GetTooltipBorder()
-            local saved, dim, key, color, alpha = _resolveConfiguredBorder("tooltip", legacySize)
+            local saved, size, key, color, alpha = _resolveConfiguredBorder("tooltip", legacySize)
             local details = {
                 backdropInfo = {
                     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -2189,14 +2187,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             -- Same style, size and placement as the GameTooltip border (ApplyBorderStyle,
             -- through CludesUI.BorderPlacement), drawn by the one backdrop the engine
             -- allows; insets keep the fill on the tooltip.
-            if dim > 0 then
+            if size > 0 then
                 local texture = saved.tooltipBorderTexture or "solid"
-                local px = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, dim, texture)
+                local px = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, size, texture)
                 local edgeFile = CludesUI.ResolveBorderTexture(texture)
                 local edge, ox, oy, sx, sy
                 if edgeFile then
                     edge, ox, oy, sx, sy = CludesUI.BorderPlacement(
-                        dim,
+                        size,
                         texture,
                         saved.tooltipBorderOffsetX,
                         saved.tooltipBorderOffsetY,
@@ -2209,7 +2207,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 else
                     -- Solid: the PP line, (px or size) whole pixels inside the tooltip.
                     edgeFile = "Interface\\Buttons\\WHITE8X8"
-                    edge, ox, oy, sx, sy = (px or dim) * CludesUI.PP.mult, 0, 0, 0, 0
+                    edge, ox, oy, sx, sy = (px or size) * CludesUI.PP.mult, 0, 0, 0, 0
                 end
                 details.backdropInfo.edgeFile = edgeFile
                 details.backdropInfo.edgeSize = edge

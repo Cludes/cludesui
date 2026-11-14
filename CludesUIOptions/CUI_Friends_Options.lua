@@ -46,7 +46,7 @@ initFrame:SetScript("OnEvent", function(self)
         saved = _G._CUFR_DB
     end)
 
-    local function SavedDB()
+    local function DB()
         if not saved then
             saved = _G._CUFR_DB
         end
@@ -54,17 +54,17 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function ChatDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.chat
     end
 
     local function MinimapDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.minimap
     end
 
     local function FriendsDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.friends
     end
 
@@ -126,7 +126,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildFriendsPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local posY = yOffset
-        local _, rowFrame, hgt
+        local _, row, hgt
 
         CludesUI:ClearContentHeader()
 
@@ -346,7 +346,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         -- Show Region Icons | Auto-Accept Friend Invites
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Region Icons",
             tooltip = "Shows a map icon of the friend's region if they are not playing within your region",
@@ -387,7 +387,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Guildmate option lives in a cog on Auto-Accept Friend Invites; it
         -- only extends that feature, so the cog blocks while the toggle is off.
         if not CludesUI._prebuilding then
-            local region = rowFrame._rightRegion
+            local region = row._rightRegion
             local function autoAcceptOff()
                 local f = FriendsDB()
                 return not (f and f.autoAcceptFriendInvites)

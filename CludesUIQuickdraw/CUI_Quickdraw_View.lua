@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local floor, upper = math.floor, math.max
+local floor, max = math.floor, math.max
 local sin, pi = math.sin, math.pi
 local type = type
 
@@ -162,10 +162,10 @@ local function ApplySlotVisual(widget, selected, armed)
     end
     widget.icon:SetDesaturated(tint ~= nil and tint[4] or false)
     local t = armed and ARM_BORDER or selected and SEL_BORDER or IDLE_BORDER
-    local baseValue = widget.baseSize
-    if baseValue then
+    local base = widget.baseSize
+    if base then
         local z = selected and SelectedZoom() or 1
-        widget:SetSize(baseValue * z, baseValue * z)
+        widget:SetSize(base * z, base * z)
     end
     if armed then
         local lr = r + (1 - r) * ARM_LIFT
@@ -203,8 +203,8 @@ local FONT_KEY = "quickdraw"
 local fontStrings = {}
 
 local function ApplyModuleFont(fontStr)
-    local dim = fontStr.eqdFontSize
-    if not dim or not CludesUI.GetFontPath then
+    local size = fontStr.eqdFontSize
+    if not size or not CludesUI.GetFontPath then
         return
     end
     -- Snapped to whole physical pixels. A font height is given in the string's
@@ -219,7 +219,7 @@ local function ApplyModuleFont(fontStr)
     local Pix = CludesUI.PP
     local eff = fontStr.GetEffectiveScale and fontStr:GetEffectiveScale()
     if Pix and Pix.perfect and Pix.perfect > 0 and eff and eff > 0 then
-        dim = upper(1, floor(dim * eff / Pix.perfect + 0.5)) * Pix.perfect / eff
+        size = max(1, floor(size * eff / Pix.perfect + 0.5)) * Pix.perfect / eff
     end
     local flags
     if fontStr.eqdIconText and CludesUI.GetIconTextOutlineFlag then
@@ -233,14 +233,14 @@ local function ApplyModuleFont(fontStr)
         local useShadow = flags == "" and CludesUI.GetFontUseShadow()
         CludesUI.PrimeFontShadow(fontStr, useShadow and true or false)
     end
-    fontStr:SetFont(CludesUI.GetFontPath(FONT_KEY), dim, flags)
+    fontStr:SetFont(CludesUI.GetFontPath(FONT_KEY), size, flags)
 end
 
 -- Called once per string, right after it is created from its Blizzard font
 -- object, and again for every string whenever the font settings change.
 local function AdoptFontString(fontStr, iconText)
-    local _, dim = fontStr:GetFont()
-    fontStr.eqdFontSize = dim
+    local _, size = fontStr:GetFont()
+    fontStr.eqdFontSize = size
     fontStr.eqdIconText = iconText or nil
     fontStrings[#fontStrings + 1] = fontStr
     ApplyModuleFont(fontStr)
@@ -260,22 +260,22 @@ end
 -- the TEXTURE rather than the slot kind, so a nested menu entry borrowing
 -- its first child's marker icon stays whole too. Shared with the options
 -- picker's rows, which draw the same icons at list size.
-local function ApplyIconCrop(texture, glyph)
+local function ApplyIconCrop(texture, icon)
     -- Atlas-backed icons already have their own UVs and should not be cropped.
-    if type(glyph) == "table" and glyph.atlas then
+    if type(icon) == "table" and icon.atlas then
         texture:SetTexCoord(0, 1, 0, 1)
         return
     end
 
     if
-        type(glyph) == "string"
+        type(icon) == "string"
         and (
-            glyph:find("RaidTargetingIcon", 1, true)
-            or glyph:find("UI-GroupLoot-Pass-Up", 1, true)
-            -- The interface panel glyphs, which are drawn to the edge of their
-            -- own square the way the marker textures are. The crop is sized
-            -- for the border every spell icon carries and would cut into these.
-            or glyph:find("micromenu", 1, true)
+            icon:find("RaidTargetingIcon", 1, true)
+            or icon:find("UI-GroupLoot-Pass-Up", 1, true)
+            -- The interface panel glyphs, which are drawn to the edge of their
+            -- own square the way the marker textures are. The crop is sized
+            -- for the border every spell icon carries and would cut into these.
+            or icon:find("micromenu", 1, true)
         )
     then
         texture:SetTexCoord(0, 1, 0, 1)
@@ -289,17 +289,17 @@ mod.ApplyIconCrop = ApplyIconCrop
 -- at the Lua 5.1 200-local cap and this function was the 200th -- hosting it
 -- on ns restored the last slot of headroom. Paint-frequency callers; the ns
 -- lookup is free there.
-function mod.SetIconTexture(texture, glyph)
-    if type(glyph) == "table" and glyph.atlas then
-        texture:SetAtlas(glyph.atlas, true)
+function mod.SetIconTexture(texture, icon)
+    if type(icon) == "table" and icon.atlas then
+        texture:SetAtlas(icon.atlas, true)
     else
-        texture:SetTexture(glyph or QUESTION_MARK)
+        texture:SetTexture(icon or QUESTION_MARK)
     end
 end
 
-local function CreateSlotWidget(view, slotPos)
+local function CreateSlotWidget(view, index)
     local wid = CreateFrame("Button", nil, view.frame, "BackdropTemplate")
-    wid.index = slotPos
+    wid.index = index
     -- Our frame, so the backref is safe to carry. ApplySlotVisual reads the
     -- selection color through it: the color keys are per-menu appearance, and
     -- the widget is the only argument that function gets.
@@ -428,7 +428,7 @@ function PaletteView:Geom(shownOverride)
     end
     local radius, iconSize = p.radius or 100, p.iconSize or 40
     if self:LayoutMode() == "ARC" then
-        local isShown = upper(1, shownOverride or self.shownCount or 1)
+        local isShown = max(1, shownOverride or self.shownCount or 1)
         if isShown > 1 then
             -- The chord between two neighbouring entries is 2R sin(step/2).
             -- Holding that to the separation two entries need and solving for R
@@ -445,8 +445,8 @@ function PaletteView:Geom(shownOverride)
             -- there, which is exactly what a sixteen-entry ring showed.
             local half = self:ArcGeom(isShown) * 0.5
             if half > 0 and half < pi * 0.5 then
-                local need = upper(iconSize + (p.fanGap or 10), iconSize * 2 ^ 0.5)
-                radius = upper(radius, need / (2 * sin(half)))
+                local need = max(iconSize + (p.fanGap or 10), iconSize * 2 ^ 0.5)
+                radius = max(radius, need / (2 * sin(half)))
             end
         end
     end
@@ -480,8 +480,8 @@ end
 function PaletteView:ShownCount()
     return self.shownCount
 end
-function PaletteView:GetSlotWidget(slotPos)
-    return self.widgets[slotPos]
+function PaletteView:GetSlotWidget(index)
+    return self.widgets[index]
 end
 
 -- ARC | FAN | GRID. A view may pin its own mode (the options preview

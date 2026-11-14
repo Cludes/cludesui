@@ -167,11 +167,11 @@ end
 -- so the look is cut for the host rather than for the bar's Icon Size. nil
 -- before the first layout (the bar's Icon Size stands in).
 local function HostSize(E)
-    local hostRegion = E.host
-    if not hostRegion then
+    local host = E.host
+    if not host then
         return nil
     end
-    local wid, hgt = hostRegion:GetSize()
+    local wid, hgt = host:GetSize()
     if
         type(wid) ~= "number"
         or type(hgt) ~= "number"
@@ -187,15 +187,15 @@ end
 
 -- The slot's look: the bar's custom-aura look, cut for the host's size.
 local function HostStyle(E, edge)
-    local look = _AC.BuildStyle(edge)
+    local style = _AC.BuildStyle(edge)
     local wid, hgt = HostSize(E)
     if wid then
-        look.width, look.height = wid, hgt
-        if look.cdm then
-            look.cdm.size = wid
+        style.width, style.height = wid, hgt
+        if style.cdm then
+            style.cdm.size = wid
         end
     end
-    return look
+    return style
 end
 
 -- The look's fingerprint: the bar settings a restyle carries, and the size
@@ -231,11 +231,11 @@ end
 -- Levels follow the host: DecorateFrame levels its regions off the frame's
 -- own level, which the reanchor's reparent moves.
 local function Level(E)
-    local hostRegion, boxHolder = E.host, E.container
-    if not (hostRegion and boxHolder) then
+    local host, boxHolder = E.host, E.container
+    if not (host and boxHolder) then
         return
     end
-    local lvl = hostRegion:GetFrameLevel() + SLOT_LEVEL
+    local lvl = host:GetFrameLevel() + SLOT_LEVEL
     if E.level == lvl then
         return
     end
@@ -428,13 +428,13 @@ local function BuffProvider(spellRef)
         key = "buff:" .. spellRef,
         tip = spellRef,
         Include = function()
-            local group = _AC.AddSpellForms({}, spellRef)
+            local set = _AC.AddSpellForms({}, spellRef)
             local ids = {}
-            for ident in pairs(group) do
+            for ident in pairs(set) do
                 ids[#ids + 1] = ident
             end
             table.sort(ids)
-            return group, table.concat(ids, ",")
+            return set, table.concat(ids, ",")
         end,
         Icon = function()
             if not p.art then

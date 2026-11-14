@@ -386,14 +386,10 @@ CludesUI._dmCache = { gen = -1 }
 function CludesUI._RebuildDarkModeCache()
     local c = CludesUI._dmCache
     local d = CludesUI.GetDarkModeDB()
-    local spec_def = CludesUI.DEFAULT_DARK_MODE
+    local def = CludesUI.DEFAULT_DARK_MODE
     c.fr, c.fg, c.fb, c.fa =
-        d.fillR or spec_def.fillR,
-        d.fillG or spec_def.fillG,
-        d.fillB or spec_def.fillB,
-        d.fillA or spec_def.fillA
-    c.br, c.bg, c.bb, c.ba =
-        d.bgR or spec_def.bgR, d.bgG or spec_def.bgG, d.bgB or spec_def.bgB, d.bgA or spec_def.bgA
+        d.fillR or def.fillR, d.fillG or def.fillG, d.fillB or def.fillB, d.fillA or def.fillA
+    c.br, c.bg, c.bb, c.ba = d.bgR or def.bgR, d.bgG or def.bgG, d.bgB or def.bgB, d.bgA or def.bgA
     c.gen = CludesUI._dmGen
 end
 
@@ -437,8 +433,8 @@ end
 function CludesUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
     wipe(result)
     if defaultSet then
-        for k, spec_def in pairs(defaultSet) do
-            result[k] = { r = spec_def.r, g = spec_def.g, b = spec_def.b }
+        for k, def in pairs(defaultSet) do
+            result[k] = { r = def.r, g = def.g, b = def.b }
         end
     end
     if custom then
@@ -451,10 +447,10 @@ function CludesUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
         if f < 0 then
             f = 0
         end
-        for _, column in pairs(result) do
-            column.r = column.r * f
-            column.g = column.g * f
-            column.b = column.b * f
+        for _, col in pairs(result) do
+            col.r = col.r * f
+            col.g = col.g * f
+            col.b = col.b * f
         end
     end
 end
@@ -491,17 +487,17 @@ function CludesUI._RebuildColorCache()
     -- palette leaves the table empty, so that path costs one next() and stops.
     local customized = cache.classCustomized
     wipe(customized)
-    for token, spec_def in pairs(CludesUI.CLASS_COLOR_MAP) do
-        local column = cache.class[token]
+    for token, def in pairs(CludesUI.CLASS_COLOR_MAP) do
+        local col = cache.class[token]
         if
-            column
+            col
             and (
-                math.abs(column.r - spec_def.r) > 0.004
-                or math.abs(column.g - spec_def.g) > 0.004
-                or math.abs(column.b - spec_def.b) > 0.004
+                math.abs(col.r - def.r) > 0.004
+                or math.abs(col.g - def.g) > 0.004
+                or math.abs(col.b - def.b) > 0.004
             )
         then
-            customized[token] = column
+            customized[token] = col
         end
     end
     CludesUI._restrictedCandidatesDirty = true
@@ -656,10 +652,10 @@ function CludesUI._RebuildRestrictedCandidates()
         for idx = first, last do
             local u = (idx == 0) and "player" or ((inRaid and "raid" or "party") .. idx)
             local _, token = UnitClass(u)
-            local column = (type(token) == "string" and not issecretvalue(token)) and customized[token]
-            if column then
+            local col = (type(token) == "string" and not issecretvalue(token)) and customized[token]
+            if col then
                 result[#result + 1] = u
-                result[#result + 1] = column
+                result[#result + 1] = col
             end
         end
     end
@@ -700,11 +696,11 @@ function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
     if total == 0 then
         return false
     end
-    local baseValue = C_ClassColor.GetClassColor(secretClassToken)
-    if not baseValue then
+    local base = C_ClassColor.GetClassColor(secretClassToken)
+    if not base then
         return false
     end
-    local r, g, b = baseValue.r, baseValue.g, baseValue.b
+    local r, g, b = base.r, base.g, base.b
     local canCompare = C_Secrets and C_Secrets.CanCompareUnitTokens
     for idx = 1, total, 2 do
         local u = candidates[idx]
@@ -715,10 +711,10 @@ function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
             -- reaching pick() would throw. type() reports a secret's underlying type, so a
             -- secret boolean -- the whole point of this fold -- passes here.
             if type(isSameUnit) == "boolean" then
-                local column = candidates[idx + 1]
-                r = pick(isSameUnit, column.r, r)
-                g = pick(isSameUnit, column.g, g)
-                b = pick(isSameUnit, column.b, b)
+                local col = candidates[idx + 1]
+                r = pick(isSameUnit, col.r, r)
+                g = pick(isSameUnit, col.g, g)
+                b = pick(isSameUnit, col.b, b)
             end
         end
     end

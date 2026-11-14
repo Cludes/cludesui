@@ -106,7 +106,7 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
     sequence[#sequence + 1] = "---a"
     local skip = lead and lead(values, sequence, icons) or {}
     for classID = 1, (GetNumClasses and GetNumClasses() or 0) do
-        local className, classFile = GetClassInfo(classID)
+        local className, class = GetClassInfo(classID)
         local numSpecs = GetNumSpecializationsForClassID and GetNumSpecializationsForClassID(classID) or 0
         for si = 1, numSpecs do
             local specID, specName, _, sIcon = GetSpecializationInfoForClassID(classID, si)
@@ -115,7 +115,7 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
                 values[key] = (specName or "") .. " " .. (className or "")
                 sequence[#sequence + 1] = key
                 icons[key] = sIcon
-                classes[key] = classFile
+                classes[key] = class
             end
         end
     end
@@ -710,10 +710,10 @@ local function LayerOwnedFKey(fkey)
     if folder ~= "CludesUIRaidFrames" or not filePath then
         return nil
     end
-    local head, subFrame = filePath:match("^([^\30]+)\30?([^\30]*)")
+    local head, sub = filePath:match("^([^\30]+)\30?([^\30]*)")
     -- bm2's filter library is shared profile-wide: _CURF_BM2HarvestFork banks
     -- specs + seeded only, so a filter edit is NOT scoped to the fork.
-    if head == "bm2" and subFrame == "filters" then
+    if head == "bm2" and sub == "filters" then
         return nil
     end
     return LAYER_OWNED_SEGS[head or ""]
@@ -752,14 +752,14 @@ local function MatchOwnedFKey(fkey)
     if not CludesUIDB then
         return false
     end
-    local dim = details.dim
-    if dim ~= "h" then
+    local size = details.dim
+    if size ~= "h" then
         local wm = CludesUIDB.unlockWidthMatch
         if wm and wm[details.elem] ~= nil then
             return true
         end
     end
-    if dim ~= "w" then
+    if size ~= "w" then
         local hm = CludesUIDB.unlockHeightMatch
         if hm and hm[details.elem] ~= nil then
             return true
@@ -775,10 +775,10 @@ local function MatchOwnedFKey(fkey)
     -- namespace, not a local, because the function is defined in CUI_SpecOverrides_Layers.lua.
     if CludesUI.SpecOverrides_UnlockBaselineLinks then
         local _, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
-        if bw and dim ~= "h" and bw[details.elem] ~= nil then
+        if bw and size ~= "h" and bw[details.elem] ~= nil then
             return true
         end
-        if bh and dim ~= "w" and bh[details.elem] ~= nil then
+        if bh and size ~= "w" and bh[details.elem] ~= nil then
             return true
         end
     end

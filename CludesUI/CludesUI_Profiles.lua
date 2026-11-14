@@ -613,15 +613,15 @@ function CludesUI.BuildLayoutKeyToFolder(ul)
             end
         end
         if type(ul.widthMatch) == "table" then
-            for childFrame, targetUnit in pairs(ul.widthMatch) do
+            for childFrame, target in pairs(ul.widthMatch) do
                 add(childFrame)
-                add(targetUnit)
+                add(target)
             end
         end
         if type(ul.heightMatch) == "table" then
-            for childFrame, targetUnit in pairs(ul.heightMatch) do
+            for childFrame, target in pairs(ul.heightMatch) do
                 add(childFrame)
-                add(targetUnit)
+                add(target)
             end
         end
     end
@@ -705,16 +705,16 @@ function CludesUI.FilterLayoutToFolders(ul, folderSet, k2f)
         end
     end
     if type(ul.widthMatch) == "table" then
-        for childFrame, targetUnit in pairs(ul.widthMatch) do
-            if endpointOK(childFrame) and endpointOK(targetUnit) then
-                out.widthMatch[childFrame] = targetUnit
+        for childFrame, target in pairs(ul.widthMatch) do
+            if endpointOK(childFrame) and endpointOK(target) then
+                out.widthMatch[childFrame] = target
             end
         end
     end
     if type(ul.heightMatch) == "table" then
-        for childFrame, targetUnit in pairs(ul.heightMatch) do
-            if endpointOK(childFrame) and endpointOK(targetUnit) then
-                out.heightMatch[childFrame] = targetUnit
+        for childFrame, target in pairs(ul.heightMatch) do
+            if endpointOK(childFrame) and endpointOK(target) then
+                out.heightMatch[childFrame] = target
             end
         end
     end
@@ -858,21 +858,21 @@ end
 -- its child). importedFolders = set of LOCAL folders being imported. For a full
 -- import (every module) this reduces to "replace with imported" (every child is
 -- owned by an imported module). LOCAL keyspace throughout.
-function CludesUI.MergeImportedLayout(baseValue, imported, importedFolders)
-    baseValue = (type(baseValue) == "table") and baseValue or {}
+function CludesUI.MergeImportedLayout(base, imported, importedFolders)
+    base = (type(base) == "table") and base or {}
     imported = (type(imported) == "table") and imported or {}
     importedFolders = importedFolders or {}
     local out = {
-        anchors = DeepCopy(baseValue.anchors or {}),
-        widthMatch = DeepCopy(baseValue.widthMatch or {}),
-        heightMatch = DeepCopy(baseValue.heightMatch or {}),
-        phantomBounds = DeepCopy(baseValue.phantomBounds or {}),
+        anchors = DeepCopy(base.anchors or {}),
+        widthMatch = DeepCopy(base.widthMatch or {}),
+        heightMatch = DeepCopy(base.heightMatch or {}),
+        phantomBounds = DeepCopy(base.phantomBounds or {}),
     }
     -- 1) Drop base entries OWNED by an imported module (child in importedFolders),
     --    so the imported module's layout fully replaces the base's for that module.
     --    Classify the BASE children via the live (recipient) registry + static
     --    resolver, since these are the recipient's own profile keys.
-    local baseK2F = CludesUI.BuildLayoutKeyToFolder(baseValue)
+    local baseK2F = CludesUI.BuildLayoutKeyToFolder(base)
     local function childImported(childFrame)
         local f = baseK2F[childFrame]
         return f ~= nil and importedFolders[f] == true
@@ -910,8 +910,8 @@ function CludesUI.MergeImportedLayout(baseValue, imported, importedFolders)
     end
     -- 3) Match extras follow their links: a kept base link keeps its extra, an
     --    imported link brings the import's extra (or none).
-    out.widthMatchExtra = CopyLinkedExtras(baseValue.widthMatchExtra, out.widthMatch)
-    out.heightMatchExtra = CopyLinkedExtras(baseValue.heightMatchExtra, out.heightMatch)
+    out.widthMatchExtra = CopyLinkedExtras(base.widthMatchExtra, out.widthMatch)
+    out.heightMatchExtra = CopyLinkedExtras(base.heightMatchExtra, out.heightMatch)
     OverlayLinkedExtras(out.widthMatchExtra, imported.widthMatch, imported.widthMatchExtra)
     OverlayLinkedExtras(out.heightMatchExtra, imported.heightMatch, imported.heightMatchExtra)
     return out
@@ -1096,12 +1096,12 @@ local function StampUnlockLayoutIfMissing(prof)
         { cb = "focusCastbar", parent = "focus" },
         { cb = "petCastbar", parent = "pet" },
     }
-    for _, spec_def in ipairs(CB_DEFAULTS) do
-        if not snap.anchors[spec_def.cb] then
-            snap.anchors[spec_def.cb] = { target = spec_def.parent, side = "BOTTOM" }
+    for _, def in ipairs(CB_DEFAULTS) do
+        if not snap.anchors[def.cb] then
+            snap.anchors[def.cb] = { target = def.parent, side = "BOTTOM" }
         end
-        if not snap.widthMatch[spec_def.cb] then
-            snap.widthMatch[spec_def.cb] = spec_def.parent
+        if not snap.widthMatch[def.cb] then
+            snap.widthMatch[def.cb] = def.parent
         end
     end
     prof.unlockLayout = snap
@@ -1670,12 +1670,12 @@ function CludesUI.ApplyProfileData(profileData)
                     and type(profile.cdmBars) == "table"
                     and type(profile.cdmBars.bars) == "table"
                 then
-                    for _, barFrame in ipairs(profile.cdmBars.bars) do
-                        if barFrame.anchorFirstRow then
-                            if barFrame.rowGrowDirection == nil then
-                                barFrame.rowGrowDirection = barFrame.verticalOrientation and "RIGHT" or "DOWN"
+                    for _, bar in ipairs(profile.cdmBars.bars) do
+                        if bar.anchorFirstRow then
+                            if bar.rowGrowDirection == nil then
+                                bar.rowGrowDirection = bar.verticalOrientation and "RIGHT" or "DOWN"
                             end
-                            barFrame.anchorFirstRow = nil
+                            bar.anchorFirstRow = nil
                         end
                     end
                 end
@@ -2516,7 +2516,7 @@ function CludesUI.RenderedLook()
     if not reg then
         return nil
     end
-    local look, eitherBlizz
+    local style, eitherBlizz
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
         local mns = reg[f.folder]
@@ -2525,16 +2525,16 @@ function CludesUI.RenderedLook()
             if cur == "blizzard" and not f.forever and CludesUI.IS_FOREVER then
                 eitherBlizz = f
             elseif cur ~= nil then
-                if look == nil then
-                    look = cur
-                elseif look ~= cur then
+                if style == nil then
+                    style = cur
+                elseif style ~= cur then
                     return false
                 end
             end
         end
     end
     if eitherBlizz then
-        if look == nil then
+        if style == nil then
             local f = eitherBlizz
             local p = CludesUI.GetActiveProfileData()
             local t = p and type(p.addons) == "table" and p.addons[f.data or f.folder] or nil
@@ -2546,11 +2546,11 @@ function CludesUI.RenderedLook()
             end
             return "blizzard"
         end
-        if look ~= "blizzard" and look ~= "forever" then
+        if style ~= "blizzard" and style ~= "forever" then
             return false
         end
     end
-    return look
+    return style
 end
 
 --- WoW Forever: true when more than half of the loaded modules' styleable
@@ -4254,9 +4254,9 @@ local function ReconcileImportedMedia(data)
             elseif type(v) == "string" and #v >= 9 and #v <= 26 then
                 -- Saved texture values are either plain names or carry the
                 -- "sm:" dropdown key prefix.
-                local baseValue = v:match("^sm:(.+)") or v
-                if RECONCILE_BAR_SIGS[Signature(baseValue)] then
-                    if not LSM:Fetch("statusbar", baseValue, true) then
+                local base = v:match("^sm:(.+)") or v
+                if RECONCILE_BAR_SIGS[Signature(base)] then
+                    if not LSM:Fetch("statusbar", base, true) then
                         t[k] = "sm:" .. RECONCILE_TEX_NAME
                     end
                 end
@@ -4287,11 +4287,11 @@ local function FixupImportedClassColors()
         return
     end
 
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     -- CLASS_COLORS and POWER_COLORS are local to ResourceBars, so we
     -- use the same lookup the addon uses at init time.
     local classColors = CludesUI.CLASS_COLOR_MAP
-    local cc = classColors and classColors[classFile]
+    local cc = classColors and classColors[class]
 
     -- Health bar: reset to importer's class color
     if profile.health then
@@ -5354,18 +5354,16 @@ do
                         CludesUIDB.lastSpecByChar[ck] = spellRef
                         CludesUI._profileSaveLocked = false
                         -- Resolve via the unified function
-                        local targetUnit = ResolveSpecProfile()
-                        if targetUnit then
+                        local target = ResolveSpecProfile()
+                        if target then
                             local cur = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-                            if cur ~= targetUnit then
-                                local fontChange =
-                                    CludesUI.ProfileChangesFont(CludesUIDB.profiles[targetUnit])
+                            if cur ~= target then
+                                local fontChange = CludesUI.ProfileChangesFont(CludesUIDB.profiles[target])
                                 local skinsChange =
-                                    CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[targetUnit])
-                                local styleChange =
-                                    CludesUI.ProfileChangesStyle(CludesUIDB.profiles[targetUnit])
+                                    CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[target])
+                                local styleChange = CludesUI.ProfileChangesStyle(CludesUIDB.profiles[target])
                                 -- _specProfileSwitching disabled (see doSwitch comment)
-                                CludesUI.SwitchProfile(targetUnit)
+                                CludesUI.SwitchProfile(target)
                                 CludesUI.RefreshAllAddons()
                                 if fontChange or skinsChange or styleChange then
                                     CludesUI:ShowConfirmPopup({
@@ -5764,7 +5762,7 @@ function CludesUI.AttachImportPasteAbsorber(editBox, onRetry)
     }
 end
 
-local function BuildStringPopup(titleText, subtitle, readOnly, onConfirm, confirmLabel)
+local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLabel)
     local POPUP_W, POPUP_H = 520, 310
     local FONT = CludesUI.EXPRESSWAY
 
@@ -5794,7 +5792,7 @@ local function BuildStringPopup(titleText, subtitle, readOnly, onConfirm, confir
     -- Title
     local titleFS = CludesUI.MakeFont(dialog, 15, "", 1, 1, 1)
     titleFS:SetPoint("TOP", dialog, "TOP", 0, -20)
-    titleFS:SetText(titleText)
+    titleFS:SetText(title)
 
     -- Subtitle
     local subFS = CludesUI.MakeFont(dialog, 11, "", 1, 1, 1)
@@ -5971,9 +5969,8 @@ end
 --  Same auto-highlight behavior as ShowExportPopup, but the caller supplies the
 --  title and subtitle (e.g. for the preset "Copy Blizz Edit Mode" string).
 -------------------------------------------------------------------------------
-function CludesUI:ShowCopyPopup(titleText, subtitle, str)
-    local dimmer, editBox, RefreshHeight =
-        BuildStringPopup(titleText or "Copy", subtitle or "", true, nil, nil)
+function CludesUI:ShowCopyPopup(title, subtitle, str)
+    local dimmer, editBox, RefreshHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
 
     editBox._readOnly = str or ""
     editBox:SetText(str or "")
@@ -6080,28 +6077,28 @@ function CludesUI.ApplyPresetEditMode(layoutString, layoutName)
     -- The game lists layouts as presets, then Account, then Character. Slot ours in
     -- just before the first Character layout (or at the end when there is none) so
     -- it stays grouped with the Account layouts.
-    local slotIndex = #layouts + 1
+    local slot = #layouts + 1
     for i = presetCount + 1, #layouts do
         if layouts[i].layoutType == Enum.EditModeLayoutType.Character then
-            slotIndex = i
+            slot = i
             break
         end
     end
-    table.insert(layouts, slotIndex, imported)
+    table.insert(layouts, slot, imported)
 
     details.layouts = layouts
-    details.activeLayout = slotIndex
+    details.activeLayout = slot
     C_EditMode.SaveLayouts(details)
-    C_EditMode.SetActiveLayout(slotIndex)
+    C_EditMode.SetActiveLayout(slot)
     return true
 end
 
 -------------------------------------------------------------------------------
 --  Import Popup
 -------------------------------------------------------------------------------
-function CludesUI:ShowImportPopup(onImport, titleText, subtitle)
+function CludesUI:ShowImportPopup(onImport, title, subtitle)
     local dimmer, editBox = BuildStringPopup(
-        titleText or "Import Profile",
+        title or "Import Profile",
         subtitle or "Paste an CludesUI profile string below",
         false,
         function(str)

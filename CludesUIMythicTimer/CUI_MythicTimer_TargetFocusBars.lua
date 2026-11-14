@@ -35,8 +35,8 @@ end
 --  the bar texts take a font family (Cyrillic, Korean and Chinese names
 --  draw); no plain SetFont may reach them after it.
 --------------------------------------------------------------------------------
-local function SetFSFont(fontStr, dim)
-    CludesUI.ApplyModuleFontFamily(fontStr, nil, dim, "mythicTimer")
+local function SetFSFont(fontStr, size)
+    CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer")
 end
 
 --------------------------------------------------------------------------------
@@ -60,18 +60,18 @@ local ComputeCastBarTint = CludesUI.ComputeCastBarTint
 --  Position (unlock interchange = raw UIParent-logical center delta; scale
 --  division never leaves the module's own SetPoint -- the timer lesson).
 --------------------------------------------------------------------------------
-local function ApplyBarPosition(barFrame)
-    if not barFrame then
+local function ApplyBarPosition(bar)
+    if not bar then
         return
     end
-    local conf = BarCfg(barFrame.which)
+    local conf = BarCfg(bar.which)
     local place = conf and conf.pos
-    barFrame.frame:ClearAllPoints()
+    bar.frame:ClearAllPoints()
     if place and place.centerX and place.centerY then
-        barFrame.frame:SetPoint("CENTER", UIParent, "CENTER", place.centerX, place.centerY)
+        bar.frame:SetPoint("CENTER", UIParent, "CENTER", place.centerX, place.centerY)
     else
-        local d = DEFAULT_POS[barFrame.which]
-        barFrame.frame:SetPoint("CENTER", UIParent, "CENTER", d.x, d.y)
+        local d = DEFAULT_POS[bar.which]
+        bar.frame:SetPoint("CENTER", UIParent, "CENTER", d.x, d.y)
     end
 end
 
@@ -89,103 +89,103 @@ local function BuildBarChrome(which, hostFrame)
     local holderFrame = CreateFrame("Frame", nil, hostFrame)
     holderFrame:Hide()
 
-    local barFrame = { which = which, unit = unitToken, frame = holderFrame }
+    local bar = { which = which, unit = unitToken, frame = holderFrame }
 
-    barFrame.bg = holderFrame:CreateTexture(nil, "BACKGROUND")
-    barFrame.bg:SetAllPoints(holderFrame)
-    barFrame.bg:SetColorTexture(0, 0, 0, 0.45)
+    bar.bg = holderFrame:CreateTexture(nil, "BACKGROUND")
+    bar.bg:SetAllPoints(holderFrame)
+    bar.bg:SetColorTexture(0, 0, 0, 0.45)
 
-    barFrame.iconFrame = CreateFrame("Frame", nil, holderFrame)
-    barFrame.iconFrame:SetPoint("TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
-    barFrame.iconFrame:SetPoint("BOTTOMLEFT", holderFrame, "BOTTOMLEFT", 0, 0)
-    barFrame.icon = barFrame.iconFrame:CreateTexture(nil, "ARTWORK")
-    barFrame.icon:SetAllPoints(barFrame.iconFrame)
-    barFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    bar.iconFrame = CreateFrame("Frame", nil, holderFrame)
+    bar.iconFrame:SetPoint("TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
+    bar.iconFrame:SetPoint("BOTTOMLEFT", holderFrame, "BOTTOMLEFT", 0, 0)
+    bar.icon = bar.iconFrame:CreateTexture(nil, "ARTWORK")
+    bar.icon:SetAllPoints(bar.iconFrame)
+    bar.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    barFrame.sb = CreateFrame("StatusBar", nil, holderFrame)
+    bar.sb = CreateFrame("StatusBar", nil, holderFrame)
     -- Placeholder fill: a StatusBar has NO texture object until one is set, and
     -- the fill-edge riders below plus every GetStatusBarTexture() call on the
     -- cast path would index nil on a bar that never reached StyleBar.
-    barFrame.sb:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    barFrame.sb:SetPoint("TOPLEFT", barFrame.iconFrame, "TOPRIGHT", 0, 0)
-    barFrame.sb:SetPoint("BOTTOMRIGHT", holderFrame, "BOTTOMRIGHT", 0, 0)
-    barFrame.sb:SetMinMaxValues(0, 1)
-    barFrame.sb:SetValue(0)
+    bar.sb:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    bar.sb:SetPoint("TOPLEFT", bar.iconFrame, "TOPRIGHT", 0, 0)
+    bar.sb:SetPoint("BOTTOMRIGHT", holderFrame, "BOTTOMRIGHT", 0, 0)
+    bar.sb:SetMinMaxValues(0, 1)
+    bar.sb:SetValue(0)
 
     -- Uninterruptible grey wash: rides the fill texture, alpha-gated by the
     -- (possibly secret) protection flag via SetAlphaFromBoolean.
-    barFrame.overlay = barFrame.sb:CreateTexture(nil, "ARTWORK", nil, 2)
-    barFrame.overlay:SetAllPoints(barFrame.sb:GetStatusBarTexture())
-    barFrame.overlay:SetTexture("Interface\\Buttons\\WHITE8x8")
-    barFrame.overlay:SetAlpha(0)
+    bar.overlay = bar.sb:CreateTexture(nil, "ARTWORK", nil, 2)
+    bar.overlay:SetAllPoints(bar.sb:GetStatusBarTexture())
+    bar.overlay:SetTexture("Interface\\Buttons\\WHITE8x8")
+    bar.overlay:SetAlpha(0)
 
     -- Interrupted flash: a full-bar wash OVER the fill. Deliberately not a
     -- fill repaint -- an armed SetTimerDuration owns the drawn fill and a
     -- plain SetValue neither repaints nor reliably reclaims it.
-    barFrame.flash = barFrame.sb:CreateTexture(nil, "ARTWORK", nil, 3)
-    barFrame.flash:SetAllPoints(barFrame.sb)
-    barFrame.flash:SetTexture("Interface\\Buttons\\WHITE8x8")
-    barFrame.flash:Hide()
+    bar.flash = bar.sb:CreateTexture(nil, "ARTWORK", nil, 3)
+    bar.flash:SetAllPoints(bar.sb)
+    bar.flash:SetTexture("Interface\\Buttons\\WHITE8x8")
+    bar.flash:Hide()
 
-    barFrame.spark = barFrame.sb:CreateTexture(nil, "OVERLAY", nil, 1)
-    barFrame.spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
-    barFrame.spark:SetBlendMode("ADD")
-    barFrame.spark:SetPoint("CENTER", barFrame.sb:GetStatusBarTexture(), "RIGHT", 0, 0)
+    bar.spark = bar.sb:CreateTexture(nil, "OVERLAY", nil, 1)
+    bar.spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
+    bar.spark:SetBlendMode("ADD")
+    bar.spark:SetPoint("CENTER", bar.sb:GetStatusBarTexture(), "RIGHT", 0, 0)
 
-    barFrame.shieldFrame = CreateFrame("Frame", nil, holderFrame)
-    barFrame.shieldFrame:SetPoint("CENTER", holderFrame, "LEFT", 0, 0)
-    barFrame.shieldFrame:SetFrameLevel(holderFrame:GetFrameLevel() + 5)
-    barFrame.shieldFrame:Hide()
-    barFrame.shield = barFrame.shieldFrame:CreateTexture(nil, "OVERLAY")
-    barFrame.shield:SetAllPoints()
-    barFrame.shield:SetAtlas("nameplates-InterruptShield")
+    bar.shieldFrame = CreateFrame("Frame", nil, holderFrame)
+    bar.shieldFrame:SetPoint("CENTER", holderFrame, "LEFT", 0, 0)
+    bar.shieldFrame:SetFrameLevel(holderFrame:GetFrameLevel() + 5)
+    bar.shieldFrame:Hide()
+    bar.shield = bar.shieldFrame:CreateTexture(nil, "OVERLAY")
+    bar.shield:SetAllPoints()
+    bar.shield:SetAtlas("nameplates-InterruptShield")
 
-    barFrame.textFrame = CreateFrame("Frame", nil, barFrame.sb)
-    barFrame.textFrame:SetAllPoints(barFrame.sb)
-    barFrame.textFrame:SetFrameLevel(barFrame.sb:GetFrameLevel() + 6)
+    bar.textFrame = CreateFrame("Frame", nil, bar.sb)
+    bar.textFrame:SetAllPoints(bar.sb)
+    bar.textFrame:SetFrameLevel(bar.sb:GetFrameLevel() + 6)
     -- Fonts applied at BUILD as well as in StyleBar: a bar can be built on a
     -- disabled path (unlock getFrame, enable round-trip) and its teardown
     -- SetText("") errors on a fontless FontString.
-    barFrame.name = barFrame.textFrame:CreateFontString(nil, "OVERLAY")
-    barFrame.name:SetJustifyH("LEFT")
-    barFrame.name:SetWordWrap(false)
-    barFrame.name:SetMaxLines(1)
-    SetFSFont(barFrame.name, 11)
-    barFrame.target = barFrame.textFrame:CreateFontString(nil, "OVERLAY")
-    barFrame.target:SetJustifyH("RIGHT")
-    barFrame.target:SetWordWrap(false)
-    barFrame.target:SetMaxLines(1)
-    SetFSFont(barFrame.target, 10)
-    barFrame.timer = barFrame.textFrame:CreateFontString(nil, "OVERLAY")
-    barFrame.timer:SetJustifyH("RIGHT")
-    barFrame.timer:SetWordWrap(false)
-    barFrame.timer:SetMaxLines(1)
-    SetFSFont(barFrame.timer, 11)
+    bar.name = bar.textFrame:CreateFontString(nil, "OVERLAY")
+    bar.name:SetJustifyH("LEFT")
+    bar.name:SetWordWrap(false)
+    bar.name:SetMaxLines(1)
+    SetFSFont(bar.name, 11)
+    bar.target = bar.textFrame:CreateFontString(nil, "OVERLAY")
+    bar.target:SetJustifyH("RIGHT")
+    bar.target:SetWordWrap(false)
+    bar.target:SetMaxLines(1)
+    SetFSFont(bar.target, 10)
+    bar.timer = bar.textFrame:CreateFontString(nil, "OVERLAY")
+    bar.timer:SetJustifyH("RIGHT")
+    bar.timer:SetWordWrap(false)
+    bar.timer:SetMaxLines(1)
+    SetFSFont(bar.timer, 11)
 
-    return barFrame
+    return bar
 end
 
 local function BuildBar(which)
-    local barFrame = BuildBarChrome(which, UIParent)
+    local bar = BuildBarChrome(which, UIParent)
 
     -- Kick tick machinery, clipped so the tick never renders outside the bar
     -- when the kick CD exceeds the remaining cast.
-    barFrame.kickClip = CreateFrame("Frame", nil, barFrame.sb)
-    barFrame.kickClip:SetAllPoints(barFrame.sb)
-    barFrame.kickClip:SetClipsChildren(true)
-    barFrame.kickPositioner = CreateFrame("StatusBar", nil, barFrame.kickClip)
-    barFrame.kickPositioner:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    barFrame.kickPositioner:GetStatusBarTexture():SetAlpha(0)
-    barFrame.kickPositioner:SetPoint("CENTER", barFrame.sb)
-    barFrame.kickPositioner:SetFrameLevel(barFrame.sb:GetFrameLevel() + 1)
-    barFrame.kickPositioner:Hide()
-    barFrame.kickMarker = CreateFrame("StatusBar", nil, barFrame.kickClip)
-    barFrame.kickMarker:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    barFrame.kickMarker:GetStatusBarTexture():SetAlpha(0)
-    barFrame.kickMarker:SetPoint("LEFT", barFrame.kickPositioner:GetStatusBarTexture(), "RIGHT")
-    barFrame.kickMarker:SetSize(1, 1)
-    barFrame.kickMarker:SetFrameLevel(barFrame.sb:GetFrameLevel() + 2)
-    barFrame.kickMarker:Hide()
+    bar.kickClip = CreateFrame("Frame", nil, bar.sb)
+    bar.kickClip:SetAllPoints(bar.sb)
+    bar.kickClip:SetClipsChildren(true)
+    bar.kickPositioner = CreateFrame("StatusBar", nil, bar.kickClip)
+    bar.kickPositioner:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    bar.kickPositioner:GetStatusBarTexture():SetAlpha(0)
+    bar.kickPositioner:SetPoint("CENTER", bar.sb)
+    bar.kickPositioner:SetFrameLevel(bar.sb:GetFrameLevel() + 1)
+    bar.kickPositioner:Hide()
+    bar.kickMarker = CreateFrame("StatusBar", nil, bar.kickClip)
+    bar.kickMarker:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    bar.kickMarker:GetStatusBarTexture():SetAlpha(0)
+    bar.kickMarker:SetPoint("LEFT", bar.kickPositioner:GetStatusBarTexture(), "RIGHT")
+    bar.kickMarker:SetSize(1, 1)
+    bar.kickMarker:SetFrameLevel(bar.sb:GetFrameLevel() + 2)
+    bar.kickMarker:Hide()
     local function Unsnap(sbFrame)
         local tx = sbFrame:GetStatusBarTexture()
         if tx and tx.SetSnapToPixelGrid then
@@ -193,135 +193,135 @@ local function BuildBar(which)
             tx:SetTexelSnappingBias(0)
         end
     end
-    Unsnap(barFrame.kickPositioner)
-    Unsnap(barFrame.kickMarker)
-    barFrame.kickTick = barFrame.kickMarker:CreateTexture(nil, "OVERLAY", nil, 3)
-    barFrame.kickTick:SetColorTexture(1, 1, 1, 1)
-    barFrame.kickTick:SetWidth(2)
-    barFrame.kickTick:SetPoint("TOP", barFrame.kickMarker, "TOP", 0, 0)
-    barFrame.kickTick:SetPoint("BOTTOM", barFrame.kickMarker, "BOTTOM", 0, 0)
-    barFrame.kickTick:SetPoint("LEFT", barFrame.kickMarker:GetStatusBarTexture(), "RIGHT")
+    Unsnap(bar.kickPositioner)
+    Unsnap(bar.kickMarker)
+    bar.kickTick = bar.kickMarker:CreateTexture(nil, "OVERLAY", nil, 3)
+    bar.kickTick:SetColorTexture(1, 1, 1, 1)
+    bar.kickTick:SetWidth(2)
+    bar.kickTick:SetPoint("TOP", bar.kickMarker, "TOP", 0, 0)
+    bar.kickTick:SetPoint("BOTTOM", bar.kickMarker, "BOTTOM", 0, 0)
+    bar.kickTick:SetPoint("LEFT", bar.kickMarker:GetStatusBarTexture(), "RIGHT")
     -- Mid-cast "kick available" window: rides the marker geometry so the
     -- two-secret in-time test resolves by where the marker edge lands (the
     -- anchors cross and the fill collapses to zero width -- no Lua branch).
-    barFrame.kickReadyFill = barFrame.sb:CreateTexture(nil, "ARTWORK", nil, 1)
-    barFrame.kickReadyFill:SetColorTexture(1, 1, 1, 1)
-    barFrame.kickReadyFill:SetAlpha(0)
-    barFrame.kickReadyFill:Hide()
+    bar.kickReadyFill = bar.sb:CreateTexture(nil, "ARTWORK", nil, 1)
+    bar.kickReadyFill:SetColorTexture(1, 1, 1, 1)
+    bar.kickReadyFill:SetAlpha(0)
+    bar.kickReadyFill:Hide()
 
     -- 10Hz cast timer text (engine-slept between fires; self-stops when the
     -- cast ends). Remaining time from the duration object only. bar.durKind
     -- (set by ArmFill, which already knows which getter applies) picks the
     -- one matching API instead of probing all three every tick; falls back to
     -- the full chain on a transient miss or before any kind is cached.
-    barFrame._timerTick = function(force)
-        if not barFrame.isCasting and not force then
+    bar._timerTick = function(force)
+        if not bar.isCasting and not force then
             return
         end
-        local conf = BarCfg(barFrame.which)
+        local conf = BarCfg(bar.which)
         if not conf or conf.showTimer == false then
             return true
         end
         if UnitCastingDuration then
             local durObj
-            local kindOf = barFrame.durKind
-            if kindOf == "cast" then
-                durObj = UnitCastingDuration(barFrame.unit)
-            elseif kindOf == "empowered" then
-                durObj = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(barFrame.unit, true)
-            elseif kindOf == "channel" then
-                durObj = UnitChannelDuration and UnitChannelDuration(barFrame.unit)
+            local kind = bar.durKind
+            if kind == "cast" then
+                durObj = UnitCastingDuration(bar.unit)
+            elseif kind == "empowered" then
+                durObj = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(bar.unit, true)
+            elseif kind == "channel" then
+                durObj = UnitChannelDuration and UnitChannelDuration(bar.unit)
             end
             if not durObj then
-                durObj = UnitCastingDuration(barFrame.unit)
-                    or (UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(barFrame.unit, true))
-                    or (UnitChannelDuration and UnitChannelDuration(barFrame.unit))
+                durObj = UnitCastingDuration(bar.unit)
+                    or (UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(bar.unit, true))
+                    or (UnitChannelDuration and UnitChannelDuration(bar.unit))
             end
             if durObj then
-                barFrame.timer:SetFormattedText("%.1f", durObj:GetRemainingDuration())
+                bar.timer:SetFormattedText("%.1f", durObj:GetRemainingDuration())
             else
-                barFrame.timer:SetText("")
+                bar.timer:SetText("")
             end
         end
         return true
     end
     if CludesUI.Tick and CludesUI.Tick.NewAnimTicker then
-        barFrame._timerTicker = CludesUI.Tick.NewAnimTicker(barFrame.frame, barFrame._timerTick, 0.1)
+        bar._timerTicker = CludesUI.Tick.NewAnimTicker(bar.frame, bar._timerTick, 0.1)
     end
 
-    barList[which] = barFrame
-    ApplyBarPosition(barFrame)
-    return barFrame
+    barList[which] = bar
+    ApplyBarPosition(bar)
+    return bar
 end
 
 --------------------------------------------------------------------------------
 --  Style pass
 --------------------------------------------------------------------------------
-local function StyleBar(barFrame)
-    local conf = BarCfg(barFrame.which)
+local function StyleBar(bar)
+    local conf = BarCfg(bar.which)
     local tf = TF()
     if not (conf and tf) then
         return
     end
     local wid = conf.width or 260
     local hgt = conf.height or 22
-    barFrame.frame:SetSize(wid, hgt)
+    bar.frame:SetSize(wid, hgt)
 
     local showIcon = conf.showIcon ~= false
-    barFrame.iconFrame:SetWidth(showIcon and hgt or 0.001)
-    barFrame.iconFrame:SetShown(showIcon)
+    bar.iconFrame:SetWidth(showIcon and hgt or 0.001)
+    bar.iconFrame:SetShown(showIcon)
 
     local texPath = CludesUI.ResolveTexturePath(
         mod.barTextures,
         conf.texture or "none",
         "Interface\\Buttons\\WHITE8x8"
     ) or "Interface\\Buttons\\WHITE8x8"
-    barFrame.sb:SetStatusBarTexture(texPath)
+    bar.sb:SetStatusBarTexture(texPath)
     local pp = CludesUI.PP
     if pp and pp.DisablePixelSnap then
-        pp.DisablePixelSnap(barFrame.sb:GetStatusBarTexture())
+        pp.DisablePixelSnap(bar.sb:GetStatusBarTexture())
     end
     -- Fill texture re-mint: re-pin the fill-edge riders.
-    barFrame.overlay:ClearAllPoints()
-    barFrame.overlay:SetAllPoints(barFrame.sb:GetStatusBarTexture())
-    barFrame.spark:ClearAllPoints()
-    barFrame.spark:SetPoint("CENTER", barFrame.sb:GetStatusBarTexture(), "RIGHT", 0, 0)
-    barFrame.spark:SetSize(8, hgt)
-    barFrame.spark:SetShown(tf.showSpark ~= false)
+    bar.overlay:ClearAllPoints()
+    bar.overlay:SetAllPoints(bar.sb:GetStatusBarTexture())
+    bar.spark:ClearAllPoints()
+    bar.spark:SetPoint("CENTER", bar.sb:GetStatusBarTexture(), "RIGHT", 0, 0)
+    bar.spark:SetSize(8, hgt)
+    bar.spark:SetShown(tf.showSpark ~= false)
 
     local un = tf.uninterruptible or { r = 0.45, g = 0.45, b = 0.45 }
-    barFrame.overlay:SetVertexColor(un.r, un.g, un.b)
+    bar.overlay:SetVertexColor(un.r, un.g, un.b)
 
     local fl = tf.interruptedColor or { r = 0.8, g = 0, b = 0 }
-    barFrame.flash:SetVertexColor(fl.r, fl.g, fl.b, 0.85)
+    bar.flash:SetVertexColor(fl.r, fl.g, fl.b, 0.85)
 
     local shieldH = hgt * 0.75
-    barFrame.shieldFrame:SetSize(shieldH * (29 / 35), shieldH)
+    bar.shieldFrame:SetSize(shieldH * (29 / 35), shieldH)
 
     if pp and pp.CreateBorder then
-        if not barFrame._border then
-            barFrame._border = true
-            pp.CreateBorder(barFrame.frame, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        if not bar._border then
+            bar._border = true
+            pp.CreateBorder(bar.frame, 0, 0, 0, 1, 1, "OVERLAY", 7)
         end
     end
 
-    SetFSFont(barFrame.name, conf.nameSize or 11)
-    SetFSFont(barFrame.target, conf.targetSize or 10)
-    SetFSFont(barFrame.timer, conf.timerSize or 11)
+    SetFSFont(bar.name, conf.nameSize or 11)
+    SetFSFont(bar.target, conf.targetSize or 10)
+    SetFSFont(bar.timer, conf.timerSize or 11)
 
     local showTimer = conf.showTimer ~= false
     local reserve = showTimer and ((conf.timerSize or 11) * 2.2) or 0
-    barFrame.name:ClearAllPoints()
-    barFrame.name:SetPoint("LEFT", barFrame.sb, "LEFT", 4, 0)
-    barFrame.name:SetWidth((wid - hgt) * 0.48)
-    barFrame.timer:ClearAllPoints()
-    barFrame.timer:SetPoint("RIGHT", barFrame.sb, "RIGHT", -3, 0)
-    barFrame.target:ClearAllPoints()
-    barFrame.target:SetPoint("RIGHT", barFrame.sb, "RIGHT", -3 - reserve, 0)
-    barFrame.target:SetWidth((wid - hgt) * 0.40)
+    bar.name:ClearAllPoints()
+    bar.name:SetPoint("LEFT", bar.sb, "LEFT", 4, 0)
+    bar.name:SetWidth((wid - hgt) * 0.48)
+    bar.timer:ClearAllPoints()
+    bar.timer:SetPoint("RIGHT", bar.sb, "RIGHT", -3, 0)
+    bar.target:ClearAllPoints()
+    bar.target:SetPoint("RIGHT", bar.sb, "RIGHT", -3 - reserve, 0)
+    bar.target:SetWidth((wid - hgt) * 0.40)
 
-    barFrame.name:SetShown(conf.showSpellName ~= false)
-    barFrame.timer:SetShown(showTimer)
+    bar.name:SetShown(conf.showSpellName ~= false)
+    bar.timer:SetShown(showTimer)
 end
 
 --------------------------------------------------------------------------------
@@ -329,7 +329,7 @@ end
 --  combines ride C_CurveUtil boolean curves; nothing branches on a secret.
 --------------------------------------------------------------------------------
 local impScratch = {}
-local function ApplyCastColor(barFrame, uninterruptible)
+local function ApplyCastColor(bar, uninterruptible)
     local tf = TF()
     if not tf then
         return
@@ -338,7 +338,7 @@ local function ApplyCastColor(barFrame, uninterruptible)
     local baseTint = tf.castColor or { r = 0.70, g = 0.40, b = 0.90 }
     if tf.importantEnabled and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
         local imp = tf.importantColor or { r = 1, g = 0.2, b = 0.2 }
-        local isImp = barFrame._castImportant
+        local isImp = bar._castImportant
         if type(isImp) == "nil" then
             isImp = false
         end
@@ -349,19 +349,19 @@ local function ApplyCastColor(barFrame, uninterruptible)
         baseTint = impScratch
     end
     local cr, cg, cb = ComputeCastBarTint(kickReadyTint, baseTint)
-    barFrame.sb:GetStatusBarTexture():SetVertexColor(cr, cg, cb)
+    bar.sb:GetStatusBarTexture():SetVertexColor(cr, cg, cb)
     local showShield = TF().showShield ~= false
-    if barFrame.overlay.SetAlphaFromBoolean then
-        barFrame.overlay:SetAlphaFromBoolean(uninterruptible)
+    if bar.overlay.SetAlphaFromBoolean then
+        bar.overlay:SetAlphaFromBoolean(uninterruptible)
         if showShield then
-            barFrame.shieldFrame:SetAlphaFromBoolean(uninterruptible)
+            bar.shieldFrame:SetAlphaFromBoolean(uninterruptible)
         else
-            barFrame.shieldFrame:SetAlpha(0)
+            bar.shieldFrame:SetAlpha(0)
         end
     else
         local a = uninterruptible and 1 or 0
-        barFrame.overlay:SetAlpha(a)
-        barFrame.shieldFrame:SetAlpha(showShield and a or 0)
+        bar.overlay:SetAlpha(a)
+        bar.shieldFrame:SetAlpha(showShield and a or 0)
     end
 end
 
@@ -370,76 +370,71 @@ end
 --  work; RefreshKickTick re-pins the PAIRED positioner/marker snapshot on
 --  cooldown events -- never one without the other (the tick drifts).
 --------------------------------------------------------------------------------
-local function HideKickTick(barFrame)
-    barFrame.kickPositioner:Hide()
-    barFrame.kickMarker:Hide()
-    barFrame.kickReadyFill:Hide()
-    barFrame.kickTick:Hide()
-    if barFrame._kickTicker then
-        barFrame._kickTicker:Cancel()
-        barFrame._kickTicker = nil
+local function HideKickTick(bar)
+    bar.kickPositioner:Hide()
+    bar.kickMarker:Hide()
+    bar.kickReadyFill:Hide()
+    bar.kickTick:Hide()
+    if bar._kickTicker then
+        bar._kickTicker:Cancel()
+        bar._kickTicker = nil
     end
 end
 
-local function UpdateKickTick(barFrame, kickProtected, isChannel, isEmpowered)
+local function UpdateKickTick(bar, kickProtected, isChannel, isEmpowered)
     local tf = TF()
     if not tf then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
     local tickOn = tf.kickTickEnabled ~= false
     local midOn = tf.midCastEnabled == true
     if (not (tickOn or midOn)) or not GetActiveKickSpell() then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
-    barFrame._kickProtected = kickProtected
-    barFrame._kickIsChannel = isChannel
-    barFrame._kickIsEmpowered = isEmpowered
+    bar._kickProtected = kickProtected
+    bar._kickIsChannel = isChannel
+    bar._kickIsEmpowered = isEmpowered
     if
-        not (
-            C_Spell
-            and C_Spell.GetSpellCooldownDuration
-            and UnitCastingDuration
-            and barFrame.sb.SetTimerDuration
-        )
+        not (C_Spell and C_Spell.GetSpellCooldownDuration and UnitCastingDuration and bar.sb.SetTimerDuration)
     then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
     local castDuration
     if isChannel then
         if isEmpowered and UnitEmpoweredChannelDuration then
-            castDuration = UnitEmpoweredChannelDuration(barFrame.unit, true)
+            castDuration = UnitEmpoweredChannelDuration(bar.unit, true)
         end
         if not castDuration then
-            castDuration = UnitChannelDuration(barFrame.unit)
+            castDuration = UnitChannelDuration(bar.unit)
         end
     else
-        castDuration = UnitCastingDuration(barFrame.unit)
+        castDuration = UnitCastingDuration(bar.unit)
     end
     if not castDuration then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
     local totalDur = castDuration:GetTotalDuration()
     local interruptCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
     if not interruptCD then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
 
-    local hgt = barFrame.frame:GetHeight()
-    local barW = barFrame.sb:GetWidth()
-    barFrame.kickPositioner:SetSize(barW, hgt)
-    barFrame.kickPositioner:SetMinMaxValues(0, totalDur)
-    barFrame.kickMarker:SetMinMaxValues(0, totalDur)
-    barFrame.kickMarker:SetSize(barW, hgt)
+    local hgt = bar.frame:GetHeight()
+    local barW = bar.sb:GetWidth()
+    bar.kickPositioner:SetSize(barW, hgt)
+    bar.kickPositioner:SetMinMaxValues(0, totalDur)
+    bar.kickMarker:SetMinMaxValues(0, totalDur)
+    bar.kickMarker:SetSize(barW, hgt)
     -- PAIRED snapshot: elapsed + kick CD remaining sampled at one instant.
-    barFrame.kickPositioner:SetValue(castDuration:GetElapsedDuration())
-    barFrame.kickMarker:SetValue(interruptCD:GetRemainingDuration())
+    bar.kickPositioner:SetValue(castDuration:GetElapsedDuration())
+    bar.kickMarker:SetValue(interruptCD:GetRemainingDuration())
     local kc = tf.kickTickColor or { r = 1, g = 1, b = 1 }
-    barFrame.kickTick:SetColorTexture(kc.r, kc.g, kc.b, 1)
+    bar.kickTick:SetColorTexture(kc.r, kc.g, kc.b, 1)
 
     local function Unsnap(sbFrame)
         local tx = sbFrame:GetStatusBarTexture()
@@ -449,90 +444,90 @@ local function UpdateKickTick(barFrame, kickProtected, isChannel, isEmpowered)
         end
     end
     if isChannel and not isEmpowered then
-        barFrame.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
-        barFrame.kickMarker:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
+        bar.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
+        bar.kickMarker:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
         -- SetFillStyle re-mints the fill snap-ON; re-disable so the summed
         -- edge stays an exact float and the tick holds still.
-        Unsnap(barFrame.kickPositioner)
-        Unsnap(barFrame.kickMarker)
-        barFrame.kickMarker:ClearAllPoints()
-        barFrame.kickTick:ClearAllPoints()
-        barFrame.kickMarker:SetPoint("RIGHT", barFrame.kickPositioner:GetStatusBarTexture(), "LEFT")
-        barFrame.kickTick:SetPoint("TOP", barFrame.kickMarker, "TOP", 0, 0)
-        barFrame.kickTick:SetPoint("BOTTOM", barFrame.kickMarker, "BOTTOM", 0, 0)
-        barFrame.kickTick:SetPoint("RIGHT", barFrame.kickMarker:GetStatusBarTexture(), "LEFT")
-        barFrame.kickReadyFill:ClearAllPoints()
-        barFrame.kickReadyFill:SetPoint("TOP", barFrame.sb, "TOP", 0, 0)
-        barFrame.kickReadyFill:SetPoint("BOTTOM", barFrame.sb, "BOTTOM", 0, 0)
-        barFrame.kickReadyFill:SetPoint("LEFT", barFrame.sb, "LEFT", 0, 0)
-        barFrame.kickReadyFill:SetPoint("RIGHT", barFrame.kickMarker:GetStatusBarTexture(), "LEFT")
+        Unsnap(bar.kickPositioner)
+        Unsnap(bar.kickMarker)
+        bar.kickMarker:ClearAllPoints()
+        bar.kickTick:ClearAllPoints()
+        bar.kickMarker:SetPoint("RIGHT", bar.kickPositioner:GetStatusBarTexture(), "LEFT")
+        bar.kickTick:SetPoint("TOP", bar.kickMarker, "TOP", 0, 0)
+        bar.kickTick:SetPoint("BOTTOM", bar.kickMarker, "BOTTOM", 0, 0)
+        bar.kickTick:SetPoint("RIGHT", bar.kickMarker:GetStatusBarTexture(), "LEFT")
+        bar.kickReadyFill:ClearAllPoints()
+        bar.kickReadyFill:SetPoint("TOP", bar.sb, "TOP", 0, 0)
+        bar.kickReadyFill:SetPoint("BOTTOM", bar.sb, "BOTTOM", 0, 0)
+        bar.kickReadyFill:SetPoint("LEFT", bar.sb, "LEFT", 0, 0)
+        bar.kickReadyFill:SetPoint("RIGHT", bar.kickMarker:GetStatusBarTexture(), "LEFT")
     else
-        barFrame.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Standard)
-        barFrame.kickMarker:SetFillStyle(Enum.StatusBarFillStyle.Standard)
-        Unsnap(barFrame.kickPositioner)
-        Unsnap(barFrame.kickMarker)
-        barFrame.kickMarker:ClearAllPoints()
-        barFrame.kickTick:ClearAllPoints()
-        barFrame.kickMarker:SetPoint("LEFT", barFrame.kickPositioner:GetStatusBarTexture(), "RIGHT")
-        barFrame.kickTick:SetPoint("TOP", barFrame.kickMarker, "TOP", 0, 0)
-        barFrame.kickTick:SetPoint("BOTTOM", barFrame.kickMarker, "BOTTOM", 0, 0)
-        barFrame.kickTick:SetPoint("LEFT", barFrame.kickMarker:GetStatusBarTexture(), "RIGHT")
-        barFrame.kickReadyFill:ClearAllPoints()
-        barFrame.kickReadyFill:SetPoint("TOP", barFrame.sb, "TOP", 0, 0)
-        barFrame.kickReadyFill:SetPoint("BOTTOM", barFrame.sb, "BOTTOM", 0, 0)
-        barFrame.kickReadyFill:SetPoint("LEFT", barFrame.kickMarker:GetStatusBarTexture(), "RIGHT")
-        barFrame.kickReadyFill:SetPoint("RIGHT", barFrame.sb, "RIGHT", 0, 0)
+        bar.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Standard)
+        bar.kickMarker:SetFillStyle(Enum.StatusBarFillStyle.Standard)
+        Unsnap(bar.kickPositioner)
+        Unsnap(bar.kickMarker)
+        bar.kickMarker:ClearAllPoints()
+        bar.kickTick:ClearAllPoints()
+        bar.kickMarker:SetPoint("LEFT", bar.kickPositioner:GetStatusBarTexture(), "RIGHT")
+        bar.kickTick:SetPoint("TOP", bar.kickMarker, "TOP", 0, 0)
+        bar.kickTick:SetPoint("BOTTOM", bar.kickMarker, "BOTTOM", 0, 0)
+        bar.kickTick:SetPoint("LEFT", bar.kickMarker:GetStatusBarTexture(), "RIGHT")
+        bar.kickReadyFill:ClearAllPoints()
+        bar.kickReadyFill:SetPoint("TOP", bar.sb, "TOP", 0, 0)
+        bar.kickReadyFill:SetPoint("BOTTOM", bar.sb, "BOTTOM", 0, 0)
+        bar.kickReadyFill:SetPoint("LEFT", bar.kickMarker:GetStatusBarTexture(), "RIGHT")
+        bar.kickReadyFill:SetPoint("RIGHT", bar.sb, "RIGHT", 0, 0)
     end
-    barFrame.kickPositioner:Show()
-    barFrame.kickMarker:Show()
+    bar.kickPositioner:Show()
+    bar.kickMarker:Show()
     local mc = tf.midCastColor or { r = 0.318, g = 0.820, b = 0.357 }
-    barFrame.kickReadyFill:SetVertexColor(mc.r, mc.g, mc.b, 1)
-    barFrame.kickTick:SetShown(tickOn)
-    barFrame.kickReadyFill:SetShown(midOn)
+    bar.kickReadyFill:SetVertexColor(mc.r, mc.g, mc.b, 1)
+    bar.kickTick:SetShown(tickOn)
+    bar.kickReadyFill:SetShown(midOn)
     -- Alpha = on-CD x interruptible, both possibly SECRET: chained curves.
     if interruptCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-        local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(barFrame._kickProtected, 0, 1)
+        local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(bar._kickProtected, 0, 1)
         local kickReady = interruptCD:IsZero()
         local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, interruptible)
-        barFrame.kickTick:SetAlpha(alpha)
-        barFrame.kickReadyFill:SetAlpha(alpha)
+        bar.kickTick:SetAlpha(alpha)
+        bar.kickReadyFill:SetAlpha(alpha)
     else
-        barFrame.kickTick:SetAlpha(0)
-        barFrame.kickReadyFill:SetAlpha(0)
+        bar.kickTick:SetAlpha(0)
+        bar.kickReadyFill:SetAlpha(0)
     end
-    if barFrame._kickTicker then
-        barFrame._kickTicker:Cancel()
+    if bar._kickTicker then
+        bar._kickTicker:Cancel()
     end
     local myTicker
     myTicker = C_Timer.NewTicker(0.1, function()
-        if barFrame._kickTicker ~= myTicker then
+        if bar._kickTicker ~= myTicker then
             myTicker:Cancel()
             return
         end
-        if not barFrame.isCasting then
-            HideKickTick(barFrame)
+        if not bar.isCasting then
+            HideKickTick(bar)
             return
         end
         if not GetActiveKickSpell() then
-            HideKickTick(barFrame)
+            HideKickTick(bar)
             return
         end
         local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
         if icd and icd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-            local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(barFrame._kickProtected, 0, 1)
+            local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(bar._kickProtected, 0, 1)
             local kickReady = icd:IsZero()
             local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, interruptible)
-            barFrame.kickTick:SetAlpha(alpha)
-            barFrame.kickReadyFill:SetAlpha(alpha)
+            bar.kickTick:SetAlpha(alpha)
+            bar.kickReadyFill:SetAlpha(alpha)
         end
     end)
-    barFrame._kickTicker = myTicker
+    bar._kickTicker = myTicker
 end
 
 -- Light cooldown-event refresh: bar values + alpha only, PAIRED re-pin.
-local function RefreshKickTick(barFrame)
+local function RefreshKickTick(bar)
     if not GetActiveKickSpell() or not (C_Spell and C_Spell.GetSpellCooldownDuration) then
-        HideKickTick(barFrame)
+        HideKickTick(bar)
         return
     end
     local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
@@ -543,21 +538,21 @@ local function RefreshKickTick(barFrame)
         return
     end
     local castDuration
-    if barFrame._kickIsChannel then
-        if barFrame._kickIsEmpowered and UnitEmpoweredChannelDuration then
-            castDuration = UnitEmpoweredChannelDuration(barFrame.unit, true)
+    if bar._kickIsChannel then
+        if bar._kickIsEmpowered and UnitEmpoweredChannelDuration then
+            castDuration = UnitEmpoweredChannelDuration(bar.unit, true)
         end
         if not castDuration then
-            castDuration = UnitChannelDuration(barFrame.unit)
+            castDuration = UnitChannelDuration(bar.unit)
         end
     else
-        castDuration = UnitCastingDuration(barFrame.unit)
+        castDuration = UnitCastingDuration(bar.unit)
     end
     if not castDuration then
         return
     end
-    barFrame.kickPositioner:SetValue(castDuration:GetElapsedDuration())
-    barFrame.kickMarker:SetValue(icd:GetRemainingDuration())
+    bar.kickPositioner:SetValue(castDuration:GetElapsedDuration())
+    bar.kickMarker:SetValue(icd:GetRemainingDuration())
 end
 
 --------------------------------------------------------------------------------
@@ -567,29 +562,24 @@ end
 --------------------------------------------------------------------------------
 local kickWatcher = CreateFrame("Frame")
 kickWatcher:SetScript("OnEvent", function()
-    for _, barFrame in pairs(barList) do
-        if barFrame.isCasting and type(barFrame._kickProtected) ~= "nil" then
-            ApplyCastColor(barFrame, barFrame._kickProtected)
-            if not barFrame.kickPositioner:IsShown() then
-                UpdateKickTick(
-                    barFrame,
-                    barFrame._kickProtected,
-                    barFrame._kickIsChannel,
-                    barFrame._kickIsEmpowered
-                )
+    for _, bar in pairs(barList) do
+        if bar.isCasting and type(bar._kickProtected) ~= "nil" then
+            ApplyCastColor(bar, bar._kickProtected)
+            if not bar.kickPositioner:IsShown() then
+                UpdateKickTick(bar, bar._kickProtected, bar._kickIsChannel, bar._kickIsEmpowered)
             else
-                RefreshKickTick(barFrame)
+                RefreshKickTick(bar)
             end
         end
     end
 end)
 
-local function NotifyCastStarted(barFrame)
-    if barFrame._timerTick then
-        barFrame._timerTick(true)
+local function NotifyCastStarted(bar)
+    if bar._timerTick then
+        bar._timerTick(true)
     end
-    if barFrame._timerTicker then
-        barFrame._timerTicker.Start()
+    if bar._timerTicker then
+        bar._timerTicker.Start()
     end
     activeCastCount = activeCastCount + 1
     if activeCastCount == 1 then
@@ -627,8 +617,8 @@ end
 -- self-cast, or a unit with target text off) never populate it, so name stays
 -- needlessly capped and clips into "..." with room to spare. Hand that zone back
 -- to the name whenever this cast has no target text to show.
-local function SizeNameForTarget(barFrame, hasTarget)
-    local conf = BarCfg(barFrame.which)
+local function SizeNameForTarget(bar, hasTarget)
+    local conf = BarCfg(bar.which)
     if not conf then
         return
     end
@@ -636,7 +626,7 @@ local function SizeNameForTarget(barFrame, hasTarget)
     local hgt = conf.height or 22
     local reserve = (conf.showTimer ~= false) and ((conf.timerSize or 11) * 2.2) or 0
     local shared = (wid - hgt) * 0.48
-    barFrame.name:SetWidth(hasTarget and shared or math.max(shared, (wid - hgt) - 8 - reserve))
+    bar.name:SetWidth(hasTarget and shared or math.max(shared, (wid - hgt) - 8 - reserve))
 end
 
 -- Per-bar toggle; a bar that never set it inherits the former shared one.
@@ -649,33 +639,33 @@ local function ShowsTarget(tf, which)
     return val ~= false
 end
 
-local function PaintTarget(barFrame)
+local function PaintTarget(bar)
     local tf = TF()
-    local fontStr = barFrame.target
-    if not tf or not ShowsTarget(tf, barFrame.which) then
+    local fontStr = bar.target
+    if not tf or not ShowsTarget(tf, bar.which) then
         fontStr:SetText("")
         fontStr:Hide()
-        SizeNameForTarget(barFrame, false)
+        SizeNameForTarget(bar, false)
         return
     end
     local spellTarget, spellTargetClass
-    if UnitShouldDisplaySpellTargetName and UnitShouldDisplaySpellTargetName(barFrame.unit) then
-        local raw = UnitSpellTargetName and UnitSpellTargetName(barFrame.unit)
+    if UnitShouldDisplaySpellTargetName and UnitShouldDisplaySpellTargetName(bar.unit) then
+        local raw = UnitSpellTargetName and UnitSpellTargetName(bar.unit)
         if type(raw) ~= "nil" then
             spellTarget = raw
-            spellTargetClass = UnitSpellTargetClass and UnitSpellTargetClass(barFrame.unit)
+            spellTargetClass = UnitSpellTargetClass and UnitSpellTargetClass(bar.unit)
         end
     end
     if type(spellTarget) == "nil" then
         fontStr:SetText("")
         fontStr:Hide()
-        SizeNameForTarget(barFrame, false)
+        SizeNameForTarget(bar, false)
         return
     end
     if tf.targetClassColor ~= false and type(spellTargetClass) ~= "nil" and C_ClassColor then
-        local column = C_ClassColor.GetClassColor(spellTargetClass)
-        if column then
-            fontStr:SetTextColor(column:GetRGB())
+        local col = C_ClassColor.GetClassColor(spellTargetClass)
+        if col then
+            fontStr:SetTextColor(col:GetRGB())
         else
             fontStr:SetTextColor(1, 1, 1, 1)
         end
@@ -689,177 +679,177 @@ local function PaintTarget(barFrame)
     end
     fontStr:SetText(spellTarget)
     fontStr:Show()
-    SizeNameForTarget(barFrame, true)
+    SizeNameForTarget(bar, true)
 end
 
 --------------------------------------------------------------------------------
 --  Cast lifecycle (nameplate UpdateCast port, full/fast split)
 --------------------------------------------------------------------------------
-local function ArmFill(barFrame, isChannel)
-    local scrollBar = barFrame.sb
+local function ArmFill(bar, isChannel)
+    local scrollBar = bar.sb
     if not (UnitCastingDuration and scrollBar.SetTimerDuration) then
         return false
     end
     local dur, isEmp
     if isChannel then
         if UnitEmpoweredChannelDuration then
-            dur = UnitEmpoweredChannelDuration(barFrame.unit, true)
+            dur = UnitEmpoweredChannelDuration(bar.unit, true)
             if dur then
                 isEmp = true
             end
         end
         if not dur then
-            dur = UnitChannelDuration(barFrame.unit)
+            dur = UnitChannelDuration(bar.unit)
         end
         if dur then
             scrollBar:SetReverseFill(false)
             local dirn = isEmp and Enum.StatusBarTimerDirection.ElapsedTime
                 or Enum.StatusBarTimerDirection.RemainingTime
             scrollBar:SetTimerDuration(dur, nil, dirn)
-            barFrame.durKind = isEmp and "empowered" or "channel"
+            bar.durKind = isEmp and "empowered" or "channel"
         end
     else
-        dur = UnitCastingDuration(barFrame.unit)
+        dur = UnitCastingDuration(bar.unit)
         if dur then
             scrollBar:SetReverseFill(false)
             scrollBar:SetTimerDuration(dur, nil, Enum.StatusBarTimerDirection.ElapsedTime)
-            barFrame.durKind = "cast"
+            bar.durKind = "cast"
         end
     end
     return dur ~= nil, isEmp
 end
 
-local function TeardownCast(barFrame)
-    if barFrame.isCasting then
+local function TeardownCast(bar)
+    if bar.isCasting then
         NotifyCastEnded()
     end
-    barFrame.isCasting = false
-    barFrame._castDirtyFull = nil
-    HideKickTick(barFrame)
-    barFrame.timer:SetText("")
-    if not barFrame._interrupted then
-        barFrame.frame:Hide()
-        barFrame.flash:Hide()
+    bar.isCasting = false
+    bar._castDirtyFull = nil
+    HideKickTick(bar)
+    bar.timer:SetText("")
+    if not bar._interrupted then
+        bar.frame:Hide()
+        bar.flash:Hide()
     end
 end
 
-local function UpdateCast(barFrame)
-    if previewOn[barFrame.which] then
+local function UpdateCast(bar)
+    if previewOn[bar.which] then
         return
     end
-    local conf = BarCfg(barFrame.which)
+    local conf = BarCfg(bar.which)
     if not (conf and conf.enabled == true) then
-        TeardownCast(barFrame)
-        barFrame._interrupted = nil
-        barFrame.frame:Hide()
+        TeardownCast(bar)
+        bar._interrupted = nil
+        bar.frame:Hide()
         return
     end
-    if not UnitExists(barFrame.unit) then
-        TeardownCast(barFrame)
+    if not UnitExists(bar.unit) then
+        TeardownCast(bar)
         return
     end
-    local name, _, texture, _, _, _, _, kickProtected, castSpellID = UnitCastingInfo(barFrame.unit)
+    local name, _, texture, _, _, _, _, kickProtected, castSpellID = UnitCastingInfo(bar.unit)
     local isChannel = false
     local isEmpowered = false
     if type(name) == "nil" then
-        name, _, texture, _, _, _, kickProtected, castSpellID = UnitChannelInfo(barFrame.unit)
+        name, _, texture, _, _, _, kickProtected, castSpellID = UnitChannelInfo(bar.unit)
         isChannel = true
     end
     if type(name) == "nil" then
-        TeardownCast(barFrame)
+        TeardownCast(bar)
         return
     end
 
-    if barFrame._interrupted then
-        barFrame._interrupted = nil
-        barFrame.flash:Hide()
-        if barFrame._interruptTimer then
-            barFrame._interruptTimer:Cancel()
-            barFrame._interruptTimer = nil
+    if bar._interrupted then
+        bar._interrupted = nil
+        bar.flash:Hide()
+        if bar._interruptTimer then
+            bar._interruptTimer:Cancel()
+            bar._interruptTimer = nil
         end
     end
 
-    local isFullSetup = barFrame._castDirtyFull or not barFrame.isCasting
-    barFrame._castDirtyFull = nil
+    local isFullSetup = bar._castDirtyFull or not bar.isCasting
+    bar._castDirtyFull = nil
 
     if isFullSetup then
-        StyleBar(barFrame)
-        barFrame.flash:Hide()
-        barFrame.frame:Show()
+        StyleBar(bar)
+        bar.flash:Hide()
+        bar.frame:Show()
         -- Icon and name MUST describe the SAME cast; the live texture may be
         -- SECRET (SetTexture accepts it).
         if conf.showIcon ~= false then
             if type(texture) ~= "nil" then
-                barFrame.icon:SetTexture(texture)
+                bar.icon:SetTexture(texture)
             elseif type(castSpellID) ~= "nil" then
                 local okInfo, details = pcall(C_Spell.GetSpellInfo, castSpellID)
                 if okInfo and type(details) == "table" then
-                    barFrame.icon:SetTexture(details.iconID)
+                    bar.icon:SetTexture(details.iconID)
                 else
-                    barFrame.icon:SetTexture(nil)
+                    bar.icon:SetTexture(nil)
                 end
             else
-                barFrame.icon:SetTexture(nil)
+                bar.icon:SetTexture(nil)
             end
         end
         -- PaintTarget first: it sizes bar.name for whether this cast has target
         -- text to share the row with, and SetWidth after SetText does not
         -- reliably re-truncate an already-laid-out FontString.
-        PaintTarget(barFrame)
+        PaintTarget(bar)
         if conf.showSpellName ~= false then
-            barFrame.name:SetText(name)
+            bar.name:SetText(name)
         end
-        barFrame.timer:SetText("")
+        bar.timer:SetText("")
 
         if type(kickProtected) == "nil" then
             kickProtected = false
         end
-        barFrame._kickProtected = kickProtected
+        bar._kickProtected = kickProtected
         -- Important flag may be SECRET: stored raw, fed only to color curves.
-        barFrame._castImportant = false
+        bar._castImportant = false
         if C_Spell and C_Spell.IsSpellImportant then
             local impOK, imp = pcall(C_Spell.IsSpellImportant, castSpellID or 0)
             if impOK then
-                barFrame._castImportant = imp
+                bar._castImportant = imp
             end
         end
-        ApplyCastColor(barFrame, kickProtected)
+        ApplyCastColor(bar, kickProtected)
     end
 
-    local armed, isEmp = ArmFill(barFrame, isChannel)
+    local armed, isEmp = ArmFill(bar, isChannel)
     isEmpowered = isEmp or false
-    if armed and not barFrame.isCasting then
-        NotifyCastStarted(barFrame)
+    if armed and not bar.isCasting then
+        NotifyCastStarted(bar)
     end
     if armed then
-        barFrame.isCasting = true
+        bar.isCasting = true
     end
 
     if isFullSetup then
-        barFrame._kickGeoDirty = nil
-        UpdateKickTick(barFrame, barFrame._kickProtected, isChannel, isEmpowered)
-    elseif barFrame._kickGeoDirty then
-        barFrame._kickGeoDirty = nil
-        UpdateKickTick(barFrame, barFrame._kickProtected, barFrame._kickIsChannel, barFrame._kickIsEmpowered)
+        bar._kickGeoDirty = nil
+        UpdateKickTick(bar, bar._kickProtected, isChannel, isEmpowered)
+    elseif bar._kickGeoDirty then
+        bar._kickGeoDirty = nil
+        UpdateKickTick(bar, bar._kickProtected, bar._kickIsChannel, bar._kickIsEmpowered)
     end
 end
 
 -- Mid-cast interruptibility flips: re-read protection once, store, refresh.
-local function KickProtectionChanged(barFrame)
+local function KickProtectionChanged(bar)
     -- The unit events cover both tokens whenever EITHER bar is enabled, and a
     -- disabled bar can still exist (unlock getFrame builds it), so gate here --
     -- UpdateCast's own gate runs too late for this one.
-    local conf = BarCfg(barFrame.which)
+    local conf = BarCfg(bar.which)
     if not (conf and conf.enabled == true) then
         return
     end
     local kickProtected
-    local sName, _, _, _, _, _, _, kp = UnitCastingInfo(barFrame.unit)
+    local sName, _, _, _, _, _, _, kp = UnitCastingInfo(bar.unit)
     if type(sName) ~= "nil" then
         kickProtected = kp
     else
         local chName
-        chName, _, _, _, _, _, kp = UnitChannelInfo(barFrame.unit)
+        chName, _, _, _, _, _, kp = UnitChannelInfo(bar.unit)
         if type(chName) == "nil" then
             return
         end
@@ -868,43 +858,43 @@ local function KickProtectionChanged(barFrame)
     if type(kickProtected) == "nil" then
         kickProtected = false
     end
-    barFrame._kickProtected = kickProtected
-    ApplyCastColor(barFrame, kickProtected)
-    RefreshKickTick(barFrame)
+    bar._kickProtected = kickProtected
+    ApplyCastColor(bar, kickProtected)
+    RefreshKickTick(bar)
 end
 
-local function ShowInterruptedFlash(barFrame, interrupterGUID)
+local function ShowInterruptedFlash(bar, interrupterGUID)
     local tf = TF()
     if not tf or tf.interruptedFlash == false then
         return
     end
-    local conf = BarCfg(barFrame.which)
+    local conf = BarCfg(bar.which)
     if not (conf and conf.enabled == true) then
         return
     end
-    local protected = barFrame._kickProtected
+    local protected = bar._kickProtected
     if type(interrupterGUID) == "nil" then
         return
     end
     if not ((issecretvalue and issecretvalue(protected)) or not protected) then
         return
     end
-    barFrame._interrupted = true
-    barFrame.flash:Show()
-    barFrame.name:SetText(CludesUI.L("Interrupted") or "Interrupted")
-    barFrame.target:SetText("")
-    barFrame.target:Hide()
-    barFrame.timer:SetText("")
-    barFrame.frame:Show()
-    if barFrame._interruptTimer then
-        barFrame._interruptTimer:Cancel()
+    bar._interrupted = true
+    bar.flash:Show()
+    bar.name:SetText(CludesUI.L("Interrupted") or "Interrupted")
+    bar.target:SetText("")
+    bar.target:Hide()
+    bar.timer:SetText("")
+    bar.frame:Show()
+    if bar._interruptTimer then
+        bar._interruptTimer:Cancel()
     end
-    barFrame._interruptTimer = C_Timer.NewTimer(1.0, function()
-        barFrame._interruptTimer = nil
-        barFrame._interrupted = nil
-        barFrame.flash:Hide()
-        if not barFrame.isCasting then
-            barFrame.frame:Hide()
+    bar._interruptTimer = C_Timer.NewTimer(1.0, function()
+        bar._interruptTimer = nil
+        bar._interrupted = nil
+        bar.flash:Hide()
+        if not bar.isCasting then
+            bar.frame:Hide()
         end
     end)
 end
@@ -933,27 +923,27 @@ local UNIT_EVENTS = {
 
 evt:SetScript("OnEvent", function(_, event, unitToken, ...)
     if event == "PLAYER_TARGET_CHANGED" then
-        local barFrame = barList.target
-        if barFrame then
-            barFrame._castDirtyFull = true
-            barFrame._interrupted = nil
-            barFrame.flash:Hide()
-            UpdateCast(barFrame)
+        local bar = barList.target
+        if bar then
+            bar._castDirtyFull = true
+            bar._interrupted = nil
+            bar.flash:Hide()
+            UpdateCast(bar)
         end
         return
     end
     if event == "PLAYER_FOCUS_CHANGED" then
-        local barFrame = barList.focus
-        if barFrame then
-            barFrame._castDirtyFull = true
-            barFrame._interrupted = nil
-            barFrame.flash:Hide()
-            UpdateCast(barFrame)
+        local bar = barList.focus
+        if bar then
+            bar._castDirtyFull = true
+            bar._interrupted = nil
+            bar.flash:Hide()
+            UpdateCast(bar)
         end
         return
     end
-    local barFrame = barList[unitToken]
-    if not barFrame then
+    local bar = barList[unitToken]
+    if not bar then
         return
     end
     if previewOn[unitToken] then
@@ -964,46 +954,46 @@ evt:SetScript("OnEvent", function(_, event, unitToken, ...)
         or event == "UNIT_SPELLCAST_CHANNEL_START"
         or event == "UNIT_SPELLCAST_EMPOWER_START"
     then
-        barFrame._castDirtyFull = true
-        UpdateCast(barFrame)
+        bar._castDirtyFull = true
+        UpdateCast(bar)
     elseif
         event == "UNIT_SPELLCAST_DELAYED"
         or event == "UNIT_SPELLCAST_CHANNEL_UPDATE"
         or event == "UNIT_SPELLCAST_EMPOWER_UPDATE"
     then
-        barFrame._kickGeoDirty = true
-        UpdateCast(barFrame)
+        bar._kickGeoDirty = true
+        UpdateCast(bar)
     elseif event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_FAILED" then
-        UpdateCast(barFrame)
+        UpdateCast(bar)
     elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
         -- An interrupted empower carries the interrupter GUID as the 4th arg
         -- after unit (castGUID, spellID, complete, interrupterGUID).
         local _, _, _, interrupterGUID = ...
         if type(interrupterGUID) ~= "nil" then
-            TeardownCast(barFrame)
-            if not barFrame._interrupted then
-                ShowInterruptedFlash(barFrame, interrupterGUID)
+            TeardownCast(bar)
+            if not bar._interrupted then
+                ShowInterruptedFlash(bar, interrupterGUID)
             end
         else
-            UpdateCast(barFrame)
+            UpdateCast(bar)
         end
     elseif event == "UNIT_SPELLCAST_CHANNEL_STOP" then
         -- Direct teardown: in restricted execution UnitCastingInfo can return
         -- secret values (not nil) for a stale channel (nameplate lesson).
         -- An interrupted channel carries the interrupter GUID as the 3rd arg
         -- after unit (castGUID, spellID, interrupterGUID); nil on a natural end.
-        TeardownCast(barFrame)
+        TeardownCast(bar)
         local _, _, interrupterGUID = ...
-        if type(interrupterGUID) ~= "nil" and not barFrame._interrupted then
-            ShowInterruptedFlash(barFrame, interrupterGUID)
+        if type(interrupterGUID) ~= "nil" and not bar._interrupted then
+            ShowInterruptedFlash(bar, interrupterGUID)
         end
     elseif event == "UNIT_SPELLCAST_INTERRUPTED" then
         local _, _, interrupterGUID = ...
-        ShowInterruptedFlash(barFrame, interrupterGUID)
-        UpdateCast(barFrame)
+        ShowInterruptedFlash(bar, interrupterGUID)
+        UpdateCast(bar)
     elseif event == "UNIT_SPELLCAST_INTERRUPTIBLE" or event == "UNIT_SPELLCAST_NOT_INTERRUPTIBLE" then
-        KickProtectionChanged(barFrame)
-        UpdateCast(barFrame)
+        KickProtectionChanged(bar)
+        UpdateCast(bar)
     end
 end)
 
@@ -1031,10 +1021,10 @@ local function Deactivate()
     end
     isActive = false
     evt:UnregisterAllEvents()
-    for _, barFrame in pairs(barList) do
-        TeardownCast(barFrame)
-        barFrame._interrupted = nil
-        barFrame.frame:Hide()
+    for _, bar in pairs(barList) do
+        TeardownCast(bar)
+        bar._interrupted = nil
+        bar.frame:Hide()
     end
 end
 
@@ -1045,41 +1035,41 @@ end
 --------------------------------------------------------------------------------
 -- The static content alone: icon, texts, colour, fill. Shared by the on-screen
 -- preview (the live bar) and the options header sample (a chrome-only bar).
-local function PaintSampleCast(barFrame, which, tf)
-    barFrame.icon:SetTexture(134400)
-    barFrame.name:SetText(which == "target" and "Crushing Blow" or "Dark Mending")
+local function PaintSampleCast(bar, which, tf)
+    bar.icon:SetTexture(134400)
+    bar.name:SetText(which == "target" and "Crushing Blow" or "Dark Mending")
     local tc = tf and tf.targetColor
     if tf and tf.targetClassColor ~= false and C_ClassColor and UnitClassBase then
         -- Class token only: UnitClassBase also returns the class ID, which would
         -- land in GetClassColor's optional tint color argument and be rejected.
-        local column = C_ClassColor.GetClassColor((UnitClassBase("player")))
-        if column then
-            barFrame.target:SetTextColor(column:GetRGB())
+        local col = C_ClassColor.GetClassColor((UnitClassBase("player")))
+        if col then
+            bar.target:SetTextColor(col:GetRGB())
         end
     elseif tc then
-        barFrame.target:SetTextColor(tc.r, tc.g, tc.b, 1)
+        bar.target:SetTextColor(tc.r, tc.g, tc.b, 1)
     end
     if tf and ShowsTarget(tf, which) then
-        barFrame.target:SetText(UnitName("player") or "Target")
-        barFrame.target:Show()
+        bar.target:SetText(UnitName("player") or "Target")
+        bar.target:Show()
     else
-        barFrame.target:SetText("")
-        barFrame.target:Hide()
+        bar.target:SetText("")
+        bar.target:Hide()
     end
-    barFrame.timer:SetText("1.4")
-    local baseValue = (tf and tf.castColor) or { r = 0.70, g = 0.40, b = 0.90 }
-    barFrame.sb:GetStatusBarTexture():SetVertexColor(baseValue.r, baseValue.g, baseValue.b)
-    barFrame.overlay:SetAlpha(0)
-    barFrame.flash:Hide()
-    barFrame.sb:SetValue(0.62)
+    bar.timer:SetText("1.4")
+    local base = (tf and tf.castColor) or { r = 0.70, g = 0.40, b = 0.90 }
+    bar.sb:GetStatusBarTexture():SetVertexColor(base.r, base.g, base.b)
+    bar.overlay:SetAlpha(0)
+    bar.flash:Hide()
+    bar.sb:SetValue(0.62)
 end
 
 local function ShowPreview(which)
-    local barFrame = barList[which] or BuildBar(which)
-    StyleBar(barFrame)
-    PaintSampleCast(barFrame, which, TF())
-    ApplyBarPosition(barFrame)
-    barFrame.frame:Show()
+    local bar = barList[which] or BuildBar(which)
+    StyleBar(bar)
+    PaintSampleCast(bar, which, TF())
+    ApplyBarPosition(bar)
+    bar.frame:Show()
 end
 
 --------------------------------------------------------------------------------
@@ -1092,23 +1082,23 @@ local sampleBars = {}
 
 -- Hangs the sample at the host's TOPLEFT and returns its size (width, height
 -- in the host's units); nil before the settings exist.
-function mod.TFB_PaintSample(hostRegion, which)
+function mod.TFB_PaintSample(host, which)
     local conf = BarCfg(which)
     local tf = TF()
     if not (conf and tf) then
         return nil
     end
-    local barFrame = sampleBars[which]
-    if not barFrame then
-        barFrame = BuildBarChrome(which, hostRegion)
-        sampleBars[which] = barFrame
+    local bar = sampleBars[which]
+    if not bar then
+        bar = BuildBarChrome(which, host)
+        sampleBars[which] = bar
     end
-    barFrame.frame:SetParent(hostRegion)
-    barFrame.frame:ClearAllPoints()
-    barFrame.frame:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 0, 0)
-    StyleBar(barFrame)
-    PaintSampleCast(barFrame, which, tf)
-    barFrame.frame:Show()
+    bar.frame:SetParent(host)
+    bar.frame:ClearAllPoints()
+    bar.frame:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
+    StyleBar(bar)
+    PaintSampleCast(bar, which, tf)
+    bar.frame:Show()
     return conf.width or 260, conf.height or 22
 end
 
@@ -1117,12 +1107,12 @@ function mod.TFB_SetPreview(which, on)
     if previewOn[which] then
         ShowPreview(which)
     else
-        local barFrame = barList[which]
-        if barFrame then
-            barFrame.frame:Hide()
-            barFrame.sb:SetValue(0)
+        local bar = barList[which]
+        if bar then
+            bar.frame:Hide()
+            bar.sb:SetValue(0)
             if isActive then
-                UpdateCast(barFrame)
+                UpdateCast(bar)
             end
         end
     end
@@ -1147,25 +1137,25 @@ function mod.TFB_Refresh()
     for which in pairs(DEFAULT_POS) do
         local conf = BarCfg(which)
         local enabled = conf and conf.enabled == true
-        local barFrame = barList[which]
-        if enabled and not barFrame then
-            barFrame = BuildBar(which)
+        local bar = barList[which]
+        if enabled and not bar then
+            bar = BuildBar(which)
         end
-        if barFrame then
+        if bar then
             if enabled then
-                StyleBar(barFrame)
-                ApplyBarPosition(barFrame)
+                StyleBar(bar)
+                ApplyBarPosition(bar)
                 if previewOn[which] then
                     ShowPreview(which)
                 elseif isActive then
-                    barFrame._castDirtyFull = true
-                    UpdateCast(barFrame)
+                    bar._castDirtyFull = true
+                    UpdateCast(bar)
                 end
             else
                 previewOn[which] = false
-                TeardownCast(barFrame)
-                barFrame._interrupted = nil
-                barFrame.frame:Hide()
+                TeardownCast(bar)
+                bar._interrupted = nil
+                bar.frame:Hide()
             end
         end
     end
@@ -1192,8 +1182,8 @@ local function MakeBarUnlockElement(which, labelText, sequence)
             return not (conf and conf.enabled == true)
         end,
         getFrame = function()
-            local barFrame = barList[which] or BuildBar(which)
-            return barFrame.frame
+            local bar = barList[which] or BuildBar(which)
+            return bar.frame
         end,
         getSize = function()
             local conf = BarCfg(which)
@@ -1242,9 +1232,9 @@ local function MakeBarUnlockElement(which, labelText, sequence)
             end
         end,
         applyPos = function()
-            local barFrame = barList[which]
-            if barFrame then
-                ApplyBarPosition(barFrame)
+            local bar = barList[which]
+            if bar then
+                ApplyBarPosition(bar)
             end
         end,
     })
@@ -1269,9 +1259,9 @@ local function RegisterUnlock()
                 mod.TFB_SetPreview(which, unlockActive == true)
                 local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
                 if not anchored then
-                    local barFrame = barList[which]
-                    if barFrame then
-                        ApplyBarPosition(barFrame)
+                    local bar = barList[which]
+                    if bar then
+                        ApplyBarPosition(bar)
                     end
                 end
             end

@@ -128,13 +128,13 @@ function mod.TalentCondFilterPass(cdFrames)
                     tremove(frameList, idx)
                     local spellRef = fc.spellID
                     if spellRef then
-                        local group = _hiddenSets[bk]
-                        if not group then
-                            group = {}
-                            _hiddenSets[bk] = group
+                        local set = _hiddenSets[bk]
+                        if not set then
+                            set = {}
+                            _hiddenSets[bk] = set
                             _hiddenFrames[bk] = {}
                         end
-                        group[spellRef] = true
+                        set[spellRef] = true
                         local entries = _hiddenFrames[bk]
                         entries[#entries + 1] = widget
                         _anyHidden = true

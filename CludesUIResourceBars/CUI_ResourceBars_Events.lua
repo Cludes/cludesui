@@ -49,9 +49,9 @@ local mainFrame
 Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
     mainFrame = val
 end
-local healthBar
+local health
 Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    healthBar = val
+    health = val
 end
 local primaryBar
 Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
@@ -102,8 +102,8 @@ function ERB:ApplySmoothing()
     local _hCfg = _G._CURB_ResolveHealthCfg(p)
     local _pCfg = _G._CURB_ResolvePowerCfg(p)
     local _sCfg = _G._CURB_ResolveSecondaryCfg(p)
-    if healthBar then
-        healthBar._smoothing = (_hCfg and _hCfg.smoothBars) and interp or nil
+    if health then
+        health._smoothing = (_hCfg and _hCfg.smoothBars) and interp or nil
     end
     if primaryBar then
         primaryBar._smoothing = (_pCfg and _pCfg.smoothBars) and interp or nil
@@ -141,7 +141,7 @@ do
                 entries[#entries + 1] = { cfg = s, frame = f }
             end
         end
-        add(p.health, healthBar)
+        add(p.health, health)
         add(p.primary, primaryBar)
         add(p.secondary, secondaryFrame)
         return entries
@@ -222,21 +222,21 @@ end
 -- receiver only ever names the player, whose GUID is never secret-content, so the
 -- securecopy that hard-errors on a restricted unit has nothing to choke on.
 local function ApplyPingReceivers()
-    for _, barFrame in ipairs({ healthBar, primaryBar }) do
-        if barFrame and not barFrame._erbPingOn then
-            barFrame._erbPingOn = true
-            barFrame:SetAttribute("ping-receiver", true)
+    for _, bar in ipairs({ health, primaryBar }) do
+        if bar and not bar._erbPingOn then
+            bar._erbPingOn = true
+            bar:SetAttribute("ping-receiver", true)
             -- Always pingable: a receiver that answers false is treated as BLOCKING UI
             -- and kills the ping outright with PING_FAILED_GENERIC, which is strictly
             -- worse than the fall-through this replaces.
-            barFrame.GetIsPingable = function()
+            bar.GetIsPingable = function()
                 return true
             end
             -- Contextual ping only, matching Blizzard over its own player resources.
-            barFrame.GetAllowRadialWheel = function()
+            bar.GetAllowRadialWheel = function()
                 return false
             end
-            barFrame.GetTargetInfo = function()
+            bar.GetTargetInfo = function()
                 return { guid = UnitGUID("player"), isPlayerResource = true }
             end
         end
@@ -248,8 +248,8 @@ function ERB:ApplyAll()
     -- resolved config -- profile switch, option edit, spec swap, form change --
     -- routes through here, so bumping the generation in one place is enough.
     mod.CfgGen = (mod.CfgGen or 0) + 1
-    local _, classFile = UnitClass("player")
-    SetCachedClass(classFile)
+    local _, class = UnitClass("player")
+    SetCachedClass(class)
     SetCachedPrimary(GetPrimaryPowerType())
     SetCachedSecondary(GetSecondaryResource())
     -- Seed combat state so a /reload mid-combat doesn't apply the OOC fade
@@ -279,8 +279,8 @@ function ERB:ApplyAll()
     if mainFrame then
         mainFrame:SetFrameStrata(barStrata)
     end
-    if healthBar then
-        healthBar:SetFrameStrata(ERB.db.profile.health.frameStrata or barStrata)
+    if health then
+        health:SetFrameStrata(ERB.db.profile.health.frameStrata or barStrata)
     end
     if primaryBar then
         primaryBar:SetFrameStrata(ERB.db.profile.primary.frameStrata or barStrata)
@@ -443,8 +443,8 @@ end
 local function OnEvent(self, evt, ...)
     if evt == "UNIT_HEALTH" then
         UpdateHealthBar()
-        if healthBar and healthBar._missLive then
-            mod.ERB_MissingPaint(healthBar)
+        if health and health._missLive then
+            mod.ERB_MissingPaint(health)
         end
         -- Stagger is based on health, so update secondary resource too
         if cachedSecondary and cachedSecondary.power == "BREWMASTER_STAGGER" then
@@ -479,8 +479,8 @@ local function OnEvent(self, evt, ...)
         end
     elseif evt == "UNIT_MAXHEALTH" or evt == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
         UpdateHealthBar()
-        if healthBar and healthBar._missLive then
-            mod.ERB_MissingPaint(healthBar)
+        if health and health._missLive then
+            mod.ERB_MissingPaint(health)
         end
         -- Two-step max-health landing (max first, value after): one next-frame
         -- re-read settles torn numbers (canonical story: UF engine RESETTLE_EVENTS).
@@ -827,8 +827,8 @@ function ERB:OnInitialize()
         if not sp then
             return 0
         end
-        local modeName = sp.shiftElementsIfNoResource
-        if modeName ~= "Up" and modeName ~= "Down" then
+        local mode = sp.shiftElementsIfNoResource
+        if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
         -- Fires whenever the class resource bar leaves an empty slot: hidden via
@@ -846,15 +846,15 @@ function ERB:OnInitialize()
         then
             return 0
         end
-        return (modeName == "Up") and 1 or -1
+        return (mode == "Up") and 1 or -1
     end
     local function ResolveShiftDirPower()
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
         if not pp then
             return 0
         end
-        local modeName = pp.shiftElementsIfNoPower
-        if modeName ~= "Up" and modeName ~= "Down" then
+        local mode = pp.shiftElementsIfNoPower
+        if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
         -- Fires whenever the power bar leaves an empty slot. IsPowerBarHidden() is the
@@ -867,7 +867,7 @@ function ERB:OnInitialize()
         if not IsPowerBarHidden() then
             return 0
         end
-        return (modeName == "Up") and 1 or -1
+        return (mode == "Up") and 1 or -1
     end
     -- Seeded into the shared shift-provider list (CUI_UnlockMode.lua dispatches
     -- CludesUI._GetAnchorTargetShiftDir over it; CooldownManager seeds its
@@ -1005,7 +1005,7 @@ function ERB:OnEnable()
             end)
         end
         RegisterBarHover("health", function()
-            return healthBar
+            return health
         end)
         RegisterBarHover("primary", function()
             return primaryBar
@@ -1246,8 +1246,8 @@ end ----------------------------------------------------------------------------
             target = "power",
             collect = function()
                 wipe(powList)
-                if healthBar then
-                    powList[#powList + 1] = healthBar
+                if health then
+                    powList[#powList + 1] = health
                 end
                 if primaryBar then
                     powList[#powList + 1] = primaryBar

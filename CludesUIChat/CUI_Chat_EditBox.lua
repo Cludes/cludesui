@@ -170,7 +170,7 @@ local function EnsureChatStateCallbacks()
         if not hgt then
             return
         end
-        local lineTex = d.pendingLine
+        local line = d.pendingLine
         d.pendingLine = nil
         local textValue = eb:GetText()
         -- type() and issecretvalue() BEFORE any comparison. `text == ""` on a
@@ -184,7 +184,7 @@ local function EnsureChatStateCallbacks()
         if issecretvalue and issecretvalue(textValue) then
             return
         end
-        if textValue == "" and lineTex then
+        if textValue == "" and line then
             -- Kept only when ParseText ran it as an ADDON's command: that slot
             -- in Blizzard's slash table is addon-written, so a typed one runs as
             -- addon code from the slash lookup on (a recalled one runs the steps
@@ -194,7 +194,7 @@ local function EnsureChatStateCallbacks()
             -- from addon code). Chat types and channel numbers are checked first,
             -- in ParseText's order: a line it reads as a chat type (an addon's
             -- own /raid included) would switch the box's chat type as addon code.
-            local lineCmd = lineTex:match("^(/[^%s]+)")
+            local lineCmd = line:match("^(/[^%s]+)")
             local slots, types = hash_SlashCmdList, hash_ChatTypeInfoList
             if
                 lineCmd
@@ -209,7 +209,7 @@ local function EnsureChatStateCallbacks()
                     and slots[lineCmd] ~= nil
                     and not issecurevariable(slots, lineCmd)
                 then
-                    textValue = lineTex
+                    textValue = line
                 end
             end
         end
@@ -367,11 +367,11 @@ local function SkinEditBox(castFrame)
                     -- order), so the whole typed line is still here; ParseText
                     -- may run it and empty the box before the send callback
                     -- reads it. Read-only copy, consumed by that callback.
-                    local lineTex = self:GetText()
-                    if type(lineTex) ~= "string" or (issecretvalue and issecretvalue(lineTex)) then
-                        lineTex = nil
+                    local line = self:GetText()
+                    if type(line) ~= "string" or (issecretvalue and issecretvalue(line)) then
+                        line = nil
                     end
-                    CFD(self).pendingLine = lineTex
+                    CFD(self).pendingLine = line
                     return
                 end
                 if key ~= "UP" and key ~= "DOWN" then

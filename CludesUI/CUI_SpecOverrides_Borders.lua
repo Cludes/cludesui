@@ -335,13 +335,13 @@ local function SlotReads(conf)
 end
 
 local function MakeBorderHost(regionFrame, r, g, b)
-    local hostRegion = CreateFrame("Frame", nil, regionFrame)
-    hostRegion:SetAllPoints()
-    hostRegion:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
+    local host = CreateFrame("Frame", nil, regionFrame)
+    host:SetAllPoints()
+    host:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
     if CludesUI.PP and CludesUI.PP.CreateBorder then
-        CludesUI.PP.CreateBorder(hostRegion, r, g, b, 0.9, 1, "OVERLAY", 7)
+        CludesUI.PP.CreateBorder(host, r, g, b, 0.9, 1, "OVERLAY", 7)
     end
-    return hostRegion
+    return host
 end
 
 -- mode: false (clear), "gold" (overridden), "red" (owned by a conflicting group
@@ -355,7 +355,7 @@ end
 -- A mark frame on a region of the options page pool rides on it (hidden at the
 -- region's reset, its key kept) instead of being lost with the region's dress;
 -- the region's next dress puts it at its new frame level (as a new mark would be).
-local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipText)
+local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
     local m = regionFrame._specOvGold
     if m and m._soStale then
         m._soStale = nil
@@ -379,7 +379,7 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
         m._blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
     end
     local Pool = CludesUI._Pool
-    if modeName == "gold" and not regionFrame._specOvGold then
+    if mode == "gold" and not regionFrame._specOvGold then
         regionFrame._specOvGold = MakeBorderHost(regionFrame, GOLD_R, GOLD_G, GOLD_B)
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
             Pool.Attach(regionFrame, regionFrame._specOvGold, "_specOvGold", function(hgt)
@@ -387,7 +387,7 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
             end)
         end
     end
-    if modeName == "gold" and tipText and not regionFrame._specOvHover then
+    if mode == "gold" and tipText and not regionFrame._specOvHover then
         -- Info badge: gold "i" bubble tucked inside the gold border's top-left
         -- corner (that corner is empty on every slot layout -- labels start at
         -- the side pad, vertically centered). Motion-only and click-through
@@ -425,9 +425,9 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
             end)
         end
     end
-    if modeName == "red" and not regionFrame._specOvRed then
-        local hostRegion = MakeBorderHost(regionFrame, 0.9, 0.2, 0.2)
-        local blocker = CreateFrame("Button", nil, hostRegion)
+    if mode == "red" and not regionFrame._specOvRed then
+        local host = MakeBorderHost(regionFrame, 0.9, 0.2, 0.2)
+        local blocker = CreateFrame("Button", nil, host)
         blocker:SetAllPoints()
         blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
         blocker:EnableMouse(true)
@@ -442,23 +442,23 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
         blocker:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        hostRegion._blocker = blocker
-        regionFrame._specOvRed = hostRegion
+        host._blocker = blocker
+        regionFrame._specOvRed = host
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
-            Pool.Attach(regionFrame, hostRegion, "_specOvRed", function(hgt)
+            Pool.Attach(regionFrame, host, "_specOvRed", function(hgt)
                 hgt._soStale = true
             end)
         end
     end
-    if modeName == "condActive" and not regionFrame._specOvCondActive then
+    if mode == "condActive" and not regionFrame._specOvCondActive then
         -- Same look as the RF party-tab sync overlays (solid dark blue cover, centered
         -- label in the global font) plus override identity: gold border + gold label.
         -- The border goes on the BLOCKER at a high sublevel so it renders above the
         -- solid background (a border on the host would be covered).
-        local hostRegion = CreateFrame("Frame", nil, regionFrame)
-        hostRegion:SetAllPoints()
-        hostRegion:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
-        local blocker = CreateFrame("Button", nil, hostRegion)
+        local host = CreateFrame("Frame", nil, regionFrame)
+        host:SetAllPoints()
+        host:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
+        local blocker = CreateFrame("Button", nil, host)
         blocker:SetAllPoints()
         blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
         blocker:EnableMouse(true)
@@ -488,20 +488,20 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
         blocker:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        hostRegion._blocker = blocker
-        hostRegion._label = labelText
-        regionFrame._specOvCondActive = hostRegion
+        host._blocker = blocker
+        host._label = labelText
+        regionFrame._specOvCondActive = host
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
-            Pool.Attach(regionFrame, hostRegion, "_specOvCondActive", function(hgt)
+            Pool.Attach(regionFrame, host, "_specOvCondActive", function(hgt)
                 hgt._soStale = true
             end)
         end
     end
     if regionFrame._specOvGold then
-        regionFrame._specOvGold:SetShown(modeName == "gold")
+        regionFrame._specOvGold:SetShown(mode == "gold")
     end
     -- Tip lives only while the slot is gold; the label tooltips read it live.
-    if modeName == "gold" then
+    if mode == "gold" then
         regionFrame._specOvTip = tipText
     else
         regionFrame._specOvTip = nil
@@ -510,8 +510,8 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
         regionFrame._specOvHover:SetShown(regionFrame._specOvTip ~= nil)
     end
     if regionFrame._specOvRed then
-        regionFrame._specOvRed:SetShown(modeName == "red")
-        if modeName == "red" and regionFrame._specOvRed._blocker then
+        regionFrame._specOvRed:SetShown(mode == "red")
+        if mode == "red" and regionFrame._specOvRed._blocker then
             regionFrame._specOvRed._blocker._tipText = string.format(
                 L("This setting already has an override for %s"),
                 conflictSpecID and SpecName(conflictSpecID) or "?"
@@ -519,14 +519,14 @@ local function SetSlotMark(regionFrame, modeName, conflictSpecID, condName, tipT
         end
     end
     if regionFrame._specOvCondActive then
-        regionFrame._specOvCondActive:SetShown(modeName == "condActive")
-        if modeName == "condActive" then
-            local hostRegion = regionFrame._specOvCondActive
-            if hostRegion._label then
-                hostRegion._label:SetText(string.format(L("Override Active: %s"), condName or "?"))
+        regionFrame._specOvCondActive:SetShown(mode == "condActive")
+        if mode == "condActive" then
+            local host = regionFrame._specOvCondActive
+            if host._label then
+                host._label:SetText(string.format(L("Override Active: %s"), condName or "?"))
             end
-            if hostRegion._blocker then
-                hostRegion._blocker._tipText = string.format(
+            if host._blocker then
+                host._blocker._tipText = string.format(
                     L("Showing the '%s' override's value. Edit it from that override's editing mode."),
                     condName or "?"
                 )
@@ -546,17 +546,17 @@ local _editLocks = setmetatable({}, { __mode = "k" })
 
 local function UpdateEditLocks()
     local specOn = _editGroup ~= nil
-    for _, hostRegion in pairs(_editLocks) do
+    for _, host in pairs(_editLocks) do
         -- A lock whose region the options page pool reset belongs to no row until
         -- the region is locked again (AttachEditLock): it stays hidden.
-        if hostRegion._inactive then
+        if host._inactive then
             -- nothing
             -- Predicate locks decide their own visibility per session (e.g. the
             -- Dark Mode condition locks); plain locks show for any spec session.
-        elseif hostRegion._predicate then
-            hostRegion:SetShown(hostRegion._predicate() and true or false)
+        elseif host._predicate then
+            host:SetShown(host._predicate() and true or false)
         else
-            hostRegion:SetShown(specOn)
+            host:SetShown(specOn)
         end
     end
 end
@@ -595,10 +595,10 @@ function CludesUI.SpecOverrides_AttachEditLock(regionFrame, tipText, predicate)
     if not regionFrame then
         return
     end
-    local hostRegion = _editLocks[regionFrame]
-    if not hostRegion then
-        hostRegion = MakeBorderHost(regionFrame, 0.9, 0.2, 0.2)
-        local blocker = CreateFrame("Button", nil, hostRegion)
+    local host = _editLocks[regionFrame]
+    if not host then
+        host = MakeBorderHost(regionFrame, 0.9, 0.2, 0.2)
+        local blocker = CreateFrame("Button", nil, host)
         blocker:SetAllPoints()
         blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
         blocker:EnableMouse(true)
@@ -613,30 +613,30 @@ function CludesUI.SpecOverrides_AttachEditLock(regionFrame, tipText, predicate)
         blocker:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        hostRegion._blocker = blocker
-        _editLocks[regionFrame] = hostRegion
+        host._blocker = blocker
+        _editLocks[regionFrame] = host
         -- On a region of the options page pool the lock rides on it: the region's
         -- reset hides it and leaves it inactive until the region is locked again.
         local Pool = CludesUI._Pool
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
-            Pool.Attach(regionFrame, hostRegion, nil, function(hgt)
+            Pool.Attach(regionFrame, host, nil, function(hgt)
                 hgt._inactive = true
                 hgt:Hide()
             end)
         end
     end
-    if hostRegion._inactive then
+    if host._inactive then
         -- back on its region's new dress: at the region's new level
-        hostRegion._inactive = nil
-        hostRegion:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
-        hostRegion._blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
+        host._inactive = nil
+        host:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
+        host._blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
     end
-    hostRegion._blocker._tipText = tipText
-    hostRegion._predicate = predicate
+    host._blocker._tipText = tipText
+    host._predicate = predicate
     if predicate then
-        hostRegion:SetShown(predicate() and true or false)
+        host:SetShown(predicate() and true or false)
     else
-        hostRegion:SetShown(_editGroup ~= nil)
+        host:SetShown(_editGroup ~= nil)
     end
 end
 

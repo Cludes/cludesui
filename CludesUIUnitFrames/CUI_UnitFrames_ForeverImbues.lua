@@ -145,11 +145,11 @@ local function Scan()
                 isShown[num] = s
             end
             s.inv = INV[ws]
-            local glyph = found.enchantIconID
-            if not (enchantIcon and Readable(glyph) and glyph ~= 0) then
-                glyph = GetInventoryItemTexture("player", s.inv) or 134400
+            local icon = found.enchantIconID
+            if not (enchantIcon and Readable(icon) and icon ~= 0) then
+                icon = GetInventoryItemTexture("player", s.inv) or 134400
             end
-            s.icon = glyph
+            s.icon = icon
             s.charges = Readable(found.charges) and found.charges or 0
             s.endTime, s.total = endTime, t.total
         else
@@ -162,16 +162,16 @@ end
 
 local function CellEnter(self)
     local c = self.fvImbue
-    local look = CludesUI.AuraKit.styles[STYLE]
-    if not (c and c.inv) or (look and look.noTooltips) then
+    local style = CludesUI.AuraKit.styles[STYLE]
+    if not (c and c.inv) or (style and style.noTooltips) then
         return
     end
-    if look and look.tooltipCombatHide and InCombatLockdown() then
+    if style and style.tooltipCombatHide and InCombatLockdown() then
         return
     end
     GameTooltip:SetOwner(
         self,
-        (look and look.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
+        (style and style.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
     )
     GameTooltip:SetInventoryItem("player", c.inv)
     GameTooltip:Show()
@@ -214,7 +214,7 @@ end
 -- Content only (the style pass owns size, border, fonts and anchors).
 local function Paint(c, s)
     local AK = CludesUI.AuraKit
-    local look = AK.styles[STYLE] or {}
+    local style = AK.styles[STYLE] or {}
     local d = c.d
     c.inv = s.inv
     d.icon:SetTexture(s.icon)
@@ -223,14 +223,14 @@ local function Paint(c, s)
     local b = c.binding
     if b then
         c.dur:SetTimeFromEnd(s.endTime, s.total)
-        local fmt = AK.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold)
+        local fmt = AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold)
         if fmt then
             b:SetFormatter(fmt)
         end
-        if look.durationUpdateInterval then
-            b:SetUpdateInterval(look.durationUpdateInterval)
+        if style.durationUpdateInterval then
+            b:SetUpdateInterval(style.durationUpdateInterval)
         end
-        local tc = look.durationColorCurve and AK.DurationTextColor(look.durationColorCurve)
+        local tc = style.durationColorCurve and AK.DurationTextColor(style.durationColorCurve)
         if tc then
             b:SetTextColorCurve(tc.curve, tc.property)
         else
@@ -253,8 +253,8 @@ end
 -- ApplyEnchants, after the container took its normal anchor and line width
 -- this pass: places the cells and makes room for them. `layout` is the bar's
 -- group layout (element size and spacing), `anchor` the container's point.
-function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchorFrame)
-    if not (enabled and boxHolder and hostFrame and conf and grid and layout and anchorFrame) then
+function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
+    if not (enabled and boxHolder and hostFrame and conf and grid and layout and anchor) then
         return
     end
     numDeclared = grid.enchSlots or 0
@@ -282,7 +282,7 @@ function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchorF
         local f = c.f
         f:ClearAllPoints()
         if not centered then
-            f:SetPoint(anchorFrame, hostFrame, anchorFrame, (idx - 1) * dx, (idx - 1) * dy)
+            f:SetPoint(anchor, hostFrame, anchor, (idx - 1) * dx, (idx - 1) * dy)
         elseif dir == "CENTER_VERTICAL" then
             f:SetPoint("RIGHT", hostFrame, "LEFT", -lineGap, ((num + 1) / 2 - idx) * step)
         else
@@ -295,7 +295,7 @@ function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchorF
     numLaid = num
     if num > 0 and not centered then
         boxHolder:ClearAllPoints()
-        boxHolder:SetPoint(anchorFrame, hostFrame, anchorFrame, num * dx, num * dy)
+        boxHolder:SetPoint(anchor, hostFrame, anchor, num * dx, num * dy)
         CludesUI.AuraKit.SetContainerRowWidth(boxHolder, math.max(step, grid.rowWidth - num * step))
     end
 end

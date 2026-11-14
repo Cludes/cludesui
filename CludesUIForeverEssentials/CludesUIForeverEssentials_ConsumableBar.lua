@@ -74,8 +74,8 @@ end
 local function Collect()
     local wanted, seen, entries = WantedSubs(), {}, {}
     for bag = 0, NUM_BAG_SLOTS or 4 do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slot)
             if ident and not seen[ident] then
                 seen[ident] = true
                 local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(ident)
@@ -158,25 +158,25 @@ local function Layout()
         return
     end
     dirty = false
-    local dim, upper = Get("iconSize"), Get("maxIcons")
+    local size, max = Get("iconSize"), Get("maxIcons")
     local entries = Enabled() and Collect() or {}
-    local num = math.min(#entries, upper)
+    local num = math.min(#entries, max)
     for idx = 1, num do
         local ident = entries[idx].id
         local b = Button(idx)
         b.itemID = ident
         b:SetAttribute("item", "item:" .. ident)
         b.icon:SetTexture(C_Item.GetItemIconByID(ident))
-        b:SetSize(dim, dim)
+        b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
         b:Show()
     end
     for idx = num + 1, #buttons do
         buttons[idx]:Hide()
         buttons[idx].itemID = nil
     end
-    holderFrame:SetSize(math.max(1, num) * (dim + GAP) - GAP, dim)
+    holderFrame:SetSize(math.max(1, num) * (size + GAP) - GAP, size)
     Paint()
 end
 
@@ -238,8 +238,8 @@ F.Start(Apply, {
         return holderFrame
     end,
     size = function()
-        local dim = Get("iconSize")
-        return dim * 6 + GAP * 5, dim
+        local size = Get("iconSize")
+        return size * 6 + GAP * 5, size
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

@@ -316,11 +316,11 @@ local function ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, conf, grid)
         boxHolder:Hide()
     end
 
-    local dim = PabSnap(conf.iconSize or 32)
+    local size = PabSnap(conf.iconSize or 32)
     local height = conf.iconShape == "cropped" and PabSnap(mod.PAB_CroppedHeight(conf.iconSize or 32, conf))
-        or dim
+        or size
     boxHolder:ClearAllPoints()
-    boxHolder:SetSize(dim, height)
+    boxHolder:SetSize(size, height)
     boxHolder:SetPoint(containerAnchor, hostFrame, containerAnchor, 0, 0)
     AK.SetContainerAnchor(boxHolder, specInfo.layout.anchorPoint)
     AK.SetContainerAxis(boxHolder, vertical)
@@ -489,9 +489,9 @@ local function ApplyBarPosition(hostFrame, isBuff, grid)
     local s = PAB()
     local posKey = BarPositionKey(isBuff)
     local place = s and s[posKey]
-    local spec_def = isBuff and DEFAULT_POS.buffs or DEFAULT_POS.debuffs
+    local def = isBuff and DEFAULT_POS.buffs or DEFAULT_POS.debuffs
     local conf = s and (isBuff and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s))
-    local p = (place and place.point) and place or spec_def
+    local p = (place and place.point) and place or def
     local posX, posY = p.x, p.y
     if conf then
         posX, posY = BarAnchorOffset(hostFrame, conf, grid or ComputeGrid(isBuff, conf), p)
@@ -961,7 +961,7 @@ end
 -- No sectionName/highlightText: NavigateToElementSettings scans the page
 -- wrapper's DIRECT children for section headers, and PABMP_BuildPage builds past
 -- `parent` into its own root on the shared scroll frame, so nothing is scannable.
-local function MapElementSettings(key, kindOf, barId)
+local function MapElementSettings(key, kind, barId)
     if not CludesUI then
         return
     end
@@ -974,20 +974,20 @@ local function MapElementSettings(key, kindOf, barId)
                 return
             end
             if not barId then
-                CludesUI._setPABSelection(kindOf, "default")
+                CludesUI._setPABSelection(kind, "default")
                 return
             end
             -- Owning bucket resolved at click time, not baked in at registration:
             -- the tile's "Add To" menu can move a bar to another editing-spec
             -- bucket long after its key was mapped.
-            local barFrame, bucket
-            if kindOf == "buff" then
-                barFrame, bucket = mod.PAB_GetCustomBuffBar(barId)
+            local bar, bucket
+            if kind == "buff" then
+                bar, bucket = mod.PAB_GetCustomBuffBar(barId)
             else
-                barFrame, bucket = mod.PAB_GetCustomDebuffBar(barId)
+                bar, bucket = mod.PAB_GetCustomDebuffBar(barId)
             end
-            if barFrame then
-                CludesUI._setPABSelection(kindOf, barId, bucket)
+            if bar then
+                CludesUI._setPABSelection(kind, barId, bucket)
             end
         end,
     }
@@ -1205,8 +1205,8 @@ local function AnyRightClickCancelActive(s)
     local customBuffBars = s.customBuffBars
     if customBuffBars then
         for idx = 1, #customBuffBars do
-            local barFrame = customBuffBars[idx]
-            if barFrame.enabled ~= false and barFrame.rightClickCancel ~= false then
+            local bar = customBuffBars[idx]
+            if bar.enabled ~= false and bar.rightClickCancel ~= false then
                 return true
             end
         end
@@ -1219,8 +1219,8 @@ local function AnyRightClickCancelActive(s)
             local bl = b.buffBars
             if bl then
                 for idx = 1, #bl do
-                    local barFrame = bl[idx]
-                    if barFrame.enabled ~= false and barFrame.rightClickCancel ~= false then
+                    local bar = bl[idx]
+                    if bar.enabled ~= false and bar.rightClickCancel ~= false then
                         return true
                     end
                 end
@@ -1533,13 +1533,13 @@ function mod.PAB_GetGrowDirection(barKey)
     end
     local buffId = barKey:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
-        local barFrame = mod.PAB_GetCustomBuffBar(tonumber(buffId))
-        return barFrame and (barFrame.growDirection or "LEFT") or "LEFT"
+        local bar = mod.PAB_GetCustomBuffBar(tonumber(buffId))
+        return bar and (bar.growDirection or "LEFT") or "LEFT"
     end
     local debuffId = barKey:match("^PAB_CustomDebuff_(%d+)$")
     if debuffId then
-        local barFrame = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
-        return barFrame and (barFrame.growDirection or "LEFT") or "LEFT"
+        local bar = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
+        return bar and (bar.growDirection or "LEFT") or "LEFT"
     end
     return "LEFT"
 end
@@ -1562,19 +1562,19 @@ function mod.PAB_SetGrowDirection(barKey, dir)
     end
     local buffId = barKey:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
-        local barFrame = mod.PAB_GetCustomBuffBar(tonumber(buffId))
-        if barFrame then
-            barFrame.growDirection = dir
-            mod.PAB_ReloadCustomBuffBar(barFrame.id)
+        local bar = mod.PAB_GetCustomBuffBar(tonumber(buffId))
+        if bar then
+            bar.growDirection = dir
+            mod.PAB_ReloadCustomBuffBar(bar.id)
         end
         return
     end
     local debuffId = barKey:match("^PAB_CustomDebuff_(%d+)$")
     if debuffId then
-        local barFrame = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
-        if barFrame then
-            barFrame.growDirection = dir
-            mod.PAB_ReloadCustomDebuffBar(barFrame.id)
+        local bar = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
+        if bar then
+            bar.growDirection = dir
+            mod.PAB_ReloadCustomDebuffBar(bar.id)
         end
         return
     end

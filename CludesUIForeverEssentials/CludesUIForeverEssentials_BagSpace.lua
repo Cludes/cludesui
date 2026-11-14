@@ -47,8 +47,8 @@ module.BagSpace = Space
 local function Cheapest()
     local entries = {}
     for bag = 0, NUM_BAG_SLOTS or 4 do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local details = C_Container.GetContainerItemInfo(bag, slot)
             if details and details.itemID and not details.hasNoValue then
                 local price = select(11, C_Item.GetItemInfo(details.itemID))
                 if price and price > 0 then

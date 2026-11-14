@@ -128,13 +128,13 @@ local function ScanTrainer()
         return
     end
     local byName, lineOf = {}, {}
-    for lineTex, payload in pairs(RecipeData()) do
-        lineOf[C_Spell.GetSpellName(payload.skillSpell) or ""] = lineTex
+    for line, payload in pairs(RecipeData()) do
+        lineOf[C_Spell.GetSpellName(payload.skillSpell) or ""] = line
         for _, r in ipairs(payload.recipes) do
             local name = C_Spell.GetSpellName(r.spell)
             if name then
                 byName[name] = byName[name] or {}
-                byName[name][#byName[name] + 1] = { r = r, line = lineTex }
+                byName[name][#byName[name] + 1] = { r = r, line = line }
             end
         end
     end
@@ -144,9 +144,9 @@ local function ScanTrainer()
         local name, _, category = GetTrainerServiceInfo(idx)
         local skillName, rank = GetTrainerServiceSkillReq(idx)
         if name and category ~= "header" and rank and byName[name] then
-            local lineTex = lineOf[skillName or ""]
+            local line = lineOf[skillName or ""]
             for _, m in ipairs(byName[name]) do
-                if not lineTex or m.line == lineTex then
+                if not line or m.line == line then
                     overrides.trainer[m.r.spell] = { rank, GetTrainerServiceCost(idx) }
                 end
             end
@@ -231,8 +231,8 @@ local function Rows(indices, payload)
         return indices or {}
     end
     local rowList = {}
-    for idx, slotPos in ipairs(indices) do
-        rowList[idx] = payload.trainers[slotPos]
+    for idx, index in ipairs(indices) do
+        rowList[idx] = payload.trainers[index]
     end
     return rowList
 end
@@ -241,20 +241,20 @@ end
 --  Ranks, and gathering professions' trainers from the town map
 -------------------------------------------------------------------------------
 local gathered = {}
-local function ProfData(lineTex)
+local function ProfData(line)
     local all = RecipeData()
-    if all[lineTex] then
-        return all[lineTex]
+    if all[line] then
+        return all[line]
     end
-    local titleText, mining = GATHERING[lineTex], all[MINING]
-    if not (titleText and mining and module.TownNPCList) then
+    local title, mining = GATHERING[line], all[MINING]
+    if not (title and mining and module.TownNPCList) then
         return
     end
-    if not gathered[lineTex] then
+    if not gathered[line] then
         local trainers = {}
         for map, npcs in pairs(module.TownNPCList()) do
             for _, num in ipairs(npcs) do
-                if num[3] == "profession" and num[5] == titleText then
+                if num[3] == "profession" and num[5] == title then
                     trainers[#trainers + 1] = { num[8] or 0, num[4], num[7] or "AH", map, num[1], num[2] }
                 end
             end
@@ -263,14 +263,14 @@ local function ProfData(lineTex)
         for idx, rank in ipairs(mining.ranks) do
             ranks[idx] = { cap = rank.cap, skill = rank.skill, cost = rank.cost }
         end
-        gathered[lineTex] = { trainers = trainers, ranks = ranks, recipes = {} }
+        gathered[line] = { trainers = trainers, ranks = ranks, recipes = {} }
     end
-    return gathered[lineTex]
+    return gathered[line]
 end
 
-local function NextRank(payload, upper)
+local function NextRank(payload, max)
     for _, rank in ipairs(payload.ranks or {}) do
-        if rank.cap > upper then
+        if rank.cap > max then
             return rank
         end
     end
@@ -294,16 +294,16 @@ local function RankWhere(payload, rank)
             ("Buy and read %s (%s)"):format(ItemName(rank.item, "its book"), Money(npc and npc[NPC_PRICE]))
     elseif rank.quest then
         local ident = rank.quest[Faction()]
-        local titleText = ident and C_QuestLog.GetTitleForQuestID(ident) or rank.questName or "its quest"
-        return Nearest(rank.teachers, 1)[1], ("Do the quest %s"):format(titleText)
+        local title = ident and C_QuestLog.GetTitleForQuestID(ident) or rank.questName or "its quest"
+        return Nearest(rank.teachers, 1)[1], ("Do the quest %s"):format(title)
     end
     return Nearest(rank.t and Rows(rank.t, payload) or payload.trainers, 1)[1],
         ("Train it for %s"):format(Money(rank.cost))
 end
 
-local function RankReady(lineTex, skill, upper, prof)
-    local payload = ProfData(lineTex)
-    local rank = payload and (upper or 0) > 0 and NextRank(payload, upper)
+local function RankReady(line, skill, max, prof)
+    local payload = ProfData(line)
+    local rank = payload and (max or 0) > 0 and NextRank(payload, max)
     if not rank or (skill or 0) < rank.skill then
         return
     end
@@ -316,12 +316,12 @@ end
 
 local function Professions()
     local entries = {}
-    for _, slotPos in pairs({ GetProfessions() }) do
-        if slotPos then
-            local name, glyph, skill, upper, _, _, lineTex = GetProfessionInfo(slotPos)
-            if name and lineTex then
+    for _, index in pairs({ GetProfessions() }) do
+        if index then
+            local name, icon, skill, max, _, _, line = GetProfessionInfo(index)
+            if name and line then
                 entries[#entries + 1] =
-                    { name = name, icon = glyph, skill = skill or 0, max = upper or 0, line = lineTex }
+                    { name = name, icon = icon, skill = skill or 0, max = max or 0, line = line }
             end
         end
     end
@@ -762,11 +762,11 @@ local function BuildWindow()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
-    local titleText = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(titleText, 15, "essentials")
-    titleText:SetPoint("TOPLEFT", 10, -8)
-    titleText:SetText("Professions")
-    CludesUI.Kit.AccentText(titleText)
+    local title = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(title, 15, "essentials")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("Professions")
+    CludesUI.Kit.AccentText(title)
     local close = CludesUI.Kit.Glyph(window, "x", function()
         window:Hide()
     end, nil, "essentials")
@@ -785,12 +785,12 @@ local function BuildWindow()
     tinsert(UISpecialFrames, "CludesUIProfessions")
 end
 
-local function Open(lineTex)
+local function Open(line)
     if not window then
         BuildWindow()
     end
-    if lineTex then
-        currentLine = lineTex
+    if line then
+        currentLine = line
     end
     window:Show()
     Draw()

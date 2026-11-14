@@ -50,8 +50,8 @@ end
 
 -- The black behind the maximized map. The world map loads on demand.
 local function ApplyBackground()
-    local dim = F.Get("dim") == true
-    if not (dim or dimmed) then
+    local size = F.Get("dim") == true
+    if not (size or dimmed) then
         return
     end
     if not C_AddOns.IsAddOnLoaded("Blizzard_WorldMap") then
@@ -70,8 +70,8 @@ local function ApplyBackground()
     end
     local blackout = WorldMapFrame.BlackoutFrame and WorldMapFrame.BlackoutFrame.Blackout
     if blackout then
-        blackout:SetAlpha(dim and BACKGROUND_ALPHA or 1)
-        dimmed = dim
+        blackout:SetAlpha(size and BACKGROUND_ALPHA or 1)
+        dimmed = size
     end
 end
 

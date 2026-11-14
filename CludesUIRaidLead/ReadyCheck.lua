@@ -51,10 +51,10 @@ end
 
 local function LowestDurability()
     local low
-    for slotIndex = 1, 18 do
-        local current, upper = GetInventoryItemDurability(slotIndex)
-        if current and upper and upper > 0 then
-            local pct = current / upper * 100
+    for slot = 1, 18 do
+        local current, max = GetInventoryItemDurability(slot)
+        if current and max and max > 0 then
+            local pct = current / max * 100
             if not low or pct < low then
                 low = pct
             end
@@ -65,12 +65,12 @@ end
 
 local function MissingEnchants()
     local missing = {}
-    for slotIndex, name in pairs(ENCHANT_SLOTS) do
-        local itemLink = GetInventoryItemLink("player", slotIndex)
+    for slot, name in pairs(ENCHANT_SLOTS) do
+        local itemLink = GetInventoryItemLink("player", slot)
         if itemLink then
             local enchant = itemLink:match("item:%d+:(%d*)")
             local isWeaponOffhand = true
-            if slotIndex == 17 then
+            if slot == 17 then
                 local classID = select(6, C_Item.GetItemInfoInstant(itemLink))
                 isWeaponOffhand = classID == Enum.ItemClass.Weapon
             end
@@ -88,9 +88,9 @@ local function CooldownsNotReady()
     local presets = CludesUI.BUFF_PRESETS
         and CludesUI.BUFF_PRESETS.spells
         and CludesUI.BUFF_PRESETS.spells.raidcds
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     for ident, details in pairs(presets or {}) do
-        if details.class == classFile and IsPlayerSpell(ident) then
+        if details.class == class and IsPlayerSpell(ident) then
             local cd = C_Spell.GetSpellCooldown(ident)
             if
                 cd
@@ -128,8 +128,8 @@ local function WellFed()
         if not aura then
             return false
         end
-        local glyph = aura.icon
-        if glyph and not (issecretvalue and issecretvalue(glyph)) and glyph == WELL_FED_ICON then
+        local icon = aura.icon
+        if icon and not (issecretvalue and issecretvalue(icon)) and icon == WELL_FED_ICON then
             return true
         end
     end
@@ -203,12 +203,12 @@ local function BuildWindow()
     window:RegisterForDrag("LeftButton")
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
-    local titleText = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(titleText, 15, nil)
-    titleText:SetPoint("TOPLEFT", 10, -8)
-    titleText:SetText("Ready Check")
-    CludesUI.Kit.AccentText(titleText)
-    window.title = titleText
+    local title = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(title, 15, nil)
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("Ready Check")
+    CludesUI.Kit.AccentText(title)
+    window.title = title
     local close = CludesUI.Kit.Glyph(window, "x", function()
         window:Hide()
     end, nil, nil)

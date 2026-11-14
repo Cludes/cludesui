@@ -146,17 +146,17 @@ local function FindBagSlotForItem(itemId)
     local maxBag = _G.NUM_BAG_SLOTS or 4
     for bag = 0, maxBag do
         local n = C_Container.GetContainerNumSlots(bag) or 0
-        for slotIndex = 1, n do
+        for slot = 1, n do
             -- GetContainerItemID reads the slot directly and works before the
             -- item's data is cached; GetContainerItemInfo returns nil for an
             -- item this client has never seen (e.g. fresh from the mailbox).
-            local ident = C_Container.GetContainerItemID and C_Container.GetContainerItemID(bag, slotIndex)
+            local ident = C_Container.GetContainerItemID and C_Container.GetContainerItemID(bag, slot)
             if not ident then
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local details = C_Container.GetContainerItemInfo(bag, slot)
                 ident = details and details.itemID
             end
             if ident == itemId then
-                return bag, slotIndex
+                return bag, slot
             end
         end
     end
@@ -183,14 +183,14 @@ local function ScanBagGems()
     local maxBag = _G.NUM_BAG_SLOTS or 4
     for bag = 0, maxBag do
         local n = C_Container.GetContainerNumSlots(bag) or 0
-        for slotIndex = 1, n do
+        for slot = 1, n do
             -- GetContainerItemID works before the item's data is cached;
             -- GetContainerItemInfo returns nil for an item this client has
             -- never seen (e.g. a gem fresh from the mailbox), which made new
             -- gems invisible until something else forced the cache.
-            local itemId = C_Container.GetContainerItemID and C_Container.GetContainerItemID(bag, slotIndex)
+            local itemId = C_Container.GetContainerItemID and C_Container.GetContainerItemID(bag, slot)
             if not itemId then
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local details = C_Container.GetContainerItemInfo(bag, slot)
                 itemId = details and details.itemID
             end
             if itemId and not seen[itemId] then
@@ -198,7 +198,7 @@ local function ScanBagGems()
                 if classID == GEM_CLASS then
                     seen[itemId] = true
                     local itemLink = (
-                        C_Container.GetContainerItemLink and C_Container.GetContainerItemLink(bag, slotIndex)
+                        C_Container.GetContainerItemLink and C_Container.GetContainerItemLink(bag, slot)
                     ) or nil
                     if not itemLink then
                         -- Data not loaded yet: request it; the row upgrades
@@ -341,7 +341,7 @@ local function OnSocketInfoUpdate()
     end
     pending.acted = true
 
-    local bag, slotIndex = FindBagSlotForItem(pending.gemItemID)
+    local bag, slot = FindBagSlotForItem(pending.gemItemID)
     if not bag then
         pending = nil
         SafeCloseSession()
@@ -349,7 +349,7 @@ local function OnSocketInfoUpdate()
     end
 
     if C_Container and C_Container.PickupContainerItem then
-        C_Container.PickupContainerItem(bag, slotIndex)
+        C_Container.PickupContainerItem(bag, slot)
     end
     if ClickSocketBtn then
         ClickSocketBtn(pending.socketIndex)
@@ -398,15 +398,15 @@ local function PaintStatLetters(button, gemLink)
 end
 
 local function PaintFilledIcon(button, gemLink)
-    local glyph = button.icon
+    local icon = button.icon
     -- Clear atlas / color-texture mode before applying a fileID.
-    if glyph.SetAtlas then
-        glyph:SetAtlas(nil)
+    if icon.SetAtlas then
+        icon:SetAtlas(nil)
     end
-    glyph:SetColorTexture(0, 0, 0, 0)
-    glyph:SetTexture(nil)
-    if glyph.SetVertexColor then
-        glyph:SetVertexColor(1, 1, 1, 1)
+    icon:SetColorTexture(0, 0, 0, 0)
+    icon:SetTexture(nil)
+    if icon.SetVertexColor then
+        icon:SetVertexColor(1, 1, 1, 1)
     end
 
     local texture
@@ -420,7 +420,7 @@ local function PaintFilledIcon(button, gemLink)
             texture = GetIconByID(iid)
         end
     end
-    glyph:SetTexture(texture)
+    icon:SetTexture(texture)
     button:SetAlpha(1)
 
     -- Rarity border (default silver; upgrades async once item data loads).
@@ -456,16 +456,16 @@ local function PaintFilledIcon(button, gemLink)
 end
 
 local function PaintEmptyIcon(button)
-    local glyph = button.icon
-    if glyph.SetAtlas then
-        glyph:SetAtlas(nil)
+    local icon = button.icon
+    if icon.SetAtlas then
+        icon:SetAtlas(nil)
     end
-    glyph:SetColorTexture(0, 0, 0, 0)
-    glyph:SetTexture(nil)
-    if glyph.SetVertexColor then
-        glyph:SetVertexColor(1, 1, 1, 1)
+    icon:SetColorTexture(0, 0, 0, 0)
+    icon:SetTexture(nil)
+    if icon.SetVertexColor then
+        icon:SetVertexColor(1, 1, 1, 1)
     end
-    glyph:SetTexture(EMPTY_SOCKET_TEX)
+    icon:SetTexture(EMPTY_SOCKET_TEX)
     if STOCK then
         button:SetAlpha(1)
         if button.qualityBorder then
@@ -570,9 +570,9 @@ local function CreatePanelIcon(hostFrame)
     local button = CreateFrame("Button", nil, hostFrame)
     button:SetSize(SIZE, SIZE)
 
-    local glyph = button:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints(button)
-    button.icon = glyph
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints(button)
+    button.icon = icon
 
     if STOCK then
         -- Blizzard's item-button look: the icon uncropped, a quality-tinted
@@ -588,7 +588,7 @@ local function CreatePanelIcon(hostFrame)
         hov:SetBlendMode("ADD")
     else
         -- Standard icon zoom: crop the baked-in dark edge ring off icon art.
-        glyph:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+        icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 
         if Pix and Pix.CreateBorder then
             Pix.CreateBorder(button, 1, 1, 1, 0.4, 1, "OVERLAY", 7)
@@ -611,21 +611,21 @@ local function AcquireIcon(i)
     button = CreatePanelIcon(panelFrame)
 
     button:SetScript("OnEnter", function(self)
-        local recd = self.cuiSock
-        if not recd then
+        local rec = self.cuiSock
+        if not rec then
             return
         end
         -- Slot locator glow first: independent of tooltip suppression.
-        StartSlotGlow(recd.slot)
+        StartSlotGlow(rec.slot)
         -- Hover-to-suggest: an EMPTY socket opens the gem flyout on hover so a
         -- single click on a gem sockets it (click-socket-then-click-gem doubles
         -- the clicks across a many-socket session). Filled sockets keep the
         -- explicit click -- replacing destroys the old gem. Never hijack a
         -- sticky (click-opened) flyout; re-hovering the open icon is a no-op.
-        if not recd.gemLink and not InCombatLockdown() then
+        if not rec.gemLink and not InCombatLockdown() then
             local open = flyout and flyout:IsShown()
             if not (open and (activeIcon == self or not flyoutHoverMode)) then
-                OpenFlyout(self, recd.slot, recd.socketIndex, true)
+                OpenFlyout(self, rec.slot, rec.socketIndex, true)
             end
         end
         if
@@ -635,16 +635,16 @@ local function AcquireIcon(i)
         then
             return
         end
-        if recd.gemLink then
+        if rec.gemLink then
             -- Filled socket: real item tooltip (sanctioned item-tooltip surface).
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetHyperlink(recd.gemLink)
+            GameTooltip:SetHyperlink(rec.gemLink)
             GameTooltip:Show()
         else
             -- Empty socket: plain-text hint uses the CUI widget tooltip.
             CludesUI.ShowWidgetTooltip(
                 self,
-                CludesUI.L(recd.emptyName or "Empty Socket")
+                CludesUI.L(rec.emptyName or "Empty Socket")
                     .. CludesUI.L("\nPick a gem from the list to socket it."),
                 { anchor = "right" }
             )
@@ -657,8 +657,8 @@ local function AcquireIcon(i)
         CludesUI.HideWidgetTooltip()
     end)
     button:SetScript("OnClick", function(self)
-        local recd = self.cuiSock
-        if not recd then
+        local rec = self.cuiSock
+        if not rec then
             return
         end
         if InCombatLockdown() then
@@ -681,7 +681,7 @@ local function AcquireIcon(i)
             CloseFlyout()
             return
         end
-        OpenFlyout(self, recd.slot, recd.socketIndex)
+        OpenFlyout(self, rec.slot, rec.socketIndex)
     end)
 
     iconPool[i] = button
@@ -743,8 +743,8 @@ RebuildSockets = function()
     end
 
     if GetItemNumSockets and GetItemGemFn then
-        for _, slotIndex in ipairs(SLOTS) do
-            local itemLink = GetInventoryItemLink("player", slotIndex)
+        for _, slot in ipairs(SLOTS) do
+            local itemLink = GetInventoryItemLink("player", slot)
             if itemLink then
                 local num = GetItemNumSockets(itemLink) or 0
                 if num > 0 then
@@ -787,7 +787,7 @@ RebuildSockets = function()
                             end
                         end
                         sockets[#sockets + 1] = {
-                            slot = slotIndex,
+                            slot = slot,
                             socketIndex = position,
                             gemLink = gemLink,
                             emptyName = emptyName or "Empty Socket",
@@ -880,12 +880,12 @@ LayoutSockets = function()
         local old = activeIcon.cuiSock
         local keep = false
         for i = 1, visible do
-            local recd = sockets[first + i]
+            local rec = sockets[first + i]
             if
                 activeIcon == iconPool[i]
                 and old
-                and old.slot == recd.slot
-                and old.socketIndex == recd.socketIndex
+                and old.slot == rec.slot
+                and old.socketIndex == rec.socketIndex
             then
                 keep = true
                 break
@@ -938,15 +938,15 @@ LayoutSockets = function()
     local shift = (panelW - contentW) / 2
 
     for i = 1, visible do
-        local recd = sockets[first + i]
+        local rec = sockets[first + i]
         local button = AcquireIcon(i)
-        button.cuiSock = recd
-        if recd.gemLink then
-            PaintFilledIcon(button, recd.gemLink)
+        button.cuiSock = rec
+        if rec.gemLink then
+            PaintFilledIcon(button, rec.gemLink)
         else
             PaintEmptyIcon(button)
         end
-        PaintStatLetters(button, recd.gemLink)
+        PaintStatLetters(button, rec.gemLink)
         button:ClearAllPoints()
         button:SetPoint(
             "LEFT",
@@ -970,35 +970,35 @@ end
 --------------------------------------------------------------------------------
 
 local function AcquireGemRow(i)
-    local rowFrame = gemRows[i]
-    if rowFrame then
-        return rowFrame
+    local row = gemRows[i]
+    if row then
+        return row
     end
 
-    rowFrame = CreateFrame("Button", nil, flyout)
-    rowFrame:SetHeight(ROW_H)
+    row = CreateFrame("Button", nil, flyout)
+    row:SetHeight(ROW_H)
 
-    local glyph = rowFrame:CreateTexture(nil, "ARTWORK")
-    glyph:SetSize(ROW_H - 2, ROW_H - 2)
-    glyph:SetPoint("LEFT", rowFrame, "LEFT", 2, 0)
-    rowFrame.icon = glyph
+    local icon = row:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(ROW_H - 2, ROW_H - 2)
+    icon:SetPoint("LEFT", row, "LEFT", 2, 0)
+    row.icon = icon
 
     local fontFile = (CludesUI.GetFontPath("blizzardSkin")) or STANDARD_TEXT_FONT
-    local labelText = rowFrame:CreateFontString(nil, "OVERLAY")
+    local labelText = row:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(fontFile, 11, "")
-    labelText:SetPoint("LEFT", glyph, "RIGHT", 5, 0)
+    labelText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
     labelText:SetJustifyH("LEFT")
-    rowFrame.label = labelText
+    row.label = labelText
 
-    local total = rowFrame:CreateFontString(nil, "OVERLAY")
+    local total = row:CreateFontString(nil, "OVERLAY")
     total:SetFont(fontFile, 11, "")
-    total:SetPoint("RIGHT", rowFrame, "RIGHT", -6, 0)
+    total:SetPoint("RIGHT", row, "RIGHT", -6, 0)
     total:SetJustifyH("RIGHT")
     total:SetTextColor(0.7, 0.7, 0.7)
-    rowFrame.count = total
+    row.count = total
 
-    local hov = rowFrame:CreateTexture(nil, "HIGHLIGHT")
-    hov:SetAllPoints(rowFrame)
+    local hov = row:CreateTexture(nil, "HIGHLIGHT")
+    hov:SetAllPoints(row)
     if STOCK then
         -- Blizzard's menu row highlight.
         hov:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
@@ -1007,7 +1007,7 @@ local function AcquireGemRow(i)
         hov:SetColorTexture(1, 1, 1, 0.1)
     end
 
-    rowFrame:SetScript("OnEnter", function(self)
+    row:SetScript("OnEnter", function(self)
         if not self.gemLink then
             return
         end
@@ -1022,19 +1022,19 @@ local function AcquireGemRow(i)
         GameTooltip:SetHyperlink(self.gemLink)
         GameTooltip:Show()
     end)
-    rowFrame:SetScript("OnLeave", function()
+    row:SetScript("OnLeave", function()
         GameTooltip:Hide()
         MaybeCloseHoverFlyout()
     end)
-    rowFrame:SetScript("OnClick", function(self)
+    row:SetScript("OnClick", function(self)
         if not self.gemItemID then
             return
         end
         DoSocket(flyout.targetSlot, flyout.targetSocketIndex, self.gemItemID)
     end)
 
-    gemRows[i] = rowFrame
-    return rowFrame
+    gemRows[i] = row
+    return row
 end
 
 local function PopulateFlyout()
@@ -1042,28 +1042,28 @@ local function PopulateFlyout()
         ScanBagGems()
     end
 
-    for _, rowFrame in ipairs(gemRows) do
-        rowFrame:Hide()
-        rowFrame.gemItemID = nil
-        rowFrame.gemLink = nil
+    for _, row in ipairs(gemRows) do
+        row:Hide()
+        row.gemItemID = nil
+        row.gemLink = nil
     end
 
     local n = #gemCache
     local isShown = 0
     if n == 0 then
         -- Single greyed "no gems" row.
-        local rowFrame = AcquireGemRow(1)
-        rowFrame.icon:SetTexture(nil)
-        rowFrame.icon:SetColorTexture(0, 0, 0, 0)
-        rowFrame.label:SetText(CludesUI.L("No gems in bags."))
-        rowFrame.label:SetTextColor(0.5, 0.5, 0.5)
-        rowFrame.count:SetText("")
-        rowFrame.gemItemID = nil
-        rowFrame.gemLink = nil
-        rowFrame:ClearAllPoints()
-        rowFrame:SetPoint("TOPLEFT", flyout, "TOPLEFT", FLY_PAD, -FLY_PAD)
-        rowFrame:SetPoint("TOPRIGHT", flyout, "TOPRIGHT", -FLY_PAD, -FLY_PAD)
-        rowFrame:Show()
+        local row = AcquireGemRow(1)
+        row.icon:SetTexture(nil)
+        row.icon:SetColorTexture(0, 0, 0, 0)
+        row.label:SetText(CludesUI.L("No gems in bags."))
+        row.label:SetTextColor(0.5, 0.5, 0.5)
+        row.count:SetText("")
+        row.gemItemID = nil
+        row.gemLink = nil
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", flyout, "TOPLEFT", FLY_PAD, -FLY_PAD)
+        row:SetPoint("TOPRIGHT", flyout, "TOPRIGHT", -FLY_PAD, -FLY_PAD)
+        row:Show()
         isShown = 1
     else
         -- Render at most MAX_FLYOUT_ROWS at a time; the wheel scrolls the window
@@ -1081,20 +1081,20 @@ local function PopulateFlyout()
         end
         for vis = 1, visible do
             local g = gemCache[flyoutScroll + vis]
-            local rowFrame = AcquireGemRow(vis)
-            rowFrame.icon:SetTexture(g.tex)
-            rowFrame.icon:SetColorTexture(0, 0, 0, 0)
-            rowFrame.icon:SetTexture(g.tex)
-            rowFrame.label:SetTextColor(1, 1, 1)
-            rowFrame.label:SetText(g.link and GetGemStatText(g.link) or "Loading...")
+            local row = AcquireGemRow(vis)
+            row.icon:SetTexture(g.tex)
+            row.icon:SetColorTexture(0, 0, 0, 0)
+            row.icon:SetTexture(g.tex)
+            row.label:SetTextColor(1, 1, 1)
+            row.label:SetText(g.link and GetGemStatText(g.link) or "Loading...")
             local c = (GetItemCountFn and GetItemCountFn(g.itemID)) or 1
-            rowFrame.count:SetText(c .. "x")
-            rowFrame.gemItemID = g.itemID
-            rowFrame.gemLink = g.link
-            rowFrame:ClearAllPoints()
-            rowFrame:SetPoint("TOPLEFT", flyout, "TOPLEFT", FLY_PAD, -FLY_PAD - (vis - 1) * ROW_H)
-            rowFrame:SetPoint("TOPRIGHT", flyout, "TOPRIGHT", -FLY_PAD, -FLY_PAD - (vis - 1) * ROW_H)
-            rowFrame:Show()
+            row.count:SetText(c .. "x")
+            row.gemItemID = g.itemID
+            row.gemLink = g.link
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", flyout, "TOPLEFT", FLY_PAD, -FLY_PAD - (vis - 1) * ROW_H)
+            row:SetPoint("TOPRIGHT", flyout, "TOPRIGHT", -FLY_PAD, -FLY_PAD - (vis - 1) * ROW_H)
+            row:Show()
             isShown = vis
         end
     end

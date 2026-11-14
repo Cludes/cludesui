@@ -57,7 +57,7 @@ mod.CDM_SEALS_SPELL = SEALS
 -- cd: cooldownID -> whether it is the Seals entry; linked: the entry's linked
 -- spells; known: a seal is in the spellbook; native: Blizzard draws its own
 -- Seals frame, the stand-in stands down.
-local Stl = { cd = {} }
+local S = { cd = {} }
 
 local IsSecret = CludesUI.IsSecret
 
@@ -75,11 +75,11 @@ local function IsSealsCd(cdID)
     if type(cdID) ~= "number" or IsSecret(cdID) then
         return false
     end
-    local known = Stl.cd[cdID]
+    local known = S.cd[cdID]
     if known == nil then
         local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
         known = IsSealsInfo(gci and gci(cdID)) and true or false
-        Stl.cd[cdID] = known
+        S.cd[cdID] = known
     end
     return known
 end
@@ -95,14 +95,14 @@ local function Aliases()
     end
     local ids, linked = {}, {}
     for _, category in pairs(cats) do
-        local success, group = pcall(CV.GetCooldownViewerCategorySet, category, true)
-        if success and type(group) == "table" then
-            for _, cdID in ipairs(group) do
+        local success, set = pcall(CV.GetCooldownViewerCategorySet, category, true)
+        if success and type(set) == "table" then
+            for _, cdID in ipairs(set) do
                 local details = type(cdID) == "number"
                     and not IsSecret(cdID)
                     and CV.GetCooldownViewerCooldownInfo(cdID)
                 if details and IsSealsInfo(details) then
-                    Stl.cd[cdID] = true
+                    S.cd[cdID] = true
                     local a, b = details.spellID, details.overrideSpellID
                     if type(a) == "number" and a > 0 and a ~= SEALS then
                         ids[#ids + 1] = a
@@ -119,15 +119,15 @@ local function Aliases()
             end
         end
     end
-    Stl.linked = linked
+    S.linked = linked
     return ids
 end
 
-local function AddID(group, nameList, ident)
+local function AddID(set, nameList, ident)
     if type(ident) ~= "number" or IsSecret(ident) or ident <= 0 then
         return
     end
-    group[ident] = true
+    set[ident] = true
     local name = C_Spell.GetSpellName(ident)
     if name then
         nameList[name] = true
@@ -137,30 +137,30 @@ end
 -- Every seal id: the seeds, the entry's linked spells, and every spellbook
 -- spell (each rank is its own spell on Forever) sharing their names.
 local function Include()
-    local group, nameList = {}, {}
+    local set, nameList = {}, {}
     for idx = 1, #SEAL_SEEDS do
-        AddID(group, nameList, SEAL_SEEDS[idx])
+        AddID(set, nameList, SEAL_SEEDS[idx])
     end
-    local linked = Stl.linked
+    local linked = S.linked
     if linked then
         for idx = 1, #linked do
-            AddID(group, nameList, linked[idx])
+            AddID(set, nameList, linked[idx])
         end
     end
     local known = false
     pcall(function()
         local bank = Enum.SpellBookSpellBank.Player
         local SPELL = Enum.SpellBookItemType.Spell
-        for lineTex = 1, C_SpellBook.GetNumSpellBookSkillLines() or 0 do
-            local li = C_SpellBook.GetSpellBookSkillLineInfo(lineTex)
+        for line = 1, C_SpellBook.GetNumSpellBookSkillLines() or 0 do
+            local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
             if li and li.itemIndexOffset and li.numSpellBookItems then
-                for slotIndex = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
-                    local it = C_SpellBook.GetSpellBookItemInfo(slotIndex, bank)
+                for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
+                    local it = C_SpellBook.GetSpellBookItemInfo(slot, bank)
                     local spellRef = it and it.itemType == SPELL and it.spellID
                     if spellRef then
                         local name = C_Spell.GetSpellName(spellRef)
                         if name and nameList[name] then
-                            group[spellRef] = true
+                            set[spellRef] = true
                             known = true
                         end
                     end
@@ -168,33 +168,33 @@ local function Include()
             end
         end
     end)
-    Stl.known = known
+    S.known = known
     local ids = {}
-    for ident in pairs(group) do
+    for ident in pairs(set) do
         ids[#ids + 1] = ident
     end
     table.sort(ids)
-    return group, table.concat(ids, ",")
+    return set, table.concat(ids, ",")
 end
 
 local function Icon()
-    if not Stl.art then
-        Stl.art = C_Spell.GetSpellTexture(SEALS)
+    if not S.art then
+        S.art = C_Spell.GetSpellTexture(SEALS)
         for idx = 1, #SEAL_SEEDS do
-            if Stl.art then
+            if S.art then
                 break
             end
-            Stl.art = C_Spell.GetSpellTexture(SEAL_SEEDS[idx])
+            S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[idx])
         end
     end
-    return Stl.art
+    return S.art
 end
 
 -- After a reanchor that placed the stand-in: Blizzard's own Seals frame on a
 -- bar means its fix landed, so the stand-in stands down for the session (the
 -- next reanchor drops its frames).
 local function Placed()
-    if Stl.native then
+    if S.native then
         return
     end
     local icons = mod.cdmBarIcons
@@ -205,7 +205,7 @@ local function Placed()
         for idx = 1, #entries do
             local f = entries[idx]
             if f and not f._isPresetFrame and not f._isPlaceholderFrame and IsSealsCd(f.cooldownID) then
-                Stl.native = true
+                S.native = true
                 if mod.QueueReanchor then
                     mod.QueueReanchor()
                 end
@@ -222,10 +222,10 @@ mod.CDM_AuraIconProvider(SEALS, {
     Icon = Icon,
     -- Grey only while no seal is known; a seal that is down is the Seals icon.
     Desaturate = function()
-        return not Stl.known
+        return not S.known
     end,
     Off = function()
-        return Stl.native
+        return S.native
     end,
     Aliases = Aliases,
     Placed = Placed,

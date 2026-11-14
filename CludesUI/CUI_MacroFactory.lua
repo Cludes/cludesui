@@ -232,11 +232,11 @@ end
 -------------------------------------------------------------------------------
 --  Macro body generation
 -------------------------------------------------------------------------------
-local function GetFirstAvailableItemID(spec_def, saved)
-    if not spec_def.checkboxes then
+local function GetFirstAvailableItemID(def, saved)
+    if not def.checkboxes then
         return nil
     end
-    local cbs = spec_def.checkboxes
+    local cbs = def.checkboxes
     local sequence = EnsureOrder(saved, #cbs)
     for _, position in ipairs(sequence) do
         local cb = cbs[position]
@@ -251,8 +251,8 @@ local function GetFirstAvailableItemID(spec_def, saved)
     return nil
 end
 
-local function GetMacroInventoryKey(spec_def, saved)
-    return GetFirstAvailableItemID(spec_def, saved)
+local function GetMacroInventoryKey(def, saved)
+    return GetFirstAvailableItemID(def, saved)
 end
 
 -- Replace {n} placeholders in a macro string with the client-localized name of
@@ -288,9 +288,9 @@ local function ResolveSpellTokens(textValue, spells)
     return result
 end
 
-local function BuildMacroBody(spec_def, saved)
-    if spec_def.checkboxes then
-        local cbs = spec_def.checkboxes
+local function BuildMacroBody(def, saved)
+    if def.checkboxes then
+        local cbs = def.checkboxes
         local sequence = EnsureOrder(saved, #cbs)
 
         -- Collect all enabled items
@@ -314,7 +314,7 @@ local function BuildMacroBody(spec_def, saved)
 
         local body = ""
         if saved.showTooltip ~= false then
-            local tipID = GetFirstAvailableItemID(spec_def, saved) or firstItemID
+            local tipID = GetFirstAvailableItemID(def, saved) or firstItemID
             if tipID then
                 body = "#showtooltip item:" .. tipID .. "\n"
             end
@@ -327,14 +327,14 @@ local function BuildMacroBody(spec_def, saved)
             return ""
         end
         return body .. table.concat(lines, "\n")
-    elseif spec_def.fixedBody then
-        local fbody = ResolveSpellTokens(spec_def.fixedBody, spec_def.spells)
+    elseif def.fixedBody then
+        local fbody = ResolveSpellTokens(def.fixedBody, def.spells)
         if fbody == nil then
             return nil
         end -- spell data not cached; skip write
         local body = ""
-        if saved.showTooltip ~= false and spec_def.fixedTooltip then
-            local tipText = ResolveSpellTokens(spec_def.fixedTooltip, spec_def.spells)
+        if saved.showTooltip ~= false and def.fixedTooltip then
+            local tipText = ResolveSpellTokens(def.fixedTooltip, def.spells)
             if tipText == nil then
                 return nil
             end
@@ -344,8 +344,8 @@ local function BuildMacroBody(spec_def, saved)
         end
         -- Optional trailing lines driven by the def's own extra toggles. Returns
         -- nil when every toggle is off, leaving the body untouched.
-        if spec_def.extraBody then
-            local extra = spec_def.extraBody(saved)
+        if def.extraBody then
+            local extra = def.extraBody(saved)
             if extra and extra ~= "" then
                 return body .. fbody .. "\n" .. extra
             end
@@ -359,12 +359,12 @@ end
 -- keep the "?" placeholder so the game shows a live icon from their
 -- #showtooltip line. Multi-spell combo macros have no #showtooltip to derive
 -- from, so they'd show a bare "?" -- give them their first spell's texture.
-local function ResolveMacroIcon(spec_def)
-    if spec_def.macroIcon then
-        return spec_def.macroIcon
+local function ResolveMacroIcon(def)
+    if def.macroIcon then
+        return def.macroIcon
     end
-    if spec_def.spells and spec_def.fixedBody and not spec_def.fixedTooltip then
-        local texture = spec_def.spells[1] and C_Spell.GetSpellTexture(spec_def.spells[1])
+    if def.spells and def.fixedBody and not def.fixedTooltip then
+        local texture = def.spells[1] and C_Spell.GetSpellTexture(def.spells[1])
         if texture then
             return texture
         end
@@ -372,22 +372,22 @@ local function ResolveMacroIcon(spec_def)
     return "INV_MISC_QUESTIONMARK"
 end
 
-local function UpdateMacro(spec_def, saved)
-    local position = GetMacroIndexByName(spec_def.name)
+local function UpdateMacro(def, saved)
+    local position = GetMacroIndexByName(def.name)
     if position ~= 0 then
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("MacroFactory:" .. spec_def.name, function()
-                local i = GetMacroIndexByName(spec_def.name)
+            CludesUI.CombatQueue.Defer("MacroFactory:" .. def.name, function()
+                local i = GetMacroIndexByName(def.name)
                 if i == 0 then
                     return
                 end
-                local body = BuildMacroBody(spec_def, GetMacroDB(spec_def.name))
+                local body = BuildMacroBody(def, GetMacroDB(def.name))
                 if body then
                     EditMacro(i, nil, nil, body)
                 end
             end)
         else
-            local body = BuildMacroBody(spec_def, saved)
+            local body = BuildMacroBody(def, saved)
             if body then
                 EditMacro(position, nil, nil, body)
             end
@@ -425,14 +425,14 @@ end
 local function ItemUpkeepPass()
     local any = false
     for i = 1, #ITEM_DEFS do
-        local spec_def = ITEM_DEFS[i]
-        if GetMacroIndexByName(spec_def.name) ~= 0 then
+        local def = ITEM_DEFS[i]
+        if GetMacroIndexByName(def.name) ~= 0 then
             any = true
-            local saved = GetMacroDB(spec_def.name)
-            local key = GetMacroInventoryKey(spec_def, saved)
-            if key ~= lastAvailableItems[spec_def.name] then
-                lastAvailableItems[spec_def.name] = key
-                UpdateMacro(spec_def, saved)
+            local saved = GetMacroDB(def.name)
+            local key = GetMacroInventoryKey(def, saved)
+            if key ~= lastAvailableItems[def.name] then
+                lastAvailableItems[def.name] = key
+                UpdateMacro(def, saved)
             end
         end
     end
@@ -1630,7 +1630,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
     ---------------------------------------------------------------------------
     --  BuildMacroGroup: creates a titled grid of macro icons
     ---------------------------------------------------------------------------
-    local function BuildMacroGroup(defs, anchorSide, titleText, perRow, gap, maxVisibleRows)
+    local function BuildMacroGroup(defs, anchorSide, title, perRow, gap, maxVisibleRows)
         perRow = perRow or ICONS_PER_ROW
         gap = gap or ICON_GAP
         local isLeft = (anchorSide == "LEFT")
@@ -1640,7 +1640,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
         titleFS:SetFont(fontFile, 16, "")
         titleFS:SetTextColor(1, 1, 1, 1)
         titleFS:SetPoint("TOP", boxHolder, "TOPLEFT", centerX, 0)
-        titleFS:SetText(CludesUI.L(titleText))
+        titleFS:SetText(CludesUI.L(title))
 
         local numIcons = #defs
         local totalRows = math.ceil(numIcons / perRow)
@@ -1680,7 +1680,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             scrollCenterX = halfW / 2
         end
 
-        for gi, spec_def in ipairs(defs) do
+        for gi, def in ipairs(defs) do
             local rowIdx = math.floor((gi - 1) / perRow)
             local colIdx = (gi - 1) % perRow
             local iconsInRow = math.min(perRow, numIcons - rowIdx * perRow)
@@ -1695,7 +1695,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
 
             local texture = btn:CreateTexture(nil, "ARTWORK")
             texture:SetAllPoints()
-            texture:SetTexture(spec_def.macroIcon or spec_def.icon)
+            texture:SetTexture(def.macroIcon or def.icon)
             texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             btn._tex = texture
 
@@ -1723,7 +1723,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             labelFS:SetWidth(ICON_SIZE + gap - 8)
             labelFS:SetWordWrap(false)
             labelFS:SetJustifyH("CENTER")
-            labelFS:SetText(CludesUI.L(spec_def.label):gsub("\n", " "))
+            labelFS:SetText(CludesUI.L(def.label):gsub("\n", " "))
             btn._label = labelFS
 
             -- Flash system (OnUpdate, no AnimationGroup)
@@ -1772,7 +1772,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
 
             -- State
             local function MacroExists()
-                return GetMacroIndexByName(spec_def.name) ~= 0
+                return GetMacroIndexByName(def.name) ~= 0
             end
             local function RefreshState()
                 local exists = MacroExists()
@@ -1781,32 +1781,32 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             end
 
             local function GetDB()
-                return GetMacroDB(spec_def.name)
+                return GetMacroDB(def.name)
             end
 
             -- Dynamic icon: show the first selected item or equipped trinket
             local function RefreshIcon()
                 local saved = GetDB()
-                local glyph
-                if spec_def.checkboxes then
-                    local cbs = spec_def.checkboxes
+                local icon
+                if def.checkboxes then
+                    local cbs = def.checkboxes
                     local sequence = EnsureOrder(saved, #cbs)
                     for _, position in ipairs(sequence) do
                         local cb = cbs[position]
                         if cb and saved[cb.key] ~= false and cb.items and cb.items[1] then
-                            glyph = C_Item.GetItemIconByID(cb.items[1])
-                            if glyph then
+                            icon = C_Item.GetItemIconByID(cb.items[1])
+                            if icon then
                                 break
                             end
                         end
                     end
-                elseif spec_def.fixedTooltip then
-                    local slotIndex = tonumber(spec_def.fixedTooltip)
-                    if slotIndex then
-                        glyph = GetInventoryItemTexture("player", slotIndex)
+                elseif def.fixedTooltip then
+                    local slot = tonumber(def.fixedTooltip)
+                    if slot then
+                        icon = GetInventoryItemTexture("player", slot)
                     end
                 end
-                texture:SetTexture(glyph or spec_def.macroIcon or spec_def.icon)
+                texture:SetTexture(icon or def.macroIcon or def.icon)
             end
             btn._refreshIcon = RefreshIcon
             RefreshIcon()
@@ -1820,10 +1820,10 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                     return
                 end
                 local MH, DH, HH, MW = 28, 14, 20, 240
-                local cbItems = spec_def.checkboxes
+                local cbItems = def.checkboxes
                 local hasCheckboxes = cbItems and #cbItems > 0
-                local xToggles = spec_def.extraToggles
-                local xChoices = spec_def.extraChoices
+                local xToggles = def.extraToggles
+                local xChoices = def.extraChoices
                 local xRows = (xToggles and #xToggles or 0) + (xChoices and #xChoices or 0)
                 -- Popups that hang outside the menu's own rect but still count as
                 -- "inside" for the click-outside-to-close test below.
@@ -1893,16 +1893,16 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         return
                     end
                     if MacroExists() then
-                        DeleteMacro(spec_def.name)
+                        DeleteMacro(def.name)
                     else
                         local saved = GetDB()
-                        local body = BuildMacroBody(spec_def, saved)
+                        local body = BuildMacroBody(def, saved)
                         if body == nil then
                             return
                         end -- spell data not cached yet
-                        CreateMacro(spec_def.name, ResolveMacroIcon(spec_def), body, nil)
-                        lastAvailableItems[spec_def.name] = GetMacroInventoryKey(spec_def, saved)
-                        if spec_def.checkboxes then
+                        CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
+                        lastAvailableItems[def.name] = GetMacroInventoryKey(def, saved)
+                        if def.checkboxes then
                             ArmItemUpkeep()
                         end
                         PlayFlash()
@@ -1968,7 +1968,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         saved.showTooltip = true
                     end
                     RefTT()
-                    UpdateMacro(spec_def, saved)
+                    UpdateMacro(def, saved)
                 end)
                 mY = mY - MH
 
@@ -2038,7 +2038,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             -- default leaves no key behind in SavedVariables.
                             saved[xt.key] = (not saved[xt.key]) or nil
                             RefX()
-                            UpdateMacro(spec_def, saved)
+                            UpdateMacro(def, saved)
                         end)
                         mY = mY - MH
                     end
@@ -2149,7 +2149,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                                     saved[xc.key] = oi
                                     RefChoice()
                                     entries:Hide()
-                                    UpdateMacro(spec_def, saved)
+                                    UpdateMacro(def, saved)
                                 end)
                             end
                             menuChildren[#menuChildren + 1] = entries
@@ -2205,23 +2205,23 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                     insLine:Hide()
 
                     for ci, cb in ipairs(cbItems) do
-                        local rowFrame = CreateFrame("Button", nil, menuFrame)
-                        rowFrame:SetHeight(MH)
-                        rowFrame._baseY = mY
-                        rowFrame._cbIndex = ci
-                        rowFrame._cb = cb
-                        rowFrame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
-                        rowFrame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
-                        rowFrame:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
+                        local row = CreateFrame("Button", nil, menuFrame)
+                        row:SetHeight(MH)
+                        row._baseY = mY
+                        row._cbIndex = ci
+                        row._cb = cb
+                        row:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
+                        row:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
+                        row:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
 
-                        local rl = rowFrame:CreateFontString(nil, "OVERLAY")
+                        local rl = row:CreateFontString(nil, "OVERLAY")
                         rl:SetFont(fontFile, 13, "")
                         rl:SetTextColor(0.75, 0.75, 0.75, 1)
-                        rl:SetPoint("LEFT", rowFrame, "LEFT", 12, 0)
+                        rl:SetPoint("LEFT", row, "LEFT", 12, 0)
                         rl:SetText(OptionDisplayName(cb))
-                        local rb = CreateFrame("Frame", nil, rowFrame)
+                        local rb = CreateFrame("Frame", nil, row)
                         rb:SetSize(16, 16)
-                        rb:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
+                        rb:SetPoint("RIGHT", row, "RIGHT", -10, 0)
                         local rBg = rb:CreateTexture(nil, "BACKGROUND")
                         rBg:SetAllPoints()
                         rBg:SetColorTexture(0.114, 0.106, 0.099, 1)
@@ -2231,13 +2231,13 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         rCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                         rCk:SetSnapToPixelGrid(false)
                         CludesUI.RoundBody(rb, rCk, 2)
-                        local rHL = rowFrame:CreateTexture(nil, "ARTWORK")
+                        local rHL = row:CreateTexture(nil, "ARTWORK")
                         rHL:SetAllPoints()
                         rHL:SetColorTexture(1, 1, 1, 0)
 
                         local function UC()
                             local saved = GetDB()
-                            local key = rowFrame._cb.key
+                            local key = row._cb.key
                             if saved[key] ~= false then
                                 rCk:Show()
                                 rBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
@@ -2247,49 +2247,49 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             end
                         end
                         UC()
-                        rowFrame._updateCheck = UC
-                        rowFrame._lbl = rl
+                        row._updateCheck = UC
+                        row._lbl = rl
 
-                        rowFrame:SetScript("OnEnter", function()
+                        row:SetScript("OnEnter", function()
                             if isDragging then
                                 return
                             end
                             rl:SetTextColor(1, 1, 1, 1)
                             rHL:SetColorTexture(1, 1, 1, 0.04)
                         end)
-                        rowFrame:SetScript("OnLeave", function()
+                        row:SetScript("OnLeave", function()
                             if isDragging then
                                 return
                             end
                             rl:SetTextColor(0.75, 0.75, 0.75, 1)
                             rHL:SetColorTexture(1, 1, 1, 0)
                         end)
-                        rowFrame:SetScript("OnClick", function()
+                        row:SetScript("OnClick", function()
                             if isDragging then
                                 return
                             end
                             local saved = GetDB()
-                            local key = rowFrame._cb.key
+                            local key = row._cb.key
                             if saved[key] ~= false then
                                 saved[key] = false
                             else
                                 saved[key] = true
                             end
                             UC()
-                            UpdateMacro(spec_def, saved)
+                            UpdateMacro(def, saved)
                             RefreshIcon()
                         end)
 
                         -- Drag (3px threshold via OnMouseDown/Up/Update)
                         local dsY, dgO
-                        rowFrame:SetScript("OnMouseDown", function(_, b)
+                        row:SetScript("OnMouseDown", function(_, b)
                             if b ~= "LeftButton" then
                                 return
                             end
                             local _, cy = GetCursorPosition()
                             dsY = cy
                         end)
-                        rowFrame:SetScript("OnMouseUp", function(self, b)
+                        row:SetScript("OnMouseUp", function(self, b)
                             if b ~= "LeftButton" then
                                 return
                             end
@@ -2346,10 +2346,10 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                                 rf:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, ry)
                                 rf._updateCheck()
                             end
-                            UpdateMacro(spec_def, saved)
+                            UpdateMacro(def, saved)
                             RefreshIcon()
                         end)
-                        rowFrame:SetScript("OnUpdate", function(self)
+                        row:SetScript("OnUpdate", function(self)
                             if not dsY then
                                 return
                             end
@@ -2396,7 +2396,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             insLine:Show()
                         end)
 
-                        rowFrames[ci] = rowFrame
+                        rowFrames[ci] = row
                         mY = mY - MH
                     end
 
@@ -2462,13 +2462,13 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             btn:SetScript("OnEnter", function(self)
                 self._hoverBdr:Show()
-                local fullName = CludesUI.L(spec_def.label):gsub("\n", " ")
-                if spec_def.tooltip then
+                local fullName = CludesUI.L(def.label):gsub("\n", " ")
+                if def.tooltip then
                     local status = self._isGray and CludesUI.L("|cff888888Created|r")
                         or CludesUI.L("|cff888888Click to create|r")
                     CludesUI.ShowWidgetTooltip(
                         self,
-                        fullName .. "\n" .. CludesUI.L(spec_def.tooltip) .. "\n" .. status
+                        fullName .. "\n" .. CludesUI.L(def.tooltip) .. "\n" .. status
                     )
                 elseif self._isGray then
                     CludesUI.ShowWidgetTooltip(
@@ -2500,13 +2500,13 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                     return
                 end
                 local saved = GetDB()
-                local body = BuildMacroBody(spec_def, saved)
+                local body = BuildMacroBody(def, saved)
                 if body == nil then
                     return
                 end -- spell data not cached yet
-                CreateMacro(spec_def.name, ResolveMacroIcon(spec_def), body, nil)
-                lastAvailableItems[spec_def.name] = GetMacroInventoryKey(spec_def, saved)
-                if spec_def.checkboxes then
+                CreateMacro(def.name, ResolveMacroIcon(def), body, nil)
+                lastAvailableItems[def.name] = GetMacroInventoryKey(def, saved)
+                if def.checkboxes then
                     ArmItemUpkeep()
                 end
                 self._playFlash()
@@ -2518,7 +2518,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             end)
 
             RefreshState()
-            btn._def = spec_def
+            btn._def = def
             allMacroButtons[#allMacroButtons + 1] = btn
         end -- for gi
     end -- BuildMacroGroup

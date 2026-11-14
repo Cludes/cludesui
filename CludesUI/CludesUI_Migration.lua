@@ -63,11 +63,11 @@ function CludesUI.RegisterMigration(specInfo)
 end
 
 -- Get (and lazily create) the per-scope flag table on the host table.
-local function GetFlagTable(hostRegion)
-    if not hostRegion._migrations then
-        hostRegion._migrations = {}
+local function GetFlagTable(host)
+    if not host._migrations then
+        host._migrations = {}
     end
-    return hostRegion._migrations
+    return host._migrations
 end
 
 -- Run a single migration body, stamp the flag on success, log on error.
@@ -525,9 +525,9 @@ CludesUI.RegisterMigration({
             end
             for idx = #storage, 1, -1 do
                 local e = storage[idx]
-                local spec_def = type(e) == "table" and e.values and e.values.default
-                if type(spec_def) == "table" then
-                    for fkey in pairs(spec_def) do
+                local def = type(e) == "table" and e.values and e.values.default
+                if type(def) == "table" then
+                    for fkey in pairs(def) do
                         if type(fkey) == "string" and fkey:sub(1, #PREFIX) == PREFIX then
                             table.remove(storage, idx)
                             break
@@ -944,9 +944,9 @@ CludesUI.RegisterMigration({
             local tbb = specData.trackedBuffBars
             local tbbBars = tbb and tbb.bars
             if tbbBars then
-                for _, barFrame in ipairs(tbbBars) do
-                    if type(barFrame) == "table" then
-                        roundFields(barFrame, { "width", "height" })
+                for _, bar in ipairs(tbbBars) do
+                    if type(bar) == "table" then
+                        roundFields(bar, { "width", "height" })
                     end
                 end
             end
@@ -1674,8 +1674,8 @@ CludesUI.RegisterMigration({
         local tbb = context.specProfile.trackedBuffBars
         if tbb and type(tbb.bars) == "table" then
             for idx = #tbb.bars, 1, -1 do
-                local barFrame = tbb.bars[idx]
-                if barFrame.popularKey and removedPopularKeys[barFrame.popularKey] then
+                local bar = tbb.bars[idx]
+                if bar.popularKey and removedPopularKeys[bar.popularKey] then
                     table.remove(tbb.bars, idx)
                 end
             end
@@ -2167,12 +2167,12 @@ CludesUI.RegisterMigration({
             if old == nil then
                 return
             end
-            local modeName = (old == true) and "right" or "overlay"
+            local mode = (old == true) and "right" or "overlay"
             if rf[absKey] == nil then
-                rf[absKey] = modeName
+                rf[absKey] = mode
             end
             if rf[healKey] == nil then
-                rf[healKey] = modeName
+                rf[healKey] = mode
             end
         end
         split("absorbFromRightEdge", "absorbEdgeMode", "healAbsorbEdgeMode")
@@ -2221,12 +2221,12 @@ CludesUI.RegisterMigration({
                 { key = "targetCastbar", target = "target" },
                 { key = "focusCastbar", target = "focus" },
             }
-            for _, spec_def in ipairs(CASTBAR_DEFAULTS) do
-                local hasPos = positions and positions[spec_def.key]
-                local hasAnchor = anchors[spec_def.key]
+            for _, def in ipairs(CASTBAR_DEFAULTS) do
+                local hasPos = positions and positions[def.key]
+                local hasAnchor = anchors[def.key]
                 if not hasPos and not hasAnchor then
-                    anchors[spec_def.key] = {
-                        target = spec_def.target,
+                    anchors[def.key] = {
+                        target = def.target,
                         side = "BOTTOM",
                         offsetX = 0,
                         offsetY = 0,
@@ -2459,11 +2459,11 @@ CludesUI.RegisterMigration({
         local cdm = context.profile.addons and context.profile.addons.CludesUICooldownManager
         local cdmBars = cdm and cdm.cdmBars and cdm.cdmBars.bars
         if cdmBars then
-            for _, barFrame in ipairs(cdmBars) do
-                local anchorKey = "CDM_" .. barFrame.key
+            for _, bar in ipairs(cdmBars) do
+                local anchorKey = "CDM_" .. bar.key
                 local ai = anchors[anchorKey]
-                if ai and ai.side and not barFrame.growDirection then
-                    barFrame.growDirection = "CENTER"
+                if ai and ai.side and not bar.growDirection then
+                    bar.growDirection = "CENTER"
                 end
             end
         end
@@ -2546,12 +2546,12 @@ CludesUI.RegisterMigration({
         if not barList then
             return
         end
-        for _, barFrame in ipairs(barList) do
-            if barFrame.anchorFirstRow then
-                if barFrame.rowGrowDirection == nil then
-                    barFrame.rowGrowDirection = barFrame.verticalOrientation and "RIGHT" or "DOWN"
+        for _, bar in ipairs(barList) do
+            if bar.anchorFirstRow then
+                if bar.rowGrowDirection == nil then
+                    bar.rowGrowDirection = bar.verticalOrientation and "RIGHT" or "DOWN"
                 end
-                barFrame.anchorFirstRow = nil
+                bar.anchorFirstRow = nil
             end
         end
     end,
@@ -4429,11 +4429,11 @@ do
             end
         end
         simpleSec.thresholdSpecs = simpleSec.thresholdSpecs or {}
-        local targetUnit = simpleSec.thresholdSpecs
+        local target = simpleSec.thresholdSpecs
         -- Strip this spec from pre-existing Simple entries (dropping any that
         -- served only it).
-        for idx = #targetUnit, 1, -1 do
-            local record = targetUnit[idx]
+        for idx = #target, 1, -1 do
+            local record = target[idx]
             if type(record) == "table" and type(record.specIDs) == "table" then
                 local changed = false
                 for jdx = #record.specIDs, 1, -1 do
@@ -4443,7 +4443,7 @@ do
                     end
                 end
                 if changed and #record.specIDs == 0 then
-                    table.remove(targetUnit, idx)
+                    table.remove(target, idx)
                 end
             end
         end
@@ -4455,7 +4455,7 @@ do
             end
         end
         for idx = #merged, 1, -1 do
-            table.insert(targetUnit, 1, merged[idx])
+            table.insert(target, 1, merged[idx])
         end
     end
 
@@ -5372,9 +5372,9 @@ if CludesUI.IS_FOREVER == true then
                 local tex = type(st) == "table" and st.texture or nil
                 local slots = tex ~= nil and erb._styleSlots
                 if type(slots) == "table" then
-                    for _, slotIndex in pairs(slots) do
-                        if type(slotIndex) == "table" and slotIndex["swingTimer.texture"] == nil then
-                            slotIndex["swingTimer.texture"] = tex
+                    for _, slot in pairs(slots) do
+                        if type(slot) == "table" and slot["swingTimer.texture"] == nil then
+                            slot["swingTimer.texture"] = tex
                         end
                     end
                 end
@@ -5596,11 +5596,11 @@ if CludesUI.IS_FOREVER == true then
             -- Cooldowns, Utility and Buffs bars first.
             local placedNames, placedIds = {}, {}
             for idx, edge in ipairs(barList) do
-                local spec_def = DEFAULT_BARS[idx]
-                local key = edge.key or (spec_def and spec_def.key)
-                local barType = edge.barType or (spec_def and spec_def.barType)
+                local def = DEFAULT_BARS[idx]
+                local key = edge.key or (def and def.key)
+                local barType = edge.barType or (def and def.barType)
                 local enabled = edge.enabled
-                if enabled == nil and spec_def then
+                if enabled == nil and def then
                     enabled = true
                 end
                 local bs = key
@@ -5710,10 +5710,10 @@ do
                 if type(val) == "table" then
                     FixTree(val, 0)
                 elseif val == 0 and fkey:sub(-#ZOOM_LEAF) == ZOOM_LEAF then
-                    local barFrame = fkey:sub(1, -#ZOOM_LEAF - 1)
-                    local shape = map[barFrame .. SHAPE_LEAF]
+                    local bar = fkey:sub(1, -#ZOOM_LEAF - 1)
+                    local shape = map[bar .. SHAPE_LEAF]
                     if shape == nil and pab then
-                        local t = BarAt(pab, barFrame:sub(#PAB_PREFIX + 1))
+                        local t = BarAt(pab, bar:sub(#PAB_PREFIX + 1))
                         shape = t and t.iconShape
                     end
                     if shape ~= NIL_SENT and Shaped(shape) then
@@ -5930,8 +5930,8 @@ do
                 return filePath == MARK_PATH
             end
             for idx = 1, #CLEARED_PATHS do
-                local baseValue = CLEARED_PATHS[idx]
-                if filePath == baseValue or filePath:sub(1, #baseValue + 1) == baseValue .. PS then
+                local base = CLEARED_PATHS[idx]
+                if filePath == base or filePath:sub(1, #base + 1) == base .. PS then
                     return true
                 end
             end
@@ -5962,10 +5962,10 @@ do
                                     end
                                 end
                             end
-                            local spec_def = vals.default
-                            if type(spec_def) == "table" then
+                            local def = vals.default
+                            if type(def) == "table" then
                                 local hit, leftX = false, false
-                                for fkey in pairs(spec_def) do
+                                for fkey in pairs(def) do
                                     if Cleared(fkey, markOnly) then
                                         hit = true
                                     else
@@ -5988,9 +5988,9 @@ do
                 return
             end
             for idx = 1, #list do
-                local barFrame = list[idx]
-                if type(barFrame) == "table" and barFrame.id ~= nil then
-                    set[barFrame.id] = true
+                local bar = list[idx]
+                if type(bar) == "table" and bar.id ~= nil then
+                    set[bar.id] = true
                 end
             end
         end
@@ -6520,27 +6520,27 @@ do
         --     data they did not arrive with) and "first" (the account's one
         --     sweep of data older than this block) strip the stores anyway.
         -- A planning error still stamps the mark (logged): never cleared twice.
-        function FvBW.ProcessUF(uf, prof, modeName)
+        function FvBW.ProcessUF(uf, prof, mode)
             local ufT = type(uf) == "table"
             local s = ufT and uf.playerAuraBars or nil
             local sT = type(s) == "table"
             local strip, clear
             if sT and s[KEY] ~= nil then
-                if modeName ~= "import" then
+                if mode ~= "import" then
                     return
                 end
                 strip = "mark"
             elseif sT then
                 clear = true
-                if modeName ~= "live" then
+                if mode ~= "live" then
                     strip = "full"
                 end
-            elseif modeName == "live" then
+            elseif mode == "live" then
                 return
             elseif ufT and uf.externalDefensives ~= nil then
                 clear = true
                 strip = "full"
-            elseif modeName == "import" or modeName == "first" then
+            elseif mode == "import" or mode == "first" then
                 strip = "full"
             else
                 return
@@ -6562,13 +6562,13 @@ do
         end
 
         -- Profile-level entry (pd = a profile root: stored, or an import payload).
-        function FvBW.ProcessProfile(pd, modeName)
+        function FvBW.ProcessProfile(pd, mode)
             if type(pd) ~= "table" then
                 return
             end
             local addons = pd.addons
-            FvBW.ProcessUF(type(addons) == "table" and addons[UF] or nil, pd, modeName)
-            if modeName == "import" then
+            FvBW.ProcessUF(type(addons) == "table" and addons[UF] or nil, pd, mode)
+            if mode == "import" then
                 TrustForks(pd)
             end
         end
@@ -6597,11 +6597,11 @@ do
                 flags = {}
                 saved._migrations = flags
             end
-            local modeName = flags[SWEEP_ID] and "login" or "first"
+            local mode = flags[SWEEP_ID] and "login" or "first"
             local profiles = saved.profiles
             if type(profiles) == "table" then
                 for _, pd in pairs(profiles) do
-                    FvBW.ProcessProfile(pd, modeName)
+                    FvBW.ProcessProfile(pd, mode)
                 end
             end
             flags[SWEEP_ID] = true

@@ -25,14 +25,14 @@ function Glow.Build(ab)
     local hp = ab._hpBar
     -- Own clip host above the shield bars: the health-side half of the line
     -- would otherwise be cut by the missing-health clip.
-    local hostRegion = CreateFrame("Frame", nil, hp)
-    hostRegion:SetAllPoints(hp)
-    hostRegion:SetClipsChildren(true)
-    hostRegion:SetFrameLevel(hp:GetFrameLevel() + 4)
+    local host = CreateFrame("Frame", nil, hp)
+    host:SetAllPoints(hp)
+    host:SetClipsChildren(true)
+    host:SetFrameLevel(hp:GetFrameLevel() + 4)
     -- Each line sits on its own frame: boolean alpha works on frames (on a
     -- texture it renders nothing on this client).
-    local edgeHost = CreateFrame("Frame", nil, hostRegion)
-    edgeHost:SetAllPoints(hostRegion)
+    local edgeHost = CreateFrame("Frame", nil, host)
+    edgeHost:SetAllPoints(host)
     -- Invisible gate bar on the edge: fed the absorb over a 0-1 range, its
     -- fill is full with ANY shield and empty without one, so the line drawn
     -- over the fill needs no boolean read of the secret amount.
@@ -43,10 +43,10 @@ function Glow.Build(ab)
     gate:SetValue(0)
     local edge = edgeHost:CreateTexture(nil, "OVERLAY")
     edge:SetAllPoints(gate:GetStatusBarTexture())
-    local bfHost = CreateFrame("Frame", nil, hostRegion)
-    bfHost:SetAllPoints(hostRegion)
+    local bfHost = CreateFrame("Frame", nil, host)
+    bfHost:SetAllPoints(host)
     local bf = bfHost:CreateTexture(nil, "OVERLAY")
-    local g = { host = hostRegion, edgeHost = edgeHost, gate = gate, edge = edge, bfHost = bfHost, bf = bf }
+    local g = { host = host, edgeHost = edgeHost, gate = gate, edge = edge, bfHost = bfHost, bf = bf }
     if CreateUnitHealPredictionCalculator and UnitGetDetailedHealPrediction then
         local calc = CreateUnitHealPredictionCalculator()
         -- Configured once: the Missing Health clamp makes GetDamageAbsorbs'
@@ -72,22 +72,22 @@ function Glow.Anchor(ab)
     end
     local rev = g.rev
     local near, far = rev and "RIGHT" or "LEFT", rev and "LEFT" or "RIGHT"
-    local offset = rev and 1 or -1
-    local fillTex = ab:GetStatusBarTexture()
+    local off = rev and 1 or -1
+    local fill = ab:GetStatusBarTexture()
     local gate, bf = g.gate, g.bf
     gate:ClearAllPoints()
     if g.ge >= 3 then
-        gate:SetPoint("CENTER", fillTex, near, offset, 0)
+        gate:SetPoint("CENTER", fill, near, off, 0)
     else
-        gate:SetPoint("CENTER", ab._forward, near, offset, 0)
+        gate:SetPoint("CENTER", ab._forward, near, off, 0)
     end
     bf:ClearAllPoints()
     if g.anc == 1 then
-        bf:SetPoint("CENTER", fillTex, near, offset, 0)
+        bf:SetPoint("CENTER", fill, near, off, 0)
     elseif g.anc == 2 then
-        bf:SetPoint("CENTER", fillTex, far, -offset, 0)
+        bf:SetPoint("CENTER", fill, far, -off, 0)
     else
-        bf:SetPoint("CENTER", ab, far, offset, 0)
+        bf:SetPoint("CENTER", ab, far, off, 0)
     end
 end
 

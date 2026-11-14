@@ -69,7 +69,7 @@ end
 -- Hash Lines row hosts the shared editor (env.BuildThresholdSettingsButton).
 function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix, SmoothRefresh, RefreshClass =
+    local DB, Pix, SmoothRefresh, RefreshClass =
         environ.DB, environ.PP, environ.SmoothRefresh, environ.RefreshClass
     local RebuildClass, RebuildPower, AddFormBarBtn, AddFormTextBtn =
         environ.RebuildClass, environ.RebuildPower, environ.AddFormBarBtn, environ.AddFormTextBtn
@@ -95,16 +95,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     local artRegions = {}
     local W = setmetatable({
         DualRow = function(_, p, yy, l, r, ...)
-            local rowFrame, rh = CludesUI.Widgets:DualRow(p, yy, l, r, ...)
-            if rowFrame then
-                if l and l.text and l.text ~= "" and not artKeep[l.text] and rowFrame._leftRegion then
-                    artRegions[#artRegions + 1] = rowFrame._leftRegion
+            local row, rh = CludesUI.Widgets:DualRow(p, yy, l, r, ...)
+            if row then
+                if l and l.text and l.text ~= "" and not artKeep[l.text] and row._leftRegion then
+                    artRegions[#artRegions + 1] = row._leftRegion
                 end
-                if r and r.text and r.text ~= "" and not artKeep[r.text] and rowFrame._rightRegion then
-                    artRegions[#artRegions + 1] = rowFrame._rightRegion
+                if r and r.text and r.text ~= "" and not artKeep[r.text] and row._rightRegion then
+                    artRegions[#artRegions + 1] = row._rightRegion
                 end
             end
-            return rowFrame, rh
+            return row, rh
         end,
     }, { __index = CludesUI.Widgets })
 
@@ -142,7 +142,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         end
         if _IsGuardianDruid() then
             local _ifOff = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and not p.secondary.guardianIronfurBar
             end
             local _, hh = W:DualRow(hostFrame, posY, {
@@ -150,11 +150,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 text = "Guardian Druid Ironfur Bar",
                 tooltip = "Replaces the class resource bar with an Ironfur tracker. Each Ironfur cast adds a hash line that slides from right to left as its buff decays. Duration is talent-aware (Ursoc's Endurance and Guardian of Elune).",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.secondary.guardianIronfurBar
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -168,11 +168,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 disabled = _ifOff,
                 disabledTooltip = "Guardian Druid Ironfur Bar",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.secondary.guardianShowHashLines ~= false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -212,11 +212,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 text = "Prot Warrior Ignore Pain Bar",
                 tooltip = ipBarTip,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.secondary.protIgnorePainBar
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -229,16 +229,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 text = "Show Hash Line",
                 tooltip = ipHashTip,
                 disabled = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return not (p and p.secondary.protIgnorePainBar)
                 end,
                 disabledTooltip = "Prot Warrior Ignore Pain Bar",
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.secondary.protIgnorePainHashLine ~= false
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -280,11 +280,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 text = "Arms Warrior Sweeping Strikes Bar",
                 tooltip = ssBarTip,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.secondary.armsSweepingStrikesBar
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -461,7 +461,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -472,7 +472,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -494,7 +494,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -505,7 +505,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1100,26 +1100,20 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 and not CludesUI._prebuilding
                 and mod.ERB_ClassicBorderRow()
             then
-                mod.ERB_ClassicBorderSync(
-                    classBsRow._rightRegion,
-                    SavedDB,
-                    "secondary",
-                    SmoothRefresh,
-                    function()
-                        return {
-                            context.syncRows.classBorder,
-                            context.syncRows.powerBorder,
-                            context.syncRows.healthBorder,
-                        }
-                    end
-                )
+                mod.ERB_ClassicBorderSync(classBsRow._rightRegion, DB, "secondary", SmoothRefresh, function()
+                    return {
+                        context.syncRows.classBorder,
+                        context.syncRows.powerBorder,
+                        context.syncRows.healthBorder,
+                    }
+                end)
             elseif not context.advanced and context.syncRows and not CludesUI._prebuilding then
                 -- Border Style: class -> primary + health
                 CludesUI.BuildSyncIcon({
                     region = classBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1145,7 +1139,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1165,7 +1159,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     region = classBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1192,7 +1186,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1611,8 +1605,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 {
                     tooltip = "Class Colored",
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b, 1
                         end
@@ -1649,8 +1643,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 end
                             end
                         end
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b, 1
                         end
@@ -1695,7 +1689,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Opacity to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1706,7 +1700,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1782,7 +1776,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         -- (secondary) config. DB() is shadowed in this scope so DB().secondary resolves to
         -- cfg() without rewriting every access path; it returns nil while cfg() does, so the
         -- `if not p` guards short-circuit.
-        local SavedDB = function()
+        local DB = function()
             local c = conf()
             if not c then
                 return nil
@@ -1797,11 +1791,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             disabled = classOff,
             disabledTooltip = "Class Resource",
             getValue = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and p.secondary.showText
             end,
             setValue = function(val)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -1819,11 +1813,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     type = "toggle",
                     label = "Show %",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return (not p) or p.secondary.showPercent ~= false
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1836,11 +1830,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     label = "Only if Power Bar Hidden",
                     tooltip = 'Show the resource text only while the power bar is hidden - disabled, filtered off for this spec, a spec with no power, or hidden by "Hide Power Bar if Resource". Off = always show the text.',
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.showTextOnlyIfNoPower
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1853,11 +1847,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     label = "Hide at Zero",
                     tooltip = "Hide the resource text while the resource is at zero.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.hideTextAtZero
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1873,11 +1867,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     max = 64,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.textSize or 11
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1892,11 +1886,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     order = { "LEFT", "CENTER", "RIGHT" },
                     tooltip = "Anchor the text inside the bar. The X/Y offsets move it from there.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.textAnchor or "CENTER"
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1911,11 +1905,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     max = 100,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.textXOffset or 0
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1930,11 +1924,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     max = 100,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.secondary.textYOffset or 0
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1952,11 +1946,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         type = "toggle",
                         label = "Show Max Stacks",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return (not p) or p.secondary.showMaxStacks ~= false
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -1968,7 +1962,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end
             CludesUI.BuildInlineCog(rgn, {
                 disabled = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return not p or not p.secondary.enabled or not p.secondary.showText
                 end,
                 disabledTooltip = "Resource Text",
@@ -1986,14 +1980,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 rgn,
                 classColorRow:GetFrameLevel() + 3,
                 function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return 1, 1, 1, 1
                     end
                     return p.secondary.textR or 1, p.secondary.textG or 1, p.secondary.textB or 1, 1
                 end,
                 function(r, g, b)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -2017,9 +2011,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end)
             local function UpdateSwatchDis()
                 updateSwatch()
-                local p = SavedDB()
-                local offset = not p or not p.secondary.enabled or not p.secondary.showText
-                if offset then
+                local p = DB()
+                local off = not p or not p.secondary.enabled or not p.secondary.showText
+                if off then
                     colorSwatch:SetAlpha(0.3)
                     swatchDis:Show()
                 else
@@ -2030,7 +2024,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             CludesUI.RegisterWidgetRefresh(UpdateSwatchDis)
             UpdateSwatchDis()
             AddFormTextBtn(rgn, colorSwatch, function()
-                return SavedDB() and SavedDB().secondary
+                return DB() and DB().secondary
             end, RefreshClass)
         end
 
@@ -2476,8 +2470,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     end)
                     local function UpdateRechargeSwatch()
                         local c = conf()
-                        local offset = not (c and c.enabled) or not c.runesCustomRecharge
-                        if offset then
+                        local off = not (c and c.enabled) or not c.runesCustomRecharge
+                        if off then
                             colorSwatch:SetAlpha(0.3)
                             swatchBlock:Show()
                         else
@@ -2501,14 +2495,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     text = "Show Focus as Power Bar (BM/MM)",
                     tooltip = "When enabled, BM and MM specs show Focus as the standard power bar instead of a class resource bar.",
                     getValue = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
                         return p.secondary.hunterFocusAsPower or false
                     end,
                     setValue = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -2577,8 +2571,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     rgn._lastInline = colorSwatch
                     local function UpdateEnhSwatchVis()
                         local c = conf()
-                        local offset = not (c and c.enabled) or not c.enhanceFiveBar or not _enhSpecOK()
-                        colorSwatch:SetAlpha(offset and 0.3 or 1)
+                        local off = not (c and c.enabled) or not c.enhanceFiveBar or not _enhSpecOK()
+                        colorSwatch:SetAlpha(off and 0.3 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(UpdateEnhSwatchVis)
                     UpdateEnhSwatchVis()

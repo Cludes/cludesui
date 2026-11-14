@@ -57,8 +57,8 @@ end
 
 local function BareSlots(unitToken)
     local bare = {}
-    for slotIndex, name in pairs(ENCHANT_SLOTS) do
-        local itemLink = GetInventoryItemLink(unitToken, slotIndex)
+    for slot, name in pairs(ENCHANT_SLOTS) do
+        local itemLink = GetInventoryItemLink(unitToken, slot)
         if itemLink and not Secret(itemLink) then
             local enchant = itemLink:match("item:%d+:(%d*)")
             if enchant == nil or enchant == "" or enchant == "0" then
@@ -75,7 +75,7 @@ local function Read(unitToken)
     if not unitGuid or Secret(unitGuid) then
         return
     end
-    local _, classFile = UnitClass(unitToken)
+    local _, class = UnitClass(unitToken)
     local ilvl
     if UnitIsUnit(unitToken, "player") then
         local _, equipped = GetAverageItemLevel()
@@ -88,7 +88,7 @@ local function Read(unitToken)
     end
     cache[unitGuid] = {
         name = UnitName(unitToken),
-        class = classFile,
+        class = class,
         level = UnitLevel(unitToken),
         ilvl = ilvl,
         bare = BareSlots(unitToken),
@@ -180,11 +180,11 @@ local function Build()
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
-    local titleText = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(titleText, 15, "essentials")
-    titleText:SetPoint("TOPLEFT", 10, -8)
-    titleText:SetText("Group Inspect")
-    CludesUI.Kit.AccentText(titleText)
+    local title = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(title, 15, "essentials")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("Group Inspect")
+    CludesUI.Kit.AccentText(title)
     local close = CludesUI.Kit.Glyph(window, "x", function()
         window:Hide()
     end, nil, "essentials")
@@ -228,8 +228,8 @@ Refresh = function()
     for _, unitToken in ipairs(Members()) do
         local unitGuid = UnitGUID(unitToken)
         local c = unitGuid and not Secret(unitGuid) and cache[unitGuid]
-        local _, classFile = UnitClass(unitToken)
-        local colour = RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+        local _, class = UnitClass(unitToken)
+        local colour = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         local name = UnitName(unitToken) or "?"
         if colour then
             name = colour:WrapTextInColorCode(name)

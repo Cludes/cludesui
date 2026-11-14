@@ -104,32 +104,32 @@ mod._RFAnchorPing = function(d)
     local s = d._isParty and mod._scaledPartyProxy
         or (d._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    local dim = PixelSnap(s.pingMarkerSize or 30)
-    popFrame:SetSize(dim, dim)
-    popFrame._factor = dim / 30
-    local hostRegion = mod.RF_AnchorHost(d.health, s)
+    local size = PixelSnap(s.pingMarkerSize or 30)
+    popFrame:SetSize(size, size)
+    popFrame._factor = size / 30
+    local host = mod.RF_AnchorHost(d.health, s)
     local place = s.pingMarkerPosition or "center"
     local ox = s.pingMarkerOffsetX or 0
     local oy = s.pingMarkerOffsetY or 0
     popFrame:ClearAllPoints()
     if place == "topleft" then
-        popFrame:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 2 + ox, -2 + oy)
+        popFrame:SetPoint("TOPLEFT", host, "TOPLEFT", 2 + ox, -2 + oy)
     elseif place == "top" then
-        popFrame:SetPoint("TOP", hostRegion, "TOP", ox, -2 + oy)
+        popFrame:SetPoint("TOP", host, "TOP", ox, -2 + oy)
     elseif place == "topright" then
-        popFrame:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -2 + ox, -2 + oy)
+        popFrame:SetPoint("TOPRIGHT", host, "TOPRIGHT", -2 + ox, -2 + oy)
     elseif place == "left" then
-        popFrame:SetPoint("LEFT", hostRegion, "LEFT", 2 + ox, oy)
+        popFrame:SetPoint("LEFT", host, "LEFT", 2 + ox, oy)
     elseif place == "right" then
-        popFrame:SetPoint("RIGHT", hostRegion, "RIGHT", -2 + ox, oy)
+        popFrame:SetPoint("RIGHT", host, "RIGHT", -2 + ox, oy)
     elseif place == "bottomleft" then
-        popFrame:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        popFrame:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 2 + ox, 2 + oy)
     elseif place == "bottom" then
-        popFrame:SetPoint("BOTTOM", hostRegion, "BOTTOM", ox, 2 + oy)
+        popFrame:SetPoint("BOTTOM", host, "BOTTOM", ox, 2 + oy)
     elseif place == "bottomright" then
-        popFrame:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        popFrame:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -2 + ox, 2 + oy)
     else
-        popFrame:SetPoint("CENTER", hostRegion, "CENTER", ox, oy)
+        popFrame:SetPoint("CENTER", host, "CENTER", ox, oy)
     end
 end
 
@@ -171,15 +171,15 @@ mod._pingKitArt = {}
 mod._PingKitArt = function(kit)
     local art = mod._pingKitArt[kit]
     if art == nil then
-        local backdrop, glyph = "Ping_Frame_BG_" .. kit, "Ping_Frame_" .. kit
-        local bgInfo, iconInfo = C_Texture.GetAtlasInfo(backdrop), C_Texture.GetAtlasInfo(glyph)
+        local backdrop, icon = "Ping_Frame_BG_" .. kit, "Ping_Frame_" .. kit
+        local bgInfo, iconInfo = C_Texture.GetAtlasInfo(backdrop), C_Texture.GetAtlasInfo(icon)
         art = bgInfo
                 and iconInfo
                 and {
                     bg = backdrop,
                     bgW = bgInfo.width,
                     bgH = bgInfo.height,
-                    icon = glyph,
+                    icon = icon,
                     iconW = iconInfo.width,
                     iconH = iconInfo.height,
                 }
@@ -221,11 +221,11 @@ mod._RFPingLight = function(btnFrame, kit)
     end)
 end
 
-mod._OnCufShowPing = function(glyph, kit)
+mod._OnCufShowPing = function(icon, kit)
     if issecretvalue(kit) or type(kit) ~= "string" then
         return
     end
-    local ownerFrame = glyph:GetParent()
+    local ownerFrame = icon:GetParent()
     local unitToken = ownerFrame and ownerFrame.unit
     if type(unitToken) ~= "string" then
         return
@@ -233,7 +233,7 @@ mod._OnCufShowPing = function(glyph, kit)
     local btn = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
     local xf = mod._xfUnitToButton[unitToken]
     -- The icon re-lit for a different occupant: release what it lit before.
-    local prevB, prevX = mod._pingLitBtn[glyph], mod._pingLitXf[glyph]
+    local prevB, prevX = mod._pingLitBtn[icon], mod._pingLitXf[icon]
     if prevB and prevB ~= btn then
         mod._RFPingHide(prevB)
     end
@@ -246,42 +246,42 @@ mod._OnCufShowPing = function(glyph, kit)
     if xf then
         mod._RFPingLight(xf, kit)
     end
-    mod._pingLitBtn[glyph], mod._pingLitXf[glyph] = btn, xf
+    mod._pingLitBtn[icon], mod._pingLitXf[icon] = btn, xf
 end
 
-mod._OnCufClearPing = function(glyph)
-    local b, posX = mod._pingLitBtn[glyph], mod._pingLitXf[glyph]
+mod._OnCufClearPing = function(icon)
+    local b, posX = mod._pingLitBtn[icon], mod._pingLitXf[icon]
     if not b and not posX then
         return
     end
-    mod._pingLitBtn[glyph], mod._pingLitXf[glyph] = nil, nil
+    mod._pingLitBtn[icon], mod._pingLitXf[icon] = nil, nil
     mod._RFPingHide(b)
     mod._RFPingHide(posX)
 end
 
 mod._HookCufPingIcon = function(cuf)
-    local glyph = cuf and cuf.pingIconFrame
-    if not glyph then
+    local icon = cuf and cuf.pingIconFrame
+    if not icon then
         return
     end
-    local state = mod._pingHooked[glyph]
+    local state = mod._pingHooked[icon]
     if state ~= nil then
         return
     end
     -- Nameplate compact frames carry the same child; never ours to mirror.
     local okN, name = pcall(cuf.GetName, cuf)
     if okN and type(name) == "string" and name:find("^NamePlate") then
-        mod._pingHooked[glyph] = false
+        mod._pingHooked[icon] = false
         return
     end
-    local okF, forbidden = pcall(glyph.IsForbidden, glyph)
+    local okF, forbidden = pcall(icon.IsForbidden, icon)
     if not okF or forbidden then
-        mod._pingHooked[glyph] = false
+        mod._pingHooked[icon] = false
         return
     end
-    mod._pingHooked[glyph] = true
-    hooksecurefunc(glyph, "ShowPing", mod._OnCufShowPing)
-    hooksecurefunc(glyph, "ClearPing", mod._OnCufClearPing)
+    mod._pingHooked[icon] = true
+    hooksecurefunc(icon, "ShowPing", mod._OnCufShowPing)
+    hooksecurefunc(icon, "ClearPing", mod._OnCufClearPing)
 end
 
 if type(CompactUnitFrame_SetUpFrame) == "function" then
@@ -299,18 +299,18 @@ end
 -- the vehicle state, map to no texture, so it shows what the plain path would.
 -- Before 12.1.5 (and with Role Text on) a secret role stays hidden, as before.
 local secretRoleMaps = {} -- style -> toggle bits -> texture map
-local function SecretRoleMap(look, s)
-    local styleMap = mod.ROLE_ICON_STYLES[look]
+local function SecretRoleMap(style, s)
+    local styleMap = mod.ROLE_ICON_STYLES[style]
     if not styleMap then
         return nil
     end
     local bits = (s.showRoleForTank and 1 or 0)
         + (s.showRoleForHealer and 2 or 0)
         + (s.showRoleForDPS and 4 or 0)
-    local byStyle = secretRoleMaps[look]
+    local byStyle = secretRoleMaps[style]
     if not byStyle then
         byStyle = {}
-        secretRoleMaps[look] = byStyle
+        secretRoleMaps[style] = byStyle
     end
     local map = byStyle[bits]
     if not map then
@@ -325,9 +325,9 @@ local function SecretRoleMap(look, s)
     return map
 end
 
-local function PaintSecretRole(d, unitToken, look, s)
+local function PaintSecretRole(d, unitToken, style, s)
     local paint = UnitFrameUtil and UnitFrameUtil.UpdateUnitFrameRoleIcon
-    local map = paint and not s.roleText and SecretRoleMap(look, s)
+    local map = paint and not s.roleText and SecretRoleMap(style, s)
     local texture = d.roleIconSecret
     if not map then
         if texture then
@@ -336,10 +336,10 @@ local function PaintSecretRole(d, unitToken, look, s)
         return
     end
     if not texture then
-        local glyph = d.roleIcon
-        local layer, subFrame = glyph:GetDrawLayer()
-        texture = glyph:GetParent():CreateTexture(nil, layer, nil, subFrame)
-        texture:SetAllPoints(glyph)
+        local icon = d.roleIcon
+        local layer, sub = icon:GetDrawLayer()
+        texture = icon:GetParent():CreateTexture(nil, layer, nil, sub)
+        texture:SetAllPoints(icon)
         d.roleIconSecret = texture
         d.roleSecretProxy =
             { roleIcon = texture, optionTable = { displayRoleIcon = true, displayRaidRoleIcon = false } }
@@ -359,8 +359,8 @@ local function UpdateRoleIconShown(d, s, unitToken)
         roleIcon._roleText:Hide()
     end
     local secretTex = d.roleIconSecret
-    local look = s.roleIconStyle or "modern"
-    if look == "none" and not s.roleText then
+    local style = s.roleIconStyle or "modern"
+    if style == "none" and not s.roleText then
         roleIcon:Hide()
         if secretTex then
             secretTex:Hide()
@@ -377,7 +377,7 @@ local function UpdateRoleIconShown(d, s, unitToken)
     local role, roleSecret = CludesUI.UnitEffectiveRole(unitToken)
     if roleSecret then
         roleIcon:Hide()
-        PaintSecretRole(d, unitToken, look, s)
+        PaintSecretRole(d, unitToken, style, s)
     elseif role then
         if secretTex then
             secretTex:Hide()
@@ -385,7 +385,7 @@ local function UpdateRoleIconShown(d, s, unitToken)
         local showForRole = (role == "TANK" and s.showRoleForTank)
             or (role == "HEALER" and s.showRoleForHealer)
             or (role == "DAMAGER" and s.showRoleForDPS)
-        if showForRole and (s.roleText or ApplyRoleIcon(roleIcon, role, look)) then
+        if showForRole and (s.roleText or ApplyRoleIcon(roleIcon, role, style)) then
             roleIcon:Show()
             if s.roleText then
                 mod.ApplyRoleText(roleIcon, role, s)
@@ -460,30 +460,30 @@ end
 --  updater (UNIT_FLAGS / regen). Texture Show/Hide is combat-legal. On ns (cap).
 -------------------------------------------------------------------------------
 mod._UpdateCombatIcon = function(d, s, unitToken)
-    local glyph = d.combatIcon
-    if not glyph then
+    local icon = d.combatIcon
+    if not icon then
         return
     end
     if not s.showCombatIndicator then
-        glyph:Hide()
+        icon:Hide()
         return
     end
     local c = UnitAffectingCombat(unitToken)
     if issecretvalue(c) or not c then
-        glyph:Hide()
+        icon:Hide()
         return
     end
 
     local CludesUI = mod.CludesUI
-    local look = s.combatIndicatorStyle or "standard"
+    local style = s.combatIndicatorStyle or "standard"
     local MEDIA = mod._COMBAT_MEDIA
-    if look:find("^combat%d") then
-        glyph:SetTexture(MEDIA .. look .. ".tga")
-        glyph:SetTexCoord(0, 1, 0, 1)
-        if glyph.SetDesaturated then
-            glyph:SetDesaturated(false)
+    if style:find("^combat%d") then
+        icon:SetTexture(MEDIA .. style .. ".tga")
+        icon:SetTexCoord(0, 1, 0, 1)
+        if icon.SetDesaturated then
+            icon:SetDesaturated(false)
         end
-        glyph:SetVertexColor(1, 1, 1, 1)
+        icon:SetVertexColor(1, 1, 1, 1)
     else
         local classToken = d.classToken
         if not classToken then
@@ -493,28 +493,28 @@ mod._UpdateCombatIcon = function(d, s, unitToken)
         if classToken and issecretvalue(classToken) then
             classToken = nil
         end
-        if look == "class" then
-            glyph:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
+        if style == "class" then
+            icon:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
             local coords = classToken and mod._COMBAT_CLASS_COORDS[classToken]
             if coords then
-                glyph:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
             else
-                glyph:SetTexCoord(0, 1, 0, 1)
+                icon:SetTexCoord(0, 1, 0, 1)
             end
         else
-            glyph:SetTexture(MEDIA .. "combat-indicator-custom.png")
-            glyph:SetTexCoord(0, 1, 0, 1)
+            icon:SetTexture(MEDIA .. "combat-indicator-custom.png")
+            icon:SetTexCoord(0, 1, 0, 1)
         end
         local colorMode = s.combatIndicatorColor or "custom"
         if colorMode == "classcolor" then
             local cc = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
-            glyph:SetVertexColor(cc.r, cc.g, cc.b, 1)
+            icon:SetVertexColor(cc.r, cc.g, cc.b, 1)
         else
             local cc = s.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
-            glyph:SetVertexColor(cc.r, cc.g, cc.b, 1)
+            icon:SetVertexColor(cc.r, cc.g, cc.b, 1)
         end
     end
-    glyph:Show()
+    icon:Show()
 end
 
 -------------------------------------------------------------------------------
@@ -563,52 +563,52 @@ local function UpdateButton(btnFrame)
         and Enum.StatusBarInterpolation
         and Enum.StatusBarInterpolation.ExponentialEaseOut
 
-    local healthBar = d.health
+    local health = d.health
     -- Offline/dead units keep the gray tint _ApplyHealthBg owns. That tint is
     -- state-stamped there (applied on the transition, not on every call), so a
     -- full paint must never lay a class color over it -- the same split as
     -- Blizzard's UpdateHealthColor, which grays those units itself.
     local connected = UnitIsConnected(unitToken)
     local deadOrGhost = UnitIsDeadOrGhost(unitToken)
-    if healthBar then
+    if health then
         -- Inverted Fill (the bar's _cuiInv stamp) paints missing health for every
         -- unit, so the current-health area the Health Bar Color tints and the dispel
         -- wash cover (ns.RF_AnchorCurHealth) is the unit's own, last-known while
         -- offline. A corpse paints a full missing bar, the empty current-health area
         -- of a normal bar at 0%; _ApplyHealthBg hides that fill over the Dead colour.
         local pct
-        if healthBar._cuiInv then
+        if health._cuiInv then
             pct = deadOrGhost and 100 or GetSafeHealthPercent(unitToken, true)
         else
             pct = GetSafeHealthPercent(unitToken)
         end
-        healthBar:SetMinMaxValues(0, 100)
+        health:SetMinMaxValues(0, 100)
         if smooth then
-            healthBar:SetValue(pct, smooth)
+            health:SetValue(pct, smooth)
         else
-            healthBar:SetValue(pct)
+            health:SetValue(pct)
         end
 
         if connected and not deadOrGhost then
             local r, g, b = GetHealthColor(unitToken, s)
-            local fillTex = healthBar:GetStatusBarTexture()
+            local fill = health:GetStatusBarTexture()
             if s.healthColorMode == "dark" then
-                healthBar:SetStatusBarColor(r, g, b, 1)
+                health:SetStatusBarColor(r, g, b, 1)
                 -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
-                if fillTex then
-                    fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
+                if fill then
+                    fill:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
                 end
             else
-                if fillTex then
-                    fillTex:SetAlpha(1)
+                if fill then
+                    fill:SetAlpha(1)
                 end
-                healthBar:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
             end
         end
     end
 
     -- Background (+ dead/offline status tint). Centralized in ns._ApplyHealthBg so the lightweight UNIT_HEALTH path stays in lockstep.
-    mod._ApplyHealthBg(d, healthBar, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
 
     -- Power (filtered by role + hide if unit has no power)
     mod._PaintPower(btnFrame, d, s, unitToken)
@@ -914,15 +914,15 @@ function mod._RebuildDispelCurves()
         local c = C_CurveUtil.CreateColorCurve()
         c:SetType(Enum.LuaCurveType.Step)
         local function add(position, key, dr, dg, saved)
-            local column = profile and profile[key]
+            local col = profile and profile[key]
             -- Per-type alpha rides the curve too (0 = type opted out of the dispel border/overlay). Never darkened by mult.
             c:AddPoint(
                 position,
                 CreateColor(
-                    (column and column.r or dr) * mult,
-                    (column and column.g or dg) * mult,
-                    (column and column.b or saved) * mult,
-                    ((column and column.a) or 1) * (alphaMult or 1)
+                    (col and col.r or dr) * mult,
+                    (col and col.g or dg) * mult,
+                    (col and col.b or saved) * mult,
+                    ((col and col.a) or 1) * (alphaMult or 1)
                 )
             )
         end
@@ -1447,18 +1447,18 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
         or (d._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 
-    local healthBar = d.health
+    local health = d.health
     local pct = GetSafeHealthPercent(unitToken)
     local connected = UnitIsConnected(unitToken)
     local deadOrGhost = UnitIsDeadOrGhost(unitToken)
 
     -- Health bar
-    if healthBar then
+    if health then
         -- The bar is always a percent bar; its range never changes after the
         -- first application.
         if not d._hb100 then
             d._hb100 = true
-            healthBar:SetMinMaxValues(0, 100)
+            health:SetMinMaxValues(0, 100)
         end
         local smooth = s.smoothBars
             and Enum
@@ -1466,13 +1466,13 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
             and Enum.StatusBarInterpolation.ExponentialEaseOut
         -- Missing health under Inverted Fill, every unit (see UpdateButton).
         local barPct = pct
-        if healthBar._cuiInv then
+        if health._cuiInv then
             barPct = deadOrGhost and 100 or GetSafeHealthPercent(unitToken, true)
         end
         if smooth then
-            healthBar:SetValue(barPct, smooth)
+            health:SetValue(barPct, smooth)
         else
-            healthBar:SetValue(barPct)
+            health:SetValue(barPct)
         end
         -- Fill color: dead/offline ticks skip this entirely (_ApplyHealthBg
         -- owns the gray tint and clears the stamp on the transition). The
@@ -1480,9 +1480,9 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
         -- modes stamp the applied color and re-run only on a real change
         -- (every static-mode component is a plain value by construction).
         if connected and not deadOrGhost then
-            local modeName = s.healthColorMode
+            local mode = s.healthColorMode
             local r, g, b
-            if modeName == nil or modeName == "class" then
+            if mode == nil or mode == "class" then
                 -- Class color is identity, not health: resolve the class token
                 -- once per occupant and reuse it per tick. Cleared on unit
                 -- assignment, UNIT_NAME_UPDATE and UNIT_CONNECTION -- the edges
@@ -1507,28 +1507,28 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
             else
                 r, g, b = GetHealthColor(unitToken, s)
             end
-            if modeName == "classic" or modeName == "customDynamic" or modeName == "classReactive" then
-                local fillTex = healthBar:GetStatusBarTexture()
-                if fillTex then
-                    fillTex:SetAlpha(1)
+            if mode == "classic" or mode == "customDynamic" or mode == "classReactive" then
+                local fill = health:GetStatusBarTexture()
+                if fill then
+                    fill:SetAlpha(1)
                 end
-                healthBar:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
             else
-                local a = (modeName == "dark") and 1 or (s.healthBarOpacity or 100) / 100
-                if d._hcR ~= r or d._hcG ~= g or d._hcB ~= b or d._hcA ~= a or d._hcM ~= modeName then
-                    d._hcR, d._hcG, d._hcB, d._hcA, d._hcM = r, g, b, a, modeName
-                    local fillTex = healthBar:GetStatusBarTexture()
-                    if modeName == "dark" then
-                        healthBar:SetStatusBarColor(r, g, b, 1)
+                local a = (mode == "dark") and 1 or (s.healthBarOpacity or 100) / 100
+                if d._hcR ~= r or d._hcG ~= g or d._hcB ~= b or d._hcA ~= a or d._hcM ~= mode then
+                    d._hcR, d._hcG, d._hcB, d._hcA, d._hcM = r, g, b, a, mode
+                    local fill = health:GetStatusBarTexture()
+                    if mode == "dark" then
+                        health:SetStatusBarColor(r, g, b, 1)
                         -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
-                        if fillTex then
-                            fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
+                        if fill then
+                            fill:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
                         end
                     else
-                        if fillTex then
-                            fillTex:SetAlpha(1)
+                        if fill then
+                            fill:SetAlpha(1)
                         end
-                        healthBar:SetStatusBarColor(r, g, b, a)
+                        health:SetStatusBarColor(r, g, b, a)
                     end
                 end
             end
@@ -1548,7 +1548,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
 
     -- Background + dead/offline tint. This path owns death/resurrect transitions
     -- arriving via UNIT_HEALTH, so it runs per tick (state-stamped inside).
-    mod._ApplyHealthBg(d, healthBar, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
 
     -- Debuff Manager dead-corpse swap rides the same ownership: one field read
     -- for every button without a qualifying config.

@@ -33,51 +33,51 @@ local CD_FAILED = 6
 
 local FFD = setmetatable({}, { __mode = "k" })
 -- shared helpers (lua 5.1 caps a chunk at 200 locals).
-local Xfer = {}
+local XF = {}
 -- grey for our white glyphs
-Xfer.GLYPH = 0.78
+XF.GLYPH = 0.78
 -- dimmed tooltip lines, gold bountiful line
-Xfer.DIM_HEX = CM.HexColor(0.7, 0.7, 0.7)
-Xfer.GOLD_HEX = CM.HexColor(GOLD_R, GOLD_G, GOLD_B)
+XF.DIM_HEX = CM.HexColor(0.7, 0.7, 0.7)
+XF.GOLD_HEX = CM.HexColor(GOLD_R, GOLD_G, GOLD_B)
 -- shared empty list (never written)
-Xfer.EMPTY = {}
+XF.EMPTY = {}
 -- plain tooltip, extra lines dimmed
-function Xfer.Tip(ownerFrame, titleText, ...)
-    local textValue = titleText
+function XF.Tip(ownerFrame, title, ...)
+    local textValue = title
     for idx = 1, select("#", ...) do
-        local lineTex = select(idx, ...)
-        if lineTex then
-            if lineTex:sub(1, 2) == "|c" then
-                textValue = textValue .. "\n" .. lineTex
+        local line = select(idx, ...)
+        if line then
+            if line:sub(1, 2) == "|c" then
+                textValue = textValue .. "\n" .. line
             else
-                textValue = textValue .. "\n" .. Xfer.DIM_HEX .. lineTex .. "|r"
+                textValue = textValue .. "\n" .. XF.DIM_HEX .. line .. "|r"
             end
         end
     end
-    Xfer.tipOwner = ownerFrame
+    XF.tipOwner = ownerFrame
     CM.ShowWidgetTooltip(ownerFrame, textValue)
 end
-function Xfer.ClassLine(classFile, textValue)
+function XF.ClassLine(classFile, textValue)
     local c = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(classFile)
     return c and c:WrapTextInColorCode(textValue) or textValue
 end
-function Xfer.Untip()
-    Xfer.tipOwner = nil
+function XF.Untip()
+    XF.tipOwner = nil
     CM.HideWidgetTooltip()
 end
 
 -- our text in the module's font
-function Xfer.Font(fontStr, size, flags)
+function XF.Font(fontStr, size, flags)
     CM.ApplyModuleFont(fontStr, nil, size, ADDON_NAME, flags or "")
 end
 
 -- blizzard's frames only move out of combat: queued till it ends
-function Xfer.Defer(key, func)
+function XF.Defer(key, func)
     mod.CombatQueue.Defer(key, func)
 end
 
 -- click-outside close for our menus
-function Xfer.ClickOff(m, inside)
+function XF.ClickOff(m, inside)
     m:SetScript("OnEvent", function(self, _, btnFrame)
         if btnFrame == "LeftButton" and not inside(self) then
             self:Hide()
@@ -92,7 +92,7 @@ function Xfer.ClickOff(m, inside)
 end
 
 local SP
-local rowFrame, diffBtn, dropMenu, resetBtn, refreshBtn, gfFont
+local row, diffBtn, dropMenu, resetBtn, refreshBtn, gfFont
 local pending = false -- filters changed since the last search
 local cdUntil = 0
 local squares = {}
@@ -130,25 +130,25 @@ local function Skin()
 end
 -- cui's group finder skin is on; off, our parts take blizzard's look. read once per session, at login,
 -- when the window skin itself installs: a card toggle swaps both with the reload it asks for
-function Xfer.SkinOn()
-    local on = Xfer.skinOn
+function XF.SkinOn()
+    local on = XF.skinOn
     if on ~= nil then
         return on
     end
     local style = CM.GetBlizzWindowStyle -- nil while blizzard skins+ is off
     on = (Skin() ~= nil and style ~= nil and style("lfg") ~= "off") and true or false
     if IsLoggedIn() then
-        Xfer.skinOn = on
+        XF.skinOn = on
     end
     return on
 end
-mod.SkinOn = Xfer.SkinOn
+mod.SkinOn = XF.SkinOn
 local function ThemeBorder()
-    if not Xfer.SkinOn() then
+    if not XF.SkinOn() then
         return 0.38, 0.38, 0.38, 1
     end -- blizzard's search box grey
-    local Stl = Skin()
-    local T = Stl and Stl.Theme
+    local S = Skin()
+    local T = S and S.Theme
     if T and T.brdR then
         return T.brdR, T.brdG, T.brdB, T.brdA
     end
@@ -156,24 +156,24 @@ local function ThemeBorder()
 end
 mod.Skin, mod.ThemeBorder = Skin, ThemeBorder
 -- an unpicked square's edge: the theme's, or none on blizzard's rounded button
-function Xfer.RestBorder(f)
-    if Xfer.SkinOn() then
+function XF.RestBorder(f)
+    if XF.SkinOn() then
         CM.PanelPP.SetBorderColor(f, ThemeBorder())
     else
         CM.PanelPP.SetBorderColor(f, 0, 0, 0, 0)
     end
 end
 -- a picked square: a white edge, or blizzard's highlight held on
-function Xfer.PickBorder(sq, edge, on)
-    if Xfer.SkinOn() then
+function XF.PickBorder(sq, edge, on)
+    if XF.SkinOn() then
         if on then
             CM.PanelPP.SetBorderColor(edge, 1, 1, 1, 1)
         else
-            Xfer.RestBorder(edge)
+            XF.RestBorder(edge)
         end
         return
     end
-    Xfer.RestBorder(edge)
+    XF.RestBorder(edge)
     if on then
         sq:LockHighlight()
     else
@@ -244,9 +244,9 @@ local function BuildDungeons()
 end
 
 -- season dungeons, rebuilt after the m+ maps update
-function Xfer.Dungeons()
-    if not dungeons or Xfer.dungeonsDirty then
-        Xfer.dungeonsDirty = nil
+function XF.Dungeons()
+    if not dungeons or XF.dungeonsDirty then
+        XF.dungeonsDirty = nil
         dungeons = BuildDungeons() or dungeons
     end
     return dungeons
@@ -334,13 +334,13 @@ local function Widen(f)
 end
 
 -- keep this character's picks so another character's don't carry over
-function Xfer.Remember(f)
+function XF.Remember(f)
     if f then
         mod.SetCharBlizzFilter(Picks(f))
     end
 end
 
-function Xfer.GetFilter()
+function XF.GetFilter()
     local f = C_LFGList.GetAdvancedFilter()
     local p = f and DimOn() and Cfg().dimPicks
     if type(p) == "table" then
@@ -358,7 +358,7 @@ local function Apply(f)
         Widen(f)
     end
     C_LFGList.SaveAdvancedFilter(f)
-    Xfer.Remember(f)
+    XF.Remember(f)
     pending = true
     Paint()
     PaintRefresh()
@@ -368,8 +368,8 @@ end
 -- picks. not at login: blizzard sets its filter back to every dungeon after
 -- that, which would undo it. The first time, the character keeps the picks
 -- blizzard holds now (the account's, from before)
-function Xfer.RestoreCharFilter()
-    if Xfer.filterRestored then
+function XF.RestoreCharFilter()
+    if XF.filterRestored then
         return
     end
     local f = C_LFGList.GetAdvancedFilter()
@@ -382,7 +382,7 @@ function Xfer.RestoreCharFilter()
             f[k] = saved[k]
         end
     end
-    Xfer.filterRestored = true
+    XF.filterRestored = true
     -- dimmed keeps the picks with us and blizzard's search wide
     local c = Cfg()
     if DimOn() then
@@ -397,11 +397,11 @@ function Xfer.RestoreCharFilter()
         c.dimPicks = nil
     end
     C_LFGList.SaveAdvancedFilter(f)
-    Xfer.Remember(f)
+    XF.Remember(f)
 end
 
 local function ToggleDungeon(groupId)
-    local f = Xfer.GetFilter()
+    local f = XF.GetFilter()
     if DungeonsDefault(f) then
         f.activities = { groupId }
     else
@@ -420,7 +420,7 @@ local function ToggleDungeon(groupId)
 end
 
 local function SetDifficulty(key, on)
-    local f = Xfer.GetFilter()
+    local f = XF.GetFilter()
     local _, n = DiffAllOrNone(f)
     if n == 0 then
         for _, d in ipairs(DIFFS) do
@@ -448,7 +448,7 @@ end
 -------------------------------------------------------------------------------
 -- the list comes from CUI_GroupFinder_Regions.lua (us regions, eu languages)
 local function Regions()
-    return mod.RegionList() or Xfer.EMPTY
+    return mod.RegionList() or XF.EMPTY
 end
 
 local IsSecret = CludesUI.IsSecret
@@ -483,27 +483,27 @@ local function ResultInfo(resultID)
     return details
 end
 
-function Xfer.Num(counts, key)
+function XF.Num(counts, key)
     local val = counts[key]
     return (type(val) == "number" and not IsSecret(val)) and val or nil
 end
 
 -- activity info, cached per session
-Xfer.actInfo = {}
-function Xfer.ActInfo(act)
-    local ai = Xfer.actInfo[act]
+XF.actInfo = {}
+function XF.ActInfo(act)
+    local ai = XF.actInfo[act]
     if ai == nil then
         ai = C_LFGList.GetActivityInfoTable(act)
         if type(ai) ~= "table" then
             return nil
         end
-        Xfer.actInfo[act] = ai
+        XF.actInfo[act] = ai
     end
     return ai
 end
 
 -- realm -> region, cached
-Xfer.regionByRealm = {}
+XF.regionByRealm = {}
 local function LeaderRegion(details)
     local leader = details and details.leaderName
     if not leader or IsSecret(leader) then
@@ -513,10 +513,10 @@ local function LeaderRegion(details)
     if not realm or IsSecret(realm) then
         return nil
     end
-    local regionFrame = Xfer.regionByRealm[realm]
+    local regionFrame = XF.regionByRealm[realm]
     if not regionFrame then
         regionFrame = mod.RegionOfRealm(realm)
-        Xfer.regionByRealm[realm] = regionFrame
+        XF.regionByRealm[realm] = regionFrame
     end
     return regionFrame
 end
@@ -556,7 +556,7 @@ local function Abbrev(name)
 end
 
 -- tier from the activity name; '?' is 12 and '??' is 13.
-function Xfer.TierOf(fullName)
+function XF.TierOf(fullName)
     if type(fullName) ~= "string" or IsSecret(fullName) then
         return nil
     end
@@ -572,7 +572,7 @@ function Xfer.TierOf(fullName)
     end
     return nil
 end
-Xfer.TierLabel = function(t)
+XF.TierLabel = function(t)
     if t == 12 then
         return CludesUI.L("Tier ?")
     elseif t == 13 then
@@ -594,7 +594,7 @@ local function BuildDelves()
                     entries[#entries + 1] = { groupID = groupId, name = name, abbr = Abbrev(name) }
                     for _, aid in ipairs(C_LFGList.GetAvailableActivities(DELVES, groupId) or {}) do
                         local details = C_LFGList.GetActivityInfoTable(aid)
-                        local tier = Xfer.TierOf(details and details.fullName)
+                        local tier = XF.TierOf(details and details.fullName)
                         byAct[aid] = { groupID = groupId, tier = tier }
                     end
                 end
@@ -614,9 +614,9 @@ end
 -- this season's delves count. At most once a minute. The first scan walks
 -- every zone under the world map and remembers the zones that hold delves;
 -- later scans check only those.
-Xfer.bountifulScanAt = nil
-Xfer.delveZones = nil -- map IDs of the zones with delve pins
-function Xfer.ScanZone(POI, mapID, season)
+XF.bountifulScanAt = nil
+XF.delveZones = nil -- map IDs of the zones with delve pins
+function XF.ScanZone(POI, mapID, season)
     local okPins, pins = pcall(POI.GetDelvesForMap, mapID)
     if not (okPins and type(pins) == "table") then
         return false
@@ -632,7 +632,7 @@ function Xfer.ScanZone(POI, mapID, season)
 end
 local function ScanBountiful()
     local nowTime = GetTime()
-    if Xfer.bountifulScanAt and nowTime - Xfer.bountifulScanAt < 60 then
+    if XF.bountifulScanAt and nowTime - XF.bountifulScanAt < 60 then
         return
     end
     local POI, MAP = C_AreaPoiInfo, C_Map
@@ -646,23 +646,23 @@ local function ScanBountiful()
     if not next(season) then
         return
     end
-    Xfer.bountifulScanAt = nowTime
+    XF.bountifulScanAt = nowTime
     wipe(bountiful)
-    if Xfer.delveZones then
-        for _, mapID in ipairs(Xfer.delveZones) do
-            Xfer.ScanZone(POI, mapID, season)
+    if XF.delveZones then
+        for _, mapID in ipairs(XF.delveZones) do
+            XF.ScanZone(POI, mapID, season)
         end
         return
     end
     local found = {}
     local okZones, zones = pcall(MAP.GetMapChildrenInfo, 946, Enum.UIMapType.Zone, true)
     for _, zone in ipairs(okZones and type(zones) == "table" and zones or {}) do
-        if Xfer.ScanZone(POI, zone.mapID, season) then
+        if XF.ScanZone(POI, zone.mapID, season) then
             found[#found + 1] = zone.mapID
         end
     end
     if #found > 0 then
-        Xfer.delveZones = found
+        XF.delveZones = found
     end
 end
 
@@ -783,8 +783,8 @@ local function Encounters(jid)
         if not name then
             break
         end
-        local glyph = EJ_GetCreatureInfo and select(5, EJ_GetCreatureInfo(1, encID))
-        result[#result + 1] = { key = encID, name = name, icon = glyph }
+        local icon = EJ_GetCreatureInfo and select(5, EJ_GetCreatureInfo(1, encID))
+        result[#result + 1] = { key = encID, name = name, icon = icon }
     end
     if prevInst then
         EJ_SelectInstance(prevInst)
@@ -797,7 +797,7 @@ end
 
 -- current raid bosses in blizzard's order, nil till the journal has data
 -- this season's raids: the season filter, else the journal's newest tier
-function Xfer.SeasonRaidSets()
+function XF.SeasonRaidSets()
     local F = Enum.LFGListFilter
     local groups = {}
     local success, g = pcall(C_LFGList.GetAvailableActivityGroups, RAIDS, bit.bor(F.CurrentSeason, F.PvE))
@@ -828,7 +828,7 @@ local function BuildBosses()
     if not (EJ_SelectInstance and EJ_GetEncounterInfoByIndex) then
         return nil
     end
-    local seasonGroups, seasonTier = Xfer.SeasonRaidSets()
+    local seasonGroups, seasonTier = XF.SeasonRaidSets()
     local byGroup, byTier = {}, {}
     local entries, byAct, seen, raids = {}, {}, {}, {}
     local current = {}
@@ -872,7 +872,7 @@ local function BuildBosses()
         return nil
     end
     -- none flagged = all count
-    wipe(Xfer.raidCurrent)
+    wipe(XF.raidCurrent)
     if next(byGroup) then
         current = byGroup
     elseif next(byTier) then
@@ -880,24 +880,24 @@ local function BuildBosses()
     end
     if next(current) then
         for _, raid in ipairs(raids) do
-            Xfer.raidCurrent[raid.jid] = current[raid.jid] == true
+            XF.raidCurrent[raid.jid] = current[raid.jid] == true
         end
     end
     return entries, byAct, raids
 end
 
 -- current season only, older raids are out
-Xfer.raidCurrent = {}
-function Xfer.SeasonOnly()
+XF.raidCurrent = {}
+function XF.SeasonOnly()
     return Cfg().extraSeasonRaids ~= false
 end
-function Xfer.RaidEligible(jid)
-    return not (Xfer.SeasonOnly() and Xfer.raidCurrent[jid] == false)
+function XF.RaidEligible(jid)
+    return not (XF.SeasonOnly() and XF.raidCurrent[jid] == false)
 end
 
 -- raids show unless hidden in the raid menu
 local function RaidShown(jid)
-    if not Xfer.RaidEligible(jid) then
+    if not XF.RaidEligible(jid) then
         return false
     end
     local hgt = Cfg().raidsHidden
@@ -905,16 +905,16 @@ local function RaidShown(jid)
         return true
     end
     for _, raid in ipairs(raidList or {}) do
-        if Xfer.RaidEligible(raid.jid) and not hgt[raid.jid] then
+        if XF.RaidEligible(raid.jid) and not hgt[raid.jid] then
             return false
         end
     end
     return true
 end
 
-function Xfer.AnyRaidHidden()
+function XF.AnyRaidHidden()
     for _, raid in ipairs(raidList or {}) do
-        if Xfer.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
+        if XF.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
             return true
         end
     end
@@ -931,7 +931,7 @@ local function BossFilterActive()
 end
 
 -- scratch set of a group's killed bosses
-Xfer.dead = {}
+XF.dead = {}
 local function BossKeep(resultID, details)
     local acts = details and details.activityIDs
     local act = type(acts) == "table" and not IsSecret(acts) and acts[1]
@@ -943,8 +943,8 @@ local function BossKeep(resultID, details)
     if done and (IsSecret(done) or (canaccesstable and not canaccesstable(done))) then
         return true
     end
-    local dead = wipe(Xfer.dead)
-    for _, name in ipairs(done or Xfer.EMPTY) do
+    local dead = wipe(XF.dead)
+    for _, name in ipairs(done or XF.EMPTY) do
         if IsSecret(name) then
             return true
         end
@@ -1048,7 +1048,7 @@ end
 local function RaidListFilterActive()
     return SP
             and SP.categoryID == RAIDS
-            and (ChosenRaidDiffs() ~= nil or HideWorldBosses() or ChosenRaidPlaystyles() ~= nil or ChosenRaidRoles() ~= nil or Xfer.AnyRaidHidden())
+            and (ChosenRaidDiffs() ~= nil or HideWorldBosses() or ChosenRaidPlaystyles() ~= nil or ChosenRaidRoles() ~= nil or XF.AnyRaidHidden())
         or false
 end
 
@@ -1063,7 +1063,7 @@ local RAID_DIFF_BY_ID = {
     [6] = "heroic",
     [9] = "normal",
 }
-Xfer.DIFF_WORDS = {
+XF.DIFF_WORDS = {
     mythic = PLAYER_DIFFICULTY6 or "Mythic",
     heroic = PLAYER_DIFFICULTY2 or "Heroic",
     normal = PLAYER_DIFFICULTY1 or "Normal",
@@ -1085,7 +1085,7 @@ local function ActivityDiffKey(ai)
     -- last resort: the difficulty word in the name.
     local name = ai.fullName
     if type(name) == "string" and not IsSecret(name) then
-        for key, word in pairs(Xfer.DIFF_WORDS) do
+        for key, word in pairs(XF.DIFF_WORDS) do
             if name:find(word, 1, true) then
                 return key
             end
@@ -1102,7 +1102,7 @@ end
 local function RaidListKeep(resultID, details)
     local acts = details and details.activityIDs
     local act = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local ai = act and not IsSecret(act) and Xfer.ActInfo(act)
+    local ai = act and not IsSecret(act) and XF.ActInfo(act)
     if not ai then
         return true
     end
@@ -1127,7 +1127,7 @@ local function RaidListKeep(resultID, details)
     if roles then
         local c = C_LFGList.GetSearchResultMemberCounts(resultID)
         if type(c) == "table" and not IsSecret(c) then
-            local num = Xfer.Num
+            local num = XF.Num
             -- match any role
             if mod.ExtraRolesAny and mod.ExtraRolesAny() then
                 return (roles.needsTank and (num(c, "TANK_REMAINING") or 1) > 0)
@@ -1152,24 +1152,24 @@ end
 -------------------------------------------------------------------------------
 -- extra filters (filters menu, client side)
 -------------------------------------------------------------------------------
-Xfer.LUST_CLASSES = { SHAMAN = true, MAGE = true, HUNTER = true, EVOKER = true }
-Xfer.BREZ_CLASSES = { DRUID = true, DEATHKNIGHT = true, WARLOCK = true, PALADIN = true }
-Xfer.COUNT_ROLES = {
+XF.LUST_CLASSES = { SHAMAN = true, MAGE = true, HUNTER = true, EVOKER = true }
+XF.BREZ_CLASSES = { DRUID = true, DEATHKNIGHT = true, WARLOCK = true, PALADIN = true }
+XF.COUNT_ROLES = {
     { key = "TANK", label = CludesUI.L("Tanks") },
     { key = "HEALER", label = CludesUI.L("Healers") },
     { key = "DAMAGER", label = CludesUI.L("DPS") },
 }
-Xfer.COUNT_OPS = {
+XF.COUNT_OPS = {
     { key = "lt", label = "<  " .. CludesUI.L("Less Than") },
     { key = "gt", label = ">  " .. CludesUI.L("More Than") },
     { key = "eq", label = "=  " .. CludesUI.L("Equal To") },
 }
-Xfer.COUNT_OP_LABEL = { lt = "<", gt = ">", eq = "=" }
+XF.COUNT_OP_LABEL = { lt = "<", gt = ">", eq = "=" }
 -- member-count keys for the open slots of each role.
-Xfer.REMAINING = { TANK = "TANK_REMAINING", HEALER = "HEALER_REMAINING", DAMAGER = "DAMAGER_REMAINING" }
-Xfer.PARTY = { "party1", "party2", "party3", "party4" }
+XF.REMAINING = { TANK = "TANK_REMAINING", HEALER = "HEALER_REMAINING", DAMAGER = "DAMAGER_REMAINING" }
+XF.PARTY = { "party1", "party2", "party3", "party4" }
 
-function Xfer.CountRule(role)
+function XF.CountRule(role)
     local t = Cfg().roleCounts
     local r = type(t) == "table" and t[role]
     local n = type(r) == "table" and r.on and tonumber(r.n)
@@ -1179,7 +1179,7 @@ function Xfer.CountRule(role)
     return nil
 end
 
-function Xfer.ExtraFilterActive()
+function XF.ExtraFilterActive()
     if not SP or (SP.categoryID ~= DUNGEONS and SP.categoryID ~= RAIDS) then
         return false
     end
@@ -1193,8 +1193,8 @@ function Xfer.ExtraFilterActive()
     if mod.ExtraExprActive and mod.ExtraExprActive() then
         return true
     end
-    for _, r in ipairs(Xfer.COUNT_ROLES) do
-        if Xfer.CountRule(r.key) then
+    for _, r in ipairs(XF.COUNT_ROLES) do
+        if XF.CountRule(r.key) then
             return true
         end
     end
@@ -1202,7 +1202,7 @@ function Xfer.ExtraFilterActive()
 end
 
 -- info: the result's readable info, or false when it has none.
-function Xfer.IsDeclinedResult(ident, details)
+function XF.IsDeclinedResult(ident, details)
     local _, status = C_LFGList.GetApplicationInfo(ident)
     if IsSecret(status) then
         return false
@@ -1216,11 +1216,11 @@ function Xfer.IsDeclinedResult(ident, details)
 end
 
 -- your party's roles, nil while one reads secret
-function Xfer.PartyNeeds(need)
+function XF.PartyNeeds(need)
     need.TANK, need.HEALER, need.DAMAGER = 0, 0, 0
     local members = IsInRaid() and 0 or GetNumSubgroupMembers()
-    for idx = 0, math.min(members, #Xfer.PARTY) do
-        local role, secret = CM.UnitEffectiveRole(idx == 0 and "player" or Xfer.PARTY[idx])
+    for idx = 0, math.min(members, #XF.PARTY) do
+        local role, secret = CM.UnitEffectiveRole(idx == 0 and "player" or XF.PARTY[idx])
         if secret then
             return nil
         end
@@ -1233,17 +1233,17 @@ function Xfer.PartyNeeds(need)
     return need
 end
 
-function Xfer.ExtraKeep(ident, details, need)
+function XF.ExtraKeep(ident, details, need)
     local c = Cfg()
-    if c.notDeclined and Xfer.IsDeclinedResult(ident, details) then
+    if c.notDeclined and XF.IsDeclinedResult(ident, details) then
         return false
     end
     local counts = C_LFGList.GetSearchResultMemberCounts(ident)
     if type(counts) == "table" and not IsSecret(counts) then
-        local num = Xfer.Num
+        local num = XF.Num
         if c.partyFit and need then
             for role, n in pairs(need) do
-                local leftX = num(counts, Xfer.REMAINING[role])
+                local leftX = num(counts, XF.REMAINING[role])
                 if leftX and leftX < n then
                     return false
                 end
@@ -1252,8 +1252,8 @@ function Xfer.ExtraKeep(ident, details, need)
         -- match any role
         local any = mod.ExtraRolesAny and mod.ExtraRolesAny()
         local anySet, anyHit = false, false
-        for _, r in ipairs(Xfer.COUNT_ROLES) do
-            local op, n = Xfer.CountRule(r.key)
+        for _, r in ipairs(XF.COUNT_ROLES) do
+            local op, n = XF.CountRule(r.key)
             local have = op and num(counts, r.key)
             if have then
                 local success = (op == "lt" and have < n)
@@ -1287,10 +1287,10 @@ function Xfer.ExtraKeep(ident, details, need)
                 local p = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
                 local cls = p and p.classFilename
                 if cls and not IsSecret(cls) then
-                    if Xfer.LUST_CLASSES[cls] then
+                    if XF.LUST_CLASSES[cls] then
                         lust = true
                     end
-                    if Xfer.BREZ_CLASSES[cls] then
+                    if XF.BREZ_CLASSES[cls] then
                         brez = true
                     end
                 end
@@ -1307,7 +1307,7 @@ function Xfer.ExtraKeep(ident, details, need)
 end
 
 -- results are secret in restricted content: filters stay out of it.
-function Xfer.ResultsSecret()
+function XF.ResultsSecret()
     local res = SP and SP.results
     local first = type(res) == "table" and res[1]
     if not first then
@@ -1327,32 +1327,32 @@ function Xfer.ResultsSecret()
 end
 
 -- one pass shares secrecy, active filters and party fit's needs (once per frame)
-Xfer.pass = { needT = { TANK = 0, HEALER = 0, DAMAGER = 0 } }
-function Xfer.Pass()
-    local Prm = Xfer.pass
+XF.pass = { needT = { TANK = 0, HEALER = 0, DAMAGER = 0 } }
+function XF.Pass()
+    local P = XF.pass
     local nowTime = GetTime()
     local res = SP and SP.results
-    if Prm.at == nowTime and Prm.res == res then
-        return Prm
+    if P.at == nowTime and P.res == res then
+        return P
     end
-    Prm.at, Prm.res = nowTime, res
-    Prm.secret = Xfer.ResultsSecret()
-    Prm.regions = RegionFilterActive()
-    Prm.delveOn = DelveFilterActive()
-    Prm.bossOn = BossFilterActive()
-    Prm.raidOn = RaidListFilterActive()
-    Prm.extraOn = Xfer.ExtraFilterActive()
-    Prm.dimOn = Xfer.DimActive()
-    Prm.any = Prm.regions or Prm.delveOn or Prm.bossOn or Prm.raidOn or Prm.extraOn or Prm.dimOn
-    Prm.need = (Prm.extraOn and Cfg().partyFit) and Xfer.PartyNeeds(Prm.needT) or nil
-    return Prm
+    P.at, P.res = nowTime, res
+    P.secret = XF.ResultsSecret()
+    P.regions = RegionFilterActive()
+    P.delveOn = DelveFilterActive()
+    P.bossOn = BossFilterActive()
+    P.raidOn = RaidListFilterActive()
+    P.extraOn = XF.ExtraFilterActive()
+    P.dimOn = XF.DimActive()
+    P.any = P.regions or P.delveOn or P.bossOn or P.raidOn or P.extraOn or P.dimOn
+    P.need = (P.extraOn and Cfg().partyFit) and XF.PartyNeeds(P.needT) or nil
+    return P
 end
-function Xfer.NewPass()
-    Xfer.pass.at = nil
+function XF.NewPass()
+    XF.pass.at = nil
 end
 
 -- any picks waiting on our side?
-function Xfer.DimActive()
+function XF.DimActive()
     local p = SP and SP.categoryID == DUNGEONS and DimOn() and Cfg().dimPicks
     if type(p) ~= "table" then
         return false
@@ -1369,7 +1369,7 @@ function Xfer.DimActive()
 end
 
 -- blizzard's search would have done this if it wasn't wide
-function Xfer.DimKeep(ident, details)
+function XF.DimKeep(ident, details)
     local p = Cfg().dimPicks
     if not details then
         return true
@@ -1412,7 +1412,7 @@ function Xfer.DimKeep(ident, details)
     if DungeonRolesSet(p) then
         local counts = C_LFGList.GetSearchResultMemberCounts(ident)
         if type(counts) == "table" and not IsSecret(counts) then
-            local num = Xfer.Num
+            local num = XF.Num
             if p.hasTank and (num(counts, "TANK") or 1) < 1 then
                 return false
             end
@@ -1467,7 +1467,7 @@ function mod.DimFiltersChanged()
         c.dimPicks = nil
     end
     C_LFGList.SaveAdvancedFilter(f)
-    Xfer.Remember(f)
+    XF.Remember(f)
     pending = true
     Paint()
     PaintRefresh()
@@ -1475,9 +1475,9 @@ end
 
 -- does a group pass the client-side filters? info: readable info, false if none,
 -- nil to fetch it
-function Xfer.PassesFilters(ident, details)
-    local Prm = Xfer.Pass()
-    if not SP or Prm.secret or not Prm.any then
+function XF.PassesFilters(ident, details)
+    local P = XF.Pass()
+    if not SP or P.secret or not P.any then
         return true
     end
     local c = Cfg()
@@ -1490,27 +1490,27 @@ function Xfer.PassesFilters(ident, details)
     end
     if appStatus and appStatus ~= "none" then
         -- applied groups stay lit, unless declined with not declined on.
-        return not (Prm.extraOn and c.notDeclined and Xfer.IsDeclinedResult(ident, details))
+        return not (P.extraOn and c.notDeclined and XF.IsDeclinedResult(ident, details))
     end
-    if Prm.dimOn and not Xfer.DimKeep(ident, details) then
+    if P.dimOn and not XF.DimKeep(ident, details) then
         return false
     end
-    if Prm.regions then
+    if P.regions then
         local regionFrame = LeaderRegion(details)
         if regionFrame ~= nil and not ChosenRegions()[regionFrame] then
             return false
         end
     end
-    if Prm.delveOn and not DelveKeep(details) then
+    if P.delveOn and not DelveKeep(details) then
         return false
     end
-    if Prm.bossOn and not BossKeep(ident, details) then
+    if P.bossOn and not BossKeep(ident, details) then
         return false
     end
-    if Prm.raidOn and not RaidListKeep(ident, details) then
+    if P.raidOn and not RaidListKeep(ident, details) then
         return false
     end
-    if Prm.extraOn and not Xfer.ExtraKeep(ident, details, Prm.need) then
+    if P.extraOn and not XF.ExtraKeep(ident, details, P.need) then
         return false
     end
     return true
@@ -1518,21 +1518,21 @@ end
 
 -- read-only filter checks for our results list
 mod.ExtraPasses = function(ident)
-    return Xfer.PassesFilters(ident)
+    return XF.PassesFilters(ident)
 end
 mod.ExtraResultsSecret = function()
-    return Xfer.ResultsSecret()
+    return XF.ResultsSecret()
 end
 
 -- filters changed: re-fade the visible rows, no search.
-function Xfer.RefilterEntry(record)
+function XF.RefilterEntry(record)
     local ident = record.resultID
     if ident then
-        record:SetAlpha(Xfer.PassesFilters(ident) and 1 or Xfer.DIM_ALPHA)
+        record:SetAlpha(XF.PassesFilters(ident) and 1 or XF.DIM_ALPHA)
     end
 end
 local function Refilter()
-    Xfer.NewPass()
+    XF.NewPass()
     if mod.ExtraRefilter then
         mod.ExtraRefilter()
     end -- our results list
@@ -1543,9 +1543,9 @@ local function Refilter()
     if mod.OwnListActive and mod.OwnListActive() then
         return
     end
-    local boxFrame = SP.ScrollBox
-    if boxFrame and boxFrame.ForEachFrame then
-        boxFrame:ForEachFrame(Xfer.RefilterEntry)
+    local box = SP.ScrollBox
+    if box and box.ForEachFrame then
+        box:ForEachFrame(XF.RefilterEntry)
     end
 end
 
@@ -1576,13 +1576,13 @@ local function SpecIcon(classFile, specName)
             if file and classID then
                 specIcon[file] = {}
                 for sx = 1, 5 do
-                    local ident, name, _, glyph = GetSpecializationInfoForClassID(classID, sx)
+                    local ident, name, _, icon = GetSpecializationInfoForClassID(classID, sx)
                     if not ident then
                         break
                     end
                     if name then
-                        specIcon[file][name] = glyph
-                        specIconAny[name] = specIconAny[name] or glyph
+                        specIcon[file][name] = icon
+                        specIconAny[name] = specIconAny[name] or icon
                     end
                 end
             end
@@ -1610,8 +1610,8 @@ local function LockedOut(ai, resultID)
             if done and (IsSecret(done) or (canaccesstable and not canaccesstable(done))) then
                 return false
             end
-            local dead = wipe(Xfer.dead)
-            for _, name in ipairs(done or Xfer.EMPTY) do
+            local dead = wipe(XF.dead)
+            for _, name in ipairs(done or XF.EMPTY) do
                 if IsSecret(name) then
                     return false
                 end
@@ -1677,16 +1677,16 @@ local MISSING_ATLAS = {
 }
 
 -- our own drawing over one of blizzard's role icons.
-local function IconLayer(glyph)
-    local d = FFD[glyph]
+local function IconLayer(icon)
+    local d = FFD[icon]
     if d then
         return d
     end
     d = {}
-    FFD[glyph] = d
-    local f = CreateFrame("Frame", nil, glyph)
-    f:SetAllPoints(glyph)
-    f:SetFrameLevel(glyph:GetFrameLevel() + 2)
+    FFD[icon] = d
+    local f = CreateFrame("Frame", nil, icon)
+    f:SetAllPoints(icon)
+    f:SetFrameLevel(icon:GetFrameLevel() + 2)
     f:EnableMouse(false)
     d.frame = f
     d.circle = f:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -1700,15 +1700,15 @@ local function IconLayer(glyph)
     d.spec:SetPoint("CENTER")
     d.spec:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- past the icon art's own border
     for _, texture in ipairs({ d.ring, d.spec }) do
-        local maskTex = f.CreateMaskTexture and f:CreateMaskTexture()
-        if maskTex then
-            maskTex:SetTexture(
+        local mask = f.CreateMaskTexture and f:CreateMaskTexture()
+        if mask then
+            mask:SetTexture(
                 "Interface\\CharacterFrame\\TempPortraitAlphaMask",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE"
             )
-            maskTex:SetAllPoints(texture)
-            texture:AddMaskTexture(maskTex)
+            mask:SetAllPoints(texture)
+            texture:AddMaskTexture(mask)
         end
     end
     d.role = f:CreateTexture(nil, "ARTWORK", nil, 3)
@@ -1719,12 +1719,12 @@ local function IconLayer(glyph)
     d.crown = f:CreateTexture(nil, "OVERLAY")
     d.crown:SetAtlas("groupfinder-icon-leader", false)
     d.crown:SetSize(10, 6)
-    d.crown:SetPoint("BOTTOM", glyph, "TOP", 0, 1)
+    d.crown:SetPoint("BOTTOM", icon, "TOP", 0, 1)
     -- blizzard's leaver mark is under our layer, so it's drawn again up here
     d.leaver = f:CreateTexture(nil, "OVERLAY", nil, 1)
     d.leaver:SetAtlas("groupfinder-icon-leaver", false)
     d.leaver:SetSize(12, 12)
-    d.leaver:SetPoint("TOPRIGHT", glyph, "TOPRIGHT", 4, 2)
+    d.leaver:SetPoint("TOPRIGHT", icon, "TOPRIGHT", 4, 2)
     return d
 end
 
@@ -1739,7 +1739,7 @@ local function ClearLayer(d)
 end
 
 -- clear our layers on rows we skip (recycled rows keep old art)
-function Xfer.ClearIcons(record)
+function XF.ClearIcons(record)
     local enum = record.DataDisplay and record.DataDisplay.Enumerate
     local icons = enum and enum.Icons
     if not icons then
@@ -1753,11 +1753,11 @@ function Xfer.ClearIcons(record)
     end
 end
 
-Xfer.members, Xfer.used, Xfer.missing = {}, {}, {}
-Xfer.ROLE_RANK = { TANK = 1, HEALER = 2, DAMAGER = 3 }
-Xfer.ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
-Xfer.FIVE_SLOTS = { TANK = 1, HEALER = 1, DAMAGER = 3 } -- a 5-player group's roles
-function Xfer.ByOrder(posX, posY)
+XF.members, XF.used, XF.missing = {}, {}, {}
+XF.ROLE_RANK = { TANK = 1, HEALER = 2, DAMAGER = 3 }
+XF.ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
+XF.FIVE_SLOTS = { TANK = 1, HEALER = 1, DAMAGER = 3 } -- a 5-player group's roles
+function XF.ByOrder(posX, posY)
     return posX._cmOrder < posY._cmOrder
 end
 
@@ -1773,7 +1773,7 @@ local function DecorateIcons(record, resultID, details, ai)
     local missOn = not (mod.OwnListGet and mod.OwnListGet("missingIcons") == "none")
     local disabled = (not IsSecret(details.isDelisted) and details.isDelisted) and true or false
     -- sort like blizzard fills its icons
-    local members = wipe(Xfer.members)
+    local members = wipe(XF.members)
     local n = details.numMembers
     if isShown and (crownOn or specOn) and type(n) == "number" and not IsSecret(n) then
         for idx = 1, n do
@@ -1783,34 +1783,34 @@ local function DecorateIcons(record, resultID, details, ai)
             end
         end
         for k, p in ipairs(members) do
-            p._cmOrder = (Xfer.ROLE_RANK[p.assignedRole] or 4) * 100 + k
+            p._cmOrder = (XF.ROLE_RANK[p.assignedRole] or 4) * 100 + k
         end
-        table.sort(members, Xfer.ByOrder)
+        table.sort(members, XF.ByOrder)
     end
     local maxN = ai and ai.maxNumPlayers or 0
     local counts = isShown and missOn and maxN == 5 and C_LFGList.GetSearchResultMemberCounts(resultID)
     local missing
     if type(counts) == "table" and not IsSecret(counts) then
-        missing = wipe(Xfer.missing)
-        for _, role in ipairs(Xfer.ROLE_ORDER) do
+        missing = wipe(XF.missing)
+        for _, role in ipairs(XF.ROLE_ORDER) do
             local have = counts[role]
             if IsSecret(have) then
                 missing = nil
                 break
             end
-            for _ = 1, math.max(0, Xfer.FIVE_SLOTS[role] - (tonumber(have) or 0)) do
+            for _ = 1, math.max(0, XF.FIVE_SLOTS[role] - (tonumber(have) or 0)) do
                 missing[#missing + 1] = role
             end
         end
     end
-    local used, mi = wipe(Xfer.used), 0
+    local used, mi = wipe(XF.used), 0
     -- right to left like blizzard; empty slots end up leftmost.
     for idx = #icons, 1, -1 do
-        local glyph = icons[idx]
-        local d = IconLayer(glyph)
+        local icon = icons[idx]
+        local d = IconLayer(icon)
         ClearLayer(d)
-        local live = isShown and glyph:IsShown()
-        local cc, ri, backdrop = glyph.ClassCircle, glyph.RoleIcon, glyph.RoleIconWithBackground
+        local live = isShown and icon:IsShown()
+        local cc, ri, backdrop = icon.ClassCircle, icon.RoleIcon, icon.RoleIconWithBackground
         local ccAtlas = live and cc and cc:IsShown() and cc:GetAtlas()
         local riAtlas = live and ri and ri:IsShown() and ri:GetAtlas()
         local bgAtlas = live and backdrop and backdrop:IsShown() and backdrop:GetAtlas()
@@ -1944,7 +1944,7 @@ local function DecorateIcons(record, resultID, details, ai)
                             d.full:Show()
                         end
                     end
-                    local lv = glyph.LeaverIcon
+                    local lv = icon.LeaverIcon
                     local leaver = lv and lv:IsShown()
                     if not IsSecret(leaver) and leaver then
                         d.leaver:SetDesaturated(disabled)
@@ -1965,7 +1965,7 @@ end
 -- cancel oldest application
 -------------------------------------------------------------------------------
 -- the pending application closest to timing out.
-function Xfer.OldestApplication()
+function XF.OldestApplication()
     local oldest, leftX = nil, math.huge
     for _, ident in ipairs(C_LFGList.GetApplications() or {}) do
         local _, status, pendingStatus, duration = C_LFGList.GetApplicationInfo(ident)
@@ -1977,8 +1977,8 @@ function Xfer.OldestApplication()
 end
 
 -- at the limit and hovering a group you could sign up to.
-function Xfer.ShouldCancelOldest(resultID)
-    if not Cfg().cancelOldest or not resultID or Xfer.ResultsSecret() then
+function XF.ShouldCancelOldest(resultID)
+    if not Cfg().cancelOldest or not resultID or XF.ResultsSecret() then
         return false
     end
     local _, isActive = C_LFGList.GetNumApplications()
@@ -1995,10 +1995,10 @@ end
 
 -- same for our rows
 function mod.GFCancelOldest(resultID)
-    if not Xfer.ShouldCancelOldest(resultID) then
+    if not XF.ShouldCancelOldest(resultID) then
         return
     end
-    local oldest = Xfer.OldestApplication()
+    local oldest = XF.OldestApplication()
     if oldest then
         C_LFGList.CancelApplication(oldest)
     end
@@ -2026,10 +2026,10 @@ local function DecorateEntry(record)
         fd.rating = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         fd.rating:SetJustifyH("RIGHT")
         record:HookScript("OnClick", function(self, btnFrame)
-            if btnFrame ~= "LeftButton" or not Xfer.ShouldCancelOldest(self.resultID) then
+            if btnFrame ~= "LeftButton" or not XF.ShouldCancelOldest(self.resultID) then
                 return
             end
-            local oldest = Xfer.OldestApplication()
+            local oldest = XF.OldestApplication()
             if oldest then
                 C_LFGList.CancelApplication(oldest)
             end
@@ -2037,29 +2037,29 @@ local function DecorateEntry(record)
     end
     fd.rating:Hide()
     record:SetAlpha(1)
-    Xfer.CancelLook(record)
+    XF.CancelLook(record)
     -- secret results: leave the row alone.
-    if Xfer.Pass().secret then
-        Xfer.ClearIcons(record)
+    if XF.Pass().secret then
+        XF.ClearIcons(record)
         return
     end
     local details = ResultInfo(resultID)
     -- filtered out: faded
-    if not Xfer.PassesFilters(resultID, details or false) then
-        record:SetAlpha(Xfer.DIM_ALPHA)
+    if not XF.PassesFilters(resultID, details or false) then
+        record:SetAlpha(XF.DIM_ALPHA)
     end
     if not details then
-        Xfer.ClearIcons(record)
+        XF.ClearIcons(record)
         return
     end
     local acts = details.activityIDs
     local act = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local ai = act and not IsSecret(act) and Xfer.ActInfo(act)
+    local ai = act and not IsSecret(act) and XF.ActInfo(act)
 
     -- name colour (blizzard already reds declined ones).
     local delisted, censored = details.isDelisted, details.censored
     if IsSecret(delisted) or IsSecret(censored) then
-        Xfer.ClearIcons(record)
+        XF.ClearIcons(record)
         return
     end
     if Cfg().nameColors == true and record.Name and not delisted and not censored then
@@ -2099,7 +2099,7 @@ local function DecorateEntry(record)
     -- scale the icon strip and trim names to fit (out of combat only)
     local scale = math.max(1, math.min(2, (tonumber(Cfg().iconSize) or 125) / 100))
     if enum and enum.SetScale and InCombatLockdown() then
-        Xfer.Defer("rows", Xfer.Redecorate)
+        XF.Defer("rows", XF.Redecorate)
     elseif enum and enum.SetScale then
         enum:SetScale(scale)
         local extra = math.floor((scale - 1) * 102 + 0.5) -- 5 icons 18 apart + 12 gap
@@ -2153,17 +2153,17 @@ function mod.GFNameColor(resultID, details, ai)
 end
 
 -- display settings changed: redecorate the visible rows.
-function Xfer.Redecorate()
-    Xfer.NewPass()
+function XF.Redecorate()
+    XF.NewPass()
     if mod.OwnListPreviewPaint then
         mod.OwnListPreviewPaint()
     end
     if not (SP and SP:IsVisible()) then
         return
     end
-    local boxFrame = SP.ScrollBox
-    if boxFrame and boxFrame.ForEachFrame then
-        boxFrame:ForEachFrame(DecorateEntry)
+    local box = SP.ScrollBox
+    if box and box.ForEachFrame then
+        box:ForEachFrame(DecorateEntry)
     end
     if mod.ExtraRedecorate then
         mod.ExtraRedecorate()
@@ -2172,19 +2172,19 @@ end
 
 -- our results list handed the panel back: blizzard's rows take their look
 function mod.RedecorateRows()
-    Xfer.NewPass()
+    XF.NewPass()
     if not (SP and SP:IsVisible()) then
         return
     end
-    local boxFrame = SP.ScrollBox
-    if boxFrame and boxFrame.ForEachFrame then
-        boxFrame:ForEachFrame(DecorateEntry)
+    local box = SP.ScrollBox
+    if box and box.ForEachFrame then
+        box:ForEachFrame(DecorateEntry)
     end
 end
 
 -- tooltip hint while a click would cancel your oldest application.
-function Xfer.CancelHint(tooltip, resultID)
-    if not (tooltip and tooltip.IsShown and tooltip:IsShown()) or not Xfer.ShouldCancelOldest(resultID) then
+function XF.CancelHint(tooltip, resultID)
+    if not (tooltip and tooltip.IsShown and tooltip:IsShown()) or not XF.ShouldCancelOldest(resultID) then
         return
     end
     tooltip:AddLine(" ")
@@ -2202,7 +2202,7 @@ local function AddClassesByRole(tooltip, resultID)
     if not Opt("classTooltip") or not (tooltip and tooltip.IsShown and tooltip:IsShown()) then
         return
     end
-    if Xfer.ResultsSecret() then
+    if XF.ResultsSecret() then
         return
     end
     local details = ResultInfo(resultID)
@@ -2211,7 +2211,7 @@ local function AddClassesByRole(tooltip, resultID)
     end
     local acts = details.activityIDs
     local act = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local ai = act and not IsSecret(act) and Xfer.ActInfo(act)
+    local ai = act and not IsSecret(act) and XF.ActInfo(act)
     if not ai then
         return
     end
@@ -2224,7 +2224,7 @@ local function AddClassesByRole(tooltip, resultID)
         players[idx] = C_LFGList.GetSearchResultPlayerInfo(resultID, idx) or false
     end
     local DT = Enum.LFGListDisplayType
-    Xfer.AddMembers(
+    XF.AddMembers(
         tooltip,
         players,
         DT and (ai.displayType == DT.RoleEnumerate or ai.displayType == DT.ClassEnumerate)
@@ -2232,7 +2232,7 @@ local function AddClassesByRole(tooltip, resultID)
 end
 
 -- the member lines from player info tables (the settings preview hands its own)
-function Xfer.AddMembers(tooltip, players, enumerate)
+function XF.AddMembers(tooltip, players, enumerate)
     local byRole = { TANK = {}, HEALER = {}, DAMAGER = {} }
     for _, p in ipairs(players) do
         local role, class = p and p.assignedRole, p and p.classFilename
@@ -2244,13 +2244,13 @@ function Xfer.AddMembers(tooltip, players, enumerate)
     -- dungeons/arenas already list roles and classes, so just add the names.
     if enumerate then
         local nameList = {}
-        for _, role in ipairs(Xfer.ROLE_ORDER) do
+        for _, role in ipairs(XF.ROLE_ORDER) do
             for _, p in ipairs(byRole[role]) do
                 local name = p.name and not IsSecret(p.name) and p.name
                 if name then
-                    local column = RAID_CLASS_COLORS[p.classFilename]
-                    nameList[#nameList + 1] = (column and column.colorStr)
-                            and ("|c" .. column.colorStr .. name .. "|r")
+                    local col = RAID_CLASS_COLORS[p.classFilename]
+                    nameList[#nameList + 1] = (col and col.colorStr)
+                            and ("|c" .. col.colorStr .. name .. "|r")
                         or name
                 end
             end
@@ -2260,7 +2260,7 @@ function Xfer.AddMembers(tooltip, players, enumerate)
         end
         tooltip:AddLine(" ")
         tooltip:AddLine(
-            CludesUI.L("Names:") .. " " .. table.concat(nameList, Xfer.DIM_HEX .. ",|r "),
+            CludesUI.L("Names:") .. " " .. table.concat(nameList, XF.DIM_HEX .. ",|r "),
             1,
             0.82,
             0,
@@ -2270,37 +2270,37 @@ function Xfer.AddMembers(tooltip, players, enumerate)
         return
     end
     local added = false
-    for _, role in ipairs(Xfer.ROLE_ORDER) do
+    for _, role in ipairs(XF.ROLE_ORDER) do
         for _, p in ipairs(byRole[role]) do
             if not added then
                 tooltip:AddLine(" ")
                 added = true
             end
-            local column = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
+            local col = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
             local className = (not IsSecret(p.className) and p.className)
                 or (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[p.classFilename])
                 or p.classFilename
             local specInfo = p.specName and not IsSecret(p.specName) and p.specName
-            local glyph = CreateAtlasMarkup and CreateAtlasMarkup(ROLE_ICON[role], 12, 12) or ""
+            local icon = CreateAtlasMarkup and CreateAtlasMarkup(ROLE_ICON[role], 12, 12) or ""
             local crown = (p.isLeader and CreateAtlasMarkup)
                     and (" " .. CreateAtlasMarkup("groupfinder-icon-leader", 12, 8))
                 or ""
-            local leftX = glyph .. " " .. (specInfo and (specInfo .. " ") or "") .. className .. crown
+            local leftX = icon .. " " .. (specInfo and (specInfo .. " ") or "") .. className .. crown
             local name = p.name and not IsSecret(p.name) and p.name or ""
-            tooltip:AddDoubleLine(leftX, name, column.r, column.g, column.b, column.r, column.g, column.b)
+            tooltip:AddDoubleLine(leftX, name, col.r, col.g, col.b, col.r, col.g, col.b)
         end
     end
     if added then
         tooltip:Show()
     end
 end
-mod.GFTooltipMembers = Xfer.AddMembers
+mod.GFTooltipMembers = XF.AddMembers
 
 local ITEM_H, CHECK_SZ, ITEM_FONT = 20, 12, 9
 
 local function ThemeFill()
-    local Stl = Skin()
-    local T = Stl and Stl.Theme
+    local S = Skin()
+    local T = S and S.Theme
     if T and T.bgR then
         return T.bgR, T.bgG, T.bgB
     end
@@ -2308,47 +2308,47 @@ local function ThemeFill()
 end
 
 local function MenuItem(hostFrame, posY, textValue, onClick)
-    local itemInfo = CreateFrame("Button", nil, hostFrame)
-    itemInfo:SetHeight(ITEM_H)
-    itemInfo:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 1, -posY)
-    itemInfo:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -1, -posY)
-    local cb = CreateFrame("Frame", nil, itemInfo)
+    local item = CreateFrame("Button", nil, hostFrame)
+    item:SetHeight(ITEM_H)
+    item:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 1, -posY)
+    item:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -1, -posY)
+    local cb = CreateFrame("Frame", nil, item)
     cb:SetSize(CHECK_SZ, CHECK_SZ)
-    cb:SetPoint("LEFT", itemInfo, "LEFT", 8, 0)
+    cb:SetPoint("LEFT", item, "LEFT", 8, 0)
     local cbBg = cb:CreateTexture(nil, "BACKGROUND")
     cbBg:SetAllPoints()
     cbBg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    itemInfo.ring = CM.MakeBorder(cb, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
-    itemInfo.fill = cb:CreateTexture(nil, "ARTWORK")
-    itemInfo.fill:SetPoint("TOPLEFT", cb, "TOPLEFT", 3, -3)
-    itemInfo.fill:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", -3, 3)
+    item.ring = CM.MakeBorder(cb, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    item.fill = cb:CreateTexture(nil, "ARTWORK")
+    item.fill:SetPoint("TOPLEFT", cb, "TOPLEFT", 3, -3)
+    item.fill:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", -3, 3)
     local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
-    itemInfo.label = itemInfo:CreateFontString(nil, "OVERLAY")
-    Xfer.Font(itemInfo.label, ITEM_FONT)
-    itemInfo.label:SetPoint("LEFT", cb, "RIGHT", 7, 0)
-    itemInfo.label:SetPoint("RIGHT", itemInfo, "RIGHT", -4, 0)
-    itemInfo.label:SetJustifyH("LEFT")
-    itemInfo.label:SetWordWrap(false)
-    itemInfo.label:SetText(textValue)
-    itemInfo.label:SetTextColor(tR, tG, tB, tA)
-    local highlight = itemInfo:CreateTexture(nil, "ARTWORK", nil, -1)
+    item.label = item:CreateFontString(nil, "OVERLAY")
+    XF.Font(item.label, ITEM_FONT)
+    item.label:SetPoint("LEFT", cb, "RIGHT", 7, 0)
+    item.label:SetPoint("RIGHT", item, "RIGHT", -4, 0)
+    item.label:SetJustifyH("LEFT")
+    item.label:SetWordWrap(false)
+    item.label:SetText(textValue)
+    item.label:SetTextColor(tR, tG, tB, tA)
+    local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0)
-    itemInfo:SetScript("OnEnter", function()
-        itemInfo.label:SetTextColor(1, 1, 1, 1)
+    item:SetScript("OnEnter", function()
+        item.label:SetTextColor(1, 1, 1, 1)
         highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A)
     end)
-    itemInfo:SetScript("OnLeave", function()
-        itemInfo.label:SetTextColor(tR, tG, tB, tA)
+    item:SetScript("OnLeave", function()
+        item.label:SetTextColor(tR, tG, tB, tA)
         highlight:SetColorTexture(1, 1, 1, 0)
     end)
-    itemInfo:SetScript("OnClick", onClick)
+    item:SetScript("OnClick", onClick)
     -- dimmed + unclickable
-    function itemInfo:SetDimmed(offset)
-        self:EnableMouse(not offset)
-        self:SetAlpha(offset and 0.35 or 1)
+    function item:SetDimmed(off)
+        self:EnableMouse(not off)
+        self:SetAlpha(off and 0.35 or 1)
     end
-    function itemInfo:SetChecked(on)
+    function item:SetChecked(on)
         local r, g, b = Accent()
         self.fill:SetColorTexture(r, g, b, 1)
         self.fill:SetShown(on)
@@ -2358,7 +2358,7 @@ local function MenuItem(hostFrame, posY, textValue, onClick)
             self.ring:SetColor(0.25, 0.25, 0.25, 0.6)
         end
     end
-    return itemInfo
+    return item
 end
 
 -- section title, with a divider above all but the first.
@@ -2371,7 +2371,7 @@ local function FitHairline(texture)
         texture:SetHeight(CM.PP.perfect / es)
     end
 end
-function Xfer.Hairline(texture)
+function XF.Hairline(texture)
     local p = texture:GetParent()
     local entries = hairlines[p]
     if not entries then
@@ -2386,12 +2386,12 @@ function Xfer.Hairline(texture)
     entries[#entries + 1] = texture
     FitHairline(texture)
 end
-mod.GFHairline = Xfer.Hairline
+mod.GFHairline = XF.Hairline
 
-local function AddSection(m, posY, titleText)
+local function AddSection(m, posY, title)
     if posY > 4 then
         local div = m:CreateTexture(nil, "ARTWORK")
-        Xfer.Hairline(div)
+        XF.Hairline(div)
         div:SetColorTexture(1, 1, 1, 0.10)
         div:SetPoint("TOPLEFT", m, "TOPLEFT", 10, -posY - 3)
         div:SetPoint("TOPRIGHT", m, "TOPRIGHT", -10, -posY - 3)
@@ -2400,11 +2400,11 @@ local function AddSection(m, posY, titleText)
         posY = posY + 2
     end
     local fontStr = m:CreateFontString(nil, "OVERLAY")
-    Xfer.Font(fontStr, ITEM_FONT)
+    XF.Font(fontStr, ITEM_FONT)
     fontStr:SetTextColor(0.55, 0.55, 0.55, 1)
     fontStr:SetJustifyH("LEFT")
     fontStr:SetPoint("TOPLEFT", m, "TOPLEFT", 9, -posY - 2)
-    fontStr:SetText(titleText)
+    fontStr:SetText(title)
     return posY + 14
 end
 
@@ -2426,7 +2426,7 @@ local function AddPlaystyleItems(m, posY, raids)
                 Refilter()
                 Paint()
             else
-                local f = Xfer.GetFilter()
+                local f = XF.GetFilter()
                 local key = "generalPlaystyle" .. idx
                 if DungeonPlaystyles(f) == nil then
                     for k = 1, #PLAYSTYLES do
@@ -2454,18 +2454,18 @@ local function PaintPlaystyleItems(m, raids)
     if raids then
         chosen = ChosenRaidPlaystyles()
     else
-        chosen = DungeonPlaystyles(Xfer.GetFilter())
+        chosen = DungeonPlaystyles(XF.GetFilter())
     end
     for idx = 1, #PLAYSTYLES do
-        local itemInfo = m.items["style_" .. idx]
-        if itemInfo then
+        local item = m.items["style_" .. idx]
+        if item then
             local on
             if raids then
                 on = chosen ~= nil and chosen[idx] == true
             else
                 on = chosen ~= nil and chosen["generalPlaystyle" .. idx] == true
             end
-            itemInfo:SetChecked(on)
+            item:SetChecked(on)
         end
     end
 end
@@ -2473,30 +2473,30 @@ end
 local function AddRoleItems(m, posY, raids)
     posY = AddSection(m, posY, CludesUI.L("Roles"))
     -- helpers for our rows
-    local Keys = mod.ExtraClassRows
+    local K = mod.ExtraClassRows
         and {
             Cfg = Cfg,
             Refilter = Refilter,
             Paint = Paint,
-            Font = Xfer.Font,
+            Font = XF.Font,
             ITEM_H = ITEM_H,
             ITEM_FONT = ITEM_FONT,
             CHECK_SZ = CHECK_SZ,
             ThemeBorder = ThemeBorder,
             ThemeFill = ThemeFill,
-            ClickOff = Xfer.ClickOff,
-            Tip = Xfer.Tip,
-            Untip = Xfer.Untip,
+            ClickOff = XF.ClickOff,
+            Tip = XF.Tip,
+            Untip = XF.Untip,
             Accent = Accent,
             parent = SP,
             MenuItem = MenuItem,
-            ClassLine = Xfer.ClassLine,
-            FLAG_KEYS = Xfer.FLAG_KEYS,
+            ClassLine = XF.ClassLine,
+            FLAG_KEYS = XF.FLAG_KEYS,
             raids = raids,
-            AddCountRow = Xfer.AddCountRow,
-            COUNT_ROLES = Xfer.COUNT_ROLES,
+            AddCountRow = XF.AddCountRow,
+            COUNT_ROLES = XF.COUNT_ROLES,
             OpListOver = function()
-                return Xfer.opList and Xfer.opList:IsShown() and Xfer.opList:IsMouseOver() or false
+                return XF.opList and XF.opList:IsShown() and XF.opList:IsMouseOver() or false
             end,
         }
     for _, r in ipairs(ROLES) do
@@ -2511,50 +2511,50 @@ local function AddRoleItems(m, posY, raids)
                 Refilter()
                 Paint()
             else
-                local f = Xfer.GetFilter()
+                local f = XF.GetFilter()
                 f[key] = not f[key]
                 Apply(f)
             end
         end)
         posY = posY + ITEM_H
     end
-    if Keys and mod.ExtraClassRows then
-        posY = mod.ExtraClassRows(m, posY, Keys) -- has / missing dropdown rows
+    if K and mod.ExtraClassRows then
+        posY = mod.ExtraClassRows(m, posY, K) -- has / missing dropdown rows
     else
-        posY = Xfer.AddFlagItem(m, posY, "hasLust", CludesUI.L("Has Bloodlust"), {
+        posY = XF.AddFlagItem(m, posY, "hasLust", CludesUI.L("Has Bloodlust"), {
             CludesUI.L("A member whose class has one of these spells:"),
-            Xfer.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
-            Xfer.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
-            Xfer.ClassLine("HUNTER", CludesUI.L("Primal Rage (Hunter pet)")),
-            Xfer.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
+            XF.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
+            XF.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
+            XF.ClassLine("HUNTER", CludesUI.L("Primal Rage (Hunter pet)")),
+            XF.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
             CludesUI.L("Drums and other items don't count."),
         })
-        posY = Xfer.AddFlagItem(m, posY, "hasBrez", CludesUI.L("Has Battle Res"), {
+        posY = XF.AddFlagItem(m, posY, "hasBrez", CludesUI.L("Has Battle Res"), {
             CludesUI.L("A member whose class has one of these spells:"),
-            Xfer.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
-            Xfer.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
-            Xfer.ClassLine("WARLOCK", CludesUI.L("Soulstone (Warlock)")),
-            Xfer.ClassLine("PALADIN", CludesUI.L("Intercession (Paladin)")),
+            XF.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
+            XF.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
+            XF.ClassLine("WARLOCK", CludesUI.L("Soulstone (Warlock)")),
+            XF.ClassLine("PALADIN", CludesUI.L("Intercession (Paladin)")),
             CludesUI.L("Engineering and other items don't count."),
         })
     end
     -- match any / exactly + count rows under one button
-    if Keys and mod.ExtraRoleCounts then
-        posY = mod.ExtraRoleCounts(m, posY, Keys)
+    if K and mod.ExtraRoleCounts then
+        posY = mod.ExtraRoleCounts(m, posY, K)
     else
-        for _, r in ipairs(Xfer.COUNT_ROLES) do
-            posY = Xfer.AddCountRow(m, posY, r.key, r.label)
+        for _, r in ipairs(XF.COUNT_ROLES) do
+            posY = XF.AddCountRow(m, posY, r.key, r.label)
         end
     end
     return posY
 end
 
 -- shared less than / more than / equal to list.
-function Xfer.OpenOpList(btn, role)
-    local L = Xfer.opList
+function XF.OpenOpList(btn, role)
+    local L = XF.opList
     if not L then
         L = CreateFrame("Frame", nil, SP)
-        Xfer.opList = L
+        XF.opList = L
         L:SetFrameStrata("FULLSCREEN_DIALOG")
         L:SetFrameLevel(330)
         L:SetClampedToScreen(true)
@@ -2565,13 +2565,13 @@ function Xfer.OpenOpList(btn, role)
         backdrop:SetColorTexture(0, 0, 0, 1)
         CM.MakeBorder(L, ThemeBorder())
         L.items = {}
-        for idx, o in ipairs(Xfer.COUNT_OPS) do
+        for idx, o in ipairs(XF.COUNT_OPS) do
             local it = CreateFrame("Button", nil, L)
             it:SetHeight(ITEM_H)
             it:SetPoint("TOPLEFT", L, "TOPLEFT", 1, -(2 + (idx - 1) * ITEM_H))
             it:SetPoint("TOPRIGHT", L, "TOPRIGHT", -1, -(2 + (idx - 1) * ITEM_H))
             it.text = it:CreateFontString(nil, "OVERLAY")
-            Xfer.Font(it.text, ITEM_FONT)
+            XF.Font(it.text, ITEM_FONT)
             it.text:SetPoint("LEFT", it, "LEFT", 8, 0)
             it.text:SetText(o.label)
             local highlight = it:CreateTexture(nil, "HIGHLIGHT")
@@ -2592,8 +2592,8 @@ function Xfer.OpenOpList(btn, role)
             end)
             L.items[idx] = it
         end
-        L:SetHeight(4 + #Xfer.COUNT_OPS * ITEM_H)
-        Xfer.ClickOff(L, function(self)
+        L:SetHeight(4 + #XF.COUNT_OPS * ITEM_H)
+        XF.ClickOff(L, function(self)
             return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
         end)
         L:Hide()
@@ -2603,7 +2603,7 @@ function Xfer.OpenOpList(btn, role)
         return
     end
     L.owner, L.role = btn, role
-    local rule = (Cfg().roleCounts or Xfer.EMPTY)[role]
+    local rule = (Cfg().roleCounts or XF.EMPTY)[role]
     local cur = (type(rule) == "table" and rule.op) or "lt"
     local ar, ag, ab = Accent()
     local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
@@ -2620,30 +2620,30 @@ function Xfer.OpenOpList(btn, role)
 end
 
 -- small black input box.
-function Xfer.MenuBox(hostFrame, wid, letters)
-    local boxFrame = CreateFrame("EditBox", nil, hostFrame)
-    boxFrame:SetSize(wid, 16)
-    boxFrame:SetAutoFocus(false)
-    boxFrame:SetNumeric(true)
-    boxFrame:SetMaxLetters(letters)
-    Xfer.Font(boxFrame, ITEM_FONT)
-    boxFrame:SetTextColor(1, 1, 1, 1)
-    boxFrame:SetJustifyH("CENTER")
-    local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+function XF.MenuBox(hostFrame, wid, letters)
+    local box = CreateFrame("EditBox", nil, hostFrame)
+    box:SetSize(wid, 16)
+    box:SetAutoFocus(false)
+    box:SetNumeric(true)
+    box:SetMaxLetters(letters)
+    XF.Font(box, ITEM_FONT)
+    box:SetTextColor(1, 1, 1, 1)
+    box:SetJustifyH("CENTER")
+    local backdrop = box:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0, 0, 0, 1)
-    CM.MakeBorder(boxFrame, ThemeBorder())
-    boxFrame:SetScript("OnEnterPressed", function(self)
+    CM.MakeBorder(box, ThemeBorder())
+    box:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
     end)
-    boxFrame:SetScript("OnEscapePressed", function(self)
+    box:SetScript("OnEscapePressed", function(self)
         self:ClearFocus()
     end)
-    return boxFrame
+    return box
 end
 
 -- 'Tanks [Less Than] [n]' row; empty box means no check.
-function Xfer.AddCountRow(m, posY, role, textValue)
+function XF.AddCountRow(m, posY, role, textValue)
     local function Rule()
         local c = Cfg()
         if type(c.roleCounts) ~= "table" then
@@ -2685,18 +2685,18 @@ function Xfer.AddCountRow(m, posY, role, textValue)
     obg:SetColorTexture(0, 0, 0, 1)
     CM.MakeBorder(op, ThemeBorder())
     op.text = op:CreateFontString(nil, "OVERLAY")
-    Xfer.Font(op.text, ITEM_FONT + 1)
+    XF.Font(op.text, ITEM_FONT + 1)
     op.text:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     op.text:SetPoint("CENTER", 0, 1)
     local highlight = op:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0.08)
     op:SetScript("OnClick", function(self)
-        Xfer.OpenOpList(self, role)
+        XF.OpenOpList(self, role)
     end)
-    local boxFrame = Xfer.MenuBox(rowF, 22, 2)
-    boxFrame:SetPoint("LEFT", op, "RIGHT", 3, 0)
-    boxFrame:SetScript("OnTextChanged", function(self, user)
+    local box = XF.MenuBox(rowF, 22, 2)
+    box:SetPoint("LEFT", op, "RIGHT", 3, 0)
+    box:SetScript("OnTextChanged", function(self, user)
         if not user then
             return
         end
@@ -2705,27 +2705,27 @@ function Xfer.AddCountRow(m, posY, role, textValue)
         Paint()
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
-    Xfer.Font(labelText, ITEM_FONT)
+    XF.Font(labelText, ITEM_FONT)
     labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
-    labelText:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
+    labelText:SetPoint("LEFT", box, "RIGHT", 6, 0)
     labelText:SetText(textValue)
     m.counts = m.counts or {}
-    m.counts[role] = { box = boxFrame, op = op, sw = sw, label = labelText }
+    m.counts[role] = { box = box, op = op, sw = sw, label = labelText }
     return posY + ITEM_H + 2
 end
 
-function Xfer.PaintCountRows(m)
-    for _, r in ipairs(Xfer.COUNT_ROLES) do
-        local rowFrame = m.counts and m.counts[r.key]
-        if rowFrame then
-            local rule = (Cfg().roleCounts or Xfer.EMPTY)[r.key]
+function XF.PaintCountRows(m)
+    for _, r in ipairs(XF.COUNT_ROLES) do
+        local row = m.counts and m.counts[r.key]
+        if row then
+            local rule = (Cfg().roleCounts or XF.EMPTY)[r.key]
             local on = type(rule) == "table" and rule.on == true
-            rowFrame.op.text:SetText(Xfer.COUNT_OP_LABEL[(type(rule) == "table" and rule.op) or "lt"])
-            if not rowFrame.box:HasFocus() then
+            row.op.text:SetText(XF.COUNT_OP_LABEL[(type(rule) == "table" and rule.op) or "lt"])
+            if not row.box:HasFocus() then
                 local n = type(rule) == "table" and tonumber(rule.n)
-                rowFrame.box:SetText(n and tostring(n) or "")
+                row.box:SetText(n and tostring(n) or "")
             end
-            local sw = rowFrame.sw
+            local sw = row.sw
             local ar, ag, ab = Accent()
             sw.fill:SetColorTexture(ar, ag, ab, 1)
             sw.fill:SetShown(on)
@@ -2735,60 +2735,60 @@ function Xfer.PaintCountRows(m)
                 sw.ring:SetColor(0.25, 0.25, 0.25, 0.6)
             end
             local a = on and 1 or 0.4
-            rowFrame.op:SetAlpha(a)
-            rowFrame.box:SetAlpha(a)
-            if not on and rowFrame.box:HasFocus() then
-                rowFrame.box:ClearFocus()
+            row.op:SetAlpha(a)
+            row.box:SetAlpha(a)
+            if not on and row.box:HasFocus() then
+                row.box:ClearFocus()
             end
-            rowFrame.box:SetEnabled(on)
-            rowFrame.label:SetAlpha(a)
+            row.box:SetEnabled(on)
+            row.label:SetAlpha(a)
         end
     end
 end
 
 -- toggles both menus share
-function Xfer.AddFlagItem(m, posY, key, textValue, tipText)
-    local itemInfo = MenuItem(m, posY, textValue, function()
+function XF.AddFlagItem(m, posY, key, textValue, tipText)
+    local item = MenuItem(m, posY, textValue, function()
         local c = Cfg()
         c[key] = (not c[key]) or nil
         Refilter()
         Paint()
     end)
-    m.items["flag_" .. key] = itemInfo
+    m.items["flag_" .. key] = item
     if tipText then
-        itemInfo:HookScript("OnEnter", function(self)
+        item:HookScript("OnEnter", function(self)
             if type(tipText) == "table" then
-                Xfer.Tip(self, textValue, unpack(tipText))
+                XF.Tip(self, textValue, unpack(tipText))
             else
-                Xfer.Tip(self, textValue, tipText)
+                XF.Tip(self, textValue, tipText)
             end
         end)
-        itemInfo:HookScript("OnLeave", Xfer.Untip)
+        item:HookScript("OnLeave", XF.Untip)
     end
     return posY + ITEM_H
 end
 
-Xfer.FLAG_KEYS = { "partyFit", "notDeclined", "hasLust", "hasBrez" }
-function Xfer.PaintFlagItems(m)
+XF.FLAG_KEYS = { "partyFit", "notDeclined", "hasLust", "hasBrez" }
+function XF.PaintFlagItems(m)
     local c = Cfg()
-    for _, key in ipairs(Xfer.FLAG_KEYS) do
-        local itemInfo = m.items["flag_" .. key]
-        if itemInfo then
-            itemInfo:SetChecked(c[key] == true)
+    for _, key in ipairs(XF.FLAG_KEYS) do
+        local item = m.items["flag_" .. key]
+        if item then
+            item:SetChecked(c[key] == true)
         end
     end
 end
 
 local function PaintRoleItems(m, raids)
-    local source = raids and (ChosenRaidRoles() or Xfer.EMPTY) or Xfer.GetFilter()
+    local source = raids and (ChosenRaidRoles() or XF.EMPTY) or XF.GetFilter()
     for _, r in ipairs(ROLES) do
-        local itemInfo = m.items["role_" .. r.key]
-        if itemInfo then
-            itemInfo:SetChecked(source[r.key] == true)
+        local item = m.items["role_" .. r.key]
+        if item then
+            item:SetChecked(source[r.key] == true)
         end
     end
-    Xfer.PaintFlagItems(m)
-    Xfer.PaintCountRows(m)
+    XF.PaintFlagItems(m)
+    XF.PaintCountRows(m)
 end
 
 -- min. rating: the leader's m+ rating, applied on search again
@@ -2796,7 +2796,7 @@ local function AddRatingRow(m, posY)
     local function Send()
         local c = Cfg()
         local val = c.ratingOn and (tonumber(c.ratingValue) or 0) or 0
-        local f = Xfer.GetFilter()
+        local f = XF.GetFilter()
         if (f.minimumRating or 0) ~= val then
             f.minimumRating = val
             Apply(f)
@@ -2812,16 +2812,16 @@ local function AddRatingRow(m, posY)
         CludesUI.L("Only groups whose leader has at least this Mythic+ rating. Applied on Search Again.")
     rowF:EnableMouse(true)
     rowF:SetScript("OnEnter", function(self)
-        Xfer.Tip(self, RATING, RATING_TIP)
+        XF.Tip(self, RATING, RATING_TIP)
     end)
-    rowF:SetScript("OnLeave", Xfer.Untip)
+    rowF:SetScript("OnLeave", XF.Untip)
     local cb = CreateFrame("Button", nil, rowF)
     cb:SetSize(CHECK_SZ, CHECK_SZ)
     cb:SetPoint("LEFT", rowF, "LEFT", 8, 0)
     cb:SetScript("OnEnter", function(self)
-        Xfer.Tip(self, RATING, RATING_TIP)
+        XF.Tip(self, RATING, RATING_TIP)
     end)
-    cb:SetScript("OnLeave", Xfer.Untip)
+    cb:SetScript("OnLeave", XF.Untip)
     local cbg = cb:CreateTexture(nil, "BACKGROUND")
     cbg:SetAllPoints()
     cbg:SetColorTexture(0.12, 0.12, 0.12, 1)
@@ -2840,35 +2840,35 @@ local function AddRatingRow(m, posY)
         end
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
-    Xfer.Font(labelText, ITEM_FONT)
+    XF.Font(labelText, ITEM_FONT)
     labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     labelText:SetPoint("LEFT", cb, "RIGHT", 7, 0)
     labelText:SetText(RATING)
-    local boxFrame = Xfer.MenuBox(rowF, 44, 4)
-    boxFrame:SetPoint("RIGHT", rowF, "RIGHT", -7, 0)
-    boxFrame:SetScript("OnEditFocusLost", function(self)
+    local box = XF.MenuBox(rowF, 44, 4)
+    box:SetPoint("RIGHT", rowF, "RIGHT", -7, 0)
+    box:SetScript("OnEditFocusLost", function(self)
         Cfg().ratingValue = tonumber(self:GetText())
         Send()
         Paint()
     end)
-    m.rating = { box = boxFrame, cb = cb, label = labelText }
+    m.rating = { box = box, cb = cb, label = labelText }
     return posY + ITEM_H
 end
 
 -- restore the saved rating when ticked again.
-function Xfer.AdoptRating()
+function XF.AdoptRating()
     local c = Cfg()
     if c.ratingOn ~= nil or c.ratingValue ~= nil then
         return
     end
-    local f = Xfer.GetFilter()
+    local f = XF.GetFilter()
     local val = f and tonumber(f.minimumRating) or 0
     if val > 0 then
         c.ratingOn, c.ratingValue = true, val
     end
 end
 
-function Xfer.PaintRating(m)
+function XF.PaintRating(m)
     local r = m and m.rating
     if not r then
         return
@@ -2905,7 +2905,7 @@ local function AddRegionItems(m, posY)
     posY = AddSection(m, posY, lang and CludesUI.L("Language") or CludesUI.L("Region"))
     for idx, r in ipairs(Regions()) do
         local key = r.key
-        local itemInfo = MenuItem(m, posY, lang and r.tag or r.label, function()
+        local item = MenuItem(m, posY, lang and r.tag or r.label, function()
             local c = Cfg()
             if type(c.regions) ~= "table" then
                 c.regions = {}
@@ -2923,15 +2923,15 @@ local function AddRegionItems(m, posY)
             Refilter()
             Paint()
         end)
-        m.items["region_" .. key] = itemInfo
+        m.items["region_" .. key] = item
         if lang then
-            itemInfo:ClearAllPoints()
+            item:ClearAllPoints()
             if idx % 2 == 1 then
-                itemInfo:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
-                itemInfo:SetPoint("TOPRIGHT", m, "TOP", 0, -posY)
+                item:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
+                item:SetPoint("TOPRIGHT", m, "TOP", 0, -posY)
             else
-                itemInfo:SetPoint("TOPLEFT", m, "TOP", 0, -posY)
-                itemInfo:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
+                item:SetPoint("TOPLEFT", m, "TOP", 0, -posY)
+                item:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
             end
             if idx % 2 == 0 or idx == #Regions() then
                 posY = posY + ITEM_H
@@ -2946,9 +2946,9 @@ end
 local function PaintRegionItems(m)
     local chosen = RegionFilterActive() and ChosenRegions()
     for _, r in ipairs(Regions()) do
-        local itemInfo = m.items["region_" .. r.key]
-        if itemInfo then
-            itemInfo:SetChecked(chosen and chosen[r.key] == true or false)
+        local item = m.items["region_" .. r.key]
+        if item then
+            item:SetChecked(chosen and chosen[r.key] == true or false)
         end
     end
 end
@@ -2960,33 +2960,33 @@ local function PaintMenu()
             raidDiffMenu.items[d.key]:SetChecked(chosen ~= nil and chosen[d.key] == true)
         end
         PaintRoleItems(raidDiffMenu, true)
-        Xfer.PaintFlagItems(raidDiffMenu.side)
+        XF.PaintFlagItems(raidDiffMenu.side)
         PaintRegionItems(raidDiffMenu.side)
         PaintPlaystyleItems(raidDiffMenu.side, true)
     end
     if not (dropMenu and dropMenu:IsShown()) then
         return
     end
-    local f = Xfer.GetFilter()
+    local f = XF.GetFilter()
     local all = DiffAllOrNone(f)
     for _, d in ipairs(DIFFS) do
         dropMenu.items[d.key]:SetChecked(not all and f[d.key] == true)
     end
-    Xfer.PaintRating(dropMenu.side)
+    XF.PaintRating(dropMenu.side)
     PaintRoleItems(dropMenu, false)
-    Xfer.PaintFlagItems(dropMenu.side)
+    XF.PaintFlagItems(dropMenu.side)
     PaintRegionItems(dropMenu.side)
     PaintPlaystyleItems(dropMenu.side, false)
 end
 
 -- filters menu side panel: region, playstyle, then the extra toggles.
-Xfer.DIM_ALPHA = 0.35
+XF.DIM_ALPHA = 0.35
 local function DimForMenu(on)
-    local a = on and Xfer.DIM_ALPHA or 1
-    if rowFrame then
-        rowFrame:SetAlpha(a)
+    local a = on and XF.DIM_ALPHA or 1
+    if row then
+        row:SetAlpha(a)
     end
-    local face = Xfer.FilterFace()
+    local face = XF.FilterFace()
     if face then
         face:SetAlpha(a)
     end
@@ -3002,80 +3002,80 @@ local function DimForMenu(on)
 end
 
 local function BuildSidePanel(m, raids)
-    local sideName = CreateFrame("Frame", nil, SP)
-    sideName:SetFrameStrata("FULLSCREEN_DIALOG")
-    sideName:EnableMouse(true)
-    sideName:SetFrameLevel(300)
-    sideName:SetClampedToScreen(true)
-    sideName:SetWidth(140)
-    sideName:SetPoint("TOPRIGHT", m, "TOPLEFT", 0, 0)
-    local backdrop = sideName:CreateTexture(nil, "BACKGROUND")
+    local side = CreateFrame("Frame", nil, SP)
+    side:SetFrameStrata("FULLSCREEN_DIALOG")
+    side:EnableMouse(true)
+    side:SetFrameLevel(300)
+    side:SetClampedToScreen(true)
+    side:SetWidth(140)
+    side:SetPoint("TOPRIGHT", m, "TOPLEFT", 0, 0)
+    local backdrop = side:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     local r, g, b = ThemeFill()
     backdrop:SetColorTexture(r, g, b, 0.98)
-    sideName.items = {}
+    side.items = {}
     local posY = 3
-    posY = AddRegionItems(sideName, posY)
-    posY = AddPlaystyleItems(sideName, posY, raids)
-    sideName.extraMiscY = posY -- where misc starts
-    posY = AddSection(sideName, posY, CludesUI.L("Misc"))
-    sideName.extraMiscRowsY = posY
-    posY = Xfer.AddFlagItem(
-        sideName,
+    posY = AddRegionItems(side, posY)
+    posY = AddPlaystyleItems(side, posY, raids)
+    side.extraMiscY = posY -- where misc starts
+    posY = AddSection(side, posY, CludesUI.L("Misc"))
+    side.extraMiscRowsY = posY
+    posY = XF.AddFlagItem(
+        side,
         posY,
         "partyFit",
         CludesUI.L("Party Fit"),
         CludesUI.L("Only groups with open slots for your role, or for your whole party's roles.")
     )
-    posY = Xfer.AddFlagItem(
-        sideName,
+    posY = XF.AddFlagItem(
+        side,
         posY,
         "notDeclined",
         CludesUI.L("Not Declined"),
         CludesUI.L("Hides groups that have declined you this session.")
     )
     if not raids then
-        posY = AddRatingRow(sideName, posY)
+        posY = AddRatingRow(side, posY)
     end
-    sideName.extraEndY = posY
+    side.extraEndY = posY
     -- both columns the same height, one border around them
     local hgt = math.max(posY + 3, m:GetHeight() or 0)
-    sideName:SetHeight(hgt)
+    side:SetHeight(hgt)
     m:SetHeight(hgt)
-    local edge = CreateFrame("Frame", nil, sideName)
-    edge:SetPoint("TOPLEFT", sideName, "TOPLEFT", 0, 0)
+    local edge = CreateFrame("Frame", nil, side)
+    edge:SetPoint("TOPLEFT", side, "TOPLEFT", 0, 0)
     edge:SetPoint("BOTTOMRIGHT", m, "BOTTOMRIGHT", 0, 0)
     edge:SetFrameLevel(m:GetFrameLevel() + 10)
     edge:EnableMouse(false)
-    local Stl = Skin()
-    if Stl and Stl.AddBorder then
-        Stl.AddBorder(edge)
+    local S = Skin()
+    if S and S.AddBorder then
+        S.AddBorder(edge)
     else
         CM.MakeBorder(edge, ThemeBorder())
     end
-    sideName:Hide()
-    m.side = sideName
+    side:Hide()
+    m.side = side
     m:SetScript("OnShow", function()
-        sideName:Show()
+        side:Show()
         DimForMenu(true)
     end)
     m:SetScript("OnHide", function()
-        sideName:Hide()
+        side:Hide()
         DimForMenu(false)
-        if Xfer.opList then
-            Xfer.opList:Hide()
+        if XF.opList then
+            XF.opList:Hide()
         end
     end)
-    Xfer.ClickOff(m, Xfer.FiltersInside)
-    return sideName
+    XF.ClickOff(m, XF.FiltersInside)
+    return side
 end
 
 -- clicks on the menu, side panel, button or operator list keep it open
-function Xfer.FiltersInside(m)
+function XF.FiltersInside(m)
     return m:IsMouseOver()
         or (diffBtn and diffBtn:IsMouseOver())
         or m.side:IsMouseOver()
-        or (Xfer.opList and Xfer.opList:IsShown() and Xfer.opList:IsMouseOver())
+        or (XF.opList and XF.opList:IsShown() and XF.opList:IsMouseOver())
         or (mod.ExtraInside and mod.ExtraInside()) -- our dropdowns
         or false
 end
@@ -3097,7 +3097,7 @@ local function BuildMenu()
     for _, d in ipairs(DIFFS) do
         local key = d.key
         dropMenu.items[key] = MenuItem(dropMenu, posY, d.label, function()
-            local f = Xfer.GetFilter()
+            local f = XF.GetFilter()
             local all = DiffAllOrNone(f)
             if all then
                 for _, o in ipairs(DIFFS) do
@@ -3209,7 +3209,7 @@ end
 -------------------------------------------------------------------------------
 -- button in the skin's look (WSkin.button); skin off, blizzard's rounded menu button
 local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
-    local stock = not Xfer.SkinOn()
+    local stock = not XF.SkinOn()
     local b = CreateFrame("Button", nil, hostFrame, stock and "UIMenuButtonStretchTemplate" or nil)
     b:SetSize(wid, hgt)
     b:SetNormalFontObject("GameFontHighlight")
@@ -3219,13 +3219,13 @@ local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
     if decorate then
         decorate(b)
     end
-    local Stl = Skin()
+    local S = Skin()
     if stock then
         -- no edge of ours: a picked square holds the template's highlight on (XF.PickBorder), and a
         -- border colour write on a frame with no border does nothing
         return b
-    elseif Stl and Stl.Button then
-        Stl.Button(b, keepKeys)
+    elseif S and S.Button then
+        S.Button(b, keepKeys)
     else
         local backdrop = b:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -3274,9 +3274,9 @@ local function GlyphButton(hostFrame, size, texture, atlas)
 end
 
 -- blizzard's cancel x restyled, its button still gets the click
-function Xfer.CancelLook(record)
+function XF.CancelLook(record)
     local cb = record and record.CancelButton
-    if type(cb) ~= "table" or not cb.GetRegions or not Xfer.SkinOn() then
+    if type(cb) ~= "table" or not cb.GetRegions or not XF.SkinOn() then
         return
     end
     local d = FFD[cb]
@@ -3295,7 +3295,7 @@ function Xfer.CancelLook(record)
         look:SetPoint("CENTER", cb, "CENTER", 0, 0)
         look:SetFrameLevel(cb:GetFrameLevel() + 1)
         look.Glyph:SetSize(11, 11)
-        look.Glyph:SetVertexColor(Xfer.GLYPH, Xfer.GLYPH, Xfer.GLYPH, 1)
+        look.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH, 1)
         d.look = look
         cb:HookScript("OnEnter", function(self)
             if not self:IsEnabled() then
@@ -3307,7 +3307,7 @@ function Xfer.CancelLook(record)
         end)
         cb:HookScript("OnLeave", function(self)
             SetBorderColor(d.look, ThemeBorder())
-            d.look.Glyph:SetVertexColor(Xfer.GLYPH, Xfer.GLYPH, Xfer.GLYPH, 1)
+            d.look.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH, 1)
             d.look.Glyph:SetAlpha(self:IsEnabled() and 0.8 or 0.35)
         end)
     end
@@ -3315,44 +3315,44 @@ function Xfer.CancelLook(record)
 end
 
 mod.GlyphButton = GlyphButton
-mod.GLYPH = Xfer.GLYPH
-mod.Redecorate = Xfer.Redecorate -- for the settings page
+mod.GLYPH = XF.GLYPH
+mod.Redecorate = XF.Redecorate -- for the settings page
 
 local function SquareEnter(self)
     local d = self.dungeon
     if not d then
         return
     end
-    Xfer.Tip(self, d.name or "?", CludesUI.L("Click to toggle"))
+    XF.Tip(self, d.name or "?", CludesUI.L("Click to toggle"))
 end
 
 -- dungeon square: a skinned button with the icon inset 1px.
 local function MakeSquare(hostFrame)
-    local px = Xfer.SkinOn() and CM.PP.mult or 3 -- blizzard's button: its black inside
+    local px = XF.SkinOn() and CM.PP.mult or 3 -- blizzard's button: its black inside
     local b = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(btn)
         btn:SetText("")
         btn.Icon = btn:CreateTexture(nil, "ARTWORK")
         btn.Icon:SetPoint("TOPLEFT", btn, "TOPLEFT", px, -px)
         btn.Icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -px, px)
         btn.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        if not Xfer.SkinOn() then
+        if not XF.SkinOn() then
             -- rounded corners, to sit inside blizzard's rounded button
-            local maskTex = btn:CreateMaskTexture()
-            maskTex:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
+            local mask = btn:CreateMaskTexture()
+            mask:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
             -- the mask's own clear margin sits outside the icon, so the icon keeps its size
-            maskTex:SetPoint("TOPLEFT", btn.Icon, "TOPLEFT", -3, 3)
-            maskTex:SetPoint("BOTTOMRIGHT", btn.Icon, "BOTTOMRIGHT", 3, -3)
-            btn.Icon:AddMaskTexture(maskTex)
+            mask:SetPoint("TOPLEFT", btn.Icon, "TOPLEFT", -3, 3)
+            mask:SetPoint("BOTTOMRIGHT", btn.Icon, "BOTTOMRIGHT", 3, -3)
+            btn.Icon:AddMaskTexture(mask)
         end
     end)
     b.icon = b.Icon
     b:SetScript("OnEnter", SquareEnter)
-    b:SetScript("OnLeave", Xfer.Untip)
+    b:SetScript("OnLeave", XF.Untip)
     b:SetScript("OnClick", function(self)
         if self.dungeon then
             ToggleDungeon(self.dungeon.groupID)
         end
-        if Xfer.tipOwner == self then
+        if XF.tipOwner == self then
             SquareEnter(self)
         end
     end)
@@ -3364,10 +3364,10 @@ local function DelveEnter(self)
     if not d then
         return
     end
-    Xfer.Tip(
+    XF.Tip(
         self,
         d.name or "?",
-        bountiful[d.name] and (Xfer.GOLD_HEX .. CludesUI.L("Bountiful today") .. "|r") or nil,
+        bountiful[d.name] and (XF.GOLD_HEX .. CludesUI.L("Bountiful today") .. "|r") or nil,
         CludesUI.L("Click to toggle")
     )
 end
@@ -3390,18 +3390,18 @@ local function MakeDelveSquare(hostFrame)
     end
     b.gold = Layer(2)
     b.edge = Layer(3)
-    local lineTex = b.gold:CreateTexture(nil, "OVERLAY")
-    lineTex:SetColorTexture(GOLD_R, GOLD_G, GOLD_B, 1)
-    lineTex:SetPoint("TOPLEFT", fontStr, "BOTTOMLEFT", 0, -1)
-    lineTex:SetPoint("TOPRIGHT", fontStr, "BOTTOMRIGHT", 0, -1)
-    lineTex:SetHeight(2)
-    if Xfer.SkinOn() then
+    local line = b.gold:CreateTexture(nil, "OVERLAY")
+    line:SetColorTexture(GOLD_R, GOLD_G, GOLD_B, 1)
+    line:SetPoint("TOPLEFT", fontStr, "BOTTOMLEFT", 0, -1)
+    line:SetPoint("TOPRIGHT", fontStr, "BOTTOMRIGHT", 0, -1)
+    line:SetHeight(2)
+    if XF.SkinOn() then
         local r, g, bl, a = ThemeBorder()
         CM.PanelPP.CreateBorder(b.edge, r, g, bl, a, 1, "OVERLAY", 7)
     end
     b.gold:Hide()
     b:SetScript("OnEnter", DelveEnter)
-    b:SetScript("OnLeave", Xfer.Untip)
+    b:SetScript("OnLeave", XF.Untip)
     b:SetScript("OnClick", function(self)
         local d = self.delve
         if not d then
@@ -3423,7 +3423,7 @@ local function MakeDelveSquare(hostFrame)
         end
         Refilter()
         Paint()
-        if Xfer.tipOwner == self then
+        if XF.tipOwner == self then
             DelveEnter(self)
         end
     end)
@@ -3459,14 +3459,14 @@ local function LayoutDelves(size, after, show, cols, slots)
             entries,
             delveSquares,
             function()
-                return MakeDelveSquare(rowFrame)
+                return MakeDelveSquare(row)
             end,
             size,
             after,
             show,
             cols,
             slots,
-            rowFrame,
+            row,
             SQ_GAP,
             function()
                 Paint()
@@ -3478,7 +3478,7 @@ local function LayoutDelves(size, after, show, cols, slots)
         local sq = delveSquares[idx]
         if d and show then
             if not sq then
-                sq = MakeDelveSquare(rowFrame)
+                sq = MakeDelveSquare(row)
                 delveSquares[idx] = sq
             end
             sq.delve = d
@@ -3501,7 +3501,7 @@ local function BossEnter(self)
     end
     local pick = Cfg().bosses
     pick = type(pick) == "table" and pick[b.key]
-    Xfer.Tip(
+    XF.Tip(
         self,
         b.name or "?",
         b.raidName,
@@ -3561,9 +3561,9 @@ local function BossPickList()
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A or 0.08)
         it:SetScript("OnEnter", function(self)
-            Xfer.Tip(self, p.tip)
+            XF.Tip(self, p.tip)
         end)
-        it:SetScript("OnLeave", Xfer.Untip)
+        it:SetScript("OnLeave", XF.Untip)
         it:SetScript("OnClick", function()
             local d = entries.owner and entries.owner.boss
             entries:Hide()
@@ -3580,10 +3580,10 @@ local function BossPickList()
         end)
         entries.rows[idx] = it
     end
-    Xfer.ClickOff(entries, function(self)
+    XF.ClickOff(entries, function(self)
         return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
     end)
-    entries:SetScript("OnHide", Xfer.Untip)
+    entries:SetScript("OnHide", XF.Untip)
     entries:Hide()
     bossPick = entries
     -- a strip that scrolls takes the square away from its list
@@ -3599,17 +3599,17 @@ local function OpenBossPick(sq)
         entries:Hide()
         return
     end
-    Xfer.Untip()
+    XF.Untip()
     entries.owner = sq
     local wid = sq:GetWidth()
-    local glyph = math.floor(wid * 0.6 + 0.5)
+    local icon = math.floor(wid * 0.6 + 0.5)
     local c = Cfg()
     local cur = type(c.bosses) == "table" and sq.boss and c.bosses[sq.boss.key] or nil
     for idx, it in ipairs(entries.rows) do
         it:SetSize(wid, wid)
         it:ClearAllPoints()
         it:SetPoint("TOP", entries, "TOP", 0, -(idx - 1) * wid)
-        it.Icon:SetSize(glyph, glyph)
+        it.Icon:SetSize(icon, icon)
         -- a light wash behind the current pick
         it.cur:SetShown(BOSS_PICKS[idx].value == cur)
     end
@@ -3623,7 +3623,7 @@ end
 local function MakeBossSquare(hostFrame)
     local b = MakeSquare(hostFrame)
     b.icon:SetTexCoord(0.25, 0.75, 0, 1)
-    if not Xfer.SkinOn() then
+    if not XF.SkinOn() then
         -- alive / dead outline around the icon, above blizzard's rounded edge
         b.state = CreateFrame("Frame", nil, b)
         b.state:SetPoint("TOPLEFT", b.icon, "TOPLEFT", -1, 1)
@@ -3654,14 +3654,14 @@ local function LayoutBosses(size, after, show, cols, slots)
             entries,
             bossSquares,
             function()
-                return MakeBossSquare(rowFrame)
+                return MakeBossSquare(row)
             end,
             size,
             after,
             show,
             cols,
             slots,
-            rowFrame,
+            row,
             SQ_GAP,
             function()
                 Paint()
@@ -3673,7 +3673,7 @@ local function LayoutBosses(size, after, show, cols, slots)
         local sq = bossSquares[idx]
         if d and show then
             if not sq then
-                sq = MakeBossSquare(rowFrame)
+                sq = MakeBossSquare(row)
                 bossSquares[idx] = sq
             end
             sq.boss = d
@@ -3699,9 +3699,9 @@ local function BuildRaidMenu()
     backdrop:SetAllPoints()
     local r, g, b = ThemeFill()
     backdrop:SetColorTexture(r, g, b, 0.98)
-    local Stl = Skin()
-    if Stl and Stl.AddBorder then
-        Stl.AddBorder(raidMenu)
+    local S = Skin()
+    if S and S.AddBorder then
+        S.AddBorder(raidMenu)
     else
         CM.MakeBorder(raidMenu, ThemeBorder())
     end
@@ -3710,7 +3710,7 @@ local function BuildRaidMenu()
     -- current season only, older raids dimmed and out
     raidMenu.items.season = MenuItem(raidMenu, posY, CludesUI.L("Current Season Only"), function()
         local c = Cfg()
-        c.extraSeasonRaids = not Xfer.SeasonOnly()
+        c.extraSeasonRaids = not XF.SeasonOnly()
         if type(c.bosses) == "table" then
             for _, bo in ipairs(bosses or {}) do
                 if not RaidShown(bo.raid) then
@@ -3723,7 +3723,7 @@ local function BuildRaidMenu()
     end)
     posY = posY + ITEM_H
     local sdiv = raidMenu:CreateTexture(nil, "ARTWORK")
-    Xfer.Hairline(sdiv)
+    XF.Hairline(sdiv)
     sdiv:SetColorTexture(1, 1, 1, 0.10)
     sdiv:SetPoint("TOPLEFT", raidMenu, "TOPLEFT", 1, -posY - 3)
     sdiv:SetPoint("TOPRIGHT", raidMenu, "TOPRIGHT", -1, -posY - 3)
@@ -3761,7 +3761,7 @@ local function BuildRaidMenu()
         posY = posY + ITEM_H
     end
     local div = raidMenu:CreateTexture(nil, "ARTWORK")
-    Xfer.Hairline(div)
+    XF.Hairline(div)
     div:SetColorTexture(1, 1, 1, 0.10)
     div:SetPoint("TOPLEFT", raidMenu, "TOPLEFT", 1, -posY - 3)
     div:SetPoint("TOPRIGHT", raidMenu, "TOPRIGHT", -1, -posY - 3)
@@ -3774,7 +3774,7 @@ local function BuildRaidMenu()
     end)
     posY = posY + ITEM_H
     raidMenu:SetHeight(posY + 3)
-    Xfer.ClickOff(raidMenu, function(m)
+    XF.ClickOff(raidMenu, function(m)
         return m:IsMouseOver() or (raidBtn and raidBtn:IsMouseOver())
     end)
     raidMenu:Hide()
@@ -3785,14 +3785,14 @@ local function PaintRaidMenu()
         return
     end
     for _, raid in ipairs(raidList or {}) do
-        local itemInfo = raidMenu.items[raid.jid]
-        if itemInfo then
-            itemInfo:SetChecked(RaidShown(raid.jid))
-            itemInfo:SetDimmed(not Xfer.RaidEligible(raid.jid))
+        local item = raidMenu.items[raid.jid]
+        if item then
+            item:SetChecked(RaidShown(raid.jid))
+            item:SetDimmed(not XF.RaidEligible(raid.jid))
         end
     end
     if raidMenu.items.season then
-        raidMenu.items.season:SetChecked(Xfer.SeasonOnly())
+        raidMenu.items.season:SetChecked(XF.SeasonOnly())
     end
     if raidMenu.items.worldBosses then
         raidMenu.items.worldBosses:SetChecked(not HideWorldBosses())
@@ -3824,9 +3824,9 @@ local function BuildTierMenu()
     backdrop:SetAllPoints()
     local r, g, b = ThemeFill()
     backdrop:SetColorTexture(r, g, b, 0.98)
-    local Stl = Skin()
-    if Stl and Stl.AddBorder then
-        Stl.AddBorder(tierMenu)
+    local S = Skin()
+    if S and S.AddBorder then
+        S.AddBorder(tierMenu)
     else
         CM.MakeBorder(tierMenu, ThemeBorder())
     end
@@ -3846,13 +3846,13 @@ local function BuildTierMenu()
     end)
     posY = posY + ITEM_H
     local div = tierMenu:CreateTexture(nil, "ARTWORK")
-    Xfer.Hairline(div)
+    XF.Hairline(div)
     div:SetColorTexture(1, 1, 1, 0.10)
     div:SetPoint("TOPLEFT", tierMenu, "TOPLEFT", 1, -posY - 3)
     div:SetPoint("TOPRIGHT", tierMenu, "TOPRIGHT", -1, -posY - 3)
     posY = posY + 7
     for tier = 1, MAX_TIER do
-        tierMenu.items[tier] = MenuItem(tierMenu, posY, Xfer.TierLabel(tier), function()
+        tierMenu.items[tier] = MenuItem(tierMenu, posY, XF.TierLabel(tier), function()
             local t = Tiers()
             t[tier] = (not t[tier]) or nil
             local _, n = ChosenTiers()
@@ -3871,7 +3871,7 @@ local function BuildTierMenu()
     tierMenu:SetScript("OnHide", function()
         DimForMenu(false)
     end)
-    Xfer.ClickOff(tierMenu, function(m)
+    XF.ClickOff(tierMenu, function(m)
         return m:IsMouseOver() or (tierBtn and tierBtn:IsMouseOver())
     end)
     tierMenu:Hide()
@@ -3904,9 +3904,9 @@ local function ToggleTierMenu()
 end
 
 local function BuildRow()
-    rowFrame = CreateFrame("Frame", nil, SP)
-    rowFrame:SetHeight(BTN)
-    rowFrame:SetFrameLevel(SP:GetFrameLevel() + 5)
+    row = CreateFrame("Frame", nil, SP)
+    row:SetHeight(BTN)
+    row:SetFrameLevel(SP:GetFrameLevel() + 5)
     diffBtn = DropButton(SP, DIFF_W, ROW1_H)
     diffBtn:SetFrameLevel(SP:GetFrameLevel() + 5)
     diffBtn:SetScript("OnClick", ToggleMenu)
@@ -3918,7 +3918,7 @@ local function BuildRow()
             raidDiffMenu:Hide()
         end
     end)
-    diffBtn:SetScript("OnLeave", Xfer.PaintLabel)
+    diffBtn:SetScript("OnLeave", XF.PaintLabel)
     tierBtn = DropButton(SP, DIFF_W, ROW1_H)
     tierBtn:SetFrameLevel(SP:GetFrameLevel() + 5)
     tierBtn:SetScript("OnClick", ToggleTierMenu)
@@ -3927,11 +3927,11 @@ local function BuildRow()
             tierMenu:Hide()
         end
     end)
-    tierBtn:SetScript("OnLeave", Xfer.PaintLabel)
+    tierBtn:SetScript("OnLeave", XF.PaintLabel)
 end
 
 -- a drop button's label color from its last paint
-function Xfer.PaintLabel(btn)
+function XF.PaintLabel(btn)
     if btn.active then
         btn.label:SetTextColor(Accent())
     else
@@ -3944,7 +3944,7 @@ Paint = function()
     if not SP then
         return
     end
-    local f = Xfer.GetFilter()
+    local f = XF.GetFilter()
     if not f then
         return
     end
@@ -3958,7 +3958,7 @@ Paint = function()
                 or DungeonRolesSet(f)
                 or (f.minimumRating or 0) ~= 0
         end
-        diffBtn.active = (isActive or RegionFilterActive() or Xfer.ExtraFilterActive()) and true or false
+        diffBtn.active = (isActive or RegionFilterActive() or XF.ExtraFilterActive()) and true or false
         -- green edge while a filter's on, same as the expressions button
         if not diffBtn.activeEdge then
             local edge = CreateFrame("Frame", nil, diffBtn)
@@ -3970,7 +3970,7 @@ Paint = function()
         end
         diffBtn.activeEdge:SetShown(diffBtn.active)
         diffBtn:SetText(CludesUI.L("Filters"))
-        Xfer.PaintLabel(diffBtn)
+        XF.PaintLabel(diffBtn)
     end
     if tierBtn then
         local chosen, n = ChosenTiers()
@@ -3979,7 +3979,7 @@ Paint = function()
             if n == 1 then
                 for idx = 1, MAX_TIER do
                     if chosen[idx] then
-                        textValue = Xfer.TierLabel(idx)
+                        textValue = XF.TierLabel(idx)
                     end
                 end
             end
@@ -3988,7 +3988,7 @@ Paint = function()
             tierBtn:SetText(CludesUI.L("Tier"))
         end
         tierBtn.active = chosen ~= nil
-        Xfer.PaintLabel(tierBtn)
+        XF.PaintLabel(tierBtn)
     end
     local chosenDelves = ChosenDelves()
     for _, sq in ipairs(delveSquares) do
@@ -3996,7 +3996,7 @@ Paint = function()
             local on = chosenDelves and chosenDelves[sq.delve.groupID] == true or false
             sq.on = on
             sq:GetFontString():SetAlpha(on and 1 or 0.4)
-            Xfer.PickBorder(sq, sq.edge, on)
+            XF.PickBorder(sq, sq.edge, on)
             sq.gold:SetShown(bountiful[sq.delve.name] == true)
         end
     end
@@ -4004,8 +4004,8 @@ Paint = function()
     PaintRaidMenu()
     if raidBtn then
         local hidden = false
-        for _, raid in ipairs(raidList or Xfer.EMPTY) do
-            if Xfer.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
+        for _, raid in ipairs(raidList or XF.EMPTY) do
+            if XF.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
                 hidden = true
             end
         end
@@ -4034,9 +4034,9 @@ Paint = function()
             elseif on then
                 SetBorderColor(edge, 0.2, 1, 0.3, 1)
             else
-                Xfer.RestBorder(edge)
+                XF.RestBorder(edge)
             end
-            if not Xfer.SkinOn() then
+            if not XF.SkinOn() then
                 if on then
                     sq:LockHighlight()
                 else
@@ -4045,14 +4045,14 @@ Paint = function()
             end
         end
     end
-    local spec_def = DungeonsDefault(f)
+    local def = DungeonsDefault(f)
     for _, sq in ipairs(squares) do
         if sq:IsShown() and sq.dungeon then
-            local on = not spec_def and Contains(f.activities, sq.dungeon.groupID) ~= nil
+            local on = not def and Contains(f.activities, sq.dungeon.groupID) ~= nil
             sq.on = on
-            sq.icon:SetDesaturated(not spec_def and not on)
-            sq.icon:SetAlpha((spec_def or on) and 1 or 0.45)
-            Xfer.PickBorder(sq, sq, on)
+            sq.icon:SetDesaturated(not def and not on)
+            sq.icon:SetAlpha((def or on) and 1 or 0.45)
+            XF.PickBorder(sq, sq, on)
         end
     end
     local filter = SP.FilterButton
@@ -4064,7 +4064,7 @@ Paint = function()
             local success, val = pcall(cb)
             isDefault = (not success) or (val and true or false)
         end
-        if Xfer.DimActive() then
+        if XF.DimActive() then
             isDefault = false
         end
         if
@@ -4072,7 +4072,7 @@ Paint = function()
             or DelveFilterActive()
             or BossFilterActive()
             or (ChosenRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()) and SP.categoryID == RAIDS
-            or Xfer.ExtraFilterActive()
+            or XF.ExtraFilterActive()
         then
             isDefault = false
         end
@@ -4122,12 +4122,12 @@ end
 -- layout
 -------------------------------------------------------------------------------
 -- the top-row settings button as seen
-function Xfer.FilterFace()
+function XF.FilterFace()
     local f = SP and SP.FilterButton
     local d = f and FFD[f]
     return d and d.face or f
 end
-mod.GFFilterFace = Xfer.FilterFace
+mod.GFFilterFace = XF.FilterFace
 
 -- blizzard's filter dropdown becomes our settings cog.
 local function CogFilterButton(btn)
@@ -4147,7 +4147,7 @@ local function CogFilterButton(btn)
     btn:SetAlpha(0)
     d.face = SkinnedButton(SP, BTN, BTN)
     d.face:EnableMouse(false) -- the catcher takes clicks
-    d.face:SetFrameLevel(rowFrame:GetFrameLevel() + 3)
+    d.face:SetFrameLevel(row:GetFrameLevel() + 3)
     d.cogFrame = CreateFrame("Frame", nil, d.face)
     d.cogFrame:SetAllPoints(d.face)
     d.cogFrame:SetFrameLevel(d.face:GetFrameLevel() + 3)
@@ -4156,7 +4156,7 @@ local function CogFilterButton(btn)
     d.cog:SetTexture(COG_TEX)
     d.cog:SetSize(14, 14)
     d.cog:SetDesaturated(true)
-    d.cog:SetVertexColor(Xfer.GLYPH, Xfer.GLYPH, Xfer.GLYPH)
+    d.cog:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH)
     d.cog:SetPoint("CENTER")
     d.cog:SetAlpha(0.8)
     if btn.ResetButton then
@@ -4170,14 +4170,14 @@ local function CogFilterButton(btn)
             return
         end
         if InCombatLockdown() then
-            Xfer.Defer("layout", Xfer.Layout)
+            XF.Defer("layout", XF.Layout)
             return
         end
         self:SetSize(fd.size, fd.size)
     end)
     -- opens the group finder settings: a click catcher sits over it
     btn:EnableMouse(false)
-    local catcher = CreateFrame("Button", nil, rowFrame)
+    local catcher = CreateFrame("Button", nil, row)
     catcher:SetAllPoints(d.face)
     catcher:SetFrameLevel(d.face:GetFrameLevel() + 6)
     local wash = catcher:CreateTexture(nil, "HIGHLIGHT")
@@ -4185,14 +4185,14 @@ local function CogFilterButton(btn)
     wash:SetColorTexture(1, 1, 1, 0.1)
     catcher:SetScript("OnEnter", function(self)
         d.cog:SetAlpha(1)
-        Xfer.Tip(self, CludesUI.L("Group Filters Settings"))
+        XF.Tip(self, CludesUI.L("Group Filters Settings"))
     end)
     catcher:SetScript("OnLeave", function()
         d.cog:SetAlpha(0.8)
-        Xfer.Untip()
+        XF.Untip()
     end)
     catcher:SetScript("OnClick", function()
-        Xfer.Untip()
+        XF.Untip()
         if InCombatLockdown() then
             CM.PrintError(CludesUI.L("Cannot open options during combat."))
             return
@@ -4202,10 +4202,10 @@ local function CogFilterButton(btn)
     d.catcher = catcher
 
     -- reset uses blizzard's own defaults.
-    resetBtn = GlyphButton(rowFrame, BTN, X_TEX)
-    resetBtn.Glyph:SetVertexColor(Xfer.GLYPH, Xfer.GLYPH, Xfer.GLYPH)
+    resetBtn = GlyphButton(row, BTN, X_TEX)
+    resetBtn.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH)
     resetBtn:SetScript("OnClick", function()
-        local f = Xfer.GetFilter()
+        local f = XF.GetFilter()
         f.needsTank, f.needsHealer, f.needsDamage, f.needsMyClass = false, false, false, false
         f.hasTank, f.hasHealer = false, false
         f.minimumRating = 0
@@ -4253,17 +4253,17 @@ local function CogFilterButton(btn)
     end)
     resetBtn:SetScript("OnEnter", function(self)
         self.Glyph:SetAlpha(1)
-        Xfer.Tip(self, CludesUI.L("Reset Filters"), not self.active and CludesUI.L("No filters set") or nil)
+        XF.Tip(self, CludesUI.L("Reset Filters"), not self.active and CludesUI.L("No filters set") or nil)
     end)
     resetBtn:SetScript("OnLeave", function(self)
-        Xfer.Untip()
+        XF.Untip()
         self.Glyph:SetAlpha(self.active and 0.9 or 0.35)
     end)
 end
 
 -- short dungeon name ('Altar of Fangs' -> AoF)
-Xfer.SMALL_WORDS = { of = true, the = true, ["and"] = true, to = true, ["in"] = true, on = true, at = true }
-function Xfer.Abbr(name)
+XF.SMALL_WORDS = { of = true, the = true, ["and"] = true, to = true, ["in"] = true, on = true, at = true }
+function XF.Abbr(name)
     if type(name) ~= "string" then
         return ""
     end
@@ -4273,7 +4273,7 @@ function Xfer.Abbr(name)
         local wid = word:gsub("[^%a]", "")
         if wid ~= "" then
             local c = wid:sub(1, 1)
-            if #result > 0 and Xfer.SMALL_WORDS[wid:lower()] then
+            if #result > 0 and XF.SMALL_WORDS[wid:lower()] then
                 c = c:lower()
             else
                 c = c:upper()
@@ -4297,14 +4297,14 @@ end
 
 -- the season's portal label when it's a seasonal dungeon, else initials
 local portalShort, portalsDone
-function Xfer.ShortName(name)
+function XF.ShortName(name)
     if type(name) ~= "string" or IsSecret(name) then
         return ""
     end
     if not portalsDone then
         -- dungeon names can be missing right after login, so keep asking until they're all in
         portalShort, portalsDone = {}, true
-        for _, e in ipairs(CludesUI.SEASON_PORTALS or Xfer.EMPTY) do
+        for _, e in ipairs(CludesUI.SEASON_PORTALS or XF.EMPTY) do
             for _, n in ipairs(e.names) do
                 portalShort[n] = e.short
             end
@@ -4316,14 +4316,14 @@ function Xfer.ShortName(name)
             end
         end
     end
-    local baseValue = name:gsub("%s*%b()", "")
-    local short = portalShort[baseValue:lower()]
-    return short and CludesUI.L(short) or Xfer.Abbr(baseValue)
+    local base = name:gsub("%s*%b()", "")
+    local short = portalShort[base:lower()]
+    return short and CludesUI.L(short) or XF.Abbr(base)
 end
-mod.GFShortName = Xfer.ShortName
+mod.GFShortName = XF.ShortName
 
 -- text layer over a square, above its border
-function Xfer.SquareOverlay(sq)
+function XF.SquareOverlay(sq)
     local f = sq.overlay
     if not f then
         f = CreateFrame("Frame", nil, sq)
@@ -4336,10 +4336,10 @@ function Xfer.SquareOverlay(sq)
 end
 
 -- short name on a square: at the top when keystone level shows too
-function Xfer.SquareAbbr(sq, d, size)
+function XF.SquareAbbr(sq, d, size)
     local on = Cfg().dungeonAbbr == true and d ~= nil
     if on and not sq.abbr then
-        sq.abbr = Xfer.SquareOverlay(sq):CreateFontString(nil, "OVERLAY")
+        sq.abbr = XF.SquareOverlay(sq):CreateFontString(nil, "OVERLAY")
         sq.abbr:SetJustifyH("CENTER")
         sq.abbr:SetWordWrap(false)
     end
@@ -4349,7 +4349,7 @@ function Xfer.SquareAbbr(sq, d, size)
     if on then
         sq.abbr:ClearAllPoints()
         if Cfg().dungeonScore == true then
-            local posY = Xfer.SkinOn() and -2 or -4 -- clear of blizzard's rounded edge
+            local posY = XF.SkinOn() and -2 or -4 -- clear of blizzard's rounded edge
             sq.abbr:SetPoint("TOPLEFT", sq, "TOPLEFT", -4, posY)
             sq.abbr:SetPoint("TOPRIGHT", sq, "TOPRIGHT", 4, posY)
             sq.abbr:SetJustifyV("TOP")
@@ -4359,14 +4359,14 @@ function Xfer.SquareAbbr(sq, d, size)
             sq.abbr:SetJustifyV("MIDDLE")
         end
         local fontStr = math.max(8, math.floor(size * 0.36))
-        Xfer.Font(sq.abbr, fontStr, "OUTLINE")
-        sq.abbr:SetText(Xfer.ShortName(d.name))
+        XF.Font(sq.abbr, fontStr, "OUTLINE")
+        sq.abbr:SetText(XF.ShortName(d.name))
         while
             fontStr > 8
             and ((sq.abbr.GetUnboundedStringWidth and sq.abbr:GetUnboundedStringWidth()) or 0) > size - 4
         do
             fontStr = fontStr - 1
-            Xfer.Font(sq.abbr, fontStr, "OUTLINE")
+            XF.Font(sq.abbr, fontStr, "OUTLINE")
         end
         sq.abbr:SetTextColor(1, 1, 1, 1)
     end
@@ -4374,7 +4374,7 @@ function Xfer.SquareAbbr(sq, d, size)
 end
 
 -- best keystone level on a square, colored by its score
-function Xfer.SquareScore(sq, d, size)
+function XF.SquareScore(sq, d, size)
     local best
     if Cfg().dungeonScore == true and d ~= nil then
         local intime, overtime = C_MythicPlus.GetSeasonBestForMap(d.cmID)
@@ -4387,7 +4387,7 @@ function Xfer.SquareScore(sq, d, size)
         end
     end
     if best and not sq.score then
-        sq.score = Xfer.SquareOverlay(sq):CreateFontString(nil, "OVERLAY")
+        sq.score = XF.SquareOverlay(sq):CreateFontString(nil, "OVERLAY")
         sq.score:SetWordWrap(false)
     end
     local fontStr = sq.score
@@ -4397,10 +4397,10 @@ function Xfer.SquareScore(sq, d, size)
     if best then
         local _, overall = C_MythicPlus.GetSeasonBestAffixScoreInfoForMap(d.cmID)
         local color = C_ChallengeMode.GetSpecificDungeonOverallScoreRarityColor(overall or best.dungeonScore)
-        Xfer.Font(fontStr, math.max(8, math.floor(size * 0.42)), "")
+        XF.Font(fontStr, math.max(8, math.floor(size * 0.42)), "")
         fontStr:ClearAllPoints()
         if Cfg().dungeonAbbr == true then
-            fontStr:SetPoint("BOTTOM", sq, "BOTTOM", 0, Xfer.SkinOn() and 2 or 4)
+            fontStr:SetPoint("BOTTOM", sq, "BOTTOM", 0, XF.SkinOn() and 2 or 4)
         else
             fontStr:SetPoint("CENTER", sq, "CENTER", 0, 0)
         end
@@ -4422,7 +4422,7 @@ local function LayoutSquares(size, after, show)
         local sq = squares[idx]
         if d and show then
             if not sq then
-                sq = MakeSquare(rowFrame)
+                sq = MakeSquare(row)
                 squares[idx] = sq
             end
             sq.dungeon = d
@@ -4430,8 +4430,8 @@ local function LayoutSquares(size, after, show)
             sq:ClearAllPoints()
             sq:SetPoint("LEFT", prev, "RIGHT", SQ_GAP, 0)
             sq.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-            Xfer.SquareScore(sq, d, size)
-            Xfer.SquareAbbr(sq, d, size)
+            XF.SquareScore(sq, d, size)
+            XF.SquareAbbr(sq, d, size)
             sq:Show()
             prev = sq
         elseif sq then
@@ -4442,7 +4442,7 @@ local function LayoutSquares(size, after, show)
 end
 
 -- back / sign up's font, a size smaller
-function Xfer.ButtonFont()
+function XF.ButtonFont()
     local source = SP and (SP.BackButton or SP.SignUpButton)
     local fontStr = source and source.GetFontString and source:GetFontString()
     local filePath, size, flags
@@ -4460,19 +4460,19 @@ function Xfer.ButtonFont()
     return gfFont
 end
 
-local function MatchButtonFont(boxFrame)
-    if not Xfer.ButtonFont() then
+local function MatchButtonFont(box)
+    if not XF.ButtonFont() then
         return
     end
     diffBtn:SetNormalFontObject(gfFont)
     diffBtn:SetHighlightFontObject(gfFont)
     tierBtn:SetNormalFontObject(gfFont)
     tierBtn:SetHighlightFontObject(gfFont)
-    if boxFrame then
-        boxFrame:SetFontObject(gfFont)
-        if boxFrame.Instructions then
-            boxFrame.Instructions:SetFontObject(gfFont)
-            boxFrame.Instructions:SetTextColor(0.4, 0.4, 0.4)
+    if box then
+        box:SetFontObject(gfFont)
+        if box.Instructions then
+            box.Instructions:SetFontObject(gfFont)
+            box.Instructions:SetTextColor(0.4, 0.4, 0.4)
         end
     end
 end
@@ -4484,7 +4484,7 @@ function mod.Search_Rows()
     if not wid or wid < 100 then
         wid = 338
     end
-    local entries = Xfer.Dungeons()
+    local entries = XF.Dungeons()
     local n = (entries and #entries > 0) and #entries or 8
     return ROW1_Y, ROW2_Y, math.max(18, (wid - pad * 2 - (n + 1) * SQ_GAP) / (n + 2)), ROW1_H
 end
@@ -4495,21 +4495,21 @@ local function Layout()
         return
     end
     if InCombatLockdown() then
-        Xfer.Defer("layout", Xfer.Layout)
+        XF.Defer("layout", XF.Layout)
         Paint()
         return
     end
-    Xfer.NewPass()
+    XF.NewPass()
     local c = Cfg()
     local pad = tonumber(c.padding) or 12
     local showFilters = SP.categoryID == DUNGEONS
     local showDiff = SP.categoryID == DUNGEONS or SP.categoryID == RAIDS
     local showDelves = SP.categoryID == DELVES
     local showBosses = RaidsCurrent()
-    if not rowFrame then
+    if not row then
         BuildRow()
     end
-    local entries = Xfer.Dungeons()
+    local entries = XF.Dungeons()
     if showDelves then
         if not delves then
             delves, delveByActivity = BuildDelves()
@@ -4526,9 +4526,9 @@ local function Layout()
     local size = math.max(18, (rowW - (n + 1) * SQ_GAP) / (n + 2))
 
     -- row 1: search box, filters, search again.
-    local filter, boxFrame, titleText = SP.FilterButton, SP.SearchBox, SP.CategoryName
-    if titleText then
-        titleText:SetAlpha(0)
+    local filter, box, title = SP.FilterButton, SP.SearchBox, SP.CategoryName
+    if title then
+        title:SetAlpha(0)
     end
     if not refreshBtn then
         local blz = SP.RefreshButton
@@ -4554,7 +4554,7 @@ local function Layout()
             refreshBtn.hover = true
             refreshBtn:LockHighlight()
             PaintRefresh()
-            Xfer.Tip(
+            XF.Tip(
                 ownerFrame,
                 LFG_LIST_SEARCH_AGAIN or "Search Again",
                 CludesUI.Lf("Limited to every %d seconds to prevent lock-out", CD_SEARCH),
@@ -4565,7 +4565,7 @@ local function Layout()
             refreshBtn.hover = nil
             refreshBtn:UnlockHighlight()
             PaintRefresh()
-            Xfer.Untip()
+            XF.Untip()
         end
         if blz then
             blz:SetAlpha(0)
@@ -4597,17 +4597,17 @@ local function Layout()
             ROW1_H = ROW1_H,
             GAP = SQ_GAP,
             Refilter = Refilter,
-            Tip = Xfer.Tip,
-            Untip = Xfer.Untip,
-            ClickOff = Xfer.ClickOff,
-            Font = Xfer.Font,
+            Tip = XF.Tip,
+            Untip = XF.Untip,
+            ClickOff = XF.ClickOff,
+            Font = XF.Font,
             ThemeFill = ThemeFill,
             ThemeBorder = ThemeBorder,
             Accent = Accent,
-            GLYPH = Xfer.GLYPH,
+            GLYPH = XF.GLYPH,
             Dim = DimForMenu,
             Filters = diffBtn,
-            DIM_ALPHA = Xfer.DIM_ALPHA,
+            DIM_ALPHA = XF.DIM_ALPHA,
             FiltersOpen = function()
                 return (dropMenu and dropMenu:IsShown()) or (raidDiffMenu and raidDiffMenu:IsShown()) or false
             end,
@@ -4627,31 +4627,31 @@ local function Layout()
     tierBtn:ClearAllPoints()
     tierBtn:SetPoint("RIGHT", row1End, "LEFT", -SQ_GAP, 0)
     tierBtn:SetShown(showDelves)
-    if boxFrame then
-        boxFrame:ClearAllPoints()
-        boxFrame:SetPoint("LEFT", SP, "TOPLEFT", pad, ROW1_Y)
-        boxFrame:SetPoint(
+    if box then
+        box:ClearAllPoints()
+        box:SetPoint("LEFT", SP, "TOPLEFT", pad, ROW1_Y)
+        box:SetPoint(
             "RIGHT",
             (showDiff and diffBtn) or (showDelves and tierBtn) or row1End,
             "LEFT",
             -SQ_GAP,
             0
         )
-        boxFrame:SetHeight(ROW1_H)
-        SetBorderColor(boxFrame, ThemeBorder())
+        box:SetHeight(ROW1_H)
+        SetBorderColor(box, ThemeBorder())
         -- shorter prompt (runs after blizzard sets its own).
-        if boxFrame.Instructions then
-            boxFrame.Instructions:SetText(CludesUI.Lf("%s (e.g. 10-12)", SEARCH or "Search"))
+        if box.Instructions then
+            box.Instructions:SetText(CludesUI.Lf("%s (e.g. 10-12)", SEARCH or "Search"))
         end
     end
-    MatchButtonFont(boxFrame)
+    MatchButtonFont(box)
 
     -- row 2: cog, reset, dungeon squares.
-    rowFrame:ClearAllPoints()
-    rowFrame:SetPoint("TOPLEFT", SP, "TOPLEFT", pad, ROW2_Y)
-    rowFrame:SetPoint("TOPRIGHT", SP, "TOPRIGHT", -pad, ROW2_Y)
-    rowFrame:SetHeight(size)
-    rowFrame:Show()
+    row:ClearAllPoints()
+    row:SetPoint("TOPLEFT", SP, "TOPLEFT", pad, ROW2_Y)
+    row:SetPoint("TOPRIGHT", SP, "TOPRIGHT", -pad, ROW2_Y)
+    row:SetHeight(size)
+    row:Show()
     if filter then
         CogFilterButton(filter)
         local fd = FFD[filter]
@@ -4659,10 +4659,10 @@ local function Layout()
         fd.cog:SetSize(math.floor(size * 0.55), math.floor(size * 0.55))
         filter:SetSize(size, size)
         filter:ClearAllPoints()
-        filter:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+        filter:SetPoint("LEFT", row, "LEFT", 0, 0)
         fd.face:SetSize(size, size)
         fd.face:ClearAllPoints()
-        fd.face:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+        fd.face:SetPoint("LEFT", row, "LEFT", 0, 0)
         fd.face:Show()
         filter = fd.face -- the row anchors to our face from here
     end
@@ -4673,7 +4673,7 @@ local function Layout()
         if filter then
             resetBtn:SetPoint("LEFT", filter, "RIGHT", SQ_GAP, 0)
         else
-            resetBtn:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+            resetBtn:SetPoint("LEFT", row, "LEFT", 0, 0)
         end
         resetBtn:Show()
     end
@@ -4682,7 +4682,7 @@ local function Layout()
     local lines = LayoutDelves(size, resetBtn or filter, showDelves, math.max(1, n - 1), n)
     -- raids: map button after the reset, bosses in the grid.
     if showBosses and not raidBtn then
-        raidBtn = GlyphButton(rowFrame, BTN, mod.ExtraRaidTex)
+        raidBtn = GlyphButton(row, BTN, mod.ExtraRaidTex)
         raidBtn:SetScript("OnClick", ToggleRaidMenu)
         raidBtn:SetScript("OnHide", function()
             if raidMenu then
@@ -4691,11 +4691,11 @@ local function Layout()
         end)
         raidBtn:SetScript("OnEnter", function(self)
             self.Glyph:SetAlpha(1)
-            Xfer.Tip(self, CludesUI.L("Raids"), CludesUI.L("Choose which raids' bosses are shown"))
+            XF.Tip(self, CludesUI.L("Raids"), CludesUI.L("Choose which raids' bosses are shown"))
         end)
         raidBtn:SetScript("OnLeave", function(self)
             self.Glyph:SetAlpha(0.8)
-            Xfer.Untip()
+            XF.Untip()
         end)
     end
     if raidBtn then
@@ -4707,7 +4707,7 @@ local function Layout()
         if after then
             raidBtn:SetPoint("LEFT", after, "RIGHT", SQ_GAP, 0)
         else
-            raidBtn:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+            raidBtn:SetPoint("LEFT", row, "LEFT", 0, 0)
         end
     end
     lines = math.max(lines, LayoutBosses(size, resetBtn or filter, showBosses, math.max(1, n - 1), n))
@@ -4716,11 +4716,11 @@ local function Layout()
     local ROW_INSET = 3
     local topY = ROW2_Y - lines * size - (lines - 1) * SQ_GAP - SQ_GAP
     local bottom = BOTTOM_Y + 22 + SQ_GAP
-    local scroll, barFrame, inset = SP.ScrollBox, SP.ScrollBar, SP.ResultsInset
-    if barFrame then
-        barFrame:ClearAllPoints()
-        barFrame:SetPoint("TOP", SP, "TOPRIGHT", -pad / 2, topY)
-        barFrame:SetPoint("BOTTOM", SP, "BOTTOMRIGHT", -pad / 2, bottom)
+    local scroll, bar, inset = SP.ScrollBox, SP.ScrollBar, SP.ResultsInset
+    if bar then
+        bar:ClearAllPoints()
+        bar:SetPoint("TOP", SP, "TOPRIGHT", -pad / 2, topY)
+        bar:SetPoint("BOTTOM", SP, "BOTTOMRIGHT", -pad / 2, bottom)
     end
     if scroll then
         scroll:ClearAllPoints()
@@ -4732,18 +4732,18 @@ local function Layout()
         inset:SetPoint("TOPLEFT", SP, "TOPLEFT", pad, topY)
         inset:SetPoint("BOTTOMRIGHT", SP, "BOTTOMRIGHT", -pad, bottom)
     end
-    Xfer.PinBottomButtons(SP, Xfer.SEARCH_LEFT, "SignUpButton")
+    XF.PinBottomButtons(SP, XF.SEARCH_LEFT, "SignUpButton")
     Paint()
 end
 mod.Search_Layout = Layout
-Xfer.Layout = Layout
-Xfer.SEARCH_LEFT = { "BackButton", "BackToGroupButton" }
+XF.Layout = Layout
+XF.SEARCH_LEFT = { "BackButton", "BackToGroupButton" }
 
 -- first show asks for this season's m+ maps
-function Xfer.PanelShown()
-    Xfer.RestoreCharFilter()
-    if not Xfer.mapInfoAsked then
-        Xfer.mapInfoAsked = true
+function XF.PanelShown()
+    XF.RestoreCharFilter()
+    if not XF.mapInfoAsked then
+        XF.mapInfoAsked = true
         if C_MythicPlus and C_MythicPlus.RequestMapInfo then
             C_MythicPlus.RequestMapInfo()
         end
@@ -4782,12 +4782,12 @@ local function PinBottomButtons(panelFrame, lefts, right)
         end
     end
 end
-Xfer.PinBottomButtons = PinBottomButtons
+XF.PinBottomButtons = PinBottomButtons
 
 -- category list spans the side padding (out of combat, else once it ends).
 local function LayoutCategoryList()
     if InCombatLockdown() then
-        Xfer.Defer("categoryList", LayoutCategoryList)
+        XF.Defer("categoryList", LayoutCategoryList)
         return
     end
     local CS = LFGListFrame and LFGListFrame.CategorySelection
@@ -4811,7 +4811,7 @@ end
 
 local function LayoutCategoryButtons()
     if InCombatLockdown() then
-        Xfer.Defer("categoryButtons", LayoutCategoryButtons)
+        XF.Defer("categoryButtons", LayoutCategoryButtons)
         return
     end
     PinBottomButtons(
@@ -4829,7 +4829,7 @@ local function StyleEntryDropdown(dropdown)
     end
     SetBorderColor(dropdown, ThemeBorder())
     local labelText = dropdown.Text
-    local font = gfFont or Xfer.ButtonFont()
+    local font = gfFont or XF.ButtonFont()
     if labelText and font then
         labelText:SetFontObject(font)
         labelText:SetTextColor(1, 1, 1, 1)
@@ -4850,10 +4850,10 @@ local function StyleEntryDropdown(dropdown)
 end
 
 -- start a group option rows
-Xfer.ENTRY_BOX_ROWS = { "MythicPlusRating", "PVPRating", "ItemLevel", "PvpItemLevel", "VoiceChat" }
-Xfer.ENTRY_CHECK_ROWS =
+XF.ENTRY_BOX_ROWS = { "MythicPlusRating", "PVPRating", "ItemLevel", "PvpItemLevel", "VoiceChat" }
+XF.ENTRY_CHECK_ROWS =
     { "MythicPlusRating", "PVPRating", "ItemLevel", "PvpItemLevel", "VoiceChat", "CrossFactionGroup" }
-Xfer.ENTRY_SWITCH_ROWS = {
+XF.ENTRY_SWITCH_ROWS = {
     "MythicPlusRating",
     "PVPRating",
     "ItemLevel",
@@ -4862,12 +4862,12 @@ Xfer.ENTRY_SWITCH_ROWS = {
     "CrossFactionGroup",
     "PrivateGroup",
 }
-Xfer.TXT_X, Xfer.TXT_Y = 6, 4 -- text padding inside the boxes
+XF.TXT_X, XF.TXT_Y = 6, 4 -- text padding inside the boxes
 
 -- start a group: lined up on the bottom buttons' padding
 local function LayoutEntryFields()
     if InCombatLockdown() then
-        Xfer.Defer("entryFields", LayoutEntryFields)
+        XF.Defer("entryFields", LayoutEntryFields)
         return
     end
     local EC = LFGListFrame and LFGListFrame.EntryCreation
@@ -4876,23 +4876,23 @@ local function LayoutEntryFields()
         return
     end
     local pad = tonumber(c.padding) or 12
-    local Widgets = EC:GetWidth()
-    if type(Widgets) ~= "number" or Widgets <= 0 then
+    local W = EC:GetWidth()
+    if type(W) ~= "number" or W <= 0 then
         return
     end
-    local inner = Widgets - pad * 2
-    local group, act = EC.GroupDropdown, EC.ActivityDropdown
-    if group then
-        group:ClearAllPoints()
-        group:SetPoint("TOPLEFT", EC, "TOPLEFT", pad, -76)
+    local inner = W - pad * 2
+    local set, act = EC.GroupDropdown, EC.ActivityDropdown
+    if set then
+        set:ClearAllPoints()
+        set:SetPoint("TOPLEFT", EC, "TOPLEFT", pad, -76)
         if act and act:IsShown() then
             local half = (inner - SQ_GAP) / 2
-            group:SetWidth(half)
+            set:SetWidth(half)
             act:ClearAllPoints()
-            act:SetPoint("LEFT", group, "RIGHT", SQ_GAP, 0)
+            act:SetPoint("LEFT", set, "RIGHT", SQ_GAP, 0)
             act:SetWidth(half)
         else
-            group:SetWidth(inner)
+            set:SetWidth(inner)
         end
     end
     local nameLabel, descLabel = EC.NameLabel, EC.DescriptionLabel
@@ -4915,7 +4915,7 @@ local function LayoutEntryFields()
             desc.EditBox:SetWidth(inner - 18)
         end
     end
-    local TXT_X, TXT_Y = Xfer.TXT_X, Xfer.TXT_Y
+    local TXT_X, TXT_Y = XF.TXT_X, XF.TXT_Y
     if name and name.SetTextInsets then
         pcall(name.SetTextInsets, name, TXT_X, TXT_X, 0, 0)
         local ins = name.Instructions
@@ -4949,19 +4949,19 @@ local function LayoutEntryFields()
         style:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, -20)
         style:SetPoint("TOPRIGHT", desc, "BOTTOMRIGHT", 0, -20)
     end
-    StyleEntryDropdown(group)
+    StyleEntryDropdown(set)
     StyleEntryDropdown(act)
     StyleEntryDropdown(style)
     -- option rows line up a frame later, once the layout settles
-    if not Xfer.alignQueued then
-        Xfer.alignQueued = true
-        C_Timer.After(0, Xfer.AlignEntryRows)
+    if not XF.alignQueued then
+        XF.alignQueued = true
+        C_Timer.After(0, XF.AlignEntryRows)
     end
 end
 
 -- the switch's width, or blizzard's check box with the skin off
-function Xfer.CheckW(cb)
-    if Xfer.SkinOn() then
+function XF.CheckW(cb)
+    if XF.SkinOn() then
         return 30
     end
     local wid = cb:GetWidth()
@@ -4969,10 +4969,10 @@ function Xfer.CheckW(cb)
 end
 
 -- option row alignment
-function Xfer.AlignEntryRows()
-    Xfer.alignQueued = nil
+function XF.AlignEntryRows()
+    XF.alignQueued = nil
     if InCombatLockdown() then
-        Xfer.Defer("entryFields", LayoutEntryFields)
+        XF.Defer("entryFields", LayoutEntryFields)
         return
     end
     local EC = LFGListFrame and LFGListFrame.EntryCreation
@@ -4981,40 +4981,40 @@ function Xfer.AlignEntryRows()
     if not sr then
         return
     end
-    local TXT_X = Xfer.TXT_X
+    local TXT_X = XF.TXT_X
     local lg = EC.ListGroupButton
     local bw = type(lg) == "table" and lg:GetWidth()
-    for _, k in ipairs(Xfer.ENTRY_BOX_ROWS) do
-        local rowFrame = EC[k]
-        local boxFrame = type(rowFrame) == "table" and rowFrame.EditBox
-        local rr = type(rowFrame) == "table" and rowFrame.GetRight and rowFrame:GetRight()
-        if boxFrame and rr then
-            local offset = sr - rr
-            boxFrame:ClearAllPoints()
-            boxFrame:SetPoint("RIGHT", rowFrame, "RIGHT", offset, 0)
-            boxFrame:SetWidth((type(bw) == "number" and bw > 0) and bw or (125 + 5 + offset))
-            if boxFrame.SetTextInsets then
-                pcall(boxFrame.SetTextInsets, boxFrame, TXT_X, TXT_X, 0, 0)
+    for _, k in ipairs(XF.ENTRY_BOX_ROWS) do
+        local row = EC[k]
+        local box = type(row) == "table" and row.EditBox
+        local rr = type(row) == "table" and row.GetRight and row:GetRight()
+        if box and rr then
+            local off = sr - rr
+            box:ClearAllPoints()
+            box:SetPoint("RIGHT", row, "RIGHT", off, 0)
+            box:SetWidth((type(bw) == "number" and bw > 0) and bw or (125 + 5 + off))
+            if box.SetTextInsets then
+                pcall(box.SetTextInsets, box, TXT_X, TXT_X, 0, 0)
             end
-            local ins = boxFrame.Instructions
+            local ins = box.Instructions
             if type(ins) == "table" then
                 ins:ClearAllPoints()
-                ins:SetPoint("LEFT", boxFrame, "LEFT", TXT_X, 0)
-                ins:SetPoint("RIGHT", boxFrame, "RIGHT", -TXT_X, 0)
+                ins:SetPoint("LEFT", box, "LEFT", TXT_X, 0)
+                ins:SetPoint("RIGHT", box, "RIGHT", -TXT_X, 0)
             end
         end
     end
     local sl = style:GetLeft()
-    for _, k in ipairs(Xfer.ENTRY_CHECK_ROWS) do
-        local rowFrame = EC[k]
-        local cb = type(rowFrame) == "table" and rowFrame.CheckButton
-        local rl = type(rowFrame) == "table" and rowFrame.GetLeft and rowFrame:GetLeft()
+    for _, k in ipairs(XF.ENTRY_CHECK_ROWS) do
+        local row = EC[k]
+        local cb = type(row) == "table" and row.CheckButton
+        local rl = type(row) == "table" and row.GetLeft and row:GetLeft()
         if type(cb) == "table" and sl and rl then
             cb:ClearAllPoints()
-            cb:SetPoint("LEFT", rowFrame, "LEFT", sl - rl, 0)
-            if rowFrame.Label then
-                rowFrame.Label:ClearAllPoints()
-                rowFrame.Label:SetPoint("LEFT", cb, "LEFT", Xfer.CheckW(cb) + 6, 0)
+            cb:SetPoint("LEFT", row, "LEFT", sl - rl, 0)
+            if row.Label then
+                row.Label:ClearAllPoints()
+                row.Label:SetPoint("LEFT", cb, "LEFT", XF.CheckW(cb) + 6, 0)
             end
         end
     end
@@ -5028,7 +5028,7 @@ function Xfer.AlignEntryRows()
         pcb:SetPoint("LEFT", prow, "LEFT", bl - pl, 0)
         if prow.Label then
             prow.Label:ClearAllPoints()
-            prow.Label:SetPoint("LEFT", pcb, "LEFT", Xfer.CheckW(pcb) + 6, 0)
+            prow.Label:SetPoint("LEFT", pcb, "LEFT", XF.CheckW(pcb) + 6, 0)
         end
     end
 end
@@ -5073,34 +5073,34 @@ local function PaintSwitch(cb)
     sw.trackOff:SetAlpha(on and 0 or 1)
     sw.knobOff:SetAlpha(on and 0 or 1)
     sw:SetAlpha(enabled and 1 or 0.4)
-    local rowFrame = d.row
+    local row = d.row
     local dim = (on and enabled) and 1 or 0.45
-    if rowFrame and rowFrame.Label then
-        rowFrame.Label:SetAlpha(dim)
+    if row and row.Label then
+        row.Label:SetAlpha(dim)
     end
-    local boxFrame = rowFrame and rowFrame.EditBox
-    if boxFrame then
-        boxFrame:SetAlpha(dim)
+    local box = row and row.EditBox
+    if box then
+        box:SetAlpha(dim)
         -- no typing while it's off.
-        if not (on and enabled) and boxFrame.HasFocus and boxFrame:HasFocus() then
-            boxFrame:ClearFocus()
+        if not (on and enabled) and box.HasFocus and box:HasFocus() then
+            box:ClearFocus()
         end
-        if boxFrame.SetEnabled then
-            boxFrame:SetEnabled(on and enabled)
+        if box.SetEnabled then
+            box:SetEnabled(on and enabled)
         end
     end
 end
 
-local function SwitchCheckbox(rowFrame)
-    if type(rowFrame) ~= "table" then
+local function SwitchCheckbox(row)
+    if type(row) ~= "table" then
         return
     end
-    local cb = rowFrame.CheckButton
+    local cb = row.CheckButton
     if type(cb) ~= "table" then
         return
     end
     if not FFD[cb] then
-        local d = { row = rowFrame }
+        local d = { row = row }
         FFD[cb] = d
         for _, childFrame in ipairs({ cb:GetChildren() }) do
             childFrame:SetAlpha(0)
@@ -5124,9 +5124,9 @@ local function SwitchCheckbox(rowFrame)
         sw.knobOn:SetPoint("RIGHT", sw, "RIGHT", -SW_PAD, 0)
         sw.knobOn:SetColorTexture(1, 1, 1, 1)
         d.switch = sw
-        if rowFrame.Label then
-            rowFrame.Label:ClearAllPoints()
-            rowFrame.Label:SetPoint("LEFT", rowFrame, "LEFT", SW_W + 6, 0)
+        if row.Label then
+            row.Label:ClearAllPoints()
+            row.Label:SetPoint("LEFT", row, "LEFT", SW_W + 6, 0)
         end
         d.curOn = CheckedState(cb)
         hooksecurefunc(cb, "SetChecked", function(self, val)
@@ -5152,28 +5152,28 @@ local function SwitchCheckbox(rowFrame)
             end
             PaintSwitch(self)
             -- blizzard focuses the box before we enable it.
-            local boxFrame = fd and fd.row and fd.row.EditBox
-            if boxFrame and on and boxFrame.SetFocus then
-                boxFrame:SetFocus()
+            local box = fd and fd.row and fd.row.EditBox
+            if box and on and box.SetFocus then
+                box:SetFocus()
             end
         end)
-        if rowFrame.EditBox and rowFrame.EditBox.HookScript then
+        if row.EditBox and row.EditBox.HookScript then
             -- blizzard re-enables these, so refuse focus while off
-            rowFrame.EditBox:HookScript("OnEditFocusGained", function(boxFrame)
+            row.EditBox:HookScript("OnEditFocusGained", function(box)
                 if CheckedState(cb) == false then
-                    boxFrame:ClearFocus()
+                    box:ClearFocus()
                 end
             end)
-            if rowFrame.EditBox.SetEnabled then
-                hooksecurefunc(rowFrame.EditBox, "SetEnabled", function(boxFrame, val)
+            if row.EditBox.SetEnabled then
+                hooksecurefunc(row.EditBox, "SetEnabled", function(box, val)
                     if not IsSecret(val) and val and CheckedState(cb) == false and not FFD[cb].reEnable then
                         FFD[cb].reEnable = true
-                        boxFrame:SetEnabled(false)
+                        box:SetEnabled(false)
                         FFD[cb].reEnable = nil
                     end
                 end)
             end
-            rowFrame.EditBox:HookScript("OnEditFocusLost", function()
+            row.EditBox:HookScript("OnEditFocusLost", function()
                 local fd = FFD[cb]
                 if fd and fd.prevOn and fd.curOn == false and fd.setAt == GetTime() then
                     cb:SetChecked(true)
@@ -5187,21 +5187,21 @@ end
 -- option check buttons as switches
 local function LayoutEntrySwitches()
     if InCombatLockdown() then
-        Xfer.Defer("entrySwitches", LayoutEntrySwitches)
+        XF.Defer("entrySwitches", LayoutEntrySwitches)
         return
     end
     local EC = LFGListFrame and LFGListFrame.EntryCreation
-    if not EC or not Xfer.SkinOn() then
+    if not EC or not XF.SkinOn() then
         return
     end
-    for _, k in ipairs(Xfer.ENTRY_SWITCH_ROWS) do
+    for _, k in ipairs(XF.ENTRY_SWITCH_ROWS) do
         SwitchCheckbox(EC[k])
     end
 end
 
 local function LayoutEntryButtons()
     if InCombatLockdown() then
-        Xfer.Defer("entryButtons", LayoutEntryButtons)
+        XF.Defer("entryButtons", LayoutEntryButtons)
         return
     end
     PinBottomButtons(LFGListFrame and LFGListFrame.EntryCreation, { "CancelButton" }, "ListGroupButton")
@@ -5234,7 +5234,7 @@ end
 -- same look as search again, blizzard's button underneath takes the click
 local function LayoutViewerRefresh(AV)
     local blz = AV.RefreshButton
-    if not Xfer.viewerRefresh then
+    if not XF.viewerRefresh then
         local look = GlyphButton(AV, ROW1_H, "UI-RefreshButton", true)
         look:SetFrameLevel(AV:GetFrameLevel() + 5)
         look:EnableMouse(false)
@@ -5264,9 +5264,9 @@ local function LayoutViewerRefresh(AV)
             look:UnlockHighlight()
             look.Glyph:SetAlpha(0.8)
         end)
-        Xfer.viewerRefresh = look
+        XF.viewerRefresh = look
     end
-    local look = Xfer.viewerRefresh
+    local look = XF.viewerRefresh
     look:Show()
     blz:SetAlpha(0)
     local pad = tonumber(Cfg().padding) or 12
@@ -5281,10 +5281,10 @@ end
 
 -- own list off: back to blizzard's layout
 local function RestoreViewer(AV)
-    if not Xfer.viewerLaid then
+    if not XF.viewerLaid then
         return
     end
-    Xfer.viewerLaid = nil
+    XF.viewerLaid = nil
     AV.BrowseGroupsButton:ClearAllPoints()
     AV.BrowseGroupsButton:SetPoint("BOTTOMLEFT", AV, "BOTTOMLEFT", -3, 4)
     AV.BrowseGroupsButton:SetWidth(145)
@@ -5298,7 +5298,7 @@ local function RestoreViewer(AV)
     AV.EditButton:ClearAllPoints()
     AV.EditButton:SetPoint("BOTTOMRIGHT", AV, "BOTTOMRIGHT", -3, 4)
     AV.EditButton:SetWidth(90)
-    Xfer.viewerRefresh:Hide()
+    XF.viewerRefresh:Hide()
     local blz = AV.RefreshButton
     blz:SetAlpha(1)
     blz:ClearAllPoints()
@@ -5312,14 +5312,14 @@ local function LayoutViewer()
         return
     end
     if InCombatLockdown() then
-        Xfer.Defer("viewerLayout", LayoutViewer)
+        XF.Defer("viewerLayout", LayoutViewer)
         return
     end
     if not mod.ApplicantListOn() then
         RestoreViewer(AV)
         return
     end
-    Xfer.viewerLaid = true
+    XF.viewerLaid = true
     LayoutViewerButtons(AV)
     LayoutViewerRefresh(AV)
 end
@@ -5336,10 +5336,10 @@ local function Init()
     -- the picks come back when premade groups first opens, before "find group"
     -- runs its first search (and again on the search panel's show, XF.PanelShown)
     if LFGListFrame:IsVisible() then
-        Xfer.RestoreCharFilter()
+        XF.RestoreCharFilter()
     end
-    LFGListFrame:HookScript("OnShow", Xfer.RestoreCharFilter)
-    SP:HookScript("OnShow", Xfer.PanelShown)
+    LFGListFrame:HookScript("OnShow", XF.RestoreCharFilter)
+    SP:HookScript("OnShow", XF.PanelShown)
     local CS = LFGListFrame.CategorySelection
     if CS then
         CS:HookScript("OnShow", LayoutCategoryButtons)
@@ -5383,7 +5383,7 @@ local function Init()
     end
     -- A new category: the row filters start over.
     hooksecurefunc("LFGListSearchPanel_SetCategory", function()
-        Xfer.NewPass()
+        XF.NewPass()
         Layout()
     end)
     -- remember results for the new-group color
@@ -5401,7 +5401,7 @@ local function Init()
     end)
     if LFGListUtil_SetSearchEntryTooltip then
         hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", AddClassesByRole)
-        hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", Xfer.CancelHint)
+        hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", XF.CancelHint)
     end
     if LFGListSearchEntry_Update then
         hooksecurefunc("LFGListSearchEntry_Update", DecorateEntry)
@@ -5412,8 +5412,8 @@ local function Init()
         prevResults = (prevCategory == SP.categoryID) and seenResults or nil
         prevCategory = SP.categoryID
         seenResults = {}
-        if Xfer.filterRestored then
-            Xfer.Remember(C_LFGList.GetAdvancedFilter())
+        if XF.filterRestored then
+            XF.Remember(C_LFGList.GetAdvancedFilter())
         end
         pending = false
         StartCooldown(CD_SEARCH)
@@ -5424,7 +5424,7 @@ local function Init()
     local ev = CreateFrame("Frame")
     ev:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
     ev:RegisterEvent("LFG_LIST_SEARCH_FAILED")
-    Xfer.AdoptRating()
+    XF.AdoptRating()
     ev:SetScript("OnEvent", function(_, evt)
         if evt == "LFG_LIST_SEARCH_FAILED" then
             -- server refused a search: wait longer.
@@ -5433,7 +5433,7 @@ local function Init()
             return
         end
         -- new m+ maps: squares rebuild on the next layout
-        Xfer.dungeonsDirty = true
+        XF.dungeonsDirty = true
         Layout()
     end)
     Layout()

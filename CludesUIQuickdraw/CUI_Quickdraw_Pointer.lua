@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local floor, upper, abs = math.floor, math.max, math.abs
+local floor, max, abs = math.floor, math.max, math.abs
 local sin, cos, atan2, sqrt, pi = math.sin, math.cos, math.atan2, math.sqrt, math.pi
 local GetCursorPosition = GetCursorPosition
 local GetTime = GetTime
@@ -50,13 +50,13 @@ function PaletteView:EnsureNeedle()
     if hub.needle then
         return
     end
-    local lineTex = self.frame:CreateLine(nil, "ARTWORK", nil, 1)
-    lineTex:SetThickness(3)
-    lineTex:SetSnapToPixelGrid(false)
-    lineTex:SetTexelSnappingBias(0)
-    lineTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
-    lineTex:Hide()
-    hub.needle = lineTex
+    local line = self.frame:CreateLine(nil, "ARTWORK", nil, 1)
+    line:SetThickness(3)
+    line:SetSnapToPixelGrid(false)
+    line:SetTexelSnappingBias(0)
+    line:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
+    line:Hide()
+    hub.needle = line
 
     local pulse = self.frame:CreateLine(nil, "ARTWORK", nil, 2)
     pulse:SetThickness(3)
@@ -67,7 +67,7 @@ function PaletteView:EnsureNeedle()
     hub.pulse = pulse
 end
 
-function PaletteView:ShowNeedle(slotPos)
+function PaletteView:ShowNeedle(index)
     self:EnsureNeedle()
     -- The line stands off both of its ends: 2/3 of the hub logo's height at
     -- the hub, 1/3 of it at the entry. Measured at this view's own geometry
@@ -78,15 +78,15 @@ function PaletteView:ShowNeedle(slotPos)
     -- reselect that follows lands back here.
     local p = self:P()
     local _, viewIcon = self:Geom()
-    local baseValue = (p and p.iconSize) or 40
-    local key = (baseValue > 0) and (viewIcon / baseValue) or 1
-    local logo = upper(8, 40 * key) -- the hub logo's hardcoded height
+    local base = (p and p.iconSize) or 40
+    local key = (base > 0) and (viewIcon / base) or 1
+    local logo = max(8, 40 * key) -- the hub logo's hardcoded height
     self._needleTrimS = logo * (2 / 3)
     self._needleTrimE = logo * (1 / 3)
     -- A NEW target grows in from the hub again; the same target keeps its
     -- animation state across repaints.
-    if self._needleTarget ~= slotPos then
-        self._needleTarget = slotPos
+    if self._needleTarget ~= index then
+        self._needleTarget = index
         self._needleT0 = GetTime()
     end
     if not self.opts.live then
@@ -121,21 +121,21 @@ end
 -- OnUpdate OUTSIDE the steer skip: the grow-in and the sweep both keep
 -- moving under a cursor that is holding still.
 function PaletteView:AdvanceNeedle(nowTime)
-    local slotPos = self._needleTarget
+    local index = self._needleTarget
     local hub = self.hub
-    local lineTex = slotPos and hub.needle
-    if not lineTex then
+    local line = index and hub.needle
+    if not line then
         return
     end
 
-    local wid = self.widgets[slotPos]
+    local wid = self.widgets[index]
     local fx, fy = self.frame:GetCenter()
     local wx, wy
     if wid and wid:IsShown() then
         wx, wy = wid:GetCenter()
     end
     if not fx or not wx then
-        lineTex:Hide()
+        line:Hide()
         hub.pulse:Hide()
         return
     end
@@ -147,7 +147,7 @@ function PaletteView:AdvanceNeedle(nowTime)
     local trimS = self._needleTrimS or 0
     local trimE = self._needleTrimE or 0
     if dist <= trimS + trimE + 1 then
-        lineTex:Hide()
+        line:Hide()
         hub.pulse:Hide()
         return
     end
@@ -164,10 +164,10 @@ function PaletteView:AdvanceNeedle(nowTime)
         t = 1
     end
     local ease = 1 - (1 - t) * (1 - t)
-    lineTex:SetStartPoint("CENTER", self.frame, sx, sy)
-    lineTex:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
-    lineTex:SetVertexColor(r, g, b, 0.75 * ease)
-    lineTex:Show()
+    line:SetStartPoint("CENTER", self.frame, sx, sy)
+    line:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
+    line:SetVertexColor(r, g, b, 0.75 * ease)
+    line:Show()
 
     local pulse = hub.pulse
     if ease >= 1 then
@@ -350,12 +350,12 @@ function PaletteView:HitTest(theta, dist)
         -- falls out of the claim entirely rather than trying another
         -- ring: the rings partition the RADIUS, not the angle.
         for r = 1, #c.rows do
-            local rowFrame = c.rows[r]
-            if dist >= rowFrame.lo and (not rowFrame.hi or dist < rowFrame.hi) then
-                if rowFrame.step > 0 then
-                    local rel = (theta - rowFrame.start + rowFrame.step * 0.5) % TWO_PI
-                    if rel < rowFrame.n * rowFrame.step then
-                        return c.base + rowFrame.base + floor(rel / rowFrame.step) + 1
+            local row = c.rows[r]
+            if dist >= row.lo and (not row.hi or dist < row.hi) then
+                if row.step > 0 then
+                    local rel = (theta - row.start + row.step * 0.5) % TWO_PI
+                    if rel < row.n * row.step then
+                        return c.base + row.base + floor(rel / row.step) + 1
                     end
                 end
                 break
@@ -450,8 +450,8 @@ function PaletteView:AdvanceArc()
                 d = TWO_PI - d
             end
             local key = FalloffK(d / step)
-            s = upper(minS, decay ^ key)
-            a = upper(minA, aDecay ^ key)
+            s = max(minS, decay ^ key)
+            a = max(minA, aDecay ^ key)
         end
 
         -- Magnified here rather than left to the selection paint: these sizes

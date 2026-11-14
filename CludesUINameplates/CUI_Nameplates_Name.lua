@@ -100,12 +100,12 @@ function NameplateFrame:UpdateName()
     -- The slotted name-family variant decides what renders: name or a level+name
     -- combo (in the slot's materialized part colours). A nil slot keeps the plain-name
     -- write (RefreshNamePosition hides it).
-    local slotIndex = mod.FindNameSlot()
-    local el = slotIndex and GetTextSlot(slotIndex) or "enemyName"
+    local slot = mod.FindNameSlot()
+    local el = slot and GetTextSlot(slot) or "enemyName"
     local name = CludesUI.WithSurname(UnitName(unitToken))
     if type(name) == "string" then
-        name = mod.NP_FormatName(name, slotIndex, unitToken) -- the slot's Name Format
-        mod.SetNameElementText(self.name, el, name, unitToken, slotIndex)
+        name = mod.NP_FormatName(name, slot, unitToken) -- the slot's Name Format
+        mod.SetNameElementText(self.name, el, name, unitToken, slot)
         -- Debuff coloring's Color Name copies follow the text (RefreshNamePosition
         -- passes it on too).
         if p and p.nameRaidMarkerEnabled == true then
@@ -174,8 +174,8 @@ function NameplateFrame:UpdateClassification()
     if not self.unit then
         return
     end
-    local slotIndex = GetClassificationSlot()
-    if slotIndex == "none" then
+    local slot = GetClassificationSlot()
+    if slot == "none" then
         self.classFrame:Hide()
         self:UpdateNameWidth()
         return
@@ -224,7 +224,7 @@ function NameplateFrame:UpdateClassification()
     local cxOff, cyOff = GetAuraSlotOffsets("classification")
     self.classFrame._npSz = sz
     Pix.Size(self.classFrame, sz, sz)
-    PlaceSlotIcon(self, self.classFrame, slotIndex, cxOff, cyOff, 2, sz)
+    PlaceSlotIcon(self, self.classFrame, slot, cxOff, cyOff, 2, sz)
     self.classFrame:Show()
     self:UpdateNameWidth()
 end
@@ -238,12 +238,12 @@ function NameplateFrame:UpdateClassification()
     if p and p.classificationIncludeFaction then
         self:UpdateFaction()
     end
-    local slotIndex = GetClassificationSlot()
+    local slot = GetClassificationSlot()
     -- Its own chain pass is this one's when the two share the slot.
-    self:UpdateQuestText(slotIndex)
+    self:UpdateQuestText(slot)
     -- Elements sharing the slot follow the indicator's show, hide and move.
     if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slotIndex)
+        mod.NP_CoreChain(self, slot)
     end
 end
 
@@ -259,9 +259,9 @@ local QT = {}
 local function QuestTextMeasure(textValue, size, font, outline)
     local fontStr = QT.fs
     if not fontStr then
-        local hostRegion = CreateFrame("Frame", nil, UIParent)
-        hostRegion:Hide()
-        fontStr = hostRegion:CreateFontString(nil, "OVERLAY")
+        local host = CreateFrame("Frame", nil, UIParent)
+        host:Hide()
+        fontStr = host:CreateFontString(nil, "OVERLAY")
         QT.fs = fontStr
     end
     if QT.size ~= size or QT.font ~= font or QT.outline ~= outline then
@@ -280,9 +280,9 @@ local function QuestTextMeasure(textValue, size, font, outline)
 end
 local function QuestTextTypeIconHide(self)
     local f = self.questTextFrame
-    local glyph = self.questTextTypeIcon
-    if glyph and glyph:IsShown() then
-        glyph:Hide()
+    local icon = self.questTextTypeIcon
+    if icon and icon:IsShown() then
+        icon:Hide()
     end
     if f and f._qtTypeIconOn then
         self.questText:ClearAllPoints()
@@ -323,9 +323,9 @@ local function QuestTextHide(self, chainedBy)
     end
 end
 function NameplateFrame:UpdateQuestText(chainedBy)
-    local slotIndex = mod.NP_GetQuestTextSlot()
+    local slot = mod.NP_GetQuestTextSlot()
     local unitToken = self.unit
-    if slotIndex == "none" or not unitToken then
+    if slot == "none" or not unitToken then
         QuestTextHide(self, chainedBy)
         return
     end
@@ -341,14 +341,14 @@ function NameplateFrame:UpdateQuestText(chainedBy)
             QuestTextHide(self, chainedBy)
             return
         end
-        iconSz = mod.NP_ElementSize("quest", nil, slotIndex)
+        iconSz = mod.NP_ElementSize("quest", nil, slot)
     end
     local f = self.questTextFrame
     if not f then
         -- The faction badge's tier, born in the plate's aspect holder like the other slot
         -- icons (PlatePool, coreHost), so a Core Positions chain can anchor it to an aura row.
         f = CreateFrame("Frame", nil, self.coreHost or self)
-        f:SetFrameStrata(mod.GetSlotRaiseStrata(slotIndex) and "HIGH" or "MEDIUM")
+        f:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
         f:SetFrameLevel(self.health:GetFrameLevel() + 2)
         f:Hide()
         local fontStr = f:CreateFontString(nil, "OVERLAY")
@@ -357,11 +357,11 @@ function NameplateFrame:UpdateQuestText(chainedBy)
         fontStr:SetJustifyV("MIDDLE")
         fontStr:SetWordWrap(false)
         fontStr:SetTextColor(1, 1, 1, 1)
-        local glyph = f:CreateTexture(nil, "ARTWORK")
-        glyph:SetAllPoints()
-        glyph:SetAtlas("Crosshair_Quest_64")
-        glyph:Hide()
-        self.questText, self.questTextIcon, self.questTextFrame = fontStr, glyph, f
+        local icon = f:CreateTexture(nil, "ARTWORK")
+        icon:SetAllPoints()
+        icon:SetAtlas("Crosshair_Quest_64")
+        icon:Hide()
+        self.questText, self.questTextIcon, self.questTextFrame = fontStr, icon, f
     end
     local wid, hgt
     if textValue then
@@ -426,27 +426,27 @@ function NameplateFrame:UpdateQuestText(chainedBy)
     local lastW, lastSlot, wasShown = f._npW, self._qtSlot, f:IsShown()
     f._npW, f._npSz = wid, hgt
     Pix.Size(f, wid, hgt)
-    local xOff, yOff = GetSlotOffsets(slotIndex)
-    PlaceSlotIcon(self, f, slotIndex, xOff, yOff, 2, hgt)
-    self._qtSlot = slotIndex
+    local xOff, yOff = GetSlotOffsets(slot)
+    PlaceSlotIcon(self, f, slot, xOff, yOff, 2, hgt)
+    self._qtSlot = slot
     f:Show()
     if not wasShown or lastW ~= wid then
         self:UpdateNameWidth()
     end
     -- A side slot pushes the target arrows out, like the classification icon.
     if
-        (not wasShown or lastSlot ~= slotIndex or lastW ~= wid)
-        and (slotIndex == "left" or slotIndex == "right" or lastSlot == "left" or lastSlot == "right")
+        (not wasShown or lastSlot ~= slot or lastW ~= wid)
+        and (slot == "left" or slot == "right" or lastSlot == "left" or lastSlot == "right")
     then
         PositionArrowsOutsideAuras(self)
     end
     -- Elements sharing the slot follow its show and move (and close up where it left).
     if mod.NP_CoreChain then
-        if wasShown and lastSlot and lastSlot ~= slotIndex and lastSlot ~= chainedBy then
+        if wasShown and lastSlot and lastSlot ~= slot and lastSlot ~= chainedBy then
             mod.NP_CoreChain(self, lastSlot)
         end
-        if slotIndex ~= chainedBy then
-            mod.NP_CoreChain(self, slotIndex)
+        if slot ~= chainedBy then
+            mod.NP_CoreChain(self, slot)
         end
     end
 end
@@ -456,10 +456,10 @@ end
 -- artOnly (the plate's own UNIT_FACTION): a badge already up in this slot only
 -- needs its art checked; every layout input moves through a layout caller.
 function NameplateFrame:UpdateFaction(artOnly)
-    local slotIndex = mod.NP_GetFactionSlot()
+    local slot = mod.NP_GetFactionSlot()
     local unitToken = self.unit
     -- Zero cost while the slot is None: no badge frame, no events.
-    if unitToken and slotIndex ~= "none" then
+    if unitToken and slot ~= "none" then
         -- Faction and PvP flag changes both arrive as UNIT_FACTION (the one event
         -- Blizzard's own unit frames repaint their PvP badge on).
         if self._factionEv ~= unitToken then
@@ -472,7 +472,7 @@ function NameplateFrame:UpdateFaction(artOnly)
             -- plate's aspect holder like the other slot icons (PlatePool, coreHost), so a
             -- Core Positions chain can anchor it to an aura row.
             local f = CreateFrame("Frame", nil, self.coreHost or self)
-            f:SetFrameStrata(mod.GetSlotRaiseStrata(slotIndex) and "HIGH" or "MEDIUM")
+            f:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
             f:SetFrameLevel(self.health:GetFrameLevel() + 2)
             f:Hide()
             self.faction = f:CreateTexture(nil, "ARTWORK")
@@ -484,7 +484,7 @@ function NameplateFrame:UpdateFaction(artOnly)
         self._factionEv = nil
     end
     local atlas, dim
-    if unitToken and slotIndex ~= "none" then
+    if unitToken and slot ~= "none" then
         atlas, dim = mod.NP_FactionBadge(unitToken)
     end
     if not atlas then
@@ -497,7 +497,7 @@ function NameplateFrame:UpdateFaction(artOnly)
             end
             -- Elements sharing the slot close up.
             if mod.NP_CoreChain then
-                mod.NP_CoreChain(self, slotIndex)
+                mod.NP_CoreChain(self, slot)
             end
         end
         return
@@ -505,21 +505,21 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- Repaint only when the art or the dim changes (inputs: faction, Icon Style, honor
     -- badge, dim). The texture keeps its art across pool recycles, so the memo never
     -- goes stale.
-    local look = mod.NP_GetFactionStyle()
-    local badge = CludesUI.FactionBadgeFor(look, unitToken)
-    if self._facArt ~= atlas or self._facStyle ~= look or self._facBadge ~= badge then
-        CludesUI.SetFactionArt(self.faction, look, atlas, badge)
-        self._facArt, self._facStyle, self._facBadge = atlas, look, badge
+    local style = mod.NP_GetFactionStyle()
+    local badge = CludesUI.FactionBadgeFor(style, unitToken)
+    if self._facArt ~= atlas or self._facStyle ~= style or self._facBadge ~= badge then
+        CludesUI.SetFactionArt(self.faction, style, atlas, badge)
+        self._facArt, self._facStyle, self._facBadge = atlas, style, badge
     end
     if self._facDim ~= dim then
         self.faction:SetDesaturated(dim)
         self.faction:SetAlpha(dim and 0.6 or 1)
         self._facDim = dim
     end
-    if artOnly and self._facSlot == slotIndex and self.factionFrame:IsShown() then
+    if artOnly and self._facSlot == slot and self.factionFrame:IsShown() then
         return
     end
-    local fxOff, fyOff = GetSlotOffsets(slotIndex)
+    local fxOff, fyOff = GetSlotOffsets(slot)
     local sz = mod.NP_GetFactionIconSize()
     self.factionFrame._npSz = sz
     Pix.Size(self.factionFrame, sz, sz)
@@ -529,23 +529,23 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- Bottom slot so it clears the cast bar.
     if p and p.classificationIncludeFaction and self.classFrame:IsShown() then
         local step = math.floor((self.classFrame._npSz or GetRareEliteIconSize()) * 0.6 + 0.5)
-        if slotIndex == "bottom" then
+        if slot == "bottom" then
             step = -step
         end
-        if mod.NP_CoreChained and mod.NP_CoreChained(slotIndex) then
+        if mod.NP_CoreChained and mod.NP_CoreChained(slot) then
             -- Other elements share the slot: the pair is one member of its chain, so the
             -- badge rides the indicator wherever the chain puts it.
             self.factionFrame:ClearAllPoints()
             Pix.Point(self.factionFrame, "BOTTOMLEFT", self.classFrame, "BOTTOMLEFT", 0, step)
         else
-            PlaceSlotIcon(self, self.factionFrame, slotIndex, fxOff, fyOff + step, 2, sz)
+            PlaceSlotIcon(self, self.factionFrame, slot, fxOff, fyOff + step, 2, sz)
         end
     else
-        PlaceSlotIcon(self, self.factionFrame, slotIndex, fxOff, fyOff, 2, sz)
+        PlaceSlotIcon(self, self.factionFrame, slot, fxOff, fyOff, 2, sz)
     end
     local wasShown = self.factionFrame:IsShown()
     local lastSlot = self._facSlot
-    self._facSlot = slotIndex
+    self._facSlot = slot
     self.factionFrame:Show()
     if not wasShown then
         self:UpdateNameWidth()
@@ -553,14 +553,14 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- A side-slot badge pushes the target arrows out, like the classification icon:
     -- re-flank them when it appears or moves into or out of a side slot.
     if
-        (not wasShown or lastSlot ~= slotIndex)
-        and (slotIndex == "left" or slotIndex == "right" or lastSlot == "left" or lastSlot == "right")
+        (not wasShown or lastSlot ~= slot)
+        and (slot == "left" or slot == "right" or lastSlot == "left" or lastSlot == "right")
     then
         PositionArrowsOutsideAuras(self)
     end
     -- Elements sharing the slot follow the badge's show and move.
     if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slotIndex)
+        mod.NP_CoreChain(self, slot)
     end
 end
 -- The room a name has in the Top slot: the bar minus the raid marker, the Rare/Quest
@@ -733,17 +733,17 @@ function NameplateFrame:RefreshNamePosition(localOnly)
         or nameSlot == "textSlotTopRight"
     then
         local txOff, tyOff = GetTextSlotOffsets(nameSlot)
-        local slotIndex =
+        local slot =
             HP_BAR_SLOTS[(nameSlot == "textSlotBottomLeft" and 4) or (nameSlot == "textSlotBottomRight" and 5) or (nameSlot == "textSlotTopLeft" and 6) or 7]
         SetFSFont(self.name, GetTextSlotSize(nameSlot), GetNPOutline())
         self.name:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
         self:PlaceSlotText(
             self.name,
-            slotIndex,
-            txOff + ((slotIndex.justify == "LEFT") and nameMarkerReserve or 0),
+            slot,
+            txOff + ((slot.justify == "LEFT") and nameMarkerReserve or 0),
             tyOff
         )
-        self.name:SetJustifyH(slotIndex.justify)
+        self.name:SetJustifyH(slot.justify)
         self.name:Show()
     elseif nameSlot == "textSlotTop" then
         local txOff, tyOff = GetTextSlotOffsets("textSlotTop")

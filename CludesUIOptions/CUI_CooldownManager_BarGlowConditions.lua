@@ -48,9 +48,9 @@ local function SpellLabel(spellRef)
 end
 
 -- A spell icon that shows the spell's tooltip on hover.
-function mod.BarGlowSpellIcon(hostFrame, dim, spellId)
+function mod.BarGlowSpellIcon(hostFrame, size, spellId)
     local f = CreateFrame("Frame", nil, hostFrame)
-    f:SetSize(dim, dim)
+    f:SetSize(size, size)
     f:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
     f.tex = f:CreateTexture(nil, "ARTWORK")
     f.tex:SetAllPoints()
@@ -217,7 +217,7 @@ local function Row(idx)
     return r
 end
 
-function mod.ShowBarGlowBuffMenu(anchorFrame, options)
+function mod.ShowBarGlowBuffMenu(anchor, options)
     if dropMenu then
         dropMenu:Hide()
     end
@@ -239,7 +239,7 @@ function mod.ShowBarGlowBuffMenu(anchorFrame, options)
     if not dropMenu then
         BuildMenu()
     end
-    menuOpts, menuAnchor = options, anchorFrame
+    menuOpts, menuAnchor = options, anchor
     dropMenu._btnIdx = nil
 
     local environ = mod._CDMO_OptEnv or {}
@@ -257,26 +257,26 @@ function mod.ShowBarGlowBuffMenu(anchorFrame, options)
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
         r:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        local name, glyph = sp.name, sp.icon
-        if not (name and glyph) then
+        local name, icon = sp.name, sp.icon
+        if not (name and icon) then
             local spellName, spellIcon = SpellLabel(spellRef)
-            name, glyph = name or spellName, glyph or spellIcon
+            name, icon = name or spellName, icon or spellIcon
         end
-        r.ico:SetTexture(glyph)
+        r.ico:SetTexture(icon)
         r.lbl:SetFont(font, 11, outline)
         r.lbl:SetText(CludesUI.L(name))
         r.lbl:SetTextColor(CludesUI.TEXT_DIM_R, CludesUI.TEXT_DIM_G, CludesUI.TEXT_DIM_B, CludesUI.TEXT_DIM_A)
         r:Show()
         mH = mH + ITEM_H
     end
-    local function AddUsable(itemInfo)
+    local function AddUsable(item)
         num = num + 1
         local r = Row(num)
         r.sp = { spellID = 0, usable = true }
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
         r:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        r.ico:SetTexture(itemInfo.icon or 134400)
+        r.ico:SetTexture(item.icon or 134400)
         r.lbl:SetFont(font, 11, outline)
         r.lbl:SetText(CludesUI.L("Glow When Usable"))
         r.lbl:SetTextColor(CludesUI.TEXT_DIM_R, CludesUI.TEXT_DIM_G, CludesUI.TEXT_DIM_B, CludesUI.TEXT_DIM_A)
@@ -350,15 +350,15 @@ function mod.ShowBarGlowBuffMenu(anchorFrame, options)
     dropMenu._maxScroll = totalH - MAX_H
     scroll:SetVerticalScroll(0)
     dropMenu:ClearAllPoints()
-    dropMenu:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -2)
+    dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
     dropMenu:Show()
     return dropMenu
 end
 
 -- Single choice for the When / And rows: closes on a pick.
-local function ShowPicker(anchorFrame, currentSid, onPick)
+local function ShowPicker(anchor, currentSid, onPick)
     local current = tonumber(currentSid)
-    mod.ShowBarGlowBuffMenu(anchorFrame, {
+    mod.ShowBarGlowBuffMenu(anchor, {
         emptyText = "No Cooldown Manager buffs to choose from.",
         isChecked = function(spellRef)
             return tonumber(spellRef) == current
@@ -385,7 +385,7 @@ local USABLE_ORDER = { "USABLE" }
 -- right is a standard toggle row labelled "And"; while it is off the buff
 -- picker and its state grey out. Returns the new y.
 -- ownSid: the button's ability when the entry saves none (CDM icons).
-function mod.BuildBarGlowWhenRow(Widgets, hostFrame, posY, record, onChange, ownSid)
+function mod.BuildBarGlowWhenRow(W, hostFrame, posY, record, onChange, ownSid)
     local c = Cond(record)
     local Paint -- forward: the toggle repaints the right column
     local usable = record.mode == "USABLE"
@@ -393,7 +393,7 @@ function mod.BuildBarGlowWhenRow(Widgets, hostFrame, posY, record, onChange, own
     local ownName = (spellRef > 0) and SpellLabel(spellRef)
         or (usable and CludesUI.L("this ability") or "buff")
 
-    local rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+    local row, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = CludesUI.Lf("When %1$s Is", ownName),
         values = usable and USABLE_VALUES or STATE_VALUES,
@@ -436,14 +436,14 @@ function mod.BuildBarGlowWhenRow(Widgets, hostFrame, posY, record, onChange, own
         return posY
     end
 
-    local leftX, right = rowFrame._leftRegion, rowFrame._rightRegion
+    local leftX, right = row._leftRegion, row._rightRegion
     local lRef = leftX and leftX._label
     local rRef = right and right._label
-    local font, dim = STANDARD_TEXT_FONT, 13
+    local font, size = STANDARD_TEXT_FONT, 13
     if lRef and lRef.GetFont then
         local f, s = lRef:GetFont()
         if f then
-            font, dim = f, s or dim
+            font, size = f, s or size
         end
     end
     local r, g, b = 1, 1, 1
@@ -451,18 +451,18 @@ function mod.BuildBarGlowWhenRow(Widgets, hostFrame, posY, record, onChange, own
         r, g, b = lRef:GetTextColor()
     end
     local CTL_H = 30 -- the options dropdown height (Glow Type)
-    local function Word(hostRegion, textValue)
-        local fontStr = hostRegion:CreateFontString(nil, "OVERLAY")
-        fontStr:SetFont(font, dim, "")
+    local function Word(host, textValue)
+        local fontStr = host:CreateFontString(nil, "OVERLAY")
+        fontStr:SetFont(font, size, "")
         fontStr:SetTextColor(r, g, b, 1)
         fontStr:SetText(textValue)
         return fontStr
     end
 
     -- Right column: after the "And" label, before the toggle -----------------
-    local rx = CreateFrame("Frame", nil, right or rowFrame)
+    local rx = CreateFrame("Frame", nil, right or row)
     rx:SetAllPoints()
-    rx:SetFrameLevel((right or rowFrame):GetFrameLevel() + 2)
+    rx:SetFrameLevel((right or row):GetFrameLevel() + 2)
     -- The And buff: a standard dropdown face whose click opens the shared buff
     -- menu (Paint writes its label and icon).
     local buffBtn, buffLbl = CludesUI.BuildDropdownControl(
@@ -507,11 +507,11 @@ function mod.BuildBarGlowWhenRow(Widgets, hostFrame, posY, record, onChange, own
     stateDrop:SetPoint("LEFT", isWord, "RIGHT", 8, 0)
 
     Paint = function()
-        local name, glyph = SpellLabel(c.spellID)
+        local name, icon = SpellLabel(c.spellID)
         buffLbl:SetText(name)
         -- Only the label's LEFT point moves; its RIGHT stays on the arrow.
-        if glyph then
-            buffBtn.icon:SetTexture(glyph)
+        if icon then
+            buffBtn.icon:SetTexture(icon)
             buffBtn.icon:Show()
             buffLbl:SetPoint("LEFT", buffBtn.icon, "RIGHT", 6, 0)
         else
@@ -565,7 +565,7 @@ end
 -- Only In Combat | Hero Talent (the current spec's hero trees; glows are
 -- saved per spec). Retail only: WoW Forever has no hero talents, so the page
 -- pairs Only In Combat with Glow Color there instead. Returns the new y.
-function mod.BuildBarGlowCombatRow(Widgets, hostFrame, posY, record, onChange)
+function mod.BuildBarGlowCombatRow(W, hostFrame, posY, record, onChange)
     local combatCfg = mod.BarGlowCombatCfg(record, onChange)
     local heroValues, heroOrder = { any = CludesUI.L("Any") }, { "any" }
     for _, t in ipairs(mod.BarGlowHeroTrees and mod.BarGlowHeroTrees() or {}) do
@@ -578,7 +578,7 @@ function mod.BuildBarGlowCombatRow(Widgets, hostFrame, posY, record, onChange)
         heroValues[tostring(current)] = "Hero Tree " .. current
         heroOrder[#heroOrder + 1] = tostring(current)
     end
-    local _, hgt = Widgets:DualRow(hostFrame, posY, combatCfg, {
+    local _, hgt = W:DualRow(hostFrame, posY, combatCfg, {
         type = "dropdown",
         text = "Hero Talent",
         tooltip = "Only use this glow while the chosen hero talent tree is active. Any: always.",
@@ -602,7 +602,7 @@ end
 -- (buff, style, colour, stacks, And condition, hero talent) right below it, so
 -- variants of the same buff (e.g. one per hero tree) start from the original.
 -- Returns the button so the buff icon can sit to its left.
-function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, slotPos, onDone)
+function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, index, onDone)
     if CludesUI._prebuilding or not (regionFrame and removeBtn and buffList) then
         return nil
     end
@@ -612,13 +612,13 @@ function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, slotPos, o
     b:SetFrameLevel(removeBtn:GetFrameLevel())
     b:SetPoint("RIGHT", removeBtn, "LEFT", -8, 0)
     CludesUI.MakeStyledButton(b, CludesUI.L("Duplicate"), 13, CludesUI.RB_COLOURS, function()
-        local source = buffList[slotPos]
+        local source = buffList[index]
         if type(source) ~= "table" then
             return
         end
         local copy = CopyTable(source)
         copy.collapsed = nil -- the copy opens expanded
-        table.insert(buffList, slotPos + 1, copy)
+        table.insert(buffList, index + 1, copy)
         if onDone then
             onDone()
         end
@@ -673,22 +673,22 @@ function mod.BuildBarGlowHeader(hostFrame, posY, record, aIdx, ownSid)
     end
     local H = 38
     local pad = CludesUI.CONTENT_PAD or 20
-    local barFrame = CreateFrame("Button", nil, hostFrame)
-    barFrame:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", pad, posY)
-    barFrame:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -pad, posY)
-    barFrame:SetHeight(H)
-    barFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
-    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+    local bar = CreateFrame("Button", nil, hostFrame)
+    bar:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", pad, posY)
+    bar:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -pad, posY)
+    bar:SetHeight(H)
+    bar:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+    local backdrop = bar:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(1, 1, 1, 0.04)
 
     -- The arrow drawn three times, 1px apart, for a bolder stroke than the icon art.
     local arrows = {}
-    for idx, offset in ipairs({ { 0, 0 }, { 1, 0 }, { 0, -1 } }) do
-        local t = barFrame:CreateTexture(nil, "OVERLAY")
+    for idx, off in ipairs({ { 0, 0 }, { 1, 0 }, { 0, -1 } }) do
+        local t = bar:CreateTexture(nil, "OVERLAY")
         t:SetSize(16, 16)
         t:SetTexture(collapsed and ARROW_RIGHT or ARROW_DOWN)
-        t:SetPoint("LEFT", barFrame, "LEFT", 10 + offset[1], offset[2])
+        t:SetPoint("LEFT", bar, "LEFT", 10 + off[1], off[2])
         arrows[idx] = t
     end
     local arrow = arrows[1]
@@ -701,25 +701,24 @@ function mod.BuildBarGlowHeader(hostFrame, posY, record, aIdx, ownSid)
     PaintArrow(1, 1, 1, 0.7)
 
     local usable = record.mode == "USABLE"
-    local ico =
-        mod.BarGlowSpellIcon(barFrame, 26, usable and (record.actionSpellID or ownSid) or record.spellID)
+    local ico = mod.BarGlowSpellIcon(bar, 26, usable and (record.actionSpellID or ownSid) or record.spellID)
     ico:SetPoint("LEFT", arrow, "RIGHT", 11, 0)
-    local titleText = CludesUI.MakeFont(barFrame, 13, nil, 1, 1, 1)
-    titleText:SetPoint("LEFT", ico, "RIGHT", 10, 0)
-    titleText:SetText(usable and CludesUI.L("Glow When Usable") or (SpellLabel(record.spellID)))
+    local title = CludesUI.MakeFont(bar, 13, nil, 1, 1, 1)
+    title:SetPoint("LEFT", ico, "RIGHT", 10, 0)
+    title:SetText(usable and CludesUI.L("Glow When Usable") or (SpellLabel(record.spellID)))
 
     local ACC = CludesUI.CLUDES_GREEN
-    barFrame:SetScript("OnEnter", function()
+    bar:SetScript("OnEnter", function()
         backdrop:SetColorTexture(1, 1, 1, 0.08)
         PaintArrow(ACC.r, ACC.g, ACC.b, 1)
-        titleText:SetTextColor(ACC.r, ACC.g, ACC.b)
+        title:SetTextColor(ACC.r, ACC.g, ACC.b)
     end)
-    barFrame:SetScript("OnLeave", function()
+    bar:SetScript("OnLeave", function()
         backdrop:SetColorTexture(1, 1, 1, 0.04)
         PaintArrow(1, 1, 1, 0.7)
-        titleText:SetTextColor(1, 1, 1)
+        title:SetTextColor(1, 1, 1)
     end)
-    barFrame:SetScript("OnClick", function()
+    bar:SetScript("OnClick", function()
         record.collapsed = (not collapsed) and true or nil
         CludesUI:RefreshPage(true)
     end)

@@ -1025,8 +1025,8 @@ local function RebuildBagCounts()
     _itemCountDirty = false
     for bag = 0, 4 do
         local numSlots = C_Container and C_Container.GetContainerNumSlots(bag) or 0
-        for slotIndex = 1, numSlots do
-            local details = C_Container and C_Container.GetContainerItemInfo(bag, slotIndex)
+        for slot = 1, numSlots do
+            local details = C_Container and C_Container.GetContainerItemInfo(bag, slot)
             if details and details.itemID then
                 _bagCounts[details.itemID] = (_bagCounts[details.itemID] or 0) + (details.stackCount or 1)
             end
@@ -1243,9 +1243,9 @@ function REMIND.ResolveConsumables()
     end
 
     -- Weapon enchant per slot: cat (equipped weapon type) gates the reminder in CollectConsumables and selects the item; resolves even out of stock (desaturated), same fallback order as inline code.
-    for _, slotIndex in ipairs({ 16, 17 }) do
-        local r = R.we[slotIndex]
-        local category = GetWeaponCategory(slotIndex)
+    for _, slot in ipairs({ 16, 17 }) do
+        local r = R.we[slot]
+        local category = GetWeaponCategory(slot)
         r.cat = category
         local bestItemID = FindWeaponEnchantItem(pwe, luwe, category)
         r.hasBags = (bestItemID ~= nil)

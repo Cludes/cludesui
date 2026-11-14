@@ -83,10 +83,10 @@ local N = 9
 
 -- Nine textures on `parent` at layer/sublevel, created once; keep the table
 -- and hand it back to Seat.
-function CF.Create(hostFrame, layer, subFrame)
+function CF.Create(hostFrame, layer, sub)
     local p = {}
     for idx = 1, N do
-        local t = hostFrame:CreateTexture(nil, layer or "OVERLAY", nil, subFrame or 2)
+        local t = hostFrame:CreateTexture(nil, layer or "OVERLAY", nil, sub or 2)
         t:SetTexture(FILE)
         if t.SetSnapToPixelGrid then
             t:SetSnapToPixelGrid(false)

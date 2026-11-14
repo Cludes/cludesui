@@ -153,10 +153,10 @@ mod.CDM_CLASSIC_RING = "Interface\\Buttons\\UI-Quickslot2"
 mod.CDM_CLASSIC_RING_SCALE = 66 / 36
 mod.CDM_CLASSIC_RING_Y = -1 / 36
 -- Places a classic ring texture round a w x h icon region.
-function mod.CdmPlaceClassicRing(shade, anchorFrame, wid, hgt)
+function mod.CdmPlaceClassicRing(shade, anchor, wid, hgt)
     shade:ClearAllPoints()
     shade:SetSize(wid * mod.CDM_CLASSIC_RING_SCALE, hgt * mod.CDM_CLASSIC_RING_SCALE)
-    shade:SetPoint("CENTER", anchorFrame, "CENTER", 0, hgt * mod.CDM_CLASSIC_RING_Y)
+    shade:SetPoint("CENTER", anchor, "CENTER", 0, hgt * mod.CDM_CLASSIC_RING_Y)
 end
 -- The swipe file the latched icon style draws: the viewer's rounded swipe
 -- under Blizzard Style, CUI's square swipe otherwise.
@@ -296,12 +296,12 @@ mod.EffectiveBarAlpha = EffectiveBarAlpha
 -- (Blizzard hides its own inactive items instead, so those slots hold no frame
 -- at all). Single predicate so the alpha passes and the mouse passes can never
 -- disagree. Off-by-default flags first: non-users stop at the first field.
-local function IsPlaceholderRenderHidden(glyph, barInfo)
-    if not glyph then
+local function IsPlaceholderRenderHidden(icon, barInfo)
+    if not icon then
         return false
     end
-    return ((barInfo and barInfo.hidePlaceholderIcon) or glyph._missingHidden)
-            and glyph._isPlaceholderFrame
+    return ((barInfo and barInfo.hidePlaceholderIcon) or icon._missingHidden)
+            and icon._isPlaceholderFrame
             and true
         or false
 end
@@ -520,12 +520,12 @@ mod.BUFF_BAR_PRESETS = BUFF_BAR_PRESETS
 function mod.RefreshLustPresetFaction()
     local alliance = UnitFactionGroup("player") == "Alliance"
     local name = alliance and "Heroism" or "Bloodlust"
-    local glyph = alliance and "Interface\\Icons\\ability_shaman_heroism"
+    local icon = alliance and "Interface\\Icons\\ability_shaman_heroism"
         or "Interface\\Icons\\spell_nature_bloodlust"
     mod._lustPresetSpellID = alliance and 32182 or 2825
     for _, p in ipairs(BUFF_BAR_PRESETS) do
         if p.key == "bloodlust" then
-            p.name, p.icon = name, glyph
+            p.name, p.icon = name, icon
             -- This character's id leads: everything that stores a preset takes
             -- spellIDs[1], while the membership tests read the whole list.
             p.spellIDs[1] = mod._lustPresetSpellID
@@ -537,7 +537,7 @@ function mod.RefreshLustPresetFaction()
     -- same table), and is built after this file, so it is absent on the first call.
     for _, e in ipairs(mod.TBB_POPULAR_BUFFS or {}) do
         if e.key == "bloodlust" then
-            e.name, e.icon = name, glyph
+            e.name, e.icon = name, icon
             break
         end
     end

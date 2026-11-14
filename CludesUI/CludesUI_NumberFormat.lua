@@ -172,13 +172,13 @@ end
 local function TrimTiers(rowList, threshold)
     local result = {}
     for idx = 1, #rowList do
-        local rowFrame = rowList[idx]
-        local bp = rowFrame.breakpoint
+        local row = rowList[idx]
+        local bp = row.breakpoint
         if bp >= threshold or bp <= 1 then
-            result[#result + 1] = rowFrame
+            result[#result + 1] = row
         elseif not result[1] or result[#result].breakpoint > threshold then
-            rowFrame.breakpoint = threshold
-            result[#result + 1] = rowFrame
+            row.breakpoint = threshold
+            result[#result + 1] = row
         end
     end
     return result
@@ -305,18 +305,18 @@ local function BuildRows(precision, glyphs, lower)
     end
     local rowList = {}
     for idx = 1, #units do
-        local baseValue = units[idx][1]
+        local base = units[idx][1]
         local abbr = (lower and units[idx][3]) or units[idx][2]
         local cap = idx > 1 and units[idx - 1][1] or nil
         if precision == "smart" then
             for k = 2, 0, -1 do
-                local bp = baseValue * 10 ^ k
+                local bp = base * 10 ^ k
                 if not cap or bp < cap then
                     local d = 10 ^ (2 - k)
                     rowList[#rowList + 1] = {
                         breakpoint = bp,
                         abbreviation = abbr,
-                        significandDivisor = baseValue / d,
+                        significandDivisor = base / d,
                         fractionDivisor = d,
                         abbreviationIsGlobal = false,
                     }
@@ -325,9 +325,9 @@ local function BuildRows(precision, glyphs, lower)
         else
             local d = 10 ^ precision
             rowList[#rowList + 1] = {
-                breakpoint = baseValue,
+                breakpoint = base,
                 abbreviation = abbr,
-                significandDivisor = baseValue / d,
+                significandDivisor = base / d,
                 fractionDivisor = d,
                 abbreviationIsGlobal = false,
             }

@@ -16,9 +16,7 @@ if not Inner or Inner.last ~= "TooltipVisibility" then
     return
 end
 
-local GetFFD = Inner.GetFFD-------------------------------------------------------------------------------
---  Blizzard HUD reskins: tooltip progress/status bars, UI widget status bar
---  covers, and the extra action button.
+local GetFFD = Inner.GetFFD--  covers, and the extra action button.
 --
 --  These are not WINDOWS -- no shell, no per-window style dropdown -- so they
 --  live here rather than in a window pack.
@@ -29,7 +27,7 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
 --  would hand this block a nil engine. WS() below reads it on first use, so
 --  there is no silent fallback to hand-rolled fonts and colors.
 -------------------------------------------------------------------------------
-;
+; ------------------------------------------------------------------------------- --  Blizzard HUD reskins: tooltip progress/status bars, UI widget status bar
 (function()
     local _WS
     local function WS()
@@ -59,16 +57,16 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         if not fontStr or not fontStr.GetFont then
             return
         end
-        local filePath, dim, flags = fontStr:GetFont()
-        if type(dim) ~= "number" or dim <= 0 then
+        local filePath, size, flags = fontStr:GetFont()
+        if type(size) ~= "number" or size <= 0 then
             fontStr:SetFont(filePath or STANDARD_TEXT_FONT, 11, flags or "")
         end
-        local Widgets = WS()
-        if Widgets then
+        local W = WS()
+        if W then
             if white then
-                Widgets.White(fontStr)
+                W.White(fontStr)
             else
-                Widgets.Font(fontStr)
+                W.Font(fontStr)
             end
         elseif white and fontStr.SetTextColor then
             fontStr:SetTextColor(1, 1, 1)
@@ -113,13 +111,13 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         end
     end
 
-    local function BarFill(barFrame)
-        local Widgets = WS()
-        if Widgets and Widgets.ApplyBarFill then
-            Widgets.ApplyBarFill(barFrame)
-        elseif barFrame.SetStatusBarColor then
+    local function BarFill(bar)
+        local W = WS()
+        if W and W.ApplyBarFill then
+            W.ApplyBarFill(bar)
+        elseif bar.SetStatusBarColor then
             local ACC = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-            barFrame:SetStatusBarColor(ACC.r * 0.8, ACC.g * 0.8, ACC.b * 0.8, 0.95)
+            bar:SetStatusBarColor(ACC.r * 0.8, ACC.g * 0.8, ACC.b * 0.8, 0.95)
         end
     end
 
@@ -146,11 +144,11 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
     -- moment a POOLED bar is reused: the first pass creates them (nothing to
     -- clear yet), the next pass clears them, and the bar renders once and then
     -- goes blank.
-    local function StripBarArt(barFrame, keepFill)
-        local owned = GetFFD(barFrame).owned
+    local function StripBarArt(bar, keepFill)
+        local owned = GetFFD(bar).owned
         -- Regions taken ONCE. select(i, bar:GetRegions()) inside the loop
         -- rebuilds the entire vararg every iteration.
-        local regions = { barFrame:GetRegions() }
+        local regions = { bar:GetRegions() }
         for idx = 1, #regions do
             local r = regions[idx]
             if r and r ~= keepFill and not (owned and owned[r]) and r.IsObjectType then
@@ -170,18 +168,18 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         end
     end
 
-    local function SkinBarCommon(barFrame, keyList)
-        if not barFrame or barFrame:IsForbidden() or not barFrame.SetStatusBarTexture then
+    local function SkinBarCommon(bar, keyList)
+        if not bar or bar:IsForbidden() or not bar.SetStatusBarTexture then
             return
         end
         -- Fill installed FIRST, then re-read, so the "clear everything that is
         -- not the fill" sweep below can never clear the live fill whatever art
         -- Blizzard happened to have there.
-        barFrame:SetStatusBarTexture(FLAT)
-        local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
-        StripBarArt(barFrame, fillTex)
+        bar:SetStatusBarTexture(FLAT)
+        local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+        StripBarArt(bar, fill)
         for idx = 1, #keyList do
-            local t = barFrame[keyList[idx]]
+            local t = bar[keyList[idx]]
             if t and t.SetTexture then
                 if t.SetAtlas then
                     t:SetAtlas("")
@@ -190,24 +188,24 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
                 t:SetAlpha(0)
             end
         end
-        local d = GetFFD(barFrame)
+        local d = GetFFD(bar)
         if not d.hudTrough then
             -- OPAQUE and lighter than the widget covers' trough. These sit on
             -- the tooltip's own dark backplate rather than over the world, so
             -- 0.12 at 85% was invisible against it: an EMPTY bar (a world quest
             -- at 0%) read as a gap in the tooltip rather than as a bar. It
             -- needs to be legible with NO fill in it at all.
-            local trough = barFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
+            local trough = bar:CreateTexture(nil, "BACKGROUND", nil, -1)
             trough:SetColorTexture(0.22, 0.22, 0.22, 1)
-            trough:SetAllPoints(barFrame)
+            trough:SetAllPoints(bar)
             d.hudTrough = trough
             d.owned = d.owned or {}
             d.owned[trough] = true
             -- Same 1px black edge as the widget covers. NOT WSkin.AddBorder:
             -- the themed border is what made these read as thick chrome.
-            ThinBorder(barFrame)
+            ThinBorder(bar)
         end
-        BarFill(barFrame)
+        BarFill(bar)
     end
 
     local PROGRESS_ART = {
@@ -219,17 +217,17 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
     }
 
     local function SkinProgressBar(widget)
-        local barFrame = widget and widget.Bar
-        if not barFrame then
+        local bar = widget and widget.Bar
+        if not bar then
             return
         end
-        SkinBarCommon(barFrame, PROGRESS_ART)
-        HouseFont(barFrame.Label, true)
+        SkinBarCommon(bar, PROGRESS_ART)
+        HouseFont(bar.Label, true)
     end
 
-    local function SkinStatusBar(barFrame)
-        SkinBarCommon(barFrame, {})
-        HouseFont(barFrame.Text, true)
+    local function SkinStatusBar(bar)
+        SkinBarCommon(bar, {})
+        HouseFont(bar.Text, true)
     end
 
     local function SweepPool(pool, func)
@@ -380,13 +378,13 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         return true, a, b
     end
 
-    local function RetireCover(barFrame)
-        local c = HUD.covers[barFrame]
+    local function RetireCover(bar)
+        local c = HUD.covers[bar]
         if c then
             c:Hide()
-            HUD.covers[barFrame] = nil
+            HUD.covers[bar] = nil
         end
-        HUD.retired[barFrame] = true
+        HUD.retired[bar] = true
     end
 
     -- Blizzard's frame art extends BEYOND the bar's own rect: in
@@ -460,14 +458,14 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
     -- Capped at MAX_VPAD because BorderLeft/BorderRight are useAtlasSize end
     -- CAPS whose atlas can be far larger than the bar; taking their full height
     -- is what produced the giant-bar round.
-    local function VPad(barFrame)
-        local okB, barH = pcall(barFrame.GetHeight, barFrame)
+    local function VPad(bar)
+        local okB, barH = pcall(bar.GetHeight, bar)
         if not okB or type(barH) ~= "number" or barH <= 0 then
             return 0
         end
         local tallest = barH
         for _, key in ipairs({ "BorderCenter", "BorderLeft", "BorderRight" }) do
-            local okT, t = pcall(HUDGet, barFrame, key)
+            local okT, t = pcall(HUDGet, bar, key)
             if okT and t then
                 local okH, hgt = pcall(t.GetHeight, t)
                 if okH and type(hgt) == "number" and hgt > tallest then
@@ -516,16 +514,16 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
 
     -- Scale factor that lifts a plate cover to the floor; 1 = leave it alone
     -- (floor off, panel bar, or plate at readable scale).
-    local function CoverScale(barFrame, c)
+    local function CoverScale(bar, c)
         local min = HUD.minPx
         if not (c.cuiPlate and type(min) == "number" and min > 0) then
             return 1
         end
-        local okH, hgt = pcall(barFrame.GetHeight, barFrame)
+        local okH, hgt = pcall(bar.GetHeight, bar)
         if not okH or type(hgt) ~= "number" or hgt <= 0 then
             return 1
         end
-        local okE, es = pcall(barFrame.GetEffectiveScale, barFrame)
+        local okE, es = pcall(bar.GetEffectiveScale, bar)
         if not okE or type(es) ~= "number" or es <= 0 then
             return 1
         end
@@ -540,8 +538,8 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         return s
     end
 
-    local function AnchorCover(c, barFrame, pad)
-        local s = CoverScale(barFrame, c)
+    local function AnchorCover(c, bar, pad)
+        local s = CoverScale(bar, c)
         c:ClearAllPoints()
         if s <= 1 then
             -- EXACTLY the bar's rect. With their art hidden there is nothing to
@@ -551,8 +549,8 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
                 c.cuiScale = 1
             end
             c.cuiMin = HUD.minPx
-            c:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-            c:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
+            c:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+            c:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
             return
         end
         -- Scaled: CENTER to CENTER with an explicit size, never the two-corner
@@ -561,26 +559,26 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- the same size as before with a bigger font in it. CENTER with zero
         -- offsets is the one anchor that needs no scale conversion, so the
         -- cover stays centred on the bar it mirrors and grows symmetrically.
-        local okW, wid = pcall(barFrame.GetWidth, barFrame)
-        local okH, hgt = pcall(barFrame.GetHeight, barFrame)
+        local okW, wid = pcall(bar.GetWidth, bar)
+        local okH, hgt = pcall(bar.GetHeight, bar)
         if not (okW and okH) or type(wid) ~= "number" or type(hgt) ~= "number" or wid <= 0 or hgt <= 0 then
             if c.cuiScale ~= 1 then
                 c:SetScale(1)
                 c.cuiScale = 1
             end
             c.cuiMin = HUD.minPx
-            c:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-            c:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
+            c:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+            c:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
             return
         end
         c:SetScale(s)
         c.cuiScale = s
         c.cuiMin = HUD.minPx
         c:SetSize(wid, hgt)
-        c:SetPoint("CENTER", barFrame, "CENTER", 0, 0)
+        c:SetPoint("CENTER", bar, "CENTER", 0, 0)
     end
 
-    local function BuildCover(barFrame, isPlate)
+    local function BuildCover(bar, isPlate)
         -- Parented to the BAR'S OWN PARENT, not UIParent.
         --
         -- UIParent parenting was the original design ("write on ours, none on
@@ -593,15 +591,15 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- SetParent on OUR OWN frame is still not a write into the widget tree;
         -- nothing on a Blizzard frame is modified. It also makes the cover
         -- inherit their scale and show/hide for free.
-        local okP, hostFrame = SafeRead(barFrame, "GetParent")
+        local okP, hostFrame = SafeRead(bar, "GetParent")
         local c = CreateFrame("StatusBar", nil, (okP and hostFrame) or UIParent)
         -- Anchored, never re-parented: position needs no polling because the
         -- anchor does it, including when a nameplate moves.
-        c.cuiPad = VPad(barFrame)
+        c.cuiPad = VPad(bar)
         c.cuiScale = 1
         -- Plate-hosted covers are the only ones the size floor applies to.
         c.cuiPlate = isPlate and true or false
-        AnchorCover(c, barFrame, c.cuiPad)
+        AnchorCover(c, bar, c.cuiPad)
         c:SetStatusBarTexture(FLAT)
         -- OPAQUE trough, not the usual 0.85: this one has to hide Blizzard's
         -- bar and border underneath rather than merely sit behind our own fill.
@@ -669,14 +667,14 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
     local function BarKids(f)
         return { f:GetChildren() }
     end
-    local function HideBarArt(barFrame)
+    local function HideBarArt(bar)
         for idx = 1, #ART do
-            local okT, t = pcall(HUDGet, barFrame, ART[idx])
+            local okT, t = pcall(HUDGet, bar, ART[idx])
             if okT and t then
                 pcall(t.SetAlpha, t, 0)
             end
         end
-        local okP, hostFrame = SafeRead(barFrame, "GetParent")
+        local okP, hostFrame = SafeRead(bar, "GetParent")
         if okP and hostFrame then
             for idx = 1, #PARENT_ART do
                 local okT, t = pcall(HUDGet, hostFrame, PARENT_ART[idx])
@@ -693,7 +691,7 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         --
         -- Our cover is parented to the bar's PARENT, not the bar, so it is
         -- never in this list -- no risk of hiding ourselves.
-        local okK, kids = pcall(BarKids, barFrame)
+        local okK, kids = pcall(BarKids, bar)
         if okK and kids then
             for idx = 1, #kids do
                 local okT, t = pcall(HUDGet, kids[idx], "Tex")
@@ -704,20 +702,20 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         end
     end
 
-    local function SyncCover(barFrame, isPlate)
-        if HUD.retired[barFrame] then
+    local function SyncCover(bar, isPlate)
+        if HUD.retired[bar] then
             return false
         end
-        local c = HUD.covers[barFrame]
+        local c = HUD.covers[bar]
         if not c then
             return false
         end
         -- Pooled bars can migrate between hosts; keep the plate flag current.
         c.cuiPlate = isPlate and true or false
 
-        local shownOk, isShown = SafeRead(barFrame, "IsVisible")
+        local shownOk, isShown = SafeRead(bar, "IsVisible")
         if not shownOk then
-            RetireCover(barFrame)
+            RetireCover(bar)
             return false
         end
         if not isShown then
@@ -727,10 +725,10 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
             return false
         end
 
-        local mmOk, mn, mx = SafeRead(barFrame, "GetMinMaxValues")
-        local vOk, val = SafeRead(barFrame, "GetValue")
+        local mmOk, mn, mx = SafeRead(bar, "GetMinMaxValues")
+        local vOk, val = SafeRead(bar, "GetValue")
         if not (mmOk and vOk) then
-            RetireCover(barFrame)
+            RetireCover(bar)
             return false
         end
 
@@ -747,7 +745,7 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
             changed = true
         end
 
-        local blabel = barFrame.Label
+        local blabel = bar.Label
         local txt
         if blabel then
             local tOk, t = SafeRead(blabel, "GetText")
@@ -770,12 +768,12 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- moves -- so a change IS the re-texture signal. Adopt() also hides at
         -- creation, so a bar is never left showing its own art.
         if changed then
-            HideBarArt(barFrame)
+            HideBarArt(bar)
         end
 
         -- Follow the bar if it is re-parented (these frames are POOLED, so a
         -- reused bar can land under a different option).
-        local pOk, bp = SafeRead(barFrame, "GetParent")
+        local pOk, bp = SafeRead(bar, "GetParent")
         if pOk and bp and c:GetParent() ~= bp then
             c:SetParent(bp)
         end
@@ -783,11 +781,11 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- STRATA FIRST, THEN LEVEL. SetFrameStrata RESETS a frame's level, so
         -- the reverse order silently threw the level away on the first pass and
         -- only self-corrected on the next tick.
-        local stOk, st = SafeRead(barFrame, "GetFrameStrata")
+        local stOk, st = SafeRead(bar, "GetFrameStrata")
         if stOk and st and c:GetFrameStrata() ~= st then
             c:SetFrameStrata(st)
         end
-        local lvlOk, lvl = SafeRead(barFrame, "GetFrameLevel")
+        local lvlOk, lvl = SafeRead(bar, "GetFrameLevel")
         if lvlOk and type(lvl) == "number" then
             local wanted = lvl + 2
             if c:GetFrameLevel() ~= wanted then
@@ -800,10 +798,10 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- differ between one use of a pooled bar and the next.
         -- VPad re-measures four textures; the answer only moves if the bar's
         -- own height does, so it is cached against that.
-        local hOk, curH = pcall(barFrame.GetHeight, barFrame)
+        local hOk, curH = pcall(bar.GetHeight, bar)
         local pad = c.cuiPad
         if not hOk or curH ~= c.cuiPadH then
-            pad = VPad(barFrame)
+            pad = VPad(bar)
             c.cuiPadH = hOk and curH or nil
         end
         -- Second trigger, PLATE covers with the size floor ON only: the bar's
@@ -814,7 +812,7 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- re-anchor every frame.
         local es
         if c.cuiPlate and HUD.minPx > 0 then
-            local esOk, curES = pcall(barFrame.GetEffectiveScale, barFrame)
+            local esOk, curES = pcall(bar.GetEffectiveScale, bar)
             if esOk and type(curES) == "number" then
                 es = curES
             end
@@ -824,7 +822,7 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         if pad ~= c.cuiPad or esMoved or c.cuiMin ~= HUD.minPx then
             c.cuiPad = pad
             c.cuiES = es
-            AnchorCover(c, barFrame, pad)
+            AnchorCover(c, bar, pad)
         end
 
         if not c:IsShown() then
@@ -850,27 +848,27 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         pcall(Refresh)
     end
 
-    local function Adopt(barFrame, isPlate)
-        if not barFrame or HUD.retired[barFrame] then
+    local function Adopt(bar, isPlate)
+        if not bar or HUD.retired[bar] then
             return
         end
-        if HUD.covers[barFrame] then
+        if HUD.covers[bar] then
             return
         end
         -- Never cover one of our own covers (see HUD.owned).
-        if HUD.owned[barFrame] then
+        if HUD.owned[bar] then
             return
         end
-        if barFrame.IsForbidden and barFrame:IsForbidden() then
+        if bar.IsForbidden and bar:IsForbidden() then
             return
         end
         -- Immediately, before the cover has values to show. Otherwise their bar
         -- is what you watch for the first few ticks while it animates in, which
         -- reads as the skin taking half a second to appear.
-        HideBarArt(barFrame)
-        local c = BuildCover(barFrame, isPlate)
+        HideBarArt(bar)
+        local c = BuildCover(bar, isPlate)
         HUD.owned[c] = true
-        HUD.covers[barFrame] = c
+        HUD.covers[bar] = c
 
         -- FOLLOW THE BAR'S OWN UPDATE. This is what replaced the 0.1s ticker.
         --
@@ -892,9 +890,9 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         -- tree: no value is read, compared or stored, and it is the same call
         -- this addon already makes on GameTooltipStatusBar. pcall'd because a
         -- field access on a widget frame can throw on its own.
-        if not HUD.hooked[barFrame] and type(barFrame.DisplayBarValue) == "function" then
-            HUD.hooked[barFrame] = true
-            pcall(hooksecurefunc, barFrame, "DisplayBarValue", OnBarValueDisplayed)
+        if not HUD.hooked[bar] and type(bar.DisplayBarValue) == "function" then
+            HUD.hooked[bar] = true
+            pcall(hooksecurefunc, bar, "DisplayBarValue", OnBarValueDisplayed)
         end
     end
 
@@ -1087,9 +1085,9 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
             end
         end
         -- Covers whose bar has gone away this pass.
-        for barFrame, c in pairs(HUD.covers) do
-            if not seen[barFrame] then
-                local success, vis = SafeRead(barFrame, "IsVisible")
+        for bar, c in pairs(HUD.covers) do
+            if not seen[bar] then
+                local success, vis = SafeRead(bar, "IsVisible")
                 if not success or not vis then
                     if c:IsShown() then
                         c:Hide()
@@ -1345,15 +1343,15 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
         end
 
         local d = GetFFD(button)
-        local look = button.style
-        if look then
-            if look.SetAtlas then
-                look:SetAtlas("")
+        local style = button.style
+        if style then
+            if style.SetAtlas then
+                style:SetAtlas("")
             end
-            if look.SetTexture then
-                look:SetTexture("")
+            if style.SetTexture then
+                style:SetTexture("")
             end
-            look:SetAlpha(0)
+            style:SetAlpha(0)
         end
         if button.icon then
             -- Square the icon and stretch it corner to corner: with the brass
@@ -1374,9 +1372,9 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
             -- stacking every squared item tile uses. NOT AddBorder: its border
             -- container renders below same-level ARTWORK regions, and the icon
             -- stretched over the full button rect would hide the edge entirely.
-            local Widgets = WS()
-            if Widgets and Widgets.QualityBorder then
-                Widgets.QualityBorder(button, button.icon or button, 0, 0, 0)
+            local W = WS()
+            if W and W.QualityBorder then
+                W.QualityBorder(button, button.icon or button, 0, 0, 0)
                 d.border = true
             end
         end
@@ -1443,15 +1441,15 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
             return
         end
 
-        local look = f.Style
-        if look then
-            if look.SetAtlas then
-                look:SetAtlas("")
+        local style = f.Style
+        if style then
+            if style.SetAtlas then
+                style:SetAtlas("")
             end
-            if look.SetTexture then
-                look:SetTexture("")
+            if style.SetTexture then
+                style:SetTexture("")
             end
-            look:SetAlpha(0)
+            style:SetAlpha(0)
         end
 
         local sc = f.SpellButtonContainer
@@ -1493,9 +1491,9 @@ local GetFFD = Inner.GetFFD-----------------------------------------------------
                     -- granted-ability buttons match. Guarded by d.border, which
                     -- matters here because these buttons are POOLED and this
                     -- runs per zone change.
-                    local Widgets = WS()
-                    if Widgets and Widgets.QualityBorder then
-                        Widgets.QualityBorder(button, button.Icon or button, 0, 0, 0)
+                    local W = WS()
+                    if W and W.QualityBorder then
+                        W.QualityBorder(button, button.Icon or button, 0, 0, 0)
                         d.border = true
                     end
                 end

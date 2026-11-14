@@ -243,51 +243,51 @@ function CludesUI.BuildVisOptsCBDropdown(
         -- show the shared value they edit.
         local held = options.ovHeldFn and options.ovHeldFn()
         if held then
-            for _, itemInfo in ipairs(itemList) do
-                if itemInfo.key == held then
-                    return CludesUI.L(itemInfo.label)
+            for _, item in ipairs(itemList) do
+                if item.key == held then
+                    return CludesUI.L(item.label)
                 end
             end
         end
-        for _, itemInfo in ipairs(itemList) do
+        for _, item in ipairs(itemList) do
             -- isModifier rows (the Visibility match toggle) are not conditions: excluded
             -- from the summary and from the "All" shortcut. item.excludeFromSummaryFn
             -- opts a row out the same way (e.g. locked behind an unlearned talent).
             if
-                not itemInfo.isHeader
-                and not itemInfo.isTopAction
-                and not itemInfo.isModifier
-                and not (itemInfo.excludeFromSummaryFn and itemInfo.excludeFromSummaryFn())
+                not item.isHeader
+                and not item.isTopAction
+                and not item.isModifier
+                and not (item.excludeFromSummaryFn and item.excludeFromSummaryFn())
             then
                 sum = sum + 1
-                if getFn(itemInfo.key) then
-                    nameList[#nameList + 1] = CludesUI.L(itemInfo.label)
+                if getFn(item.key) then
+                    nameList[#nameList + 1] = CludesUI.L(item.label)
                 end
                 -- Dual-lane rows: the hide lane reads through getFn(key, true).
-                if itemInfo.dual and getFn(itemInfo.key, true) then
+                if item.dual and getFn(item.key, true) then
                     hiddenCount = hiddenCount + 1
                 end
             end
         end
-        local baseValue
+        local base
         -- opts.emptyLabel: the unified Visibility row reads "Always" with no show lane
         -- checked (an unconstrained element still shows), never "None".
         -- opts.separatorFn lets a modifier row rename the join, so the summary reads
         -- the way the conditions actually combine.
         local sep = options.separatorFn and options.separatorFn() or ", "
         if #nameList == 0 then
-            baseValue = options.emptyLabel and CludesUI.L(options.emptyLabel) or CludesUI.L("None")
+            base = options.emptyLabel and CludesUI.L(options.emptyLabel) or CludesUI.L("None")
         elseif #nameList == sum and not options.noAllLabel then
-            baseValue = CludesUI.L("All")
+            base = CludesUI.L("All")
         elseif options.countLabel then
-            baseValue = CludesUI.Lf("%1$d of %2$d", #nameList, sum)
+            base = CludesUI.Lf("%1$d of %2$d", #nameList, sum)
         else
-            baseValue = table.concat(nameList, sep)
+            base = table.concat(nameList, sep)
         end
         if hiddenCount > 0 then
-            baseValue = baseValue .. " (-" .. hiddenCount .. ")"
+            base = base .. " (-" .. hiddenCount .. ")"
         end
-        return baseValue
+        return base
     end
     local function UpdateLabel()
         if PoolGen(ddBtn) ~= dressGen then
@@ -310,36 +310,36 @@ function CludesUI.BuildVisOptsCBDropdown(
     local sf, childFrame, searchEdit, searchPlaceholder, taDivider, closeBtn, seal
     local UpdateCBThumb
     local rowPools = {}
-    local function AcquireRow(kindOf, make, arg)
-        local pool = rowPools[kindOf]
+    local function AcquireRow(kind, make, arg)
+        local pool = rowPools[kind]
         if not pool then
             pool = { used = 0 }
-            rowPools[kindOf] = pool
+            rowPools[kind] = pool
         end
         pool.used = pool.used + 1
-        local rowFrame = pool[pool.used]
-        if not rowFrame then
-            rowFrame = make(arg)
-            pool[pool.used] = rowFrame
+        local row = pool[pool.used]
+        if not row then
+            row = make(arg)
+            pool[pool.used] = row
         end
-        rowFrame:Show()
-        return rowFrame
+        row:Show()
+        return row
     end
     -- Label row: a top action (parent: the menu) or an action item (the scroll child).
     local function MakeTextRow(hostFrame)
-        local rowFrame = CreateFrame("Button", nil, hostFrame)
-        rowFrame:SetHeight(ITEM_H)
-        local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+        local row = CreateFrame("Button", nil, hostFrame)
+        row:SetHeight(ITEM_H)
+        local labelFS = row:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(fontFile, 13, "")
-        labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
-        labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
+        labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
+        labelFS:SetPoint("RIGHT", row, "RIGHT", -10, 0)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
         labelFS:SetMaxLines(1)
-        local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+        local highlight = row:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
-        rowFrame._lbl, rowFrame._hl = labelFS, highlight
-        return rowFrame
+        row._lbl, row._hl = labelFS, highlight
+        return row
     end
     local function MakeHeaderRow()
         local heading = CreateFrame("Frame", nil, childFrame)
@@ -358,90 +358,84 @@ function CludesUI.BuildVisOptsCBDropdown(
     end
     -- Checkbox row with the parts its item's shape needs (check box, icon, hide
     -- lane, swatch); the pool key carries that shape, so a reused row has them.
-    local function MakeCheckRow(itemInfo)
-        local rowFrame = CreateFrame("Button", nil, childFrame)
-        rowFrame:SetHeight(ITEM_H)
-        rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        if not itemInfo.noCheck then
-            local boxFrame = CreateFrame("Frame", nil, rowFrame)
-            boxFrame:SetSize(16, 16)
-            boxFrame:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
-            local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+    local function MakeCheckRow(item)
+        local row = CreateFrame("Button", nil, childFrame)
+        row:SetHeight(ITEM_H)
+        row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        if not item.noCheck then
+            local box = CreateFrame("Frame", nil, row)
+            box:SetSize(16, 16)
+            box:SetPoint("LEFT", row, "LEFT", 10, 0)
+            local boxBg = box:CreateTexture(nil, "BACKGROUND")
             boxBg:SetAllPoints()
             boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-            rowFrame._boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
-            local chk = boxFrame:CreateTexture(nil, "ARTWORK")
-            Pix.SetInside(chk, boxFrame, 2, 2)
+            row._boxBrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+            local chk = box:CreateTexture(nil, "ARTWORK")
+            Pix.SetInside(chk, box, 2, 2)
             chk:SetSnapToPixelGrid(false)
-            CludesUI.RoundBody(boxFrame, chk, 2)
-            rowFrame._box, rowFrame._chk = boxFrame, chk
+            CludesUI.RoundBody(box, chk, 2)
+            row._box, row._chk = box, chk
         end
         -- Optional icon (spell icon etc.) between checkbox and label
-        local lblAnchor = rowFrame._box
-        if itemInfo.icon then
-            local ico = rowFrame:CreateTexture(nil, "ARTWORK")
-            if rowFrame._box then
-                ico:SetPoint("LEFT", rowFrame._box, "RIGHT", 6, 0)
+        local lblAnchor = row._box
+        if item.icon then
+            local ico = row:CreateTexture(nil, "ARTWORK")
+            if row._box then
+                ico:SetPoint("LEFT", row._box, "RIGHT", 6, 0)
             else
-                ico:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
+                ico:SetPoint("LEFT", row, "LEFT", 10, 0)
             end
             ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            rowFrame._ico = ico
+            row._ico = ico
             lblAnchor = ico
         end
-        local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+        local labelFS = row:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(fontFile, 13, "")
         if lblAnchor then
-            labelFS:SetPoint("LEFT", lblAnchor, "RIGHT", itemInfo.icon and 6 or 8, 0)
+            labelFS:SetPoint("LEFT", lblAnchor, "RIGHT", item.icon and 6 or 8, 0)
         else
-            labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
+            labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
         end
-        labelFS:SetPoint(
-            "RIGHT",
-            rowFrame,
-            "RIGHT",
-            (itemInfo.dual and not itemInfo.noCheck) and -32 or -10,
-            0
-        )
+        labelFS:SetPoint("RIGHT", row, "RIGHT", (item.dual and not item.noCheck) and -32 or -10, 0)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
         labelFS:SetMaxLines(1)
-        local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+        local highlight = row:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
-        rowFrame._lbl, rowFrame._hl = labelFS, highlight
-        if itemInfo.dual and not itemInfo.noCheck then
-            local negBox = CreateFrame("Button", nil, rowFrame)
+        row._lbl, row._hl = labelFS, highlight
+        if item.dual and not item.noCheck then
+            local negBox = CreateFrame("Button", nil, row)
             negBox:SetSize(16, 16)
-            negBox:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
-            negBox:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
+            negBox:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+            negBox:SetFrameLevel(row:GetFrameLevel() + 1)
             local negBg = negBox:CreateTexture(nil, "BACKGROUND")
             negBg:SetAllPoints()
             negBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-            rowFrame._negBrd = CludesUI.MakeRoundedBorder(negBox, 0.4, 0.4, 0.4, 0.6, negBg)
+            row._negBrd = CludesUI.MakeRoundedBorder(negBox, 0.4, 0.4, 0.4, 0.6, negBg)
             local negChk = negBox:CreateTexture(nil, "ARTWORK")
             Pix.SetInside(negChk, negBox, 2, 2)
             negChk:SetColorTexture(0.85, 0.3, 0.3, 1)
             negChk:SetSnapToPixelGrid(false)
             CludesUI.RoundBody(negBox, negChk, 2)
-            rowFrame._negBox, rowFrame._negChk = negBox, negChk
+            row._negBox, row._negChk = negBox, negChk
         end
-        if itemInfo.swatch then
+        if item.swatch then
             -- The swatch reads and writes the swatch spec of the item the row shows (row._swSpec).
-            rowFrame._swSpec = itemInfo.swatch
-            local sw, swUpdate = CludesUI.BuildColorSwatch(rowFrame, rowFrame:GetFrameLevel() + 1, function()
-                return rowFrame._swSpec.get()
+            row._swSpec = item.swatch
+            local sw, swUpdate = CludesUI.BuildColorSwatch(row, row:GetFrameLevel() + 1, function()
+                return row._swSpec.get()
             end, function(...)
-                rowFrame._swSpec.set(...)
-            end, itemInfo.swatch.hasAlpha, 16)
+                row._swSpec.set(...)
+            end, item.swatch.hasAlpha, 16)
             sw:ClearAllPoints()
-            sw:SetPoint("RIGHT", rowFrame, "RIGHT", rowFrame._negBox and -32 or -10, 0)
+            sw:SetPoint("RIGHT", row, "RIGHT", row._negBox and -32 or -10, 0)
             labelFS:SetPoint("RIGHT", sw, "LEFT", -6, 0)
             local swBlock = CreateFrame("Frame", nil, sw)
             swBlock:SetAllPoints()
             swBlock:SetFrameLevel(sw:GetFrameLevel() + 10)
             swBlock:EnableMouse(true)
             swBlock:SetScript("OnEnter", function()
-                local tipText = CludesUI.ResolveDisabledTip(rowFrame._swSpec)
+                local tipText = CludesUI.ResolveDisabledTip(row._swSpec)
                 if tipText then
                     CludesUI.ShowWidgetTooltip(sw, tipText)
                 end
@@ -450,9 +444,9 @@ function CludesUI.BuildVisOptsCBDropdown(
                 CludesUI.HideWidgetTooltip()
             end)
             swBlock:Hide()
-            rowFrame._sw, rowFrame._swUpdate, rowFrame._swBlock = sw, swUpdate, swBlock
+            row._sw, row._swUpdate, row._swBlock = sw, swUpdate, swBlock
         end
-        return rowFrame
+        return row
     end
 
     local function EnsureMenu()
@@ -464,17 +458,17 @@ function CludesUI.BuildVisOptsCBDropdown(
         -- Opt-in top-action rows (item.isTopAction with label + onClick): accent clickable entries pinned ABOVE the search box with a divider under the group -- the "Custom Spell ID at the top" pattern from the CDM spell pickers. Excluded from the scroll list, the checkable count, and the summary label.
         local topActions = {}
         wipe(_taTints)
-        for _, itemInfo in ipairs(itemList) do
-            if itemInfo.isTopAction then
-                topActions[#topActions + 1] = itemInfo
+        for _, item in ipairs(itemList) do
+            if item.isTopAction then
+                topActions[#topActions + 1] = item
             end
         end
         local TOP_H = (#topActions > 0) and (#topActions * ITEM_H + 7) or 0
         local checkableCount = 0
         local contentH = 8
-        for _, itemInfo in ipairs(itemList) do
-            if itemInfo.isTopAction then -- rendered above the search box
-            elseif itemInfo.isHeader then
+        for _, item in ipairs(itemList) do
+            if item.isTopAction then -- rendered above the search box
+            elseif item.isHeader then
                 contentH = contentH + HDR_H
             else
                 contentH = contentH + ITEM_H
@@ -526,24 +520,24 @@ function CludesUI.BuildVisOptsCBDropdown(
         if #topActions > 0 then
             local ay = -4
             for idx = 1, #topActions do
-                local itemInfo = topActions[idx]
-                local rowFrame = AcquireRow("ta", MakeTextRow, dropMenu)
-                rowFrame:ClearAllPoints()
-                rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, ay)
-                rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, ay)
-                rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                local labelFS, highlight = rowFrame._lbl, rowFrame._hl
+                local item = topActions[idx]
+                local row = AcquireRow("ta", MakeTextRow, dropMenu)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, ay)
+                row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, ay)
+                row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                local labelFS, highlight = row._lbl, row._hl
                 labelFS:SetTextColor(
                     CludesUI.CLUDES_GREEN.r,
                     CludesUI.CLUDES_GREEN.g,
                     CludesUI.CLUDES_GREEN.b,
                     0.8
                 )
-                labelFS:SetText(CludesUI.L(itemInfo.label))
+                labelFS:SetText(CludesUI.L(item.label))
                 highlight:SetColorTexture(1, 1, 1, 0)
                 -- Opt-in locked state (item.lockedFn + item.lockedTooltip): evaluated LIVE on hover/click (checkbox toggles can flip it while the menu is open), plus once at build for the initial tint.
                 local function TALocked()
-                    return itemInfo.lockedFn and itemInfo.lockedFn() or false
+                    return item.lockedFn and item.lockedFn() or false
                 end
                 local function TATint()
                     if TALocked() then
@@ -559,13 +553,13 @@ function CludesUI.BuildVisOptsCBDropdown(
                 end
                 TATint()
                 _taTints[#_taTints + 1] = TATint
-                rowFrame:SetScript("OnEnter", function()
+                row:SetScript("OnEnter", function()
                     TATint()
                     if TALocked() then
-                        local tipText = itemInfo.lockedTooltip
+                        local tipText = item.lockedTooltip
                         if tipText and CludesUI.ShowWidgetTooltip then
                             CludesUI.ShowWidgetTooltip(
-                                rowFrame,
+                                row,
                                 type(tipText) == "function" and tipText() or tipText
                             )
                         end
@@ -573,18 +567,18 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                     highlight:SetColorTexture(1, 1, 1, 0.06)
                 end)
-                rowFrame:SetScript("OnLeave", function()
+                row:SetScript("OnLeave", function()
                     highlight:SetColorTexture(1, 1, 1, 0)
                     CludesUI.HideWidgetTooltip()
                     TATint()
                 end)
-                rowFrame:SetScript("OnClick", function()
+                row:SetScript("OnClick", function()
                     if TALocked() then
                         return
                     end
                     dropMenu:Hide()
-                    if itemInfo.onClick then
-                        itemInfo.onClick()
+                    if item.onClick then
+                        item.onClick()
                     end
                 end)
                 ay = ay - ITEM_H
@@ -744,11 +738,11 @@ function CludesUI.BuildVisOptsCBDropdown(
         -- Published for the refreshers below: the rows are parented to the SCROLL CHILD,
         -- so a menu:GetChildren() walk never reaches them.
         dropMenu._rows = _allRows
-        for _, itemInfo in ipairs(itemList) do
+        for _, item in ipairs(itemList) do
             -- Top-action items render above the search box, never here.
-            if itemInfo.isTopAction then -- luacheck: ignore (intentional empty)
+            if item.isTopAction then -- luacheck: ignore (intentional empty)
             -- Header/divider items: non-interactive label
-            elseif itemInfo.isHeader then
+            elseif item.isHeader then
                 local hdrH = HDR_H
                 local heading = AcquireRow("hdr", MakeHeaderRow)
                 heading:ClearAllPoints()
@@ -756,9 +750,9 @@ function CludesUI.BuildVisOptsCBDropdown(
                 heading:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
                 heading:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                 local hdrLine = heading._line
-                heading._lbl:SetText(CludesUI.L(itemInfo.label))
+                heading._lbl:SetText(CludesUI.L(item.label))
                 -- Opt-in right caption (item.rightLabel): labels the hide-lane column on dual menus.
-                if itemInfo.rightLabel then
+                if item.rightLabel then
                     local hdrR = heading._right
                     if not hdrR then
                         hdrR = heading:CreateFontString(nil, "OVERLAY")
@@ -768,7 +762,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                         hdrR:SetJustifyH("RIGHT")
                         heading._right = hdrR
                     end
-                    hdrR:SetText(CludesUI.L(itemInfo.rightLabel))
+                    hdrR:SetText(CludesUI.L(item.rightLabel))
                     hdrR:Show()
                     hdrLine:SetPoint("RIGHT", hdrR, "LEFT", -6, 0)
                 else
@@ -777,10 +771,10 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                     hdrLine:SetPoint("RIGHT", heading, "RIGHT", -10, 0)
                 end
-                if itemInfo.tooltip then
+                if item.tooltip then
                     heading:EnableMouse(true)
                     heading:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(heading, itemInfo.tooltip)
+                        CludesUI.ShowWidgetTooltip(heading, item.tooltip)
                     end)
                     heading:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
@@ -791,57 +785,57 @@ function CludesUI.BuildVisOptsCBDropdown(
                     heading:EnableMouse(false)
                 end
                 _allRows[#_allRows + 1] =
-                    { frame = heading, isHeader = true, label = itemInfo.label, height = hdrH }
+                    { frame = heading, isHeader = true, label = item.label, height = hdrH }
                 yOff = yOff - hdrH
-            elseif itemInfo.isAction then
+            elseif item.isAction then
                 -- Action item: clickable text, no checkbox (for "All Specs", "All Healers", etc.)
-                local rowFrame = AcquireRow("act", MakeTextRow, childFrame)
-                rowFrame:ClearAllPoints()
-                rowFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 1, yOff)
-                rowFrame:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
-                rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                local labelFS, highlight = rowFrame._lbl, rowFrame._hl
+                local row = AcquireRow("act", MakeTextRow, childFrame)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 1, yOff)
+                row:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
+                row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                local labelFS, highlight = row._lbl, row._hl
                 labelFS:SetTextColor(
                     CludesUI.CLUDES_GREEN.r,
                     CludesUI.CLUDES_GREEN.g,
                     CludesUI.CLUDES_GREEN.b,
                     0.8
                 )
-                labelFS:SetText(CludesUI.L(itemInfo.labelFn and itemInfo.labelFn() or itemInfo.label))
+                labelFS:SetText(CludesUI.L(item.labelFn and item.labelFn() or item.label))
                 local function UpdateActionLabel()
-                    if itemInfo.labelFn then
-                        labelFS:SetText(CludesUI.L(itemInfo.labelFn()))
+                    if item.labelFn then
+                        labelFS:SetText(CludesUI.L(item.labelFn()))
                     end
                 end
-                rowFrame._updateActionLabel = UpdateActionLabel
+                row._updateActionLabel = UpdateActionLabel
                 highlight:SetColorTexture(1, 1, 1, 0)
                 local EG_r, EG_g, EG_b =
                     CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
                 local function UpdateActionLocked()
-                    local isLocked = itemInfo.lockedFn and itemInfo.lockedFn()
+                    local isLocked = item.lockedFn and item.lockedFn()
                     if isLocked then
                         labelFS:SetTextColor(0.4, 0.4, 0.4, 0.4)
-                        rowFrame:EnableMouse(false)
+                        row:EnableMouse(false)
                     else
                         labelFS:SetTextColor(EG_r, EG_g, EG_b, 0.8)
-                        rowFrame:EnableMouse(true)
+                        row:EnableMouse(true)
                     end
                 end
-                rowFrame._updateLocked = UpdateActionLocked
+                row._updateLocked = UpdateActionLocked
                 UpdateActionLocked()
-                rowFrame:SetScript("OnEnter", function()
+                row:SetScript("OnEnter", function()
                     labelFS:SetTextColor(1, 1, 1, 1)
                     highlight:SetColorTexture(1, 1, 1, 0.04)
                 end)
-                rowFrame:SetScript("OnLeave", function()
+                row:SetScript("OnLeave", function()
                     UpdateActionLocked()
                     highlight:SetColorTexture(1, 1, 1, 0)
                 end)
-                rowFrame:SetScript("OnClick", function()
-                    if itemInfo.lockedFn and itemInfo.lockedFn() then
+                row:SetScript("OnClick", function()
+                    if item.lockedFn and item.lockedFn() then
                         return
                     end
-                    setFn(itemInfo.key, true)
+                    setFn(item.key, true)
                     -- Refresh all checkbox visuals + dynamic action labels
                     for _, r in ipairs(_allRows) do
                         if r.frame._updateCheck then
@@ -860,26 +854,26 @@ function CludesUI.BuildVisOptsCBDropdown(
                     UpdateLabel()
                 end)
                 _allRows[#_allRows + 1] = {
-                    frame = rowFrame,
+                    frame = row,
                     isHeader = false,
                     isAction = true,
-                    label = itemInfo.label,
+                    label = item.label,
                     height = ITEM_H,
                 }
                 yOff = yOff - ITEM_H
             else
                 -- Opt-in plain rows (item.noCheck): the identical row minus the checkbox -- the regular-dropdown look for select-style pickers. Click still routes setFn(key, not getFn(key)), so a picker whose getFn is constant-false always selects with true.
-                local shape = (itemInfo.noCheck and "n" or "c")
-                    .. (itemInfo.icon and "i" or "")
-                    .. ((itemInfo.dual and not itemInfo.noCheck) and "d" or "")
-                    .. (itemInfo.swatch and (itemInfo.swatch.hasAlpha and "A" or "s") or "")
-                local rowFrame = AcquireRow("chk" .. shape, MakeCheckRow, itemInfo)
-                rowFrame:ClearAllPoints()
-                rowFrame:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 1, yOff)
-                rowFrame:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
-                rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                rowFrame._isLocked = nil
-                local boxFrame, boxBrd, chk = rowFrame._box, rowFrame._boxBrd, rowFrame._chk
+                local shape = (item.noCheck and "n" or "c")
+                    .. (item.icon and "i" or "")
+                    .. ((item.dual and not item.noCheck) and "d" or "")
+                    .. (item.swatch and (item.swatch.hasAlpha and "A" or "s") or "")
+                local row = AcquireRow("chk" .. shape, MakeCheckRow, item)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 1, yOff)
+                row:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
+                row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                row._isLocked = nil
+                local box, boxBrd, chk = row._box, row._boxBrd, row._chk
                 if chk then
                     chk:SetColorTexture(
                         CludesUI.CLUDES_GREEN.r,
@@ -887,27 +881,27 @@ function CludesUI.BuildVisOptsCBDropdown(
                         CludesUI.CLUDES_GREEN.b,
                         1
                     )
-                    boxFrame:SetScript("OnEnter", nil)
-                    boxFrame:SetScript("OnLeave", nil)
-                    boxFrame:EnableMouse(false)
-                    boxFrame:SetAlpha(1)
+                    box:SetScript("OnEnter", nil)
+                    box:SetScript("OnLeave", nil)
+                    box:EnableMouse(false)
+                    box:SetAlpha(1)
                 end
                 -- Optional icon (spell icon etc.) between checkbox and label
-                if rowFrame._ico then
-                    local icoSz = itemInfo.iconSize or (ITEM_H - 6)
-                    rowFrame._ico:SetSize(icoSz, icoSz)
-                    rowFrame._ico:SetTexture(itemInfo.icon)
+                if row._ico then
+                    local icoSz = item.iconSize or (ITEM_H - 6)
+                    row._ico:SetSize(icoSz, icoSz)
+                    row._ico:SetTexture(item.icon)
                 end
                 -- Opt-in dimmed rows (item.dimFn): a pick that has no effect here right now
                 -- (it shows somewhere else) rests dimmed but stays clickable, and hovering it
                 -- shows item.dimTooltip (string or function) in place of item.tooltip.
                 local function Dimmed()
-                    return (itemInfo.dimFn and itemInfo.dimFn()) and true or false
+                    return (item.dimFn and item.dimFn()) and true or false
                 end
                 -- Modifier rows rest in the accent only while active; read live, since a
                 -- sibling's click flips the checked state (UpdateCheck runs on every row).
                 local function RestColor()
-                    if itemInfo.isModifier and getFn(itemInfo.key) then
+                    if item.isModifier and getFn(item.key) then
                         return CludesUI.CLUDES_GREEN.r, CludesUI.CLUDES_GREEN.g, CludesUI.CLUDES_GREEN.b
                     end
                     if Dimmed() then
@@ -915,42 +909,42 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                     return 0.75, 0.75, 0.75
                 end
-                local labelFS, highlight = rowFrame._lbl, rowFrame._hl
+                local labelFS, highlight = row._lbl, row._hl
                 labelFS:SetTextColor(RestColor())
-                labelFS:SetText(CludesUI.L(itemInfo.label))
+                labelFS:SetText(CludesUI.L(item.label))
                 highlight:SetColorTexture(1, 1, 1, 0)
                 -- Opt-in dual-lane rows (item.dual): a second right-aligned box is the HIDE lane.
                 -- Lane state reads getFn(key, true) and writes setFn(key, v, true); the show lane
                 -- keeps the plain getFn(key)/setFn(key, v) contract, so single-lane callers are
                 -- untouched. item.showLockedFn dims the show lane; while it is locked, row clicks
                 -- fall through to the hide lane (broad "All" modes already show everything).
-                local negBox, negBrd, negChk = rowFrame._negBox, rowFrame._negBrd, rowFrame._negChk
+                local negBox, negBrd, negChk = row._negBox, row._negBrd, row._negChk
                 -- Opt-in colour swatch (item.swatch = { get = fn -> r, g, b, a, set = fn(r, g, b, a),
                 -- hasAlpha, disabled = fn, disabledTooltip (+ rawTooltip / requireState, as
                 -- ResolveDisabledTip) }): its own button at the row's right edge, so a click
                 -- opens the colour picker and never toggles the row. While disabled it dims
                 -- and a blocker takes its clicks and explains the requirement.
-                local sw, swUpdate, swBlock = rowFrame._sw, rowFrame._swUpdate, rowFrame._swBlock
+                local sw, swUpdate, swBlock = row._sw, row._swUpdate, row._swBlock
                 if sw then
-                    rowFrame._swSpec = itemInfo.swatch
+                    row._swSpec = item.swatch
                 end
                 local function ShowLaneLocked()
-                    return itemInfo.showLockedFn and itemInfo.showLockedFn() or false
+                    return item.showLockedFn and item.showLockedFn() or false
                 end
                 -- item.ovLockedFn is the override-session lock: it blocks the click like any
                 -- other lock, but is painted and explained differently, because the row is not
                 -- merely unavailable here -- it cannot be captured into an override at all.
                 local function OvLocked()
-                    return (itemInfo.ovLockedFn and itemInfo.ovLockedFn()) and true or false
+                    return (item.ovLockedFn and item.ovLockedFn()) and true or false
                 end
                 local function RowLocked()
-                    if OvLocked() or itemInfo.locked then
+                    if OvLocked() or item.locked then
                         return true
                     end
-                    return (itemInfo.lockedFn and itemInfo.lockedFn()) and true or false
+                    return (item.lockedFn and item.lockedFn()) and true or false
                 end
                 local function LockedTip()
-                    local lt = (OvLocked() and itemInfo.ovLockedTooltip) or itemInfo.lockedTooltip
+                    local lt = (OvLocked() and item.ovLockedTooltip) or item.lockedTooltip
                     if type(lt) == "function" then
                         lt = lt()
                     end
@@ -958,7 +952,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                 end
                 local function UpdateCheck()
                     if chk then
-                        if getFn(itemInfo.key) then
+                        if getFn(item.key) then
                             chk:Show()
                             boxBrd:SetColor(
                                 CludesUI.CLUDES_GREEN.r,
@@ -970,21 +964,19 @@ function CludesUI.BuildVisOptsCBDropdown(
                             chk:Hide()
                             boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
                         end
-                        if boxFrame and itemInfo.dual then
+                        if box and item.dual then
                             local laneLocked = ShowLaneLocked()
-                            boxFrame:SetAlpha(laneLocked and 0.3 or 1)
+                            box:SetAlpha(laneLocked and 0.3 or 1)
                             -- Mouse only while locked AND the item explains the
                             -- dim (item.showLockedTooltip): the disabled box then
                             -- swallows its own hover for the tooltip, and clicks,
                             -- like any disabled control. Unlocked, the box goes
                             -- mouse-inert again so the ROW keeps every click.
-                            boxFrame:EnableMouse(
-                                (laneLocked and itemInfo.showLockedTooltip) and true or false
-                            )
+                            box:EnableMouse((laneLocked and item.showLockedTooltip) and true or false)
                         end
                     end
                     if negChk then
-                        if getFn(itemInfo.key, true) then
+                        if getFn(item.key, true) then
                             negChk:Show()
                             negBrd:SetColor(0.85, 0.3, 0.3, 0.8)
                         else
@@ -994,57 +986,57 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                     if sw then
                         swUpdate()
-                        local offset = itemInfo.swatch.disabled and itemInfo.swatch.disabled() or false
-                        sw:SetAlpha(offset and 0.3 or 1)
-                        swBlock:SetShown(offset and true or false)
+                        local off = item.swatch.disabled and item.swatch.disabled() or false
+                        sw:SetAlpha(off and 0.3 or 1)
+                        swBlock:SetShown(off and true or false)
                     end
                     -- Radio partners refresh each other, so this also runs on the hovered row;
                     -- repainting that one would drop its hover white until the mouse re-enters.
-                    if itemInfo.isModifier and not rowFrame._isLocked and not rowFrame:IsMouseOver() then
+                    if item.isModifier and not row._isLocked and not row:IsMouseOver() then
                         labelFS:SetTextColor(RestColor())
                     end
                 end
                 UpdateCheck()
-                rowFrame._updateCheck = UpdateCheck
-                rowFrame:SetScript("OnEnter", function()
-                    if rowFrame._isLocked then
+                row._updateCheck = UpdateCheck
+                row:SetScript("OnEnter", function()
+                    if row._isLocked then
                         -- Locked rows keep the gray look (no highlight); if the item explains its lock, show that instead of the normal tooltip.
                         local lt = LockedTip()
                         if lt then
-                            CludesUI.ShowWidgetTooltip(rowFrame, lt)
+                            CludesUI.ShowWidgetTooltip(row, lt)
                         end
                         return
                     end
                     labelFS:SetTextColor(1, 1, 1, 1)
                     highlight:SetColorTexture(1, 1, 1, 0.04)
-                    local tipText = itemInfo.tooltip
-                    if itemInfo.dimTooltip and Dimmed() then
-                        tipText = itemInfo.dimTooltip
+                    local tipText = item.tooltip
+                    if item.dimTooltip and Dimmed() then
+                        tipText = item.dimTooltip
                     end
                     if type(tipText) == "function" then
                         tipText = tipText()
                     end
                     if tipText then
-                        CludesUI.ShowWidgetTooltip(rowFrame, tipText)
+                        CludesUI.ShowWidgetTooltip(row, tipText)
                     end
                 end)
-                rowFrame:SetScript("OnLeave", function()
-                    if rowFrame._isLocked then
-                        if itemInfo.lockedTooltip or itemInfo.ovLockedTooltip then
+                row:SetScript("OnLeave", function()
+                    if row._isLocked then
+                        if item.lockedTooltip or item.ovLockedTooltip then
                             CludesUI.HideWidgetTooltip()
                         end
                         return
                     end
                     labelFS:SetTextColor(RestColor())
                     highlight:SetColorTexture(1, 1, 1, 0)
-                    if itemInfo.tooltip or itemInfo.dimTooltip then
+                    if item.tooltip or item.dimTooltip then
                         CludesUI.HideWidgetTooltip()
                     end
                 end)
                 local function UpdateLocked()
                     local isLocked = RowLocked()
                     -- Mouse stays enabled so locked rows can explain themselves on hover; clicks are guarded independently in OnClick.
-                    rowFrame._isLocked = isLocked and true or false
+                    row._isLocked = isLocked and true or false
                     if isLocked then
                         labelFS:SetTextColor(0.4, 0.4, 0.4, 0.5)
                     else
@@ -1053,11 +1045,11 @@ function CludesUI.BuildVisOptsCBDropdown(
                     -- opts.dimLocked: a locked row's checkbox dims with its label, so a
                     -- checked one reads as fixed rather than clickable (dual rows keep
                     -- their own lane dimming).
-                    if options.dimLocked and boxFrame and not itemInfo.dual then
-                        boxFrame:SetAlpha(isLocked and 0.4 or 1)
+                    if options.dimLocked and box and not item.dual then
+                        box:SetAlpha(isLocked and 0.4 or 1)
                     end
                 end
-                rowFrame._updateLocked = UpdateLocked
+                row._updateLocked = UpdateLocked
                 UpdateLocked()
                 -- snap: the slot snapshot the click took before its setter ran
                 -- (CludesUI._SOAttribution), or nil.
@@ -1099,7 +1091,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                         onChanged()
                     end
                 end
-                rowFrame:SetScript("OnClick", function()
+                row:SetScript("OnClick", function()
                     if RowLocked() then
                         return
                     end
@@ -1109,9 +1101,9 @@ function CludesUI.BuildVisOptsCBDropdown(
                     -- The slot's Apply to link stays a few seconds after the pick.
                     CludesUI._SyncPickNotice(ddBtn)
                     if negBox and ShowLaneLocked() then
-                        setFn(itemInfo.key, not getFn(itemInfo.key, true), true)
+                        setFn(item.key, not getFn(item.key, true), true)
                     else
-                        setFn(itemInfo.key, not getFn(itemInfo.key))
+                        setFn(item.key, not getFn(item.key))
                     end
                     AfterToggle(snap)
                 end)
@@ -1122,11 +1114,11 @@ function CludesUI.BuildVisOptsCBDropdown(
                         end
                         local snap = options.notifyWrites and CludesUI._SOAttribution(ddBtn) or nil
                         CludesUI._SyncPickNotice(ddBtn)
-                        setFn(itemInfo.key, not getFn(itemInfo.key, true), true)
+                        setFn(item.key, not getFn(item.key, true), true)
                         AfterToggle(snap)
                     end)
                     negBox:SetScript("OnEnter", function()
-                        if rowFrame._isLocked then
+                        if row._isLocked then
                             local lt = LockedTip()
                             if lt then
                                 CludesUI.ShowWidgetTooltip(negBox, lt)
@@ -1137,7 +1129,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                         highlight:SetColorTexture(1, 1, 1, 0.04)
                         local hlt = options.hideLaneTooltip
                         if type(hlt) == "function" then
-                            hlt = hlt(itemInfo.key)
+                            hlt = hlt(item.key)
                         end
                         CludesUI.ShowWidgetTooltip(
                             negBox,
@@ -1145,7 +1137,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                         )
                     end)
                     negBox:SetScript("OnLeave", function()
-                        if not rowFrame._isLocked then
+                        if not row._isLocked then
                             labelFS:SetTextColor(RestColor())
                         end
                         highlight:SetColorTexture(1, 1, 1, 0)
@@ -1155,20 +1147,20 @@ function CludesUI.BuildVisOptsCBDropdown(
                     -- only while a broad mode locks the lane: UpdateCheck enables
                     -- its mouse exactly then, so these scripts never fire for an
                     -- active lane and row clicks stay untouched.
-                    if boxFrame then
-                        boxFrame:SetScript("OnEnter", function()
+                    if box then
+                        box:SetScript("OnEnter", function()
                             labelFS:SetTextColor(1, 1, 1, 1)
                             highlight:SetColorTexture(1, 1, 1, 0.04)
-                            local tt = itemInfo.showLockedTooltip
+                            local tt = item.showLockedTooltip
                             if type(tt) == "function" then
                                 tt = tt()
                             end
                             if tt then
-                                CludesUI.ShowWidgetTooltip(boxFrame, tt)
+                                CludesUI.ShowWidgetTooltip(box, tt)
                             end
                         end)
-                        boxFrame:SetScript("OnLeave", function()
-                            if not rowFrame._isLocked then
+                        box:SetScript("OnLeave", function()
+                            if not row._isLocked then
                                 labelFS:SetTextColor(RestColor())
                             end
                             highlight:SetColorTexture(1, 1, 1, 0)
@@ -1177,9 +1169,9 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                 end
                 -- Marks the contiguous run the override overlay below seals off.
-                rowFrame._ovBlock = itemInfo.ovLockedFn and true or nil
+                row._ovBlock = item.ovLockedFn and true or nil
                 _allRows[#_allRows + 1] =
-                    { frame = rowFrame, isHeader = false, label = itemInfo.label, height = ITEM_H }
+                    { frame = row, isHeader = false, label = item.label, height = ITEM_H }
                 yOff = yOff - ITEM_H
             end -- isHeader else
         end
@@ -1583,24 +1575,24 @@ function CludesUI.BuildVisOptsCBDropdown(
     end
 
     if options.disabled then
-        local blockData = CreateFrame("Frame", nil, ddBtn)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(ddBtn:GetFrameLevel() + 20)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, ddBtn)
+        block:SetAllPoints()
+        block:SetFrameLevel(ddBtn:GetFrameLevel() + 20)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             local tipText = CludesUI.ResolveDisabledTip(options)
             if tipText then
                 CludesUI.ShowWidgetTooltip(ddBtn, tipText)
             end
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function DisabledState()
-            local offset = options.disabled() and true or false
-            ddBtn:SetAlpha(offset and 0.4 or 1)
-            blockData:SetShown(offset)
-            if offset and dropMenu then
+            local off = options.disabled() and true or false
+            ddBtn:SetAlpha(off and 0.4 or 1)
+            block:SetShown(off)
+            if off and dropMenu then
                 dropMenu:Hide()
             end
         end
@@ -1725,24 +1717,24 @@ end
 --  Rows anchor TOPLEFT (1, slotY) / TOPRIGHT (-1, slotY) to the host at the
 --  host's level + 2 and float at + 10. Every row gets row:_cancelDrag().
 -------------------------------------------------------------------------------
-function CludesUI.AttachRowReorder(hostRegion, specInfo)
+function CludesUI.AttachRowReorder(host, specInfo)
     local rowList, movable, ITEM_H, SlotY = specInfo.rows, specInfo.items, specInfo.itemH, specInfo.slotY
     local insLine, status = specInfo.insLine, specInfo.state
     -- Read live: a host raised after this call (a cog popup lifts its open
     -- dropdown menu) would otherwise park dropped rows behind its background.
     local function BaseLevel()
-        return hostRegion:GetFrameLevel() + 2
+        return host:GetFrameLevel() + 2
     end
-    local function Park(rowFrame)
-        rowFrame:SetFrameLevel(BaseLevel())
-        rowFrame:SetAlpha(1)
-        rowFrame:ClearAllPoints()
-        rowFrame:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 1, rowFrame._slotY)
-        rowFrame:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -1, rowFrame._slotY)
+    local function Park(row)
+        row:SetFrameLevel(BaseLevel())
+        row:SetAlpha(1)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", host, "TOPLEFT", 1, row._slotY)
+        row:SetPoint("TOPRIGHT", host, "TOPRIGHT", -1, row._slotY)
     end
     -- Gap index (1..#items+1) the cursor points at: walk the slot midpoints, skipping the dragged row's own slot -- the same logic as the raid frames Sort By reorder menu, so the insertion line and the drop target always agree.
     local function TargetGap(cursorY, fromIdx)
-        local mT = hostRegion:GetTop() or 0
+        local mT = host:GetTop() or 0
         local iI = #movable
         for idx = 1, #movable do
             if idx ~= fromIdx then
@@ -1757,14 +1749,14 @@ function CludesUI.AttachRowReorder(hostRegion, specInfo)
         return math.max(1, math.min(iI, #movable + 1))
     end
     for idx = 1, #rowList do
-        local rowFrame = rowList[idx]
+        local row = rowList[idx]
         local dsY, dgO, dgFrom
         local DragUpdate
-        rowFrame:SetScript("OnMouseDown", function(self, b)
+        row:SetScript("OnMouseDown", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
-            rowFrame._suppressClick = nil
+            row._suppressClick = nil
             if specInfo.canReorder and not specInfo.canReorder() then
                 return
             end
@@ -1772,7 +1764,7 @@ function CludesUI.AttachRowReorder(hostRegion, specInfo)
             dsY = cy
             self:SetScript("OnUpdate", DragUpdate)
         end)
-        rowFrame:SetScript("OnMouseUp", function(self, b)
+        row:SetScript("OnMouseUp", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
@@ -1791,7 +1783,7 @@ function CludesUI.AttachRowReorder(hostRegion, specInfo)
                 return
             end
             local _, cy = GetCursorPosition()
-            cy = cy / hostRegion:GetEffectiveScale()
+            cy = cy / host:GetEffectiveScale()
             local from
             for mi = 1, #movable do
                 if movable[mi] == self._item then
@@ -1828,7 +1820,7 @@ function CludesUI.AttachRowReorder(hostRegion, specInfo)
                     return
                 end
                 status.dragging = true
-                local sc = hostRegion:GetEffectiveScale()
+                local sc = host:GetEffectiveScale()
                 dgO = (cy / sc) - (self:GetTop() or 0)
                 dgFrom = nil
                 for mi = 1, #movable do
@@ -1843,21 +1835,21 @@ function CludesUI.AttachRowReorder(hostRegion, specInfo)
                     specInfo.onDragStart(self)
                 end
             end
-            local sc = hostRegion:GetEffectiveScale()
+            local sc = host:GetEffectiveScale()
             local cY = cy / sc
-            local mT = hostRegion:GetTop() or 0
+            local mT = host:GetTop() or 0
             local lY = cY - (dgO or 0) - mT
             lY = math.max(SlotY(#movable), math.min(lY, SlotY(1)))
             self:ClearAllPoints()
-            self:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 1, lY)
-            self:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -1, lY)
+            self:SetPoint("TOPLEFT", host, "TOPLEFT", 1, lY)
+            self:SetPoint("TOPRIGHT", host, "TOPRIGHT", -1, lY)
             local lnY = SlotY(TargetGap(cY, dgFrom)) + 1
             insLine:ClearAllPoints()
-            insLine:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 8, lnY)
-            insLine:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -8, lnY)
+            insLine:SetPoint("TOPLEFT", host, "TOPLEFT", 8, lnY)
+            insLine:SetPoint("TOPRIGHT", host, "TOPRIGHT", -8, lnY)
             insLine:Show()
         end
-        rowFrame._cancelDrag = function(self)
+        row._cancelDrag = function(self)
             if not dsY then
                 return
             end
@@ -1962,10 +1954,10 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         local nameList = {}
         local sum = 0
         local function collect(entries)
-            for _, itemInfo in ipairs(entries) do
+            for _, item in ipairs(entries) do
                 sum = sum + 1
-                if getFn(itemInfo.key) then
-                    nameList[#nameList + 1] = CludesUI.L(itemInfo.label)
+                if getFn(item.key) then
+                    nameList[#nameList + 1] = CludesUI.L(item.label)
                 end
             end
         end
@@ -2049,42 +2041,42 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         -- A plain row (head or tail): its label alone; its callback runs before
         -- the menu closes, so onClose sees the pick. A tail row shows the
         -- current choice.
-        local function BuildPlainRow(itemInfo, slotY, onPick, selFn)
-            local rowFrame = CreateFrame("Button", nil, dropMenu)
-            rowFrame:SetHeight(ITEM_H)
-            rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
-            rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
-            rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-            local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+        local function BuildPlainRow(item, slotY, onPick, selFn)
+            local row = CreateFrame("Button", nil, dropMenu)
+            row:SetHeight(ITEM_H)
+            row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
+            row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
+            row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+            local labelFS = row:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(fontFile, 13, "")
-            labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
-            labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
+            labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
+            labelFS:SetPoint("RIGHT", row, "RIGHT", -10, 0)
             labelFS:SetJustifyH("LEFT")
             labelFS:SetWordWrap(false)
             labelFS:SetMaxLines(1)
-            labelFS:SetText(CludesUI.L(itemInfo.label))
-            local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+            labelFS:SetText(CludesUI.L(item.label))
+            local highlight = row:CreateTexture(nil, "ARTWORK")
             highlight:SetAllPoints()
             local hover = false
             local function Paint()
-                local lit = hover or (selFn and selFn(itemInfo.key))
+                local lit = hover or (selFn and selFn(item.key))
                 labelFS:SetTextColor(lit and 1 or 0.75, lit and 1 or 0.75, lit and 1 or 0.75, 1)
                 highlight:SetColorTexture(1, 1, 1, lit and 0.04 or 0)
             end
             Paint()
             plainPaints[#plainPaints + 1] = Paint
-            rowFrame:SetScript("OnEnter", function()
+            row:SetScript("OnEnter", function()
                 hover = true
                 Paint()
             end)
-            rowFrame:SetScript("OnLeave", function()
+            row:SetScript("OnLeave", function()
                 hover = false
                 Paint()
             end)
-            rowFrame:SetScript("OnClick", function()
+            row:SetScript("OnClick", function()
                 hover = false
                 if onPick then
-                    onPick(itemInfo.key)
+                    onPick(item.key)
                 end
                 dropMenu:Hide()
                 UpdateLabel()
@@ -2113,49 +2105,49 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
             return ROWS_BASE_Y - (idx - 1) * ITEM_H
         end
 
-        local function BuildRow(itemInfo, slotY, draggable)
-            local rowFrame = CreateFrame("Button", nil, dropMenu)
-            rowFrame:SetHeight(ITEM_H)
-            rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
-            rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
-            rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-            rowFrame._item = itemInfo
-            rowFrame._slotY = slotY
-            local boxFrame = CreateFrame("Frame", nil, rowFrame)
-            boxFrame:SetSize(16, 16)
-            boxFrame:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
-            local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+        local function BuildRow(item, slotY, draggable)
+            local row = CreateFrame("Button", nil, dropMenu)
+            row:SetHeight(ITEM_H)
+            row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, slotY)
+            row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, slotY)
+            row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+            row._item = item
+            row._slotY = slotY
+            local box = CreateFrame("Frame", nil, row)
+            box:SetSize(16, 16)
+            box:SetPoint("LEFT", row, "LEFT", 10, 0)
+            local boxBg = box:CreateTexture(nil, "BACKGROUND")
             boxBg:SetAllPoints()
             boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-            local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
-            local chk = boxFrame:CreateTexture(nil, "ARTWORK")
-            Pix.SetInside(chk, boxFrame, 2, 2)
+            local boxBrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+            local chk = box:CreateTexture(nil, "ARTWORK")
+            Pix.SetInside(chk, box, 2, 2)
             chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
             chk:SetSnapToPixelGrid(false)
-            CludesUI.RoundBody(boxFrame, chk, 2)
-            local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+            CludesUI.RoundBody(box, chk, 2)
+            local labelFS = row:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(fontFile, 13, "")
             labelFS:SetTextColor(0.75, 0.75, 0.75, 1)
-            labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
-            labelFS:SetPoint("RIGHT", rowFrame, "RIGHT", (draggable and options.grip) and -30 or -10, 0)
+            labelFS:SetPoint("LEFT", box, "RIGHT", 8, 0)
+            labelFS:SetPoint("RIGHT", row, "RIGHT", (draggable and options.grip) and -30 or -10, 0)
             labelFS:SetJustifyH("LEFT")
             labelFS:SetWordWrap(false)
             labelFS:SetMaxLines(1)
-            labelFS:SetText(CludesUI.L(itemInfo.label))
-            local highlight = rowFrame:CreateTexture(nil, "ARTWORK")
+            labelFS:SetText(CludesUI.L(item.label))
+            local highlight = row:CreateTexture(nil, "ARTWORK")
             highlight:SetAllPoints()
             highlight:SetColorTexture(1, 1, 1, 0)
             -- opts.grip: a three-dash handle on the right of each movable row.
             if draggable and options.grip then
                 for g = 1, 3 do
-                    local barFrame = rowFrame:CreateTexture(nil, "ARTWORK")
-                    barFrame:SetSize(10, 1)
-                    barFrame:SetPoint("RIGHT", rowFrame, "RIGHT", -10, (2 - g) * 3)
-                    barFrame:SetColorTexture(1, 1, 1, 0.35)
+                    local bar = row:CreateTexture(nil, "ARTWORK")
+                    bar:SetSize(10, 1)
+                    bar:SetPoint("RIGHT", row, "RIGHT", -10, (2 - g) * 3)
+                    bar:SetColorTexture(1, 1, 1, 0.35)
                 end
             end
             local function UpdateCheck()
-                if getFn(rowFrame._item.key) then
+                if getFn(row._item.key) then
                     chk:Show()
                     boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                 else
@@ -2164,39 +2156,39 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                 end
             end
             UpdateCheck()
-            rowFrame._updateCheck = UpdateCheck
-            rowFrame._lbl = labelFS
-            rowFrame:SetScript("OnEnter", function()
+            row._updateCheck = UpdateCheck
+            row._lbl = labelFS
+            row:SetScript("OnEnter", function()
                 if dragState.dragging then
                     return
                 end
                 labelFS:SetTextColor(1, 1, 1, 1)
                 highlight:SetColorTexture(1, 1, 1, 0.04)
                 -- The row's current item (drops shuffle row contents).
-                local tipText = rowFrame._item.tooltip
+                local tipText = row._item.tooltip
                 if tipText then
-                    CludesUI.ShowWidgetTooltip(rowFrame, tipText)
+                    CludesUI.ShowWidgetTooltip(row, tipText)
                 end
             end)
-            rowFrame:SetScript("OnLeave", function()
+            row:SetScript("OnLeave", function()
                 if dragState.dragging then
                     return
                 end
                 labelFS:SetTextColor(0.75, 0.75, 0.75, 1)
                 highlight:SetColorTexture(1, 1, 1, 0)
-                if rowFrame._item.tooltip then
+                if row._item.tooltip then
                     CludesUI.HideWidgetTooltip()
                 end
             end)
-            rowFrame:SetScript("OnClick", function()
-                if rowFrame._suppressClick then
-                    rowFrame._suppressClick = nil
+            row:SetScript("OnClick", function()
+                if row._suppressClick then
+                    row._suppressClick = nil
                     return
                 end
                 if dragState.dragging then
                     return
                 end
-                setFn(rowFrame._item.key, not getFn(rowFrame._item.key), MovableKeys())
+                setFn(row._item.key, not getFn(row._item.key), MovableKeys())
                 UpdateLabel()
                 for _, r in ipairs(allRows) do
                     if r._updateCheck then
@@ -2205,8 +2197,8 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                 end
                 PaintPlainRows()
             end)
-            allRows[#allRows + 1] = rowFrame
-            return rowFrame
+            allRows[#allRows + 1] = row
+            return row
         end
 
         -- Movable rows sit at fixed slots; drops shuffle row CONTENTS, not frames, so slot geometry stays constant for the drag math.
@@ -2320,8 +2312,8 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
 
         -- One close notification per open/close cycle (reload prompts hook this)
         dropMenu:HookScript("OnHide", function()
-            for _, rowFrame in ipairs(movableRows) do
-                rowFrame:_cancelDrag()
+            for _, row in ipairs(movableRows) do
+                row:_cancelDrag()
             end
             dragState.dragging = false
             insLine:Hide()
@@ -2467,10 +2459,10 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
             return
         end
         local nameList = {}
-        for _, itemInfo in ipairs(itemList) do
-            local val = itemInfo.get()
-            if val and val ~= (itemInfo.min or 0) then
-                nameList[#nameList + 1] = CludesUI.L(itemInfo.label)
+        for _, item in ipairs(itemList) do
+            local val = item.get()
+            if val and val ~= (item.min or 0) then
+                nameList[#nameList + 1] = CludesUI.L(item.label)
             end
         end
         if #nameList == 0 then
@@ -2514,15 +2506,15 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
         CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A, mBg, nil, true)
 
         refreshers = {}
-        for idx, itemInfo in ipairs(itemList) do
+        for idx, item in ipairs(itemList) do
             local posY = -(PAD + (idx - 1) * ROW_H)
-            local rowFrame = CreateFrame("Frame", nil, dropMenu)
-            rowFrame:SetHeight(ROW_H)
-            rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, posY)
-            rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, posY)
-            rowFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+            local row = CreateFrame("Frame", nil, dropMenu)
+            row:SetHeight(ROW_H)
+            row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, posY)
+            row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, posY)
+            row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
             local track, valBox, refresh = CludesUI.BuildSliderCore(
-                rowFrame,
+                row,
                 TRACK_W,
                 4,
                 14,
@@ -2530,48 +2522,48 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
                 24,
                 12,
                 CludesUI.SL_INPUT_A,
-                itemInfo.min or 0,
-                itemInfo.max or 100,
-                itemInfo.step or 1,
-                itemInfo.get,
+                item.min or 0,
+                item.max or 100,
+                item.step or 1,
+                item.get,
                 function(val)
                     -- Attributed to the button: its row carries the override
                     -- capture config, the menu sits on the overlay parent. The
                     -- slot is taken before the setter runs: one that rebuilds
                     -- the page can dress ddBtn for another slot.
                     local snap = CludesUI._SOAttribution(ddBtn)
-                    itemInfo.set(val)
+                    item.set(val)
                     UpdateLabel()
                     CludesUI._NotifySettingWrite(ddBtn, snap)
                 end,
                 true
             )
-            Pix.Point(valBox, "RIGHT", rowFrame, "RIGHT", -12, 0)
+            Pix.Point(valBox, "RIGHT", row, "RIGHT", -12, 0)
             Pix.Point(track, "RIGHT", valBox, "LEFT", -12, 0)
             refreshers[idx] = refresh
-            local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+            local labelFS = row:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(fontFile, 13, "")
             labelFS:SetTextColor(1, 1, 1, 0.85)
             labelFS:SetJustifyH("LEFT")
             labelFS:SetWordWrap(false)
-            labelFS:SetPoint("LEFT", rowFrame, "LEFT", 14, 0)
+            labelFS:SetPoint("LEFT", row, "LEFT", 14, 0)
             labelFS:SetPoint("RIGHT", track, "LEFT", -12, 0)
-            labelFS:SetText(CludesUI.L(itemInfo.label))
-            if itemInfo.tooltip then
-                rowFrame:EnableMouse(true)
-                rowFrame:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(labelFS, itemInfo.tooltip)
+            labelFS:SetText(CludesUI.L(item.label))
+            if item.tooltip then
+                row:EnableMouse(true)
+                row:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(labelFS, item.tooltip)
                 end)
-                rowFrame:SetScript("OnLeave", function()
+                row:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
             end
             if idx < #itemList then
-                local div = rowFrame:CreateTexture(nil, "ARTWORK")
+                local div = row:CreateTexture(nil, "ARTWORK")
                 div:SetColorTexture(1, 1, 1, 0.06)
                 div:SetHeight(1)
-                div:SetPoint("BOTTOMLEFT", rowFrame, "BOTTOMLEFT", 10, 0)
-                div:SetPoint("BOTTOMRIGHT", rowFrame, "BOTTOMRIGHT", -10, 0)
+                div:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 10, 0)
+                div:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -10, 0)
             end
         end
 

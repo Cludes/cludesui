@@ -245,10 +245,10 @@ local function CUI_GetEnchantText(slotID, unitToken)
         return ""
     end
 
-    for _, lineTex in ipairs(payload.lines) do
-        local raw = _stripLineEscapes(lineTex.leftText or "")
+    for _, line in ipairs(payload.lines) do
+        local raw = _stripLineEscapes(line.leftText or "")
         local matched
-        if lineTex.type == _ENCHANT_LINE_TYPE then
+        if line.type == _ENCHANT_LINE_TYPE then
             matched = raw
         elseif _ENCHANT_PATTERN then
             matched = raw:match(_ENCHANT_PATTERN)
@@ -435,10 +435,10 @@ local CUI_EMPTY_SOCKET_ATLAS = {
 -- (the slot's cuiGemPaintPasses) suppresses empty-socket atlas rows for the first frames after
 -- /reload while gem bytes hydrate.
 local function CUI_BuildSocketIconRow(itemLink, paintPasses)
-    local rowFrame = {}
+    local row = {}
     local gemLinks = {}
     if not itemLink or not C_Item or not C_Item.GetItemGem or not C_Item.GetItemStats then
-        return rowFrame, 0, 0, gemLinks
+        return row, 0, 0, gemLinks
     end
 
     local stats = C_Item.GetItemStats(itemLink)
@@ -458,11 +458,11 @@ local function CUI_BuildSocketIconRow(itemLink, paintPasses)
         local _, gemLink = C_Item.GetItemGem(itemLink, i)
         if gemLink then
             gemLinks[#gemLinks + 1] = gemLink
-            local glyph = C_Item.GetItemIconByID(gemLink)
-            if not glyph then
-                glyph = select(5, C_Item.GetItemInfoInstant(gemLink))
+            local icon = C_Item.GetItemIconByID(gemLink)
+            if not icon then
+                icon = select(5, C_Item.GetItemInfoInstant(gemLink))
             end
-            rowFrame[#rowFrame + 1] = { icon = glyph or 134400, isAtlas = false }
+            row[#row + 1] = { icon = icon or 134400, isAtlas = false }
         end
     end
     local nGems = #gemLinks
@@ -473,12 +473,12 @@ local function CUI_BuildSocketIconRow(itemLink, paintPasses)
         local emptyCount = math.max(0, totalSockets - nGems)
         if emptyCount > 0 then
             for _ = 1, emptyCount do
-                rowFrame[#rowFrame + 1] = { icon = firstAtlas, isAtlas = true }
+                row[#row + 1] = { icon = firstAtlas, isAtlas = true }
             end
         end
     end
 
-    return rowFrame, totalSockets, nGems, gemLinks
+    return row, totalSockets, nGems, gemLinks
 end
 
 -- Default the themed sheet + its sub-displays on first install. Keys are stamped
@@ -1205,10 +1205,10 @@ local function SkinCharacterSheet()
 
     local charTabs = {}
     for i = 1, 3 do
-        local tabButton = _G["CharacterFrameTab" .. i]
-        if tabButton and not mod.CharSheetStock() then
-            charTabs[#charTabs + 1] = tabButton
-            local regions = { tabButton:GetRegions() }
+        local tab = _G["CharacterFrameTab" .. i]
+        if tab and not mod.CharSheetStock() then
+            charTabs[#charTabs + 1] = tab
+            local regions = { tab:GetRegions() }
             for jdx = 1, #regions do
                 local regionFrame = regions[jdx]
                 if regionFrame and regionFrame:IsObjectType("Texture") then
@@ -1218,80 +1218,80 @@ local function SkinCharacterSheet()
                     end
                 end
             end
-            if tabButton.Left then
-                tabButton.Left:SetTexture("")
+            if tab.Left then
+                tab.Left:SetTexture("")
             end
-            if tabButton.Middle then
-                tabButton.Middle:SetTexture("")
+            if tab.Middle then
+                tab.Middle:SetTexture("")
             end
-            if tabButton.Right then
-                tabButton.Right:SetTexture("")
+            if tab.Right then
+                tab.Right:SetTexture("")
             end
-            if tabButton.LeftDisabled then
-                tabButton.LeftDisabled:SetTexture("")
+            if tab.LeftDisabled then
+                tab.LeftDisabled:SetTexture("")
             end
-            if tabButton.MiddleDisabled then
-                tabButton.MiddleDisabled:SetTexture("")
+            if tab.MiddleDisabled then
+                tab.MiddleDisabled:SetTexture("")
             end
-            if tabButton.RightDisabled then
-                tabButton.RightDisabled:SetTexture("")
+            if tab.RightDisabled then
+                tab.RightDisabled:SetTexture("")
             end
-            local highlight = tabButton:GetHighlightTexture()
+            local highlight = tab:GetHighlightTexture()
             if highlight then
                 highlight:SetTexture("")
             end
 
-            if not GetFFD(tabButton).bg then
-                GetFFD(tabButton).bg = tabButton:CreateTexture(nil, "BACKGROUND")
-                GetFFD(tabButton).bg:SetAllPoints()
-                GetFFD(tabButton).bg:SetColorTexture(0.068, 0.056, 0.052, 1)
+            if not GetFFD(tab).bg then
+                GetFFD(tab).bg = tab:CreateTexture(nil, "BACKGROUND")
+                GetFFD(tab).bg:SetAllPoints()
+                GetFFD(tab).bg:SetColorTexture(0.068, 0.056, 0.052, 1)
             end
 
-            if not GetFFD(tabButton).activeHL then
-                local activeHL = tabButton:CreateTexture(nil, "ARTWORK", nil, -6)
+            if not GetFFD(tab).activeHL then
+                local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
                 activeHL:SetAllPoints()
                 activeHL:SetColorTexture(1, 1, 1, 0.02)
                 activeHL:SetBlendMode("ADD")
                 activeHL:Hide()
-                GetFFD(tabButton).activeHL = activeHL
+                GetFFD(tab).activeHL = activeHL
             end
 
             -- Replace Blizzard's label with our own so font/size are under our control.
-            local blizLabel = tabButton:GetFontString()
+            local blizLabel = tab:GetFontString()
             local labelText = blizLabel and blizLabel:GetText() or ("Tab " .. i)
             if blizLabel then
                 blizLabel:SetTextColor(0, 0, 0, 0)
             end
-            tabButton:SetPushedTextOffset(0, 0)
+            tab:SetPushedTextOffset(0, 0)
 
-            if not GetFFD(tabButton).label then
-                local label = tabButton:CreateFontString(nil, "OVERLAY")
+            if not GetFFD(tab).label then
+                local label = tab:CreateFontString(nil, "OVERLAY")
                 label:SetFont(fontFile, 9, "")
-                label:SetPoint("CENTER", tabButton, "CENTER", 0, 0)
+                label:SetPoint("CENTER", tab, "CENTER", 0, 0)
                 label:SetJustifyH("CENTER")
                 label:SetText(labelText)
-                GetFFD(tabButton).label = label
-                hooksecurefunc(tabButton, "SetText", function(_, newText)
+                GetFFD(tab).label = label
+                hooksecurefunc(tab, "SetText", function(_, newText)
                     if newText and label then
                         label:SetText(newText)
                     end
                 end)
             end
 
-            if not GetFFD(tabButton).underline then
-                local underline = tabButton:CreateTexture(nil, "OVERLAY", nil, 6)
+            if not GetFFD(tab).underline then
+                local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
                 if CludesUI and CludesUI.PanelPP and CludesUI.PanelPP.DisablePixelSnap then
                     CludesUI.PanelPP.DisablePixelSnap(underline)
                     underline:SetHeight(CludesUI.PanelPP.mult or 1)
                 else
                     underline:SetHeight(1)
                 end
-                underline:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 0, 0)
-                underline:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+                underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
+                underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
                 underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
                 CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
                 underline:Hide()
-                GetFFD(tabButton).underline = underline
+                GetFFD(tab).underline = underline
             end
         end
     end
@@ -1302,18 +1302,18 @@ local function SkinCharacterSheet()
 
     local function UpdateTabVisuals()
         for i = 1, 3 do
-            local tabButton = _G["CharacterFrameTab" .. i]
-            if tabButton then
+            local tab = _G["CharacterFrameTab" .. i]
+            if tab then
                 -- PanelTemplates_GetSelectedTab is unreliable here -- Blizzard updates frame.selectedTab before the template helper agrees.
                 local isActive = (widget.selectedTab or 1) == i
-                if GetFFD(tabButton).label then
-                    GetFFD(tabButton).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
+                if GetFFD(tab).label then
+                    GetFFD(tab).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
                 end
-                if GetFFD(tabButton).underline then
-                    GetFFD(tabButton).underline:SetShown(isActive)
+                if GetFFD(tab).underline then
+                    GetFFD(tab).underline:SetShown(isActive)
                 end
-                if GetFFD(tabButton).activeHL then
-                    GetFFD(tabButton).activeHL:SetShown(isActive)
+                if GetFFD(tab).activeHL then
+                    GetFFD(tab).activeHL:SetShown(isActive)
                 end
             end
         end
@@ -1325,11 +1325,11 @@ local function SkinCharacterSheet()
         if not pane or GetFFD(pane).bg then
             return
         end
-        local anchorFrame = pane.ScrollBox or pane.scrollFrame or pane
+        local anchor = pane.ScrollBox or pane.scrollFrame or pane
         local texture = pane:CreateTexture(nil, "BACKGROUND", nil, -7)
         texture:SetColorTexture(0, 0, 0, 0.1)
-        texture:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 10, -10)
-        texture:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -10, 0)
+        texture:SetPoint("TOPLEFT", anchor, "TOPLEFT", 10, -10)
+        texture:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -10, 0)
         GetFFD(pane).bg = texture
     end
     if not mod.CharSheetStock() then
@@ -1880,15 +1880,15 @@ local function SkinCharacterSheet()
 
         -- Keep only the single highest-ilvl candidate per slot
         local bestPerSlot = {}
-        for _, itemInfo in ipairs(betterItems) do
-            local current = bestPerSlot[itemInfo.slot]
-            if not current or itemInfo.level > current.level then
-                bestPerSlot[itemInfo.slot] = itemInfo
+        for _, item in ipairs(betterItems) do
+            local current = bestPerSlot[item.slot]
+            if not current or item.level > current.level then
+                bestPerSlot[item.slot] = item
             end
         end
         local deduped = {}
-        for _, itemInfo in pairs(bestPerSlot) do
-            deduped[#deduped + 1] = itemInfo
+        for _, item in pairs(bestPerSlot) do
+            deduped[#deduped + 1] = item
         end
 
         table.sort(deduped, function(a, b)
@@ -2041,10 +2041,10 @@ local function SkinCharacterSheet()
         HideAllDurabilityLabels()
 
         if location == "header" and headerLabel then
-            local anchorFrame = GetDurabilityHeaderAnchor()
-            if anchorFrame then
+            local anchor = GetDurabilityHeaderAnchor()
+            if anchor then
                 headerLabel:ClearAllPoints()
-                headerLabel:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
+                headerLabel:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
             end
             headerLabel:SetText(textValue)
             headerLabel:SetTextColor(r, g, b, 1)
@@ -2101,10 +2101,9 @@ local function SkinCharacterSheet()
             -- Show up to 10 items with icons and slots (slot on right side)
             local maxShow = math.min(#betterItems, 10)
             for i = 1, maxShow do
-                local itemInfo = betterItems[i]
-                local leftText =
-                    string.format("|T%s:16|t  %s (iLvl %d)", itemInfo.icon, itemInfo.name, itemInfo.level)
-                GameTooltip:AddDoubleLine(leftText, L(itemInfo.slot), 1, 1, 1, 0.7, 0.7, 0.7)
+                local item = betterItems[i]
+                local leftText = string.format("|T%s:16|t  %s (iLvl %d)", item.icon, item.name, item.level)
+                GameTooltip:AddDoubleLine(leftText, L(item.slot), 1, 1, 1, 0.7, 0.7, 0.7)
             end
 
             if #betterItems > 10 then
@@ -2120,9 +2119,8 @@ local function SkinCharacterSheet()
         if #betterItems > 0 then
             local maxShow = math.min(#betterItems, 10)
             for i = 1, maxShow do
-                local itemInfo = betterItems[i]
-                local textValue =
-                    string.format("%s (iLvl %d) - %s", itemInfo.name, itemInfo.level, L(itemInfo.slot))
+                local item = betterItems[i]
+                local textValue = string.format("%s (iLvl %d) - %s", item.name, item.level, L(item.slot))
                 -- Rough estimate: ~6 pixels per character + icon space
                 local estimatedWidth = #textValue * 6 + 30
                 if estimatedWidth > maxWidth then
@@ -2168,8 +2166,8 @@ local function SkinCharacterSheet()
         -- Re-anchor M+ Score: below PvP ilvl when visible, below iLvl when not
         if GetFFD(widget).mythicRatingLabel then
             GetFFD(widget).mythicRatingLabel:ClearAllPoints()
-            local anchorFrame = pvpVisible and pvpIlvlText or iLvlText
-            GetFFD(widget).mythicRatingLabel:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
+            local anchor = pvpVisible and pvpIlvlText or iLvlText
+            GetFFD(widget).mythicRatingLabel:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
         end
 
         -- M+ Score if enabled. PaperDollFrame:IsShown() is the truth-source for the
@@ -2618,23 +2616,23 @@ local function SkinCharacterSheet()
         PvP = { r = 0.671, g = 0.431, b = 0.349 },
     }
 
-    local function GetCategoryColor(titleText)
+    local function GetCategoryColor(title)
         local blizz = mod.CharSheetBlizzColor()
         if blizz then
             return blizz
         end
         local useCustom = CludesUIDB
             and CludesUIDB.statCategoryUseColor
-            and CludesUIDB.statCategoryUseColor[titleText]
+            and CludesUIDB.statCategoryUseColor[title]
         if useCustom then
             local custom = CludesUIDB
                 and CludesUIDB.statCategoryColors
-                and CludesUIDB.statCategoryColors[titleText]
+                and CludesUIDB.statCategoryColors[title]
             if custom then
                 return custom
             end
         end
-        return DEFAULT_CATEGORY_COLORS[titleText] or { r = 1, g = 1, b = 1 }
+        return DEFAULT_CATEGORY_COLORS[title] or { r = 1, g = 1, b = 1 }
     end
 
     local function GetStatSectionsOrder()
@@ -2686,11 +2684,11 @@ local function SkinCharacterSheet()
                         name = "Versatility",
                         func = function()
                             local rating = GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_DONE) or 0
-                            local baseValue = GetVersatilityBonus(CR_VERSATILITY_DAMAGE_DONE) or 0
-                            if issecretvalue(rating) or issecretvalue(baseValue) then
+                            local base = GetVersatilityBonus(CR_VERSATILITY_DAMAGE_DONE) or 0
+                            if issecretvalue(rating) or issecretvalue(base) then
                                 return rating
                             end
-                            return rating + baseValue
+                            return rating + base
                         end,
                         format = "%.2f%%",
                         rawFunc = function()
@@ -2770,7 +2768,7 @@ local function SkinCharacterSheet()
                     {
                         name = "Armor",
                         func = function()
-                            local baseValue, effectiveArmor = UnitArmor("player")
+                            local base, effectiveArmor = UnitArmor("player")
                             return effectiveArmor
                         end,
                         tooltip = L("Reduces physical damage taken"),
@@ -2881,8 +2879,8 @@ local function SkinCharacterSheet()
                         format = "%s",
                         func = function()
                             local current = (UnitHonor and UnitHonor("player")) or 0
-                            local upper = (UnitHonorMax and UnitHonorMax("player")) or 0
-                            return BreakUpLargeNumbers(current) .. "/" .. BreakUpLargeNumbers(upper)
+                            local max = (UnitHonorMax and UnitHonorMax("player")) or 0
+                            return BreakUpLargeNumbers(current) .. "/" .. BreakUpLargeNumbers(max)
                         end,
                     },
                     {
@@ -2903,9 +2901,9 @@ local function SkinCharacterSheet()
 
         if CludesUIDB and CludesUIDB.statSectionsOrder then
             local orderedSections = {}
-            for _, titleText in ipairs(CludesUIDB.statSectionsOrder) do
+            for _, title in ipairs(CludesUIDB.statSectionsOrder) do
                 for _, section in ipairs(defaultOrder) do
-                    if section.title == titleText then
+                    if section.title == title then
                         table.insert(orderedSections, section)
                         break
                     end
@@ -3528,9 +3526,9 @@ local function SkinCharacterSheet()
                         end
                     -- Attributes
                     elseif stat.statIndex then
-                        local baseValue, _, posBuff, negBuff = UnitStat("player", stat.statIndex)
+                        local base, _, posBuff, negBuff = UnitStat("player", stat.statIndex)
                         -- base from UnitStat is wrong, so calculate it like the default UI does
-                        baseValue = baseValue - posBuff - negBuff
+                        base = base - posBuff - negBuff
                         local statLabel = stat.name
 
                         -- Map to Blizzard global names
@@ -3547,12 +3545,7 @@ local function SkinCharacterSheet()
                         local bonus = (posBuff or 0) + (negBuff or 0)
                         local statLine = statLabel .. " " .. statValue
                         if bonus ~= 0 then
-                            statLine = statLine
-                                .. " ("
-                                .. baseValue
-                                .. (bonus > 0 and "+" or "")
-                                .. bonus
-                                .. ")"
+                            statLine = statLine .. " (" .. base .. (bonus > 0 and "+" or "") .. bonus .. ")"
                         end
                         GameTooltip:AddLine(statLine, scR, scG, scB, true)
                         GameTooltip:AddLine(L(stat.tooltip), 1, 1, 1, true)
@@ -4489,22 +4482,22 @@ local function SkinCharacterSheet()
             btn:ClearAllPoints()
             btn:SetPoint("TOPLEFT", statsPanel, "TOPLEFT", (i - 1) * (buttonWidth + buttonSpacing), 0)
             btn:SetFrameLevel(statsPanel:GetFrameLevel() + 2)
-            local tabButton = btn._tab
-            if tabButton then
-                tabButton:ClearAllPoints()
-                tabButton:SetAllPoints(btn)
-                tabButton:SetFrameLevel(btn:GetFrameLevel() + 1)
+            local tab = btn._tab
+            if tab then
+                tab:ClearAllPoints()
+                tab:SetAllPoints(btn)
+                tab:SetFrameLevel(btn:GetFrameLevel() + 1)
                 for _, key in ipairs(SIDEBAR_TAB_ART) do
-                    local regionFrame = tabButton[key]
+                    local regionFrame = tab[key]
                     if regionFrame then
                         regionFrame:SetAlpha(0)
                     end
                 end
-                tabButton:HookScript("OnEnter", function()
+                tab:HookScript("OnEnter", function()
                     btn._hover = true
                     _paintTopButton(btn)
                 end)
-                tabButton:HookScript("OnLeave", function()
+                tab:HookScript("OnLeave", function()
                     btn._hover = false
                     _paintTopButton(btn)
                 end)
@@ -5065,7 +5058,7 @@ local function SkinCharacterSheet()
         end
 
         -- Each socket is a small Frame (not a raw texture) so it can carry a 1px pixel-perfect border.
-        local function GetOrCreateSocketIcons(slot, sideName, slotIndex)
+        local function GetOrCreateSocketIcons(slot, side, slotIndex)
             if GetFFD(slot).charSocketsIcons then
                 return GetFFD(slot).charSocketsIcons
             end
@@ -5081,8 +5074,8 @@ local function SkinCharacterSheet()
                 gemFrame:EnableMouse(true)
                 gemFrame:Hide()
 
-                local glyph = gemFrame:CreateTexture(nil, "ARTWORK")
-                glyph:SetAllPoints(gemFrame)
+                local icon = gemFrame:CreateTexture(nil, "ARTWORK")
+                icon:SetAllPoints(gemFrame)
 
                 -- 2px pixel-perfect border, recolored per-gem in UpdateSocketIcons.
                 PP_GEM.CreateBorder(gemFrame, 1, 1, 1, 1, 2, "OVERLAY", 1)
@@ -5092,10 +5085,10 @@ local function SkinCharacterSheet()
                 end
 
                 GetFFD(slot).charSocketsFrames[i] = gemFrame
-                GetFFD(slot).charSocketsIcons[i] = glyph
+                GetFFD(slot).charSocketsIcons[i] = icon
             end
 
-            GetFFD(slot).charSocketsSide = sideName
+            GetFFD(slot).charSocketsSide = side
             GetFFD(slot).charSocketsSlotIndex = slotIndex
 
             return GetFFD(slot).charSocketsIcons
@@ -5108,9 +5101,9 @@ local function SkinCharacterSheet()
             end
 
             local slotIndex = slot:GetID()
-            local sideName = tContains(leftColumnSlots, slotName) and "RIGHT" or "LEFT"
+            local side = tContains(leftColumnSlots, slotName) and "RIGHT" or "LEFT"
 
-            local socketIcons = GetOrCreateSocketIcons(slot, sideName, slotIndex)
+            local socketIcons = GetOrCreateSocketIcons(slot, side, slotIndex)
 
             local invLink = GetInventoryItemLink("player", slotIndex)
             local gemsEnabled = not (CludesUIDB and CludesUIDB.showGems == false)
@@ -5141,7 +5134,7 @@ local function SkinCharacterSheet()
             -- Position and show gem frames inside the slot's bottom-right, with extra gems stacking leftward.
             if #socketTextures > 0 then
                 local gemFrames = GetFFD(slot).charSocketsFrames or {}
-                for i, glyph in ipairs(socketIcons) do
+                for i, icon in ipairs(socketIcons) do
                     local gemFrame = gemFrames[i]
                     if socketTextures[i] and gemFrame then
                         local record = socketTextures[i]
@@ -5149,34 +5142,34 @@ local function SkinCharacterSheet()
                             -- Empty socket: prefer Blizzard's socket atlas, never a bright
                             -- fallback fill. The inventory link can lack gem bytes while
                             -- GetItemStats still reports sockets, misreading as "missing gem" on gemmed gear.
-                            if glyph.SetAtlas then
-                                glyph:SetAtlas(nil)
+                            if icon.SetAtlas then
+                                icon:SetAtlas(nil)
                             end
-                            glyph:SetTexture(nil)
-                            if glyph.SetVertexColor then
-                                glyph:SetVertexColor(1, 1, 1, 1)
+                            icon:SetTexture(nil)
+                            if icon.SetVertexColor then
+                                icon:SetVertexColor(1, 1, 1, 1)
                             end
-                            if glyph.SetAtlas and record.icon then
-                                glyph:SetColorTexture(0, 0, 0, 0)
-                                glyph:SetAtlas(record.icon)
+                            if icon.SetAtlas and record.icon then
+                                icon:SetColorTexture(0, 0, 0, 0)
+                                icon:SetAtlas(record.icon)
                             else
-                                if glyph.SetAtlas then
-                                    glyph:SetAtlas(nil)
+                                if icon.SetAtlas then
+                                    icon:SetAtlas(nil)
                                 end
-                                glyph:SetColorTexture(0.22, 0.22, 0.26, 0.85)
+                                icon:SetColorTexture(0.22, 0.22, 0.26, 0.85)
                             end
                         else
                             -- Clear atlas/color-texture mode before applying a fileID, or the frame
                             -- shows only the PP border after a prior empty-socket atlas paint.
-                            if glyph.SetAtlas then
-                                glyph:SetAtlas(nil)
+                            if icon.SetAtlas then
+                                icon:SetAtlas(nil)
                             end
-                            glyph:SetColorTexture(0, 0, 0, 0)
-                            glyph:SetTexture(nil)
-                            if glyph.SetVertexColor then
-                                glyph:SetVertexColor(1, 1, 1, 1)
+                            icon:SetColorTexture(0, 0, 0, 0)
+                            icon:SetTexture(nil)
+                            if icon.SetVertexColor then
+                                icon:SetVertexColor(1, 1, 1, 1)
                             end
-                            glyph:SetTexture(record.icon)
+                            icon:SetTexture(record.icon)
                         end
 
                         gemFrame:ClearAllPoints()
@@ -5244,10 +5237,10 @@ local function SkinCharacterSheet()
                 end
             end
             if GetFFD(slot).charSocketsIcons then
-                for _, glyph in ipairs(GetFFD(slot).charSocketsIcons) do
-                    glyph:SetTexture(nil)
-                    if glyph.SetAtlas then
-                        glyph:SetAtlas(nil)
+                for _, icon in ipairs(GetFFD(slot).charSocketsIcons) do
+                    icon:SetTexture(nil)
+                    if icon.SetAtlas then
+                        icon:SetAtlas(nil)
                     end
                 end
             end
@@ -5969,13 +5962,13 @@ do
             flyout.Highlight:SetAlpha(0)
         end
 
-        local anchorFrame = flyout.buttonFrame
-        if anchorFrame then
+        local anchor = flyout.buttonFrame
+        if anchor then
             -- Panel fades the strips it finds now; Blizzard adds more (bgN)
             -- as the flyout grows, so every strip is faded on every fill.
-            Skin.Panel(anchorFrame)
-            for i = 1, anchorFrame.numBGs or 0 do
-                local strip = anchorFrame["bg" .. i]
+            Skin.Panel(anchor)
+            for i = 1, anchor.numBGs or 0 do
+                local strip = anchor["bg" .. i]
                 if strip then
                     strip:SetAlpha(0)
                 end
@@ -6303,23 +6296,23 @@ function CludesUI._refreshCharacterSheetColors()
         PvP = { r = 0.671, g = 0.431, b = 0.349 },
     }
 
-    local function GetCategoryColor(titleText)
+    local function GetCategoryColor(title)
         local blizz = mod.CharSheetBlizzColor()
         if blizz then
             return blizz
         end
         local useCustom = CludesUIDB
             and CludesUIDB.statCategoryUseColor
-            and CludesUIDB.statCategoryUseColor[titleText]
+            and CludesUIDB.statCategoryUseColor[title]
         if useCustom then
             local custom = CludesUIDB
                 and CludesUIDB.statCategoryColors
-                and CludesUIDB.statCategoryColors[titleText]
+                and CludesUIDB.statCategoryColors[title]
             if custom then
                 return custom
             end
         end
-        return DEFAULT_CATEGORY_COLORS[titleText] or { r = 1, g = 1, b = 1 }
+        return DEFAULT_CATEGORY_COLORS[title] or { r = 1, g = 1, b = 1 }
     end
 
     -- Stock styles' "Blizzard UI Color": titles in Blizzard's yellow, values in

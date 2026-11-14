@@ -32,7 +32,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function SavedDB()
+    local function DB()
         local d = _G._CUQT_DB
         if d and d.profile and d.profile.questTracker then
             return d.profile.questTracker
@@ -40,10 +40,10 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return SavedDB()[k]
+        return DB()[k]
     end
     local function Set(k, val)
-        SavedDB()[k] = val
+        DB()[k] = val
     end
 
     local function RefreshAll()
@@ -68,7 +68,7 @@ initFrame:SetScript("OnEvent", function(self)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
         local posY = yOffset
-        local rowFrame, hgt
+        local row, hgt
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -166,10 +166,10 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Custom Quest Tracker",
                 tooltip = "Replaces Blizzard's tracker with CludesUI's own quest tracker, which never touches Blizzard's tracker or watch list. On by default under the CludesUI style. Requires a UI reload.",
                 getValue = function()
-                    return mod.CustomTrackerWanted(SavedDB())
+                    return mod.CustomTrackerWanted(DB())
                 end,
                 setValue = function(val)
-                    mod.SetCustomTrackerWanted(SavedDB(), val)
+                    mod.SetCustomTrackerWanted(DB(), val)
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Switching quest trackers requires a UI reload to apply.",
@@ -510,7 +510,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- the Background Opacity row into the slot the old Visibility Options dropdown
         -- left behind: it answers the same question the Visibility control does.
         _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
-            getStore = SavedDB,
+            getStore = DB,
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             onChanged = function()
@@ -1060,7 +1060,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Dim Completed Objectives (+ opacity cog) | blank (WoW Forever only)
             if FOREVER then
-                rowFrame, hgt = W:DualRow(hostFrame, posY, {
+                row, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Dim Completed Objectives",
                     tooltip = "Fades objective lines that are already done.",
@@ -1073,7 +1073,7 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI:RefreshPage()
                     end,
                 }, CludesUI.BlankRowCfg())
-                CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+                CludesUI.BuildInlineCog(row._leftRegion, {
                     disabled = function()
                         return not Cfg("objDimCompleted")
                     end,
@@ -1239,7 +1239,7 @@ initFrame:SetScript("OnEvent", function(self)
                 posY = posY - hgt
             else
                 -- Experimental Quest Tools | Sort Quests (+ completed placement cog)
-                rowFrame, hgt = W:DualRow(hostFrame, posY, expCfg, {
+                row, hgt = W:DualRow(hostFrame, posY, expCfg, {
                     type = "dropdown",
                     text = "Sort Quests",
                     tooltip = "Reorders your tracked quests; Quest Log Order lists them as your quest log does.",
@@ -1258,7 +1258,7 @@ initFrame:SetScript("OnEvent", function(self)
                         ApplyWatches()
                     end,
                 })
-                CludesUI.BuildInlineCog(rowFrame._rightRegion, {
+                CludesUI.BuildInlineCog(row._rightRegion, {
                     title = "Sort Settings",
                     rows = {
                         {
@@ -1304,7 +1304,7 @@ initFrame:SetScript("OnEvent", function(self)
                 posY = posY - hgt
 
                 -- Filter Quests (+ filters cog) | Auto Track Zone Quests
-                rowFrame, hgt = W:DualRow(hostFrame, posY, {
+                row, hgt = W:DualRow(hostFrame, posY, {
                     type = "toggle",
                     text = "Filter Quests",
                     tooltip = "Untracks quests that match the filters in the cog until they no longer match.",
@@ -1328,7 +1328,7 @@ initFrame:SetScript("OnEvent", function(self)
                         ApplyWatches()
                     end,
                 })
-                CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+                CludesUI.BuildInlineCog(row._leftRegion, {
                     -- Open while the header button shows too: it turns Filter Quests
                     -- off, and its own row is in here.
                     disabled = function()
@@ -1360,7 +1360,7 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
         posY = posY - hgt
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Auto Accept Quests",
             getValue = function()
@@ -1447,12 +1447,12 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+        CludesUI.BuildInlineCog(row._leftRegion, {
             title = "Auto Accept Settings",
             rows = acceptRows,
         })
 
-        CludesUI.BuildInlineCog(rowFrame._rightRegion, {
+        CludesUI.BuildInlineCog(row._rightRegion, {
             title = "Auto Turn In Settings",
             rows = {
                 {

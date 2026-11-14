@@ -55,7 +55,7 @@ local function StopAnimEyesOnHide()
     end
 end
 
-local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
+local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     local environ = mod._RFO_OptEnv
     local AbbreviateNumbers, absorbStyleOrder, absorbStyleValues, saved =
         environ.AbbreviateNumbers, environ.absorbStyleOrder, environ.absorbStyleValues, environ.db
@@ -68,14 +68,14 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     local SWrite = environ.SWrite
     local TexBgRowCfg = environ.TexBgRowCfg
     local _, hgt
-    local rowFrame
+    local row
     local _secY -- section start tracker
     -------------------------------------------------------------------
     --  HEALTH BAR
     -------------------------------------------------------------------
     _secY = posY
     local healthHeader
-    healthHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH BAR", posY)
+    healthHeader, hgt = W:SectionHeader(hostFrame, "HEALTH BAR", posY)
     posY = posY - hgt
 
     -- Eyeball: animate health bars (damage/healing simulation); built on raid + party pages, reads the active frame set via ns.PvActiveFrames().
@@ -297,7 +297,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end -- health eyeball
 
     local texRow
-    texRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    texRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Health Bar Texture",
         values = hbtValues,
@@ -362,7 +362,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end
     posY = posY - hgt
 
-    rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Fill Color",
         values = healthColorValues,
@@ -399,16 +399,16 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     -- Fill Color's "dark" choice IS the Dark Mode condition's input, so lock the dropdown while a Dark Mode conditional is being edited -- else the override could capture a mode change that flips its own condition.
     if CludesUI.SpecOverrides_AttachEditLock and not CludesUI._prebuilding then
         CludesUI.SpecOverrides_AttachEditLock(
-            rowFrame._leftRegion,
+            row._leftRegion,
             "Fill Color's Dark Mode choice drives a Dark Mode override condition, so it can't be changed while editing an override",
             CludesUI.SpecOverrides_DarkCondEditActive
         )
     end
     -- Custom fill swatch plus the three Custom Dynamic stop swatches (100/50/0%) share one inline slot; the Fill Color mode decides which set is interactive.
     if not CludesUI._prebuilding then
-        local region = rowFrame._leftRegion
+        local region = row._leftRegion
 
-        local colorSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = SGet("customFillColor")
             if c then
                 return c.r, c.g, c.b, 1
@@ -421,14 +421,14 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
-        local blockData = CreateFrame("Frame", nil, colorSwatch)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, colorSwatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color")
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
 
@@ -457,7 +457,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         local prevAnchor = region._control
         for idx = #dynDefs, 1, -1 do
             local dropdown = dynDefs[idx]
-            local sw = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+            local sw = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
                 local c = SGet(dropdown.key) or dropdown.def
                 return c.r, c.g, c.b, 1
             end, function(r, g, b)
@@ -476,23 +476,23 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         end
 
         local function UpdateSwatchVis()
-            local modeName = SVal("healthColorMode", "class")
-            local isDynamic = modeName == "customDynamic"
+            local mode = SVal("healthColorMode", "class")
+            local isDynamic = mode == "customDynamic"
             -- Class Reactive shares the dynamic stops but its 100% color IS
             -- the class color: only the 0%/50% swatches apply there.
-            local isClassReactive = modeName == "classReactive"
+            local isClassReactive = mode == "classReactive"
             -- Single custom swatch: live only in Custom mode, dimmed+blocked in other modes, fully HIDDEN in Dynamic/Class Reactive modes so it doesn't sit behind the dynamic swatches.
             if isDynamic or isClassReactive then
                 colorSwatch:Hide()
-                blockData:Hide()
+                block:Hide()
             else
                 colorSwatch:Show()
-                if modeName == "custom" then
+                if mode == "custom" then
                     colorSwatch:SetAlpha(1)
-                    blockData:Hide()
+                    block:Hide()
                 else
                     colorSwatch:SetAlpha(0.3)
-                    blockData:Show()
+                    block:Show()
                 end
             end
             for idx, sw in ipairs(dynSwatches) do
@@ -509,9 +509,9 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end
     -- Background Custom + Class swatch pair: clicking either toggles bgClassColored, the inactive one dims (mirrors the fill picker).
     if not CludesUI._prebuilding then
-        local region = rowFrame._rightRegion
+        local region = row._rightRegion
         -- Class swatch shows the player's class color and is not editable.
-        local bgClassSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, ct = UnitClass("player")
             local cc = ct and CludesUI.GetClassColor(ct)
             if cc then
@@ -533,7 +533,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         bgClassSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(region, rowFrame:GetFrameLevel() + 3, function()
+        local bgSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = SGet("customBgColor")
             if c then
                 return c.r, c.g, c.b, 1
@@ -600,7 +600,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     local editTargets = CludesUI._prebuilding and {} or mod._editTargets
 
     local healPredRow
-    healPredRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    healPredRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Heal Prediction",
         getValue = function()
@@ -680,7 +680,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end
 
     local smoothThreatRow
-    smoothThreatRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    smoothThreatRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Health Bars",
         getValue = function()
@@ -749,7 +749,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         onSection("healthBar", _secY, posY)
     end
     _secY = posY
-    absorbsHeader, hgt = Widgets:SectionHeader(hostFrame, "ABSORBS", posY)
+    absorbsHeader, hgt = W:SectionHeader(hostFrame, "ABSORBS", posY)
     posY = posY - hgt
 
     -- Eyeball: toggle shield/heal-absorb effects on the preview frames.
@@ -830,7 +830,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end -- absorbs eyeball
 
     local absorbRow
-    absorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    absorbRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Absorb Style",
         values = absorbStyleValues,
@@ -1023,9 +1023,9 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         swatchBlock:Hide()
         local function UpdateAbsorbSwatchVis()
             local st = SVal("absorbStyle", "none")
-            local offset = (st == "none" or st == "blizzardModern")
-            colorSwatch:SetAlpha(offset and 0.3 or 1)
-            if offset then
+            local off = (st == "none" or st == "blizzardModern")
+            colorSwatch:SetAlpha(off and 0.3 or 1)
+            if off then
                 swatchBlock:Show()
             else
                 swatchBlock:Hide()
@@ -1043,7 +1043,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         return SVal("absorbBarEnabled", false) and "aboveRight" or "none"
     end
     local absorbBarRow
-    absorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    absorbBarRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Absorb Bar",
         values = {
@@ -1148,7 +1148,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end
 
     local healAbsorbRow
-    healAbsorbRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    healAbsorbRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Heal Absorb Style",
         values = absorbStyleValues,
@@ -1279,14 +1279,14 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         swatchBlock:Hide()
         local function UpdateHealAbsorbSwatchVis()
             local st = SVal("healAbsorbStyle", "clean")
-            local offset = (
+            local off = (
                 st == "none"
                 or st == "healBlizzModern"
                 or st == "largeOutlinedStripes"
                 or st == "largeOutlinedStripesR"
             )
-            colorSwatch:SetAlpha(offset and 0.3 or 1)
-            if offset then
+            colorSwatch:SetAlpha(off and 0.3 or 1)
+            if off then
                 swatchBlock:Show()
             else
                 swatchBlock:Hide()
@@ -1301,7 +1301,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
             return SGet("healAbsorbBarPosition") or "none"
         end
         local healAbsorbBarRow
-        healAbsorbBarRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        healAbsorbBarRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Heal Absorb Bar",
             values = {
@@ -1425,7 +1425,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     -- Max Health Texture (+cog+swatch) | Max Health Opacity. Styles mirror Heal Absorb plus "Max Health Stripes" first; no placement control, overlay is always right-anchored.
     do
         local maxHealthRow
-        maxHealthRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        maxHealthRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Max Health Style",
             values = absorbStyleValues,
@@ -1500,14 +1500,14 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
                 local st = SVal("maxHealthStyle", "maxHealthStripes")
-                local offset = (
+                local off = (
                     st == "none"
                     or st == "healBlizzModern"
                     or st == "largeOutlinedStripes"
                     or st == "largeOutlinedStripesR"
                 )
-                colorSwatch:SetAlpha(offset and 0.3 or 1)
-                if offset then
+                colorSwatch:SetAlpha(off and 0.3 or 1)
+                if off then
                     swatchBlock:Show()
                 else
                     swatchBlock:Hide()
@@ -1526,7 +1526,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         onSection("absorbs", _secY, posY)
     end
     _secY = posY
-    powerHeader, hgt = Widgets:SectionHeader(hostFrame, "POWER BAR", posY)
+    powerHeader, hgt = W:SectionHeader(hostFrame, "POWER BAR", posY)
     posY = posY - hgt
 
     -- Power bar animation: same pattern as health, serves raid + party.
@@ -1700,7 +1700,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
             { healer = "powerShowForHealer", tank = "powerShowForTank", dps = "powerShowForDPS" }
         -- Party Frames kit: the stock mana bar always shows at the stock
         -- size, so this row (and its cog) hides on the Party page.
-        rowFrame, hgt = Widgets:DualRow(
+        row, hgt = W:DualRow(
             hostFrame,
             posY,
             mod.RF_PartyKitGate({
@@ -1734,7 +1734,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         posY = posY - hgt
         -- Cog: uniform icon anchoring. Greyed + blocked while no role shows a power bar (nothing to ignore then).
         do
-            local region = rowFrame._rightRegion
+            local region = row._rightRegion
             CludesUI.BuildInlineCog(region, {
                 disabled = IsPowerOff,
                 disabledTooltip = "Show Power Bar For",
@@ -1766,7 +1766,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
             })
         end
         if not CludesUI._prebuilding then
-            local region = rowFrame._leftRegion
+            local region = row._leftRegion
             if region._control then
                 region._control:Hide()
             end
@@ -1855,7 +1855,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
             end,
         }
     end
-    pwBdrRow, hgt = Widgets:DualRow(
+    pwBdrRow, hgt = W:DualRow(
         hostFrame,
         posY,
         mod.RF_PartyKitGate(PwClassicGate({
@@ -1943,11 +1943,11 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         )
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
-        local blockData = CreateFrame("Frame", nil, colorSwatch)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, colorSwatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 colorSwatch,
                 MatchingPowerBorder()
@@ -1955,20 +1955,20 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
                     or CludesUI.DisabledTooltip("Border Style")
             )
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdatePwBdrSwatchState()
-            local offset = IsPowerOff()
+            local off = IsPowerOff()
                 or SVal("powerBorderSize", 1) == 0
                 or SVal("powerBorderStyle", "cui") == "cui"
                 or MatchingPowerBorder()
-            if offset then
+            if off then
                 colorSwatch:SetAlpha(0.3)
-                blockData:Show()
+                block:Show()
             else
                 colorSwatch:SetAlpha(1)
-                blockData:Hide()
+                block:Hide()
             end
         end
         CludesUI.RegisterWidgetRefresh(function()
@@ -1981,7 +1981,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
     end
 
     local pwBgRow
-    pwBgRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    pwBgRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Power Bars",
         disabled = function()
@@ -2087,11 +2087,11 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         onSection("powerBar", _secY, posY)
     end
     _secY = posY
-    _, hgt = Widgets:SectionHeader(hostFrame, "TEXT DISPLAY", posY)
+    _, hgt = W:SectionHeader(hostFrame, "TEXT DISPLAY", posY)
     posY = posY - hgt
 
     posY = mod.RFO_BuildTextDisplay(
-        Widgets,
+        W,
         hostFrame,
         posY,
         { page = CludesUI._buildingPage, party = optionState._partyCtx }
@@ -2106,7 +2106,7 @@ local function BuildVisualBars(hostFrame, posY, Widgets, onSection, EYE)
         local values, sequence, getValue = CludesUI.NameFormatMenu(function()
             return SVal("nameFormat", "full")
         end, Set)
-        _, hgt = Widgets:DualRow(hostFrame, posY, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Name Format",
             values = values,

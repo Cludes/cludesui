@@ -55,28 +55,28 @@ local _AC = { bars = {}, syncPending = {} }
 -- Position a bar's holder from its CURRENT rect + growth settings. The
 -- container point (set at build) mirrors these anchors so the engine flows
 -- away from the bar / centers under it.
-function _AC.Anchor(barId, recd)
-    local barFrame = cdmBarFrames[barId]
-    local holderFrame = recd and recd.holder
-    if not (barFrame and holderFrame) then
+function _AC.Anchor(barId, rec)
+    local bar = cdmBarFrames[barId]
+    local holderFrame = rec and rec.holder
+    if not (bar and holderFrame) then
         return
     end
-    holderFrame:SetShown(barFrame:IsShown())
+    holderFrame:SetShown(bar:IsShown())
     -- Visibility rules and bar opacity hide the bar through ALPHA on the bar
     -- frame and its own icons; this holder is UIParent-parented and inherits
     -- none of it, so mirror the bar's effective alpha here: 0 while the bar
     -- is visibility-hidden, else its opacity / out-of-combat fade.
-    local bdA = (mod.barDataByKey and mod.barDataByKey[barId]) or recd.bdRef
+    local bdA = (mod.barDataByKey and mod.barDataByKey[barId]) or rec.bdRef
     holderFrame:SetAlpha(
-        barFrame._visHidden and 0 or ((mod.EffectiveBarAlpha and mod.EffectiveBarAlpha(bdA)) or 1)
+        bar._visHidden and 0 or ((mod.EffectiveBarAlpha and mod.EffectiveBarAlpha(bdA)) or 1)
     )
     holderFrame:ClearAllPoints()
-    local success, bl, bb, bw, bh = pcall(barFrame.GetRect, barFrame)
+    local success, bl, bb, bw, bh = pcall(bar.GetRect, bar)
     if not (success and bl) then
         holderFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", -10000, -10000)
         return
     end
-    local edge = recd.bdRef
+    local edge = rec.bdRef
     local gap = (edge and edge.spacing) or 2
     local grow = (edge and edge.growDirection) or "CENTER"
     local cx, cy = bl + bw / 2, bb + bh / 2
@@ -90,12 +90,12 @@ function _AC.Anchor(barId, recd)
     -- point flips to CENTER so the engine centers it); directional bars
     -- seat it at the FIXED growth edge -- exactly where the first real
     -- buff would render.
-    local empty = (barFrame._acLiveW ~= nil and barFrame._acLiveW <= 0.5)
-    local wantPt = (empty and grow == "CENTER") and "CENTER" or recd.pt
-    if recd.container and wantPt and recd.curPt ~= wantPt then
-        recd.curPt = wantPt
-        recd.container:ClearAllPoints()
-        recd.container:SetPoint(wantPt)
+    local empty = (bar._acLiveW ~= nil and bar._acLiveW <= 0.5)
+    local wantPt = (empty and grow == "CENTER") and "CENTER" or rec.pt
+    if rec.container and wantPt and rec.curPt ~= wantPt then
+        rec.curPt = wantPt
+        rec.container:ClearAllPoints()
+        rec.container:SetPoint(wantPt)
     end
     if edge and edge.verticalOrientation then
         if grow == "UP" then
@@ -775,8 +775,8 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
             end
         end
     end
-    local glyph = preset and preset.icon or C_Item.GetItemIconByID(itemId)
-    if not glyph then
+    local icon = preset and preset.icon or C_Item.GetItemIconByID(itemId)
+    if not icon then
         return nil
     end
 
@@ -790,7 +790,7 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
     end
     local texture = f:CreateTexture(nil, "ARTWORK")
     texture:SetAllPoints()
-    texture:SetTexture(glyph)
+    texture:SetTexture(icon)
     mod.CdmOwnIconCrop(texture)
     f.Icon = texture
     f._tex = texture

@@ -134,8 +134,8 @@ end
 local function PoleInBags()
     local best, bestLevel
     for bag = 0, NUM_BAG_SLOTS do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slot)
             if ident and IsPole(ident) then
                 local level = select(4, C_Item.GetItemInfo(ident)) or 0
                 if not best or level > bestLevel then
@@ -172,10 +172,10 @@ local function CVarText(val)
     return val % 1 == 0 and tostring(val) or ("%.2f"):format(val)
 end
 
-local function Hold(group, cvars)
+local function Hold(set, cvars)
     local conf = F.Cfg()
     conf.held = conf.held or {}
-    if conf.held[group] then
+    if conf.held[set] then
         return
     end
     local was = {}
@@ -190,19 +190,19 @@ local function Hold(group, cvars)
             was[name] = current
         end
     end
-    conf.held[group] = was
+    conf.held[set] = was
 end
 
-local function Release(group)
+local function Release(set)
     local held = F.Read().held
-    local was = held and held[group]
+    local was = held and held[set]
     if not was then
         return
     end
     for name, value in pairs(was) do
         CludesUI.ReleaseCVar(name, value, "CludesUIForeverEssentials")
     end
-    held[group] = nil
+    held[set] = nil
 end
 
 -------------------------------------------------------------------------------
@@ -232,11 +232,11 @@ local function BuildIndicator()
     indicator:SetMouseMotionEnabled(true)
     indicator:SetMouseClickEnabled(false)
     indicator:Hide()
-    local glyph = indicator:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints()
-    glyph:SetTexture(ICON)
-    glyph:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    indicator.icon = glyph
+    local icon = indicator:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetTexture(ICON)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    indicator.icon = icon
     Pix.CreateBorder(indicator, 1, 0.2, 0.2, 1, 2, "OVERLAY", 2)
     -- The key, clipped to the icon's width.
     local key = indicator:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
@@ -502,8 +502,8 @@ local function Apply()
         booted = true
         local held = F.Read().held
         if held then
-            for group in pairs(held) do
-                Release(group)
+            for set in pairs(held) do
+                Release(set)
             end
         end
     end

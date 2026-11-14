@@ -17,7 +17,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local min, upper = math.min, math.max
+local min, max = math.min, math.max
 local pi = math.pi
 local tonumber, type = tonumber, type
 local GetBindingKey = GetBindingKey
@@ -27,7 +27,7 @@ local BINDING_PREFIX, ChildIndex, DB_DEFAULTS = Inner.BINDING_PREFIX, Inner.Chil
 local EnsurePalette, EQD, MAX_CHILD_ROWS = Inner.EnsurePalette, Inner.EQD, Inner.MAX_CHILD_ROWS
 local MAX_LATTICE, MAX_PALETTES, MAX_SLOTS = Inner.MAX_LATTICE, Inner.MAX_PALETTES, Inner.MAX_SLOTS
 local MigrateActiveProfile = Inner.MigrateActiveProfile
-local MigrateLegacyProfile, Prm, PA = Inner.MigrateLegacyProfile, Inner.P, Inner.PA
+local MigrateLegacyProfile, P, PA = Inner.MigrateLegacyProfile, Inner.P, Inner.PA
 local PaletteCount, REGION_MAX, CyclePosBack = Inner.PaletteCount, Inner.REGION_MAX, Inner.CyclePosBack
 local CycleSteps, FireInsecure, ResolveAction = Inner.CycleSteps, Inner.FireInsecure, Inner.ResolveAction
 local usableMemo, UsableSlots, CANCEL_BUTTON = Inner.usableMemo, Inner.UsableSlots, Inner.CANCEL_BUTTON
@@ -77,11 +77,11 @@ local bindOwner
 -- for it. Clearing the accumulator matters as much as hiding the catcher: the
 -- strip opens with entry 1 seeded, so a key-up arriving after an unattended
 -- close would otherwise fire that entry with nothing on screen.
-function ReleaseSecureState(slotPos)
+function ReleaseSecureState(index)
     if InCombatLockdown() then
         -- 0 for a close with no palette of its own to put away -- the catcher
         -- and the stamp still have to be retried.
-        secureCloseDirty = slotPos or 0
+        secureCloseDirty = index or 0
         return
     end
     secureCloseDirty = nil
@@ -96,7 +96,7 @@ function ReleaseSecureState(slotPos)
         cancelButton:SetAttribute("eqdOwner", nil)
     end
 
-    local btn = slotPos and secureButtons[slotPos]
+    local btn = index and secureButtons[index]
     if btn then
         btn:SetAttribute("eqdArmed", nil)
         -- With this left standing the next press of the key would read as the
@@ -105,7 +105,7 @@ function ReleaseSecureState(slotPos)
         -- secureCloseDirty hands to PLAYER_REGEN_ENABLED.
         btn:SetAttribute("eqdLatched", nil)
     end
-    local pool = slotPos and gatePools[slotPos]
+    local pool = index and gatePools[index]
     if not pool then
         return
     end
@@ -241,32 +241,32 @@ local function OnPostClick(self, _, down)
     end
     if why == "fire" or why == "emptyslot" then
         local position = tonumber(self:GetAttribute("eqdIdx"))
-        local slotIndex = liveView:CellSlot(position)
-        FireInsecure(slotIndex)
+        local slot = liveView:CellSlot(position)
+        FireInsecure(slot)
         -- Only "fire" moved a cycle on: "emptyslot" is a kind the sandbox has
         -- no action type for, and it never reached the snippet's step.
         if why == "fire" then
-            CyclePosBack(self, position, slotIndex)
+            CyclePosBack(self, position, slot)
         end
     end
     mod.Close()
 end
 
-local function GetSecureButton(slotPos)
-    local btn = secureButtons[slotPos]
+local function GetSecureButton(index)
+    local btn = secureButtons[index]
     if btn then
         return btn
     end
 
-    btn = CreateFrame("Button", "CUIQuickdrawButton" .. slotPos, UIParent, "SecureActionButtonTemplate")
-    btn._palette = slotPos
+    btn = CreateFrame("Button", "CUIQuickdrawButton" .. index, UIParent, "SecureActionButtonTemplate")
+    btn._palette = index
     -- The same number the sandbox can read: the ownership test in SNIPPET_PRE
     -- and SNIPPET_POST needs to know which palette it is running for, and a
     -- plain field is invisible from inside the restricted environment. Written
     -- here, where the button is built, which is out of combat by construction
     -- -- UpdateBindings, the only caller, defers the whole rebind to
     -- PLAYER_REGEN_ENABLED while the player is fighting.
-    btn:SetAttribute("eqdPalette", slotPos)
+    btn:SetAttribute("eqdPalette", index)
     btn:RegisterForClicks("AnyDown", "AnyUp")
 
     -- SecureActionButton_OnClick performs the action on exactly one edge
@@ -287,7 +287,7 @@ local function GetSecureButton(slotPos)
     btn:EnableMouse(false)
     btn:SetSize(1, 1)
     btn:SetAlpha(0)
-    btn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -300 - slotPos * 4, 100)
+    btn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -300 - index * 4, 100)
     btn:Show()
     btn:SetScript("PreClick", OnPreClick)
     btn:SetScript("PostClick", OnPostClick)
@@ -301,10 +301,10 @@ local function GetSecureButton(slotPos)
     -- The other direction too: the wheel snippet re-derives the hover-armed
     -- nest and needs this button's geometry to do it; the press stamps
     -- eqdOwnerIdx on the catcher so it knows which ref to read.
-    SecureHandlerSetFrameRef(EnsureScrollCatcher(), "btn" .. slotPos, btn)
+    SecureHandlerSetFrameRef(EnsureScrollCatcher(), "btn" .. index, btn)
     SecureHandlerWrapScript(btn, "OnClick", EnsureSecureHeader(), SNIPPET_PRE, SNIPPET_POST)
 
-    secureButtons[slotPos] = btn
+    secureButtons[index] = btn
     return btn
 end
 
@@ -324,14 +324,14 @@ local pushedClaims = {}
 -- contribute are pushed through here, under the cell index the snippet will
 -- resolve a release to -- which is what lets the snippet fire either without
 -- knowing which of the two it landed on.
-local function PushCell(btn, i, slotIndex, p)
-    local aType, aKey, aVal = ResolveAction(slotIndex, p)
+local function PushCell(btn, i, slot, p)
+    local aType, aKey, aVal = ResolveAction(slot, p)
     btn:SetAttribute("eqdT" .. i, aType)
     btn:SetAttribute("eqdK" .. i, aKey)
     btn:SetAttribute("eqdV" .. i, aVal)
     -- A palette resolves to no action, same as an empty slot. Marked so the
     -- trace can tell "you stopped on the door" from "that slot is empty".
-    btn:SetAttribute("eqdPal" .. i, ChildIndex(slotIndex) and true or nil)
+    btn:SetAttribute("eqdPal" .. i, ChildIndex(slot) and true or nil)
 
     -- A cycling entry's whole run, one step per attribute, plus the position it
     -- is up to. Written out rather than parsed in the snippet: the marker order
@@ -341,24 +341,24 @@ local function PushCell(btn, i, slotIndex, p)
     -- eqdCycN is what marks the cell as cycling, so a cell that has stopped
     -- being one has to lose it -- and the steps under it, which are read by
     -- position and would otherwise outlive a shorter run.
-    local steps = CycleSteps(slotIndex and slotIndex.kind)
+    local steps = CycleSteps(slot and slot.kind)
     local had = tonumber(btn:GetAttribute("eqdCycN" .. i)) or 0
-    for s = 1, upper(had, steps and #steps or 0) do
+    for s = 1, max(had, steps and #steps or 0) do
         btn:SetAttribute("eqdCycV" .. i .. "_" .. s, steps and steps[s] or nil)
     end
     btn:SetAttribute("eqdCycN" .. i, steps and #steps or nil)
-    btn:SetAttribute("eqdCycPos" .. i, steps and tonumber(slotIndex.cyclePos) or nil)
+    btn:SetAttribute("eqdCycPos" .. i, steps and tonumber(slot.cyclePos) or nil)
 
     -- Random Hearthstone cells, so a press can roll them again without a whole
     -- push. Every cell index passes through here on every push, cleared ones
     -- included, so the record cannot outlive the entry.
     local hearth = btn._hearthCells
-    if slotIndex and slotIndex.kind == "randomhearth" then
+    if slot and slot.kind == "randomhearth" then
         if not hearth then
             hearth = {}
             btn._hearthCells = hearth
         end
-        hearth[i] = slotIndex
+        hearth[i] = slot
     elseif hearth then
         hearth[i] = nil
     end
@@ -380,8 +380,8 @@ RerollHearth = function(pressed)
     for _, btn in pairs(secureButtons) do
         local cells = btn._hearthCells
         if cells then
-            for i, slotIndex in pairs(cells) do
-                local aType, aKey, aVal = ResolveAction(slotIndex)
+            for i, slot in pairs(cells) do
+                local aType, aKey, aVal = ResolveAction(slot)
                 btn:SetAttribute("eqdT" .. i, aType)
                 btn:SetAttribute("eqdK" .. i, aKey)
                 btn:SetAttribute("eqdV" .. i, aVal)
@@ -390,13 +390,13 @@ RerollHearth = function(pressed)
     end
 end
 
-local function PushPalette(slotPos)
+local function PushPalette(index)
     if InCombatLockdown() then
         return
     end
-    local p = PA(slotPos)
-    local btn = secureButtons[slotPos]
-    local palette = EnsurePalette(slotPos)
+    local p = PA(index)
+    local btn = secureButtons[index]
+    local palette = EnsurePalette(index)
     if not p or not btn or not palette then
         return
     end
@@ -414,7 +414,7 @@ local function PushPalette(slotPos)
     -- taken against some other palette's layout. appIndex points its own
     -- profile accessor at this palette for the length of the push. There is no
     -- early return past here; the clear at the bottom is unconditional.
-    liveView.appIndex = slotPos
+    liveView.appIndex = index
 
     -- The usable view, same as the live drawing reads (Hide Unavailable
     -- Actions): what a cell index fires and what it draws have to come off
@@ -443,7 +443,7 @@ local function PushPalette(slotPos)
     btn:SetAttribute("eqdPosY", p.posY or 0)
     btn:SetAttribute("eqdScale", p.scale or 1)
 
-    local model = LayoutModel(slotPos)
+    local model = LayoutModel(index)
     btn:SetAttribute("eqdMode", model)
     btn:SetAttribute("eqdShown", num)
     btn:SetAttribute("eqdInvert", p.fanInvert == true)
@@ -551,12 +551,12 @@ local function PushPalette(slotPos)
     -- the bound was MAX_SLOTS. Lowering it to today's claim count instead
     -- would strand a live gate at yesterday's rect with nothing left to clear
     -- it.
-    local gateMax = upper(pushedClaims[slotPos] or 0, claims and #claims or 0)
-    pushedClaims[slotPos] = gateMax
+    local gateMax = max(pushedClaims[index] or 0, claims and #claims or 0)
+    pushedClaims[index] = gateMax
     -- The arming gates. Built out of combat like everything else here, grown
     -- to the same mark, and reused and merely repositioned afterwards. See the
     -- "Arming gates" section in CUI_Quickdraw_Gates.lua for what they are for.
-    EnsureGates(slotPos, btn, gateMax)
+    EnsureGates(index, btn, gateMax)
     btn:SetAttribute("eqdGateMax", gateMax)
 
     local sum = num
@@ -585,7 +585,7 @@ local function PushPalette(slotPos)
     -- Whatever a longer set of nests left behind last time. Bounded by what was
     -- actually written rather than by the theoretical maximum, so an ordinary
     -- palette does not pay a hundred attribute writes on every options tick.
-    for i = upper(sum, MAX_SLOTS) + 1, (pushedCells[slotPos] or 0) do
+    for i = max(sum, MAX_SLOTS) + 1, (pushedCells[index] or 0) do
         -- nil for the slot, which is also how PushCell clears a cycle's steps.
         PushCell(btn, i, nil, p)
         btn:SetAttribute("eqdBX" .. i, nil)
@@ -593,7 +593,7 @@ local function PushPalette(slotPos)
         btn:SetAttribute("eqdHW" .. i, nil)
         btn:SetAttribute("eqdHH" .. i, nil)
     end
-    pushedCells[slotPos] = sum
+    pushedCells[index] = sum
     btn:SetAttribute("eqdTotal", sum)
 
     -- One claim-index -> cell-range mapping, the parent's own arming box, and
@@ -649,7 +649,7 @@ local function PushPalette(slotPos)
             btn:SetAttribute("eqdCSlot" .. k, c.parent)
         end
         if claims then
-            EnsureLatticeGates(slotPos, btn)
+            EnsureLatticeGates(index, btn)
         end
     end
 
@@ -685,19 +685,16 @@ local function PushPalette(slotPos)
         btn:SetAttribute("eqdCSlope" .. k, g and g.slope)
         btn:SetAttribute("eqdCWedge" .. k, g and (g.half * 180 / pi))
         for r = 1, MAX_CHILD_ROWS do
-            local rowFrame = c and c.rows[r]
+            local row = c and c.rows[r]
             local tag = "eqdCR" .. k .. "_" .. r
-            btn:SetAttribute(tag .. "Lo", rowFrame and rowFrame.lo)
-            btn:SetAttribute(tag .. "Hi", rowFrame and rowFrame.hi)
-            btn:SetAttribute(tag .. "N", rowFrame and rowFrame.n)
+            btn:SetAttribute(tag .. "Lo", row and row.lo)
+            btn:SetAttribute(tag .. "Hi", row and row.hi)
+            btn:SetAttribute(tag .. "N", row and row.n)
             -- Absolute: the cell index this ring's first child lands on, so the
             -- snippet adds nothing but the local offset it works out itself.
-            btn:SetAttribute(tag .. "Base", rowFrame and (c.base + rowFrame.base))
-            btn:SetAttribute(tag .. "StepDeg", rowFrame and (rowFrame.step * 180 / pi))
-            btn:SetAttribute(
-                tag .. "StartDeg",
-                rowFrame and (((rowFrame.start - rowFrame.step * 0.5) * 180 / pi) % 360)
-            )
+            btn:SetAttribute(tag .. "Base", row and (c.base + row.base))
+            btn:SetAttribute(tag .. "StepDeg", row and (row.step * 180 / pi))
+            btn:SetAttribute(tag .. "StartDeg", row and (((row.start - row.step * 0.5) * 180 / pi) % 360))
         end
     end
     btn:SetAttribute("eqdClaims", angular and #angular or 0)
@@ -871,9 +868,9 @@ local function ModifierSig(key)
     if not key then
         return ""
     end
-    local baseValue, result = BaseKey(key), "|"
+    local base, result = BaseKey(key), "|"
     for i = 1, #MOD_COMBOS do
-        result = result .. (KeyIsFree(MOD_COMBOS[i] .. baseValue) and "1" or "0")
+        result = result .. (KeyIsFree(MOD_COMBOS[i] .. base) and "1" or "0")
     end
     return result
 end
@@ -884,14 +881,14 @@ local function BindWithModifiers(name, key, claimed)
     if not key then
         return
     end
-    local baseValue = BaseKey(key)
+    local base = BaseKey(key)
     -- What the player is already holding to press this key at all. Only
     -- combinations that keep ALL of it are ours: the point of the variants is
     -- that a hold survives a modifier picked up DURING it, and dropping one the
     -- binding requires is a different gesture entirely. Without this, a palette
     -- on SHIFT-T also took plain T whenever T was free -- an opening the player
     -- never asked for, on a key they left alone.
-    local mods = key:sub(1, #key - #baseValue)
+    local mods = key:sub(1, #key - #base)
     -- META is in MOD_STRIP but not in MOD_COMBOS, so a key bound with it has no
     -- variant that keeps it. Pass 1 has already bound the key itself; leave it
     -- at that rather than hand out combinations that all drop the Command key.
@@ -908,7 +905,7 @@ local function BindWithModifiers(name, key, claimed)
             and (not ctrl or combo:find("CTRL-", 1, true))
             and (not shift or combo:find("SHIFT-", 1, true))
         then
-            local k = combo .. baseValue
+            local k = combo .. base
             if not claimed[k] and KeyIsFree(k) then
                 SetOverrideBindingClick(bindOwner, false, k, name)
                 claimed[k] = true
@@ -945,7 +942,7 @@ end
 -- It also makes the call free for the options panel, which reaches Refresh on
 -- every slider tick.
 function mod.UpdateBindings()
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end
@@ -1011,11 +1008,11 @@ function mod.UpdateBindings()
     local claimed, targets = {}, {}
     for i = 1, count do
         local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
-        local targetUnit = (k1 or k2) and KeyTarget(i, count)
-        if targetUnit then
-            targets[i] = targetUnit
-            built = built or not secureButtons[targetUnit]
-            local name = GetSecureButton(targetUnit):GetName()
+        local target = (k1 or k2) and KeyTarget(i, count)
+        if target then
+            targets[i] = target
+            built = built or not secureButtons[target]
+            local name = GetSecureButton(target):GetName()
             if k1 then
                 SetOverrideBindingClick(bindOwner, false, k1, name)
                 claimed[k1] = true
@@ -1027,10 +1024,10 @@ function mod.UpdateBindings()
         end
     end
     for i = 1, count do
-        local targetUnit = targets[i]
-        if targetUnit then
+        local target = targets[i]
+        if target then
             local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
-            local name = secureButtons[targetUnit]:GetName()
+            local name = secureButtons[target]:GetName()
             BindWithModifiers(name, k1, claimed)
             BindWithModifiers(name, k2, claimed)
         end
@@ -1067,7 +1064,7 @@ local function SpecSync(_, _, unitToken)
     if unitToken and unitToken ~= "player" then
         return
     end
-    local p = Prm()
+    local p = P()
     if not (p and p.enabled) then
         return
     end
@@ -1128,9 +1125,9 @@ local function OnRegenEnabled()
     -- steering. The flag stands until then, and the next unattended close
     -- out of combat does the work anyway.
     if secureCloseDirty and idle then
-        local slotPos = secureCloseDirty
+        local index = secureCloseDirty
         secureCloseDirty = nil
-        ReleaseSecureState(slotPos ~= 0 and slotPos or nil)
+        ReleaseSecureState(index ~= 0 and index or nil)
     end
     -- A disable that landed mid-fight left this handler standing precisely so
     -- the work above could happen; now that it has, the handlers may go.
@@ -1150,7 +1147,7 @@ end
 -- land, a palette the fight left on screen. Dropping the handler that pays them
 -- would strand the bindings live for the rest of the session.
 function EventsWanted()
-    local p = Prm()
+    local p = P()
     if p and p.enabled then
         return true
     end
@@ -1229,7 +1226,7 @@ function SetEventsEnabled(on)
                 return
             end
             local mountID = C_MountJournal.GetMountFromSpell(spellId)
-            local popFrame = Prm()
+            local popFrame = P()
             if mountID and popFrame and popFrame.lastMountID ~= mountID then
                 popFrame.lastMountID = mountID
                 -- Only a palette actually holding one of these has anything to
@@ -1268,7 +1265,7 @@ function mod.Refresh()
     -- override bindings back down, and before anything that costs something:
     -- switched off, this module draws nothing, pushes nothing and schedules
     -- nothing at all.
-    local p = Prm()
+    local p = P()
     if not p or not p.enabled then
         return
     end
@@ -1348,7 +1345,7 @@ function EQD:OnInitialize()
 end
 
 function EQD:OnEnable()
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end

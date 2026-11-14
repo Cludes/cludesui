@@ -233,8 +233,8 @@ do
         -- Never customized = "default": no tint request (nil), the suite's
         -- default look (gold). An explicit swatch pick is stored and honored.
         local c = p and p.dispelGlowColor
-        local modeName = (p and p.dispelGlowColorMode) or (c and "custom" or "default")
-        return CludesUI.Glows.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
+        local mode = (p and p.dispelGlowColorMode) or (c and "custom" or "default")
+        return CludesUI.Glows.ResolveColor(mode, c and c.r, c and c.g, c and c.b)
     end
     -- Full render spec for the dispel glow (live purge glow and its preview).
     mod.GetDispelGlowSpec = function(dispelType, result)
@@ -379,45 +379,45 @@ end
 -- square anchored to a cast BOTTOM corner (top flush with health top) with scale forced to 1
 -- to stay flush to both edges. Frame level fixed at creation (health+1), never touched here.
 function mod.LayoutCastIcon(backing, castH)
-    local glyph = backing.castIconFrame
+    local icon = backing.castIconFrame
     local onRight = mod.GetCastIconOnRight()
     local xOff = (p and p.castIconOffsetX) or defaultSet.castIconOffsetX
     local yOff = (p and p.castIconOffsetY) or defaultSet.castIconOffsetY
-    glyph:ClearAllPoints()
+    icon:ClearAllPoints()
     if mod.NP_Classic() then
         -- Classic WoW UI: the icon in the vanilla cast border's plate, a
         -- fixed square at the plate's centre (the border's middle sits half
         -- a sheet row under the bar's); the offsets still nudge it.
         local C = mod.NP_CLASSIC
         local ix, iy = mod.NP_ClassicIconOffset(castH)
-        glyph:SetScale(1)
-        glyph:SetSize(C.icon * castH, C.icon * castH)
-        glyph:SetPoint("CENTER", backing.cast, "LEFT", ix + xOff, iy + yOff)
+        icon:SetScale(1)
+        icon:SetSize(C.icon * castH, C.icon * castH)
+        icon:SetPoint("CENTER", backing.cast, "LEFT", ix + xOff, iy + yOff)
         return
     end
     if mod.GetCastIconFullSize() then
-        local sideName = GetHealthBarHeight() + castH
-        glyph:SetScale(1)
+        local side = GetHealthBarHeight() + castH
+        icon:SetScale(1)
         -- Link the icon's three shared edges DIRECTLY to the bar edges (top=health top,
         -- bottom=cast bottom, inner side=bars' outer edge) instead of deriving from its own
         -- size: anchored to the same points the health/cast borders use, they pixel-snap
         -- together and shift as ONE unit instead of rounding independently. SetWidth keeps it
         -- square (height is fixed by the top/bottom anchors = side).
-        glyph:SetWidth(sideName)
+        icon:SetWidth(side)
         if onRight then
-            glyph:SetPoint("TOPLEFT", backing.health, "TOPRIGHT", xOff, yOff)
-            glyph:SetPoint("BOTTOMLEFT", backing.cast, "BOTTOMRIGHT", xOff, yOff)
+            icon:SetPoint("TOPLEFT", backing.health, "TOPRIGHT", xOff, yOff)
+            icon:SetPoint("BOTTOMLEFT", backing.cast, "BOTTOMRIGHT", xOff, yOff)
         else
-            glyph:SetPoint("TOPRIGHT", backing.health, "TOPLEFT", xOff, yOff)
-            glyph:SetPoint("BOTTOMRIGHT", backing.cast, "BOTTOMLEFT", xOff, yOff)
+            icon:SetPoint("TOPRIGHT", backing.health, "TOPLEFT", xOff, yOff)
+            icon:SetPoint("BOTTOMRIGHT", backing.cast, "BOTTOMLEFT", xOff, yOff)
         end
     else
-        glyph:SetScale(GetCastIconScale() or 1)
-        glyph:SetSize(castH, castH)
+        icon:SetScale(GetCastIconScale() or 1)
+        icon:SetSize(castH, castH)
         if onRight then
-            glyph:SetPoint("TOPLEFT", backing.cast, "TOPRIGHT", xOff, yOff)
+            icon:SetPoint("TOPLEFT", backing.cast, "TOPRIGHT", xOff, yOff)
         else
-            glyph:SetPoint("TOPRIGHT", backing.cast, "TOPLEFT", xOff, yOff)
+            icon:SetPoint("TOPRIGHT", backing.cast, "TOPLEFT", xOff, yOff)
         end
     end
 end
@@ -439,19 +439,19 @@ function mod.GetCastIconReserve(backing)
         return 0, nil
     end
     local onRight = mod.GetCastIconOnRight()
-    local sideName = onRight and "right" or "left"
+    local side = onRight and "right" or "left"
     if mod.GetCastIconFullSize() then
         -- Reserve the full-size icon's footprint only while visible (cast bar up), so side
         -- elements sit flush against the bar when idle instead of shoved out by a phantom gap.
         if backing and backing.cast and not backing.cast:IsShown() then
-            return 0, sideName
+            return 0, side
         end
-        return GetHealthBarHeight() + GetCastBarHeight(), sideName
+        return GetHealthBarHeight() + GetCastBarHeight(), side
     end
     if onRight and not mod.GetCastIconInWidth() then
-        return GetCastBarHeight() * (GetCastIconScale() or 1), sideName
+        return GetCastBarHeight() * (GetCastIconScale() or 1), side
     end
-    return 0, sideName
+    return 0, side
 end
 
 -- Whether an element beside the bars meets the full-size cast icon. The element spans y0..y1
@@ -466,12 +466,12 @@ end
 -- The full-size cast icon's push on `side` for an element spanning y0..y1 above the health
 -- bar's bottom: the icon's width while it shows there (a cast is up) and the two meet, else 0,
 -- so an element its slot's Y offset moved clear of the icon stays put.
-function mod.NP_FullIconPush(backing, sideName, y0, y1)
+function mod.NP_FullIconPush(backing, side, y0, y1)
     if not mod.GetCastIconFullSize() then
         return 0
     end
     local res, iconSide = mod.GetCastIconReserve(backing)
-    if res <= 0 or iconSide ~= sideName then
+    if res <= 0 or iconSide ~= side then
         return 0
     end
     if mod.NP_MeetsFullIcon(y0, y1, GetHealthBarHeight(), backing._castDrop or -GetCastBarHeight()) then
@@ -484,16 +484,16 @@ end
 -- the target arrows too) steps out on `side`. It centres on the bar plus y and is sz tall.
 -- The normal-size cast icon's reserve always applies, the full-size icon's only where the two
 -- meet; plus Classic WoW UI's border reach or WoW Forever's level box (ns.NP_ClassicSide).
-function mod.NP_SideIconPush(backing, sideName, posY, sz)
+function mod.NP_SideIconPush(backing, side, posY, sz)
     local push
     if mod.GetCastIconFullSize() then
         local mid = GetHealthBarHeight() / 2 + posY
-        push = mod.NP_FullIconPush(backing, sideName, mid - sz / 2, mid + sz / 2)
+        push = mod.NP_FullIconPush(backing, side, mid - sz / 2, mid + sz / 2)
     else
         local res, iconSide = mod.GetCastIconReserve(backing)
-        push = (iconSide == sideName) and res or 0
+        push = (iconSide == side) and res or 0
     end
-    return push + mod.NP_ClassicSide(sideName)
+    return push + mod.NP_ClassicSide(side)
 end
 local function GetKickTickEnabled()
     if p and p.kickTickEnabled ~= nil then
@@ -884,12 +884,12 @@ do
         local short = CludesUI.ShortName
         function mod.NP_FormatName(name, slotKey, unitToken)
             local key = slotKey and NAME_FORMAT_KEYS[slotKey]
-            local modeName = key and p and p[key]
-            if modeName then
-                modeName = CludesUI.UnitNameFormat(modeName, unitToken)
+            local mode = key and p and p[key]
+            if mode then
+                mode = CludesUI.UnitNameFormat(mode, unitToken)
             end
-            if modeName then
-                return short(name, modeName)
+            if mode then
+                return short(name, mode)
             end
             return name
         end
@@ -941,20 +941,20 @@ do
     -- Tag modifiers shape the plain name. They do not also apply the slot's Name Format.
     -- [name:last] and [target:last] show nothing for your own unit while your name is
     -- your first name alone (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
-    local function Shaped(modeName)
+    local function Shaped(mode)
         return function(u)
-            if modeName == "last" and CludesUI.OwnSurnameHidden(u) then
+            if mode == "last" and CludesUI.OwnSurnameHidden(u) then
                 return ""
             end
             local name = CludesUI.WithSurname(UnitName(u))
             if type(name) == "nil" then
                 return ""
             end
-            return CludesUI.ShortName(name, modeName)
+            return CludesUI.ShortName(name, mode)
         end
     end
-    local function TargetShaped(modeName)
-        local piece = Shaped(modeName)
+    local function TargetShaped(mode)
+        local piece = Shaped(mode)
         return function(u)
             local tu = mod._npToTUnits[u]
             if not tu then
@@ -967,7 +967,7 @@ do
             return piece(tu)
         end
     end
-    local Prm = {
+    local P = {
         ["hp"] = function(u)
             if UnitIsDeadOrGhost(u) then
                 return CludesUI.L("DEAD")
@@ -1024,7 +1024,7 @@ do
             return mod.GetUnitLevelText(u)
         end,
     }
-    local CAT = TT.Bind(TT.UNIT, Prm)
+    local CAT = TT.Bind(TT.UNIT, P)
     mod.NP_TextTags = CAT
     -- Weak both ways: each value points back at its key (c.parsed), which a weak-key
     -- table alone would never let go of in Lua 5.1. Plates hold what they paint.
@@ -1047,7 +1047,7 @@ do
             local keyList = parsed.keys
             c = { fmt = parsed.fmt, n = #keyList, reads = parsed.reads, has = parsed.has, parsed = parsed }
             for i = 1, c.n do
-                c[i] = Prm[keyList[i]]
+                c[i] = P[keyList[i]]
             end
             compiled[parsed] = c
         end
@@ -1084,9 +1084,9 @@ do
     function mod.NP_BarRestWidth(slotKey, saved)
         saved = saved or p
         local wid = mod.GetHealthBarWidth()
-        local barFrame = mod._npBarTextKeys
-        for i = 1, #barFrame do
-            local key = barFrame[i]
+        local bar = mod._npBarTextKeys
+        for i = 1, #bar do
+            local key = bar[i]
             if key ~= slotKey then
                 local el = (saved and saved[key]) or defaultSet[key]
                 if el == "custom" then
@@ -1314,9 +1314,9 @@ do
         return (d and d[m.size]) or defaultSet[m.size] or SLOT_LAST[elem] or 24
     end
     -- Show In Instances of kind "rare" / "quest" / "questtext".
-    function mod.NP_ShowInInstances(kindOf, saved)
+    function mod.NP_ShowInInstances(kind, saved)
         local d = saved or p
-        local key = SII_KEY[kindOf]
+        local key = SII_KEY[kind]
         local val = key and d and d[key]
         if val == nil then
             val = d and d.classificationShowInInstances
@@ -1400,8 +1400,8 @@ do
     end
     -- Texcoord trim. Cropped scales the vertical span to the rectangle's aspect
     -- so the texture keeps its proportions; uncropped is the original square zoom.
-    function mod.SetAuraIconCrop(glyph, cropped, wid, hgt)
-        if not glyph then
+    function mod.SetAuraIconCrop(icon, cropped, wid, hgt)
+        if not icon then
             return
         end
         -- Stock styles draw the whole icon (zoom 0), as the engine cells do.
@@ -1410,9 +1410,9 @@ do
             local uSpan = 1 - 2 * z
             local vSpan = uSpan * (hgt / wid)
             local v0 = 0.5 - vSpan / 2
-            glyph:SetTexCoord(z, 1 - z, v0, 1 - v0)
+            icon:SetTexCoord(z, 1 - z, v0, 1 - v0)
         else
-            glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+            icon:SetTexCoord(z, 1 - z, z, 1 - z)
         end
     end
 end
@@ -1437,8 +1437,8 @@ function mod.GetTargetGlowCludesUI()
     if p and p.targetGlowCludesUI ~= nil then
         return p.targetGlowCludesUI
     end
-    local look = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
-    return look == "cludesui" or look == "vibrant"
+    local style = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
+    return style == "cludesui" or style == "vibrant"
 end
 function mod.GetTargetGlowBorderColor()
     if mod.NP_Forever() then
@@ -1447,8 +1447,8 @@ function mod.GetTargetGlowBorderColor()
     if p and p.targetGlowBorderColor ~= nil then
         return p.targetGlowBorderColor
     end
-    local look = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
-    return look == "vibrant"
+    local style = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
+    return style == "vibrant"
 end
 function mod.GetTargetGlowHighlight()
     if p and p.targetGlowHighlight ~= nil then
@@ -1614,7 +1614,7 @@ mod.IsBorderEnabled = IsBorderEnabled
 -- Per-icon 1px borders (cast / buff / debuff / CC). nil = border shown
 -- (old profiles without the key keep their borders). Setting a hide key
 -- to true hides the border; false shows it.
-function mod.GetIconBorderEnabled(kindOf)
+function mod.GetIconBorderEnabled(kind)
     -- Stock styles: the stock cast icon has no border, and the aura items
     -- carry the rounded ring overlay (Blizzard) or the stock dispel-type
     -- border (classic) instead of a 1px border.
@@ -1622,11 +1622,11 @@ function mod.GetIconBorderEnabled(kindOf)
         return false
     end
     local key
-    if kindOf == "cast" then
+    if kind == "cast" then
         key = "hideCastIconBorder"
-    elseif kindOf == "debuffs" then
+    elseif kind == "debuffs" then
         key = "hideDebuffIconBorder"
-    elseif kindOf == "buffs" then
+    elseif kind == "buffs" then
         key = "hideBuffIconBorder"
     else
         key = "hideCCIconBorder"
@@ -1681,7 +1681,7 @@ end
 -- Shared by live plates and the preview; the cast bar owns this lazy divider. It
 -- does not follow the target or threat tint, so the border-colour passes that land
 -- here (every threat repaint) change nothing: only a moved style input restyles it.
-function mod.NP_ApplyCastIconSeparator(cast, glyph, saved, customOn, strata)
+function mod.NP_ApplyCastIconSeparator(cast, icon, saved, customOn, strata)
     local seam = cast._iconSeam
     if
         not (
@@ -1705,7 +1705,7 @@ function mod.NP_ApplyCastIconSeparator(cast, glyph, saved, customOn, strata)
         cast._iconSeam = seam
     end
     local st = strata or cast:GetFrameStrata()
-    local lvl = glyph:GetFrameLevel() + 5
+    local lvl = icon:GetFrameLevel() + 5
     local key = saved.customBorderTexture or defaultSet.customBorderTexture
     local size = saved.customBorderSize or defaultSet.customBorderSize
     local px = CludesUI.BorderPx(saved.customBorderSizePx, size, key)
@@ -1770,14 +1770,14 @@ end
 -- inputs restyle only when one moved; a colour change (Use Target Border Color on the
 -- target) is a plain tint. Off, this is the 1px edge call plus the opt-in gates.
 function mod.ApplyCastIconBorder(backing)
-    local glyph = backing and backing.castIconFrame
-    if not glyph then
+    local icon = backing and backing.castIconFrame
+    if not icon then
         return
     end
     if (p and p.castIconSeparator) or backing.cast._iconSeam then
         mod.NP_ApplyCastIconSeparator(
             backing.cast,
-            glyph,
+            icon,
             p,
             mod.IsCustomBorderEnabled(),
             backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
@@ -1798,13 +1798,13 @@ function mod.ApplyCastIconBorder(backing)
             CludesUI.ApplyBorderStyle(bf, 0)
             bf:Hide()
         end
-        mod.ApplyFrameIconBorder(glyph, mod.GetIconBorderEnabled("cast"))
+        mod.ApplyFrameIconBorder(icon, mod.GetIconBorderEnabled("cast"))
         return
     end
-    mod.ApplyFrameIconBorder(glyph, false)
+    mod.ApplyFrameIconBorder(icon, false)
     if not bf then
         bf = CreateFrame("Frame", nil, backing.cast)
-        bf:SetAllPoints(glyph)
+        bf:SetAllPoints(icon)
         bf:EnableMouse(false)
         backing._castIconBorder = bf
     end
@@ -1820,7 +1820,7 @@ function mod.ApplyCastIconBorder(backing)
         r, g, b, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
     end
     local strata = backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
-    local lvl = glyph:GetFrameLevel() + 3
+    local lvl = icon:GetFrameLevel() + 3
     local offX, offY = p.customBorderOffset, p.customBorderOffsetY
     local shX, shY = p.customBorderShiftX, p.customBorderShiftY
     -- Restyle inputs: shown state, strata, level (a strata change resets it), texture,
@@ -1927,8 +1927,8 @@ function mod.ApplySlotStrata(backing)
     if not backing then
         return
     end
-    local function StrataFor(slotIndex)
-        return mod.GetSlotRaiseStrata(slotIndex) and "HIGH" or "MEDIUM"
+    local function StrataFor(slot)
+        return mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM"
     end
     if backing.raidFrame then
         backing.raidFrame:SetFrameStrata(StrataFor(GetRaidMarkerPos()))
@@ -1971,8 +1971,8 @@ do
     -------------------------------------------------------------------------------
     --  Dispellable buff glow: highlights enemy buffs the player can purge/soothe
     -------------------------------------------------------------------------------
-    local function StopDispelGlow(slotIndex)
-        local dg = slotIndex.dispelGlow
+    local function StopDispelGlow(slot)
+        local dg = slot.dispelGlow
         if not dg or not dg.active then
             return
         end
@@ -1994,17 +1994,17 @@ do
     -- hidden (options closed, another page, a build made hidden) it stops, so its
     -- animations cost nothing, and it draws again when it shows (unchanged,
     -- StartSpecGlow returns at once).
-    local function StartDispelGlow(slotIndex, slotSize, dispelType, slotH)
-        local dg = slotIndex.dispelGlow
+    local function StartDispelGlow(slot, slotSize, dispelType, slotH)
+        local dg = slot.dispelGlow
         if not dg then
-            local wrapper = Pool.CreateFrame("Frame", nil, slotIndex)
+            local wrapper = Pool.CreateFrame("Frame", nil, slot)
             wrapper:SetAllPoints()
             -- Under the duration text (its frame sits at slot + 2), as the live
             -- glow host sits under the text carrier.
-            wrapper:SetFrameLevel(slotIndex:GetFrameLevel() + 1)
+            wrapper:SetFrameLevel(slot:GetFrameLevel() + 1)
             wrapper:Show()
             dg = { wrapper = wrapper, active = false, spec = {} }
-            slotIndex.dispelGlow = dg
+            slot.dispelGlow = dg
             wrapper:SetScript("OnShow", function()
                 if dg.active then
                     DrawDispelGlow(dg)
@@ -2155,12 +2155,12 @@ end
 -- icon centres on the bar plus y and is sz tall, the arrow ah tall), else its outer edge, past
 -- its own cast icon push (as its Update* placed it) and its slot's X offset. w: its width
 -- (default sz; the Quest Objective Text is as wide as its text).
-local function ArrowSideReach(backing, sideName, posY, sz, xOff, ah, wid)
+local function ArrowSideReach(backing, side, posY, sz, xOff, ah, wid)
     if math.abs(posY) >= (sz + ah) / 2 then
         return 0
     end
-    local reach = GetSideAuraXOffset() + mod.NP_SideIconPush(backing, sideName, posY, sz) + (wid or sz)
-    if sideName == "left" then
+    local reach = GetSideAuraXOffset() + mod.NP_SideIconPush(backing, side, posY, sz) + (wid or sz)
+    if side == "left" then
         return reach - xOff
     end
     return reach + xOff
@@ -2196,47 +2196,47 @@ end
 -- on the bar from there. A row the full-size cast icon did not push out (it misses the icon)
 -- leaves the arrow to clear the icon too, one icon width further out. Otherwise the arrow's
 -- inner edge sits `extent` + 8 past the bar's edge.
-local function PlaceArrow(backing, arrow, sideName, extent, aw, ah)
+local function PlaceArrow(backing, arrow, side, extent, aw, ah)
     local barH = GetHealthBarHeight()
     local a0, a1 = (barH - ah) / 2, (barH + ah) / 2
     local posX = 8 + aw / 2
     local guests = mod.NP_SideGuests
     local guest, gy
     for i = 1, #guests do
-        guest, gy = guests[i](backing, sideName, a0, a1)
+        guest, gy = guests[i](backing, side, a0, a1)
         if guest then
             break
         end
     end
-    local rowFrame, ry, rh
+    local row, ry, rh
     if not guest and mod.NPC_SideRow then
-        rowFrame, ry, rh = mod.NPC_SideRow(backing, sideName, a0, a1)
+        row, ry, rh = mod.NPC_SideRow(backing, side, a0, a1)
     end
     arrow:ClearAllPoints()
     if guest then
-        local edge = (sideName == "left") and "LEFT" or "RIGHT"
-        if sideName == "left" then
+        local edge = (side == "left") and "LEFT" or "RIGHT"
+        if side == "left" then
             posX = -posX
         end
         gy = gy or 0
         Pix.Point(arrow, "TOP", guest, edge, posX, ah / 2 - gy)
         Pix.Point(arrow, "BOTTOM", guest, edge, posX, -ah / 2 - gy)
-    elseif rowFrame and ry < a1 and a0 < ry + rh then
-        local glyph = mod.NP_FullIconPush(backing, sideName, a0, a1)
-        if glyph > 0 and mod.NP_FullIconPush(backing, sideName, ry, ry + rh) == 0 then
-            posX = posX + glyph
+    elseif row and ry < a1 and a0 < ry + rh then
+        local icon = mod.NP_FullIconPush(backing, side, a0, a1)
+        if icon > 0 and mod.NP_FullIconPush(backing, side, ry, ry + rh) == 0 then
+            posX = posX + icon
         end
         local cy = barH / 2 - ry
-        local corner = (sideName == "left") and "BOTTOMLEFT" or "BOTTOMRIGHT"
-        if sideName == "left" then
+        local corner = (side == "left") and "BOTTOMLEFT" or "BOTTOMRIGHT"
+        if side == "left" then
             posX = -posX
         end
-        Pix.Point(arrow, "TOP", rowFrame, corner, posX, cy + ah / 2)
-        Pix.Point(arrow, "BOTTOM", rowFrame, corner, posX, cy - ah / 2)
+        Pix.Point(arrow, "TOP", row, corner, posX, cy + ah / 2)
+        Pix.Point(arrow, "BOTTOM", row, corner, posX, cy - ah / 2)
     else
         local dy = (ah - barH) / 2
         posX = posX + extent
-        if sideName == "left" then
+        if side == "left" then
             Pix.Point(arrow, "TOP", backing.health, "TOPLEFT", -posX, dy)
             Pix.Point(arrow, "BOTTOM", backing.health, "BOTTOMLEFT", -posX, -dy)
         else

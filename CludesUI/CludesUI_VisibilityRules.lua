@@ -674,35 +674,35 @@ end
 
 -- Runtime check: returns true if the element should be SHOWN based on the visibility mode
 -- dropdown value. `mode` is the dropdown string; `state` is a table: { inCombat, inRaid, inParty }.
-function CludesUI.CheckVisibilityMode(modeName, status)
-    if modeName == "disabled" then
+function CludesUI.CheckVisibilityMode(mode, status)
+    if mode == "disabled" then
         return false
     end
-    if modeName == "never" then
+    if mode == "never" then
         return false
     end
-    if modeName == "in_combat" then
+    if mode == "in_combat" then
         return status.inCombat
     end
-    if modeName == "out_of_combat" then
+    if mode == "out_of_combat" then
         return not status.inCombat
     end
-    if modeName == "in_raid" then
+    if mode == "in_raid" then
         return status.inRaid
     end
-    if modeName == "in_party" then
+    if mode == "in_party" then
         return status.inParty
     end
-    if modeName == "solo" then
+    if mode == "solo" then
         return not status.inRaid and not status.inParty
     end
-    if modeName == "show_dragonriding" then
+    if mode == "show_dragonriding" then
         -- Mirrors the secure-macro [advflyable,flying] driver: show only while airborne and
         -- glide-capable (skyriding mounts and flight forms alike). The shared predicate lives in
         -- CludesUI_Visibility.lua and is also used by the multi-select visibility engine.
         return (CludesUI.IsAirborneSkyriding and CludesUI.IsAirborneSkyriding()) or false
     end
-    if modeName == "show_not_dragonriding" then
+    if mode == "show_not_dragonriding" then
         -- Exact inverse of show_dragonriding: show whenever NOT airborne and
         -- glide-capable (skyriding mounts and flight forms alike).
         return not (CludesUI.IsAirborneSkyriding and CludesUI.IsAirborneSkyriding())

@@ -98,8 +98,8 @@ local _lastAttr = {
 }
 function _lastAttr.Snap(regionFrame, into)
     into.cfg = regionFrame._captureCfg
-    local rowFrame = regionFrame._isOptionRow and regionFrame or regionFrame:GetParent()
-    local heading = rowFrame and rowFrame._sectionHeader
+    local row = regionFrame._isOptionRow and regionFrame or regionFrame:GetParent()
+    local heading = row and row._sectionHeader
     into.section = heading and heading._sectionName or nil
     into.tip = regionFrame._specOvTip
     return into
@@ -207,17 +207,17 @@ local function SlotOwnerEntry(conf, owned, condSession, module, element, page, s
         end
     end
     for _, e in ipairs(sStore or {}) do
-        local spec_def = e.values and e.values.default
+        local def = e.values and e.values.default
         if
-            type(spec_def) == "table"
+            type(def) == "table"
             and e.slotLabel == slotLabel
             and (e.page or "") == (page or "")
             and Qualifies(e)
         then
             local any, all = false, true
-            for fkey in pairs(spec_def) do
-                local baseValue = type(fkey) == "string" and fkey:match("^(.*)Px$")
-                if reads[fkey] or (baseValue and reads[baseValue] and PxCo.Partner(baseValue) == fkey) then
+            for fkey in pairs(def) do
+                local base = type(fkey) == "string" and fkey:match("^(.*)Px$")
+                if reads[fkey] or (base and reads[base] and PxCo.Partner(base) == fkey) then
                     any = true
                 else
                     all = false
@@ -530,9 +530,9 @@ do
     -- `store`? Attribution by table identity, the same rule ClearStoreKey uses.
     local function StoreHoldsKey(sStore, storage, key)
         for _, e in ipairs(sStore or {}) do
-            local spec_def = e.values and e.values.default
-            if spec_def then
-                for fkey in pairs(spec_def) do
+            local def = e.values and e.values.default
+            if def then
+                for fkey in pairs(def) do
                     local ownerFrame, leaf = OwnerOf(fkey)
                     if ownerFrame == storage and leaf == key then
                         for mapKey, m in pairs(e.values) do
@@ -598,12 +598,12 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
     local cleared = false
     for idx = #sStore, 1, -1 do
         local e = sStore[idx]
-        local spec_def = e.values and e.values.default
+        local def = e.values and e.values.default
         -- One entry can hold the key for SEVERAL of the stores (a mirrored row banks all
         -- of them into the same slot), so every hit is collected rather than the first.
         local hits
-        if spec_def then
-            for fkey in pairs(spec_def) do
+        if def then
+            for fkey in pairs(def) do
                 local ownerFrame, leaf = OwnerOf(fkey)
                 if leaf == key and ownerFrame ~= nil then
                     for si = 1, #stores do
@@ -637,7 +637,7 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
                     break
                 end
             end
-            local dv = spec_def[hit]
+            local dv = def[hit]
             if dv == NIL_SENT then
                 dv = nil
             end
@@ -648,13 +648,13 @@ function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
                 WriteLive(hit, dv)
             end
             if not stillHeld then
-                spec_def[hit] = nil
+                def[hit] = nil
             end
             cleared = true
         end
         -- Hoisted out of the hits loop: removing inside it would delete a DIFFERENT entry
         -- on the second pass, index i no longer being this one.
-        if hits and spec_def and not next(spec_def) then
+        if hits and def and not next(def) then
             table.remove(sStore, idx)
         end
     end
@@ -1011,8 +1011,8 @@ end
 --  got captured (bespoke widgets, frame drags) must not leak into the real
 --  spec. Sweeping it into the group lets the exit restore undo it live.
 -------------------------------------------------------------------------------
-SweepUncaptured = function(group)
-    if not _enterSnap or not group then
+SweepUncaptured = function(set)
+    if not _enterSnap or not set then
         return
     end
     local storage = GetStore(true)
@@ -1049,7 +1049,7 @@ SweepUncaptured = function(group)
                 label = PrettyKey(c.fkey),
                 crumb = (CludesUI:GetModuleTitle(c.folder)) or c.folder,
                 module = c.folder,
-                group = group.id,
+                group = set.id,
                 values = { default = { [c.fkey] = (orig == nil) and NIL_SENT or orig } },
             }
             -- The real spec's map is deliberately not seeded (see AutoCapture).
@@ -1222,12 +1222,12 @@ SetEditStatus = function(textValue, r, g, b)
     end
 end
 
-ShowEditBanner = function(group)
+ShowEditBanner = function(set)
     EnsureEditBanner()
     if editBanner._done then
         editBanner._done:Show()
     end -- passive mode hides it
-    editBannerText:SetText(string.format(L("Editing as %s"), group.name or "?"))
+    editBannerText:SetText(string.format(L("Editing as %s"), set.name or "?"))
     SetEditStatus(L("Any setting you change now applies only to this group's specs."), 1, 1, 0.6)
     editBanner:Show()
     -- Lock excluded modules on the sidebar for the session's duration.
@@ -1309,19 +1309,19 @@ function CludesUI.SpecOverrides_UpdateBmPassiveChrome()
     if _editGroup or Cond._edit then
         return
     end -- real session owns chrome
-    local kindOf = CludesUI.SpecOverrides_BmPageLockInfo() or nil
+    local kind = CludesUI.SpecOverrides_BmPageLockInfo() or nil
     local status = L("Buff Manager changes on this page apply only to this override.")
     local nameFn = CludesUI.SpecOverrides_BmActiveInfo
-    if not kindOf then
+    if not kind then
         -- Same chrome serves the Debuff Manager page (one page is active at a
         -- time, so the two locks can never both report).
-        kindOf = CludesUI.SpecOverrides_DmPageLockInfo() or nil
-        if kindOf then
+        kind = CludesUI.SpecOverrides_DmPageLockInfo() or nil
+        if kind then
             status = L("Debuff Manager changes on this page apply only to this override.")
             nameFn = CludesUI.SpecOverrides_DmActiveInfo
         end
     end
-    if kindOf then
+    if kind then
         local name = (nameFn and nameFn()) or "?"
         EnsureEditBanner()
         editBannerText:SetText(string.format(L("Override Active: %s"), name))
@@ -1511,11 +1511,11 @@ function CludesUI.SpecOverrides_CloseEditSessions()
     end
 end
 
-EnterGroupEdit = function(group, force)
-    if _editGroup == group then
+EnterGroupEdit = function(set, force)
+    if _editGroup == set then
         return
     end
-    if not group or not group.specs or #group.specs == 0 then
+    if not set or not set.specs or #set.specs == 0 then
         return
     end
     -- BM page lock: while the Buff Manager page is bound to a live fork, only
@@ -1534,7 +1534,7 @@ EnterGroupEdit = function(group, force)
                 lockLabel = "Debuff Manager"
             end
         end
-        if lockKind and not force and not (lockKind == "spec" and lockGid == group.id) then
+        if lockKind and not force and not (lockKind == "spec" and lockGid == set.id) then
             CludesUI:ShowConfirmPopup({
                 title = string.format(L("%s Override Active"), L(lockLabel)),
                 message = string.format(
@@ -1562,8 +1562,8 @@ EnterGroupEdit = function(group, force)
     -- bank the real spec's live edits and swap the group in.
     ExitDefaultView()
     CludesUI.SpecOverrides_HarvestCurrent()
-    SetEditGroup(group)
-    local touched = WriteGroupValues(group)
+    SetEditGroup(set)
+    local touched = WriteGroupValues(set)
     if touched then
         RunRefreshers(touched)
     end
@@ -1575,7 +1575,7 @@ EnterGroupEdit = function(group, force)
     _sessionIgnored = {}
     _lastAttr.snap, _lastAttr.busy = nil, false
     _watchTicker = C_Timer.NewTicker(0.4, WatchTick)
-    ShowEditBanner(group)
+    ShowEditBanner(set)
     SetEditOverlayShown(true)
     UpdateIndicator()
     UpdateEditLocks()

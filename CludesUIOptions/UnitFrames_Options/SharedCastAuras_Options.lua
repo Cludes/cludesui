@@ -26,7 +26,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local SHORT_LABELS, UF_ImpCastGlowDesc, UNIT_DB_MAP, UpdatePreview =
         environ.SHORT_LABELS, environ.UF_ImpCastGlowDesc, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, optionState = environ.db, environ.optState
-    local Widgets, SGetSupported, SSetSupported, SVal =
+    local W, SGetSupported, SSetSupported, SVal =
         context.W, context.SGetSupported, context.SSetSupported, context.SVal
     local SValSupported = context.SValSupported
     local hgt
@@ -35,7 +35,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     --  CAST BAR
     -------------------------------------------------------------------
     local sharedCastHeader
-    sharedCastHeader, hgt = Widgets:SectionHeader(hostFrame, "CAST BAR", posY)
+    sharedCastHeader, hgt = W:SectionHeader(hostFrame, "CAST BAR", posY)
     posY = posY - hgt
 
     -- Helper: get/set castbar visibility per unit
@@ -99,7 +99,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- through the panel's own widget path; a transparent button over the row
         -- click-throughs to Resource & Cast Bars > Cast Bar (accent "click here").
         local hintRow
-        hintRow, hgt = Widgets:DualRow(hostFrame, posY, { type = "label", text = hintText }, nil) -- cui-style: allow dualrow-nil
+        hintRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = hintText }, nil) -- cui-style: allow dualrow-nil
         if not CludesUI._prebuilding then
             -- Labels are single-line by default; wrap this hint inside the full-width
             -- row so "click here" stays on screen.
@@ -138,7 +138,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local cbhDis, cbhTip, cbhRaw = CludesUI.MatchGuard(cbKey, "Height", function()
         return not GetCastbarEnabled(optionState.selectedUnit)
     end, "Show Cast Bar")
-    sharedCastRow1, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedCastRow1, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Cast Bar",
         getValue = function()
@@ -429,9 +429,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             -- it tracks its enable toggle in the cog.
             if disabledFn then
                 local function applySwState()
-                    local offset = disabledFn()
-                    sw:SetAlpha(offset and 0.3 or 1)
-                    sw:EnableMouse(not offset)
+                    local off = disabledFn()
+                    sw:SetAlpha(off and 0.3 or 1)
+                    sw:EnableMouse(not off)
                     if updateSw then
                         updateSw()
                     end
@@ -553,7 +553,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon = val
             end
         end
-        castRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+        castRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Icon",
             getValue = GetShowIcon,
@@ -972,7 +972,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- pushing same-side text. Size/X/Y live in each row's cog. Defaults: Name Left, Target Right, Duration Right.
         local castTextPosValues = { none = "None", left = "Left", right = "Right", center = "Center" }
         local castTextPosOrder = { "none", "left", "right", "center" }
-        castTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        castTextRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Spell Name",
             values = castTextPosValues,
@@ -1332,7 +1332,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         end
 
         -- Row 4: Spell Target (position dropdown + cog + swatch) | Reverse Fill
-        castTargetRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        castTargetRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Spell Target",
             values = castTextPosValues,
@@ -1517,7 +1517,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         if SVal("castBorderCustom", false) == true then
             posY = posY
                 - mod.UF_CastBorderRows(
-                    Widgets,
+                    W,
                     hostFrame,
                     posY,
                     function()
@@ -1555,7 +1555,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         end
         -- Classic WoW UI: Border Size closes the section (odd last slot).
         local classicH, classicRow = mod.UF_ClassicCastBorderRow(
-            Widgets,
+            W,
             hostFrame,
             posY,
             function()
@@ -1586,7 +1586,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             local impGlowRow, impGlowSide = classicRow, "_rightRegion"
             if not impGlowRow then
                 impGlowRow, hgt =
-                    Widgets:DualRow(hostFrame, posY, impGlowCfg, { type = "label", text = "Glow Color" })
+                    W:DualRow(hostFrame, posY, impGlowCfg, { type = "label", text = "Glow Color" })
                 posY = posY - hgt
                 impGlowSide = "_leftRegion"
             end
@@ -1687,10 +1687,10 @@ end
 -- (their filters merge into one group) nor the pet (one group per element).
 -- The boss rows in MiniFrames_Options.lua use it too.
 mod.UFO_MAX_COUNT_TOOLTIP = "More than this can show with some filters."
-function mod.UFO_AuraSettingsRows(kindOf, get, group, maxMax, maxDefault, afterMax, maxTip)
+function mod.UFO_AuraSettingsRows(kind, get, set, maxMax, maxDefault, afterMax, maxTip)
     local environ = mod._UFO_OptEnv
-    local growthKey, perRowKey, cropKey = kindOf .. "Growth", kindOf .. "MaxPerRow", kindOf .. "CropIcons"
-    local maxKey = (kindOf == "buff") and "maxBuffs" or "maxDebuffs"
+    local growthKey, perRowKey, cropKey = kind .. "Growth", kind .. "MaxPerRow", kind .. "CropIcons"
+    local maxKey = (kind == "buff") and "maxBuffs" or "maxDebuffs"
     local rowList = {
         {
             type = "dropdown",
@@ -1701,7 +1701,7 @@ function mod.UFO_AuraSettingsRows(kindOf, get, group, maxMax, maxDefault, afterM
                 return get(growthKey, "auto")
             end,
             set = function(v)
-                group(growthKey, v)
+                set(growthKey, v)
             end,
         },
         {
@@ -1715,7 +1715,7 @@ function mod.UFO_AuraSettingsRows(kindOf, get, group, maxMax, maxDefault, afterM
                 return get(maxKey, maxDefault)
             end,
             set = function(v)
-                group(maxKey, v)
+                set(maxKey, v)
             end,
         },
     }
@@ -1732,7 +1732,7 @@ function mod.UFO_AuraSettingsRows(kindOf, get, group, maxMax, maxDefault, afterM
             return get(perRowKey, nil) or get(maxKey, maxDefault)
         end,
         set = function(v)
-            group(perRowKey, v)
+            set(perRowKey, v)
         end,
     }
     rowList[#rowList + 1] = {
@@ -1742,7 +1742,7 @@ function mod.UFO_AuraSettingsRows(kindOf, get, group, maxMax, maxDefault, afterM
             return get(cropKey, false)
         end,
         set = function(v)
-            group(cropKey, v)
+            set(cropKey, v)
         end,
     }
     return rowList
@@ -1778,9 +1778,9 @@ end
 
 -- Position (the Size cog): Offset X / Y and the physical-pixel-perfect gaps
 -- between icons (Spacing X = columns, Spacing Y = rows).
-function mod.UFO_AuraPositionRows(kindOf, get, group)
-    local offXKey, offYKey = kindOf .. "OffsetX", kindOf .. "OffsetY"
-    local spXKey, spYKey = kindOf .. "SpacingX", kindOf .. "SpacingY"
+function mod.UFO_AuraPositionRows(kind, get, set)
+    local offXKey, offYKey = kind .. "OffsetX", kind .. "OffsetY"
+    local spXKey, spYKey = kind .. "SpacingX", kind .. "SpacingY"
     return {
         {
             type = "slider",
@@ -1792,7 +1792,7 @@ function mod.UFO_AuraPositionRows(kindOf, get, group)
                 return get(offXKey, 0)
             end,
             set = function(v)
-                group(offXKey, v)
+                set(offXKey, v)
             end,
         },
         {
@@ -1805,7 +1805,7 @@ function mod.UFO_AuraPositionRows(kindOf, get, group)
                 return get(offYKey, 0)
             end,
             set = function(v)
-                group(offYKey, v)
+                set(offYKey, v)
             end,
         },
         {
@@ -1819,7 +1819,7 @@ function mod.UFO_AuraPositionRows(kindOf, get, group)
                 return get(spXKey, 1)
             end,
             set = function(v)
-                group(spXKey, v)
+                set(spXKey, v)
             end,
         },
         {
@@ -1833,7 +1833,7 @@ function mod.UFO_AuraPositionRows(kindOf, get, group)
                 return get(spYKey, 1)
             end,
             set = function(v)
-                group(spYKey, v)
+                set(spYKey, v)
             end,
         },
     }
@@ -1850,7 +1850,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     local HideExhaustionRow = environ.HideExhaustionRow
     local buffAnchorOrder, buffAnchorValues = environ.buffAnchorOrder, environ.buffAnchorValues
     local saved, frameList, optionState = environ.db, environ.frames, environ.optState
-    local Widgets, SApplySupport, SDB, SGet = context.W, context.SApplySupport, context.SDB, context.SGet
+    local W, SApplySupport, SDB, SGet = context.W, context.SApplySupport, context.SDB, context.SGet
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
     local _, hgt
 
@@ -1858,7 +1858,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     -------------------------------------------------------------------
     --  BUFFS AND DEBUFFS
     -------------------------------------------------------------------
-    sharedBuffDebuffHeader, hgt = Widgets:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
+    sharedBuffDebuffHeader, hgt = W:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
     posY = posY - hgt
 
     -- When Buff/Debuff Display is "none", everything in that column is disabled.
@@ -1891,10 +1891,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     end
     buffDispOrder[#buffDispOrder + 1] = "anchor_debuffs"
     buffDispValues._menuOpts = {
-        onItemHover = function(key, itemInfo)
-            if key == "anchor_debuffs" and itemInfo then
+        onItemHover = function(key, item)
+            if key == "anchor_debuffs" and item then
                 CludesUI.ShowWidgetTooltip(
-                    itemInfo,
+                    item,
                     "Buffs join the debuff stack as its first rows; debuffs continue on the next row and move as buff rows change."
                 )
             end
@@ -1908,7 +1908,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     -- Buffs: Location | Icon Size + inline directions cog (X/Y)
     local sharedAddRow2
-    sharedAddRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedAddRow2, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Buff Display",
         values = buffDispValues,
@@ -2132,7 +2132,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return BuffDisabled() and "Buff Display" or "Show Cooldown Text"
         end
         local sharedBuffRow2
-        sharedBuffRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedBuffRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Buff Duration Size",
             min = 6,
@@ -2288,7 +2288,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     -- Debuffs: Location | Icon Size + inline directions cog (X/Y)
     local sharedAddRow3
-    sharedAddRow3, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedAddRow3, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Debuff Display",
         values = buffAnchorValues,
@@ -2440,7 +2440,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return DebuffDisabled() and "Debuff Display" or "Show Cooldown Text"
         end
         local sharedDebuffRow2
-        sharedDebuffRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedDebuffRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Debuff Duration Size",
             min = 6,
@@ -2604,7 +2604,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         then
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local auraBorderRow
-            auraBorderRow, hgt = Widgets:DualRow(
+            auraBorderRow, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 CludesUI.BlizzStyle.Gate("unitframes", {
@@ -2708,7 +2708,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             UpdatePreview()
                         end,
                     })
-                    _, hgt = Widgets:DualRow(
+                    _, hgt = W:DualRow(
                         hostFrame,
                         posY,
                         CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
@@ -2934,7 +2934,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 )
             end
             local filterRow
-            filterRow, hgt = Widgets:DualRow(hostFrame, posY, {
+            filterRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = unitLabel .. " Buff Filter",
                 values = { __placeholder = "..." },
@@ -2948,11 +2948,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             -- Gray out + block a CB-dropdown when its column's Display is "none".
             local function ApplyFilterDisabled(cbDD, labelText, isOff)
                 local function refresh()
-                    local offset = isOff()
-                    cbDD:SetAlpha(offset and 0.3 or 1)
-                    cbDD:EnableMouse(not offset)
+                    local off = isOff()
+                    cbDD:SetAlpha(off and 0.3 or 1)
+                    cbDD:EnableMouse(not off)
                     if labelText then
-                        labelText:SetAlpha(offset and 0.3 or 1)
+                        labelText:SetAlpha(off and 0.3 or 1)
                     end
                 end
                 refresh()
@@ -3323,8 +3323,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 return false
                             end
                             for idx = 1, #entries do
-                                local classFile = entries[idx]
-                                if not classFile.buffOnly and ps["debuff" .. classFile.skey] == true then
+                                local class = entries[idx]
+                                if not class.buffOnly and ps["debuff" .. class.skey] == true then
                                     return true
                                 end
                             end
@@ -3650,7 +3650,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return "This option requires a Border Size above 0."
         end
         local dispelRow
-        dispelRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        dispelRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Dispel Overlay",
             values = dispelOverlayValues,
@@ -3843,7 +3843,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             iconPosOrder[idx + 1] = k
         end
         local iconRow
-        iconRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        iconRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Type Icon Position",
             values = CludesUI.POSITION_GRID_VALUES_NONE,
@@ -3950,7 +3950,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     AddAuraBorderSettings()
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3

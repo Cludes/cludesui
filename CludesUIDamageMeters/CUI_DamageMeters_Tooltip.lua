@@ -20,7 +20,7 @@ Inner.broken = true
 local CUI = CludesUI
 local L = _G.CludesUI.L
 
-local BAR_TEX, SavedDB, DM_TYPE_NAMES = Inner.BAR_TEX, Inner.DB, Inner.DM_TYPE_NAMES
+local BAR_TEX, DB, DM_TYPE_NAMES = Inner.BAR_TEX, Inner.DB, Inner.DM_TYPE_NAMES
 local AbbrevNumber, AggregateEnemyPlayers = Inner.AbbrevNumber, Inner.AggregateEnemyPlayers
 local ApplyBarTexture, BuildPlayerTargets = Inner.ApplyBarTexture, Inner.BuildPlayerTargets
 local FormatBarValue = Inner.FormatBarValue
@@ -36,7 +36,7 @@ local TT_BAR_H = 18
 local TT_BAR_SP = 1
 local TT_WIDTH = 275
 local function TT_MAX()
-    local conf = SavedDB and SavedDB()
+    local conf = DB and DB()
     return (conf and conf.showAllBreakdownSpells == false) and TT_DEFAULT_MAX or 15
 end
 
@@ -348,14 +348,14 @@ local function NewGateBar(hostFrame)
     gate:EnableMouse(false)
     gate:SetAllPoints(hostFrame)
     gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fillTex = gate:GetStatusBarTexture()
-    fillTex:SetVertexColor(0, 0, 0, 0)
-    fillTex:SetSnapToPixelGrid(false)
-    fillTex:SetTexelSnappingBias(0)
+    local fill = gate:GetStatusBarTexture()
+    fill:SetVertexColor(0, 0, 0, 0)
+    fill:SetSnapToPixelGrid(false)
+    fill:SetTexelSnappingBias(0)
     gate:SetAlpha(0)
     gate:SetMinMaxValues(0, 1)
     gate:SetValue(0)
-    return gate, fillTex
+    return gate, fill
 end
 
 local function NewGateClip(hostFrame)
@@ -441,22 +441,22 @@ end
 -- outside this season's dungeons (the row waits for combat to end), true
 -- otherwise: the panels, or the combat note when no listed mob is in the
 -- fight.
-local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
+local function GatedEnemyPreview(bar, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
     local mobs = SeasonMobsHere()
     if not mobs then
         return false
     end
     EnsureGateHost()
-    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
+    ApplyTTHeader(StripRealm(bar._src.name, bar._src) or "Unknown", L("Damage Taken"))
     for bi = 1, #_ttBars do
         _ttBars[bi].row:Hide()
     end
-    local rowID = barFrame._src.sourceCreatureID
+    local rowID = bar._src.sourceCreatureID
     local used, tallest = 0, 0
     if rowID ~= nil then
         local duration = GetBreakdownDuration(curSession, curSessionID)
         local texPath, texKey = GetBreakdownBarTexturePath()
-        local numFmt = SavedDB().numberFormat or 2
+        local numFmt = DB().numberFormat or 2
         local ttMax = TT_MAX()
         local bgR, bgG, bgB = TooltipBgRGB()
         for idx = 1, #mobs do
@@ -526,7 +526,7 @@ local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHead
     return true
 end
 
-local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
+local function PopulatePreview(bar, curSession, curSessionID, curDMType)
     if _ttFrame and _ttFrame._combatMsg then
         _ttFrame._combatMsg:Hide()
     end
@@ -534,10 +534,10 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         _gateHost:Hide()
     end
     HideTTTargets()
-    if not barFrame._src then
+    if not bar._src then
         return false
     end
-    if not barFrame._srcGUID and not barFrame._src.sourceCreatureID then
+    if not bar._srcGUID and not bar._src.sourceCreatureID then
         return false
     end
     if not C_DamageMeter then
@@ -563,7 +563,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     local function ApplyTTHeader(playerName, typeName)
         EnsureTooltipFrame()
         _ttFrame._hdrText:SetText(CludesUI.Lf("%1$s's %2$s Breakdown", playerName, typeName))
-        local conf = SavedDB()
+        local conf = DB()
         local hc = conf.hdrBgColor
         local hR = hc and hc.r or 0x1B / 255
         local hG = hc and hc.g or 0x1B / 255
@@ -583,7 +583,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
 
     -- Death recap tooltip: show last few events before death
     if curDMType == Enum.DamageMeterType.Deaths then
-        local recapID = barFrame._src.deathRecapID
+        local recapID = bar._src.deathRecapID
         if recapID and issecretvalue and issecretvalue(recapID) then
             recapID = nil
         end
@@ -615,7 +615,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         for ri = #raw, 1, -1 do
             reversed[#reversed + 1] = raw[ri]
         end
-        ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), CludesUI.L("Death Recap"))
+        ApplyTTHeader(StripRealm(bar._src.name, bar._src), CludesUI.L("Death Recap"))
         local texPath, texKey = GetBreakdownBarTexturePath()
         local deathTime = reversed[#reversed] and reversed[#reversed].timestamp
         if IsSecret(deathTime) then
@@ -738,11 +738,11 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
 
     -- Enemy Damage Taken tooltip: show per-player breakdown
     if curDMType == Enum.DamageMeterType.EnemyDamageTaken then
-        local unitGuid = barFrame._srcGUID
-        local cid = barFrame._src.sourceCreatureID
+        local unitGuid = bar._srcGUID
+        local cid = bar._src.sourceCreatureID
         -- Mid-fight the row's own ID is secret: this season's listed NPC IDs.
         if issecretvalue and (issecretvalue(unitGuid) or issecretvalue(cid)) then
-            return GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
+            return GatedEnemyPreview(bar, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
         end
         local srcData
         if curSessionID and C_DamageMeter.GetCombatSessionSourceFromID then
@@ -756,12 +756,12 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
             return false
         end
 
-        ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
+        ApplyTTHeader(StripRealm(bar._src.name, bar._src) or "Unknown", L("Damage Taken"))
         local texPath, texKey = GetBreakdownBarTexturePath()
         local maxAmt = players[1].total
         local ttMax = TT_MAX()
         local count = math.min(ttMax, playerCount)
-        local numFmt = SavedDB().numberFormat or 2
+        local numFmt = DB().numberFormat or 2
         for idx = 1, math.max(ttMax, #_ttBars) do
             local b = EnsureTTBar(idx)
             if idx <= count then
@@ -775,18 +775,18 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     end
 
     -- Standard spell breakdown tooltip
-    local unitGuid = barFrame._srcGUID
-    local cid = barFrame._src.sourceCreatureID
+    local unitGuid = bar._srcGUID
+    local cid = bar._src.sourceCreatureID
     if issecretvalue and (issecretvalue(unitGuid) or issecretvalue(cid)) then
         -- Mid-combat the row guids are SECRET and the getters refuse secret
         -- ARGUMENTS from addon code -- but plain guids stay legal. Own row:
         -- UnitGUID("player"). Group rows: the identity-exempt token channel
         -- (ResolveGroupGUID). Anything unresolvable (enemies, creature rows,
         -- identity-restricted content) stays blocked until combat ends.
-        if IsOwnRow(barFrame._src) then
+        if IsOwnRow(bar._src) then
             unitGuid, cid = UnitGUID("player"), nil
         else
-            unitGuid, cid = ResolveGroupGUID(barFrame._src), nil
+            unitGuid, cid = ResolveGroupGUID(bar._src), nil
             if not unitGuid then
                 return false
             end
@@ -802,7 +802,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         return false
     end
 
-    ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), L(DM_TYPE_NAMES[curDMType] or "Damage Done"))
+    ApplyTTHeader(StripRealm(bar._src.name, bar._src), L(DM_TYPE_NAMES[curDMType] or "Damage Done"))
 
     wipe(_ttSorted)
     for _, spell in ipairs(srcData.combatSpells) do
@@ -898,7 +898,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     -- amounts across sources in Lua, which secrets cannot survive.
     local ttTargetCount = 0
     if curDMType == Enum.DamageMeterType.DamageDone and not InCombatLockdown() then
-        local rawName = barFrame._src and barFrame._src.name
+        local rawName = bar._src and bar._src.name
         local targets = BuildPlayerTargets(rawName, curSession, curSessionID, 3)
         if targets then
             -- Lazy-create tooltip target elements
@@ -960,7 +960,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                     tb.label:SetTextColor(1, 1, 1)
                     tb.amount:SetTextColor(1, 1, 1)
                     tb.label:SetText(t.name)
-                    tb.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, SavedDB().numberFormat or 2))
+                    tb.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, DB().numberFormat or 2))
                     tb.row:Show()
                     ttTargetCount = ttTargetCount + 1
                 else
@@ -993,17 +993,17 @@ end
 
 -- Single anchor chokepoint for the breakdown frame. Modes: "row" (above hovered row, default),
 -- "center" (screen center), "left"/"right" (beside the meter window, falls back to "row" if the window frame is missing).
-local function AnchorBreakdownFrame(rowFrame, winFrame)
-    local modeName = SavedDB().breakdownAnchorPoint
+local function AnchorBreakdownFrame(row, winFrame)
+    local mode = DB().breakdownAnchorPoint
     _ttFrame:ClearAllPoints()
-    if modeName == "center" then
+    if mode == "center" then
         _ttFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    elseif modeName == "left" and winFrame then
+    elseif mode == "left" and winFrame then
         _ttFrame:SetPoint("TOPRIGHT", winFrame, "TOPLEFT", -6, 0)
-    elseif modeName == "right" and winFrame then
+    elseif mode == "right" and winFrame then
         _ttFrame:SetPoint("TOPLEFT", winFrame, "TOPRIGHT", 6, 0)
     else
-        _ttFrame:SetPoint("BOTTOMRIGHT", rowFrame, "TOPRIGHT", 0, 0)
+        _ttFrame:SetPoint("BOTTOMRIGHT", row, "TOPRIGHT", 0, 0)
     end
 end
 -- ns alias for call sites inside CreateDMWindow: referencing the local there
@@ -1021,8 +1021,8 @@ local function HideBarTooltip()
     end
 end
 
-local function ShowBarTooltip(barFrame, curSession, curSessionID, curDMType)
-    local conf = SavedDB()
+local function ShowBarTooltip(bar, curSession, curSessionID, curDMType)
+    local conf = DB()
     if conf.showHoverTooltip == false then
         return
     end
@@ -1036,8 +1036,8 @@ local function ShowBarTooltip(barFrame, curSession, curSessionID, curDMType)
     end
 
     -- Always rebuild from fresh data (no GUID cache); PopulatePreview costs ~0.5ms, fine for a hover action
-    if PopulatePreview(barFrame, curSession, curSessionID, curDMType) then
-        AnchorBreakdownFrame(barFrame.row, barFrame._win and barFrame._win.frame)
+    if PopulatePreview(bar, curSession, curSessionID, curDMType) then
+        AnchorBreakdownFrame(bar.row, bar._win and bar._win.frame)
         _ttFrame:Show()
     else
         HideBarTooltip()
@@ -1051,8 +1051,8 @@ _hoverPollFrame:SetScript("OnUpdate", function()
         return
     end
     if not _ttVisible and _activeRow._win then
-        local Widgets = _activeRow._win
-        ShowBarTooltip(_activeRow, Widgets.curSession, Widgets.curSessionID, Widgets.curDMType)
+        local W = _activeRow._win
+        ShowBarTooltip(_activeRow, W.curSession, W.curSessionID, W.curDMType)
     end
 end)
 

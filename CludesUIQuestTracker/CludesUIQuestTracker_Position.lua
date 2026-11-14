@@ -69,9 +69,9 @@ local function ResolveLayout()
 end
 
 local function HeightRow(sys)
-    for _, rowFrame in ipairs(sys.settings) do
-        if rowFrame.setting == Enum.EditModeObjectiveTrackerSetting.Height then
-            return rowFrame
+    for _, row in ipairs(sys.settings) do
+        if row.setting == Enum.EditModeObjectiveTrackerSetting.Height then
+            return row
         end
     end
 end
@@ -99,10 +99,10 @@ local function WriteLayout(conf)
     local scale = _G.ObjectiveTrackerFrame:GetScale()
     emAnchor.point, emAnchor.relativePoint = place.point, place.relPoint or place.point
     emAnchor.offsetX, emAnchor.offsetY = place.x * scale, place.y * scale
-    local rowFrame = HeightRow(sys)
+    local row = HeightRow(sys)
     local value = conf.height and (conf.height - HEIGHT_MIN) / HEIGHT_STEP
     local anchorOK = AnchorAgrees(sys)
-    local heightOK = not value or (rowFrame and rowFrame.value == value)
+    local heightOK = not value or (row and row.value == value)
     if anchorOK and heightOK then
         return
     end
@@ -122,9 +122,9 @@ local function WriteLayout(conf)
         sys.isInDefaultPosition = false
     end
     if not heightOK then
-        if rowFrame then
-            CludesUI.NoteEditModeSetting(record, sys, rowFrame.setting, rowFrame.value, value)
-            rowFrame.value = value
+        if row then
+            CludesUI.NoteEditModeSetting(record, sys, row.setting, row.value, value)
+            row.value = value
         else
             sys.settings[#sys.settings + 1] =
                 { setting = Enum.EditModeObjectiveTrackerSetting.Height, value = value }
@@ -140,10 +140,9 @@ local function ResetLayout()
     if not sys or isPreset or sys.isInDefaultPosition then
         return false
     end
-    local spec_def =
-        EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(Enum.EditModeSystem.ObjectiveTracker)
-    CludesUI.NoteEditModeAnchor(record, sys, spec_def)
-    sys.anchorInfo = spec_def
+    local def = EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(Enum.EditModeSystem.ObjectiveTracker)
+    CludesUI.NoteEditModeAnchor(record, sys, def)
+    sys.anchorInfo = def
     sys.anchorInfo2 = nil
     sys.isInDefaultPosition = true
     C_EditMode.SaveLayouts(blob)

@@ -92,7 +92,7 @@ end
 -- "Custom (Ns)". get/set move the stored seconds (nil = unlimited); apply
 -- re-drives the display. Shared by the Raid Frames Debuff Manager (base grid
 -- and grid tiles) and Player Aura Bars debuff bars.
-function CludesUI.MaxDurationDropdown(get, group, apply)
+function CludesUI.MaxDurationDropdown(get, set, apply)
     local L = CludesUI.L
     local current = get()
     local values = {
@@ -111,7 +111,7 @@ function CludesUI.MaxDurationDropdown(get, group, apply)
         setValue = function(val)
             if val == "unlimited" then
                 if get() ~= nil then
-                    group(nil)
+                    set(nil)
                     if apply then
                         apply()
                     end
@@ -131,7 +131,7 @@ function CludesUI.MaxDurationDropdown(get, group, apply)
                     if num and num > 0 then
                         num = math.floor(num)
                         if num ~= get() then
-                            group(num)
+                            set(num)
                             if apply then
                                 apply()
                             end
@@ -600,7 +600,7 @@ local MC_CARD_GAP = 14
 -- A disabled module's card is inert: dimmed header, tag and tooltip only.
 -- Sets tile._hdr and tile._descFS (the header and its description line)
 -- before tile.buildContent runs, for content that updates the header.
-function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
+function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
     local Pix = CludesUI.PanelPP
     local ACC = CludesUI.CLUDES_GREEN
     local L = CludesUI.L
@@ -657,12 +657,12 @@ function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
 
     options.glyph(heading, enabled)
 
-    local titleText = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
-    Pix.Point(titleText, "TOPLEFT", heading, "TOPLEFT", 50, -12)
-    titleText:SetText(L(tile.display))
+    local title = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
+    Pix.Point(title, "TOPLEFT", heading, "TOPLEFT", 50, -12)
+    title:SetText(L(tile.display))
 
     local desc = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
-    Pix.Point(desc, "TOPLEFT", titleText, "BOTTOMLEFT", 0, -4)
+    Pix.Point(desc, "TOPLEFT", title, "BOTTOMLEFT", 0, -4)
     desc:SetWidth(options.descW)
     desc:SetJustifyH("LEFT")
     desc:SetWordWrap(false)
@@ -670,7 +670,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
     tile._hdr, tile._descFS = heading, desc
 
     if not enabled then
-        titleText:SetAlpha(0.4)
+        title:SetAlpha(0.4)
         desc:SetAlpha(0.22)
     end
 
@@ -693,7 +693,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
     -- moves that alpha: a leave puts back exactly the look a new card has.
     local function ApplyHeaderHover()
         hbg:SetColorTexture(1, 1, 1, 0.05)
-        titleText:SetTextColor(1, 1, 1, 1)
+        title:SetTextColor(1, 1, 1, 1)
         if chev then
             chev:SetAlpha(0.85)
         end
@@ -706,7 +706,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
             return
         end
         hbg:SetColorTexture(0, 0, 0, 0)
-        titleText:SetTextColor(1, 1, 1, 0.9)
+        title:SetTextColor(1, 1, 1, 0.9)
         if chev then
             chev:SetAlpha(0.45)
         end
@@ -752,7 +752,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, Widgets, tile, options)
         Pix.DisablePixelSnap(div)
 
         posY = posY - 8
-        posY = tile.buildContent(hostFrame, posY, Widgets, tile)
+        posY = tile.buildContent(hostFrame, posY, W, tile)
         posY = posY - 8
     end
 
@@ -869,24 +869,24 @@ function CludesUI.BuildManagerTile(parentFrame, posY, options)
         titleY = -8
     end
 
-    local titleText = tile:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont(fontFile, 13, "")
-    titleText:SetPoint("TOPLEFT", tile, "TOPLEFT", textX, titleY)
+    local title = tile:CreateFontString(nil, "OVERLAY")
+    title:SetFont(fontFile, 13, "")
+    title:SetPoint("TOPLEFT", tile, "TOPLEFT", textX, titleY)
     if not options.posText and not options.titleUnclamped then
-        titleText:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
+        title:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
     end
-    titleText:SetJustifyH("LEFT")
-    titleText:SetWordWrap(false)
-    titleText:SetText(options.title or "")
+    title:SetJustifyH("LEFT")
+    title:SetWordWrap(false)
+    title:SetText(options.title or "")
     if options.inheritedTooltip then
-        titleText:SetTextColor(IR, IG, IB)
+        title:SetTextColor(IR, IG, IB)
     else
-        titleText:SetTextColor(1, 1, 1)
+        title:SetTextColor(1, 1, 1)
     end
 
     if options.posText then
         local posFS = tile:CreateFontString(nil, "OVERLAY")
-        posFS:SetPoint("LEFT", titleText, "RIGHT", 4, 0)
+        posFS:SetPoint("LEFT", title, "RIGHT", 4, 0)
         posFS:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
         posFS:SetFont(fontFile, 11, "")
         posFS:SetJustifyH("LEFT")
@@ -896,23 +896,23 @@ function CludesUI.BuildManagerTile(parentFrame, posY, options)
     end
 
     if options.subtitle or options.subtitleFn then
-        local subFrame = tile:CreateFontString(nil, "OVERLAY")
-        subFrame:SetFont(fontFile, 11, "")
-        subFrame:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -4)
-        subFrame:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
-        subFrame:SetJustifyH("LEFT")
-        subFrame:SetWordWrap(false)
-        subFrame:SetText(options.subtitleFn and options.subtitleFn() or options.subtitle)
+        local sub = tile:CreateFontString(nil, "OVERLAY")
+        sub:SetFont(fontFile, 11, "")
+        sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+        sub:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
+        sub:SetJustifyH("LEFT")
+        sub:SetWordWrap(false)
+        sub:SetText(options.subtitleFn and options.subtitleFn() or options.subtitle)
         if options.inheritedTooltip then
-            subFrame:SetTextColor(IR, IG, IB, 0.55)
+            sub:SetTextColor(IR, IG, IB, 0.55)
         else
-            subFrame:SetTextColor(0.4, 0.4, 0.4)
+            sub:SetTextColor(0.4, 0.4, 0.4)
         end
         -- Re-read on every non-force RefreshPage (a full rebuild would close
         -- an open checkbox dropdown in the detail pane).
         if options.subtitleFn then
             CludesUI.RegisterWidgetRefresh(function()
-                subFrame:SetText(options.subtitleFn())
+                sub:SetText(options.subtitleFn())
             end)
         end
     end
@@ -1078,34 +1078,34 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
     local backdrop = shade:CreateTexture(nil, "OVERLAY")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 0.98)
-    local titleText = shade:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont(fontFile, 15, "")
-    titleText:SetPoint("CENTER", shade, "CENTER", 0, 60)
-    titleText:SetTextColor(1, 1, 1, 0.9)
-    titleText:SetText(options.title)
+    local title = shade:CreateFontString(nil, "OVERLAY")
+    title:SetFont(fontFile, 15, "")
+    title:SetPoint("CENTER", shade, "CENTER", 0, 60)
+    title:SetTextColor(1, 1, 1, 0.9)
+    title:SetText(options.title)
     local body = shade:CreateFontString(nil, "OVERLAY")
     body:SetFont(fontFile, 13, "")
-    body:SetPoint("TOP", titleText, "BOTTOM", 0, -14)
+    body:SetPoint("TOP", title, "BOTTOM", 0, -14)
     body:SetWidth(math.floor(options.width * 0.7))
     body:SetJustifyH("CENTER")
     body:SetTextColor(1, 1, 1, 0.56)
     body:SetText(options.text or "")
-    local subFrame
+    local sub
     if options.sub then
-        subFrame = shade:CreateFontString(nil, "OVERLAY")
-        subFrame:SetFont(fontFile, 12, "")
-        subFrame:SetPoint("TOP", body, "BOTTOM", 0, -8)
-        subFrame:SetWidth(math.floor(options.width * 0.7))
-        subFrame:SetJustifyH("CENTER")
-        subFrame:SetTextColor(1, 1, 1, 0.45)
-        subFrame:SetText(options.sub)
+        sub = shade:CreateFontString(nil, "OVERLAY")
+        sub:SetFont(fontFile, 12, "")
+        sub:SetPoint("TOP", body, "BOTTOM", 0, -8)
+        sub:SetWidth(math.floor(options.width * 0.7))
+        sub:SetJustifyH("CENTER")
+        sub:SetTextColor(1, 1, 1, 0.45)
+        sub:SetText(options.sub)
     end
     if not options.buttonLabel then
         return shade
     end
     local button = CreateFrame("Button", nil, shade)
     button:SetSize(240, 28)
-    button:SetPoint("TOP", subFrame or body, "BOTTOM", 0, -22)
+    button:SetPoint("TOP", sub or body, "BOTTOM", 0, -22)
     local backdrop = CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
     backdrop:SetAllPoints(button)
     local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22, backdrop)

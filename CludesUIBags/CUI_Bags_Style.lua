@@ -106,30 +106,30 @@ function mod.SkinForeverBagWindow(ownerFrame, backdrop, overlayFrame, hasTitle, 
     return true
 end
 
-function mod.LayoutForeverBagHeader(headerFrame, height)
-    local scale = headerFrame:GetParent()._foreverBagFrameScale or 1
+function mod.LayoutForeverBagHeader(header, height)
+    local scale = header:GetParent()._foreverBagFrameScale or 1
     local trim = CUI.FOREVER_HEAVY.title.bottom * (1 - scale)
     -- The header starts one unit inside the window rim.
-    headerFrame._foreverTitleY = 1 - 14 * scale
-    headerFrame._foreverControlsY = 1 - 15 * scale
-    headerFrame._foreverToolsY = -39 + trim
-    headerFrame:SetHeight((height or 54) - trim)
+    header._foreverTitleY = 1 - 14 * scale
+    header._foreverControlsY = 1 - 15 * scale
+    header._foreverToolsY = -39 + trim
+    header:SetHeight((height or 54) - trim)
 end
 
-function mod.SkinForeverBagTitle(titleText, total)
-    local headerFrame = titleText:GetParent()
-    local posY = headerFrame._foreverTitleY
-    titleText:ClearAllPoints()
-    titleText:SetPoint("LEFT", headerFrame, "TOPLEFT", total and 55 or 40, posY)
-    titleText:SetPoint("RIGHT", headerFrame, "TOPRIGHT", total and -124 or -30, posY)
-    titleText:SetJustifyH("CENTER")
-    titleText:SetWordWrap(false)
-    titleText:SetTextColor(1, 0.82, 0)
+function mod.SkinForeverBagTitle(title, total)
+    local header = title:GetParent()
+    local posY = header._foreverTitleY
+    title:ClearAllPoints()
+    title:SetPoint("LEFT", header, "TOPLEFT", total and 55 or 40, posY)
+    title:SetPoint("RIGHT", header, "TOPRIGHT", total and -124 or -30, posY)
+    title:SetJustifyH("CENTER")
+    title:SetWordWrap(false)
+    title:SetTextColor(1, 0.82, 0)
     if not total then
         return
     end
     total:ClearAllPoints()
-    total:SetPoint("RIGHT", headerFrame, "TOPRIGHT", -31, posY)
+    total:SetPoint("RIGHT", header, "TOPRIGHT", -31, posY)
     total:SetWidth(85)
     total:SetJustifyH("RIGHT")
     total:SetWordWrap(false)
@@ -149,7 +149,7 @@ function mod.AnchorBagSidebarIcon(icon, collapsed, leftX)
     end
 end
 
-function mod.SetForeverBagSectionColors(labelText, lineTex, depth)
+function mod.SetForeverBagSectionColors(labelText, line, depth)
     local shade, alpha = 1, 0.5
     if depth == 1 then
         shade, alpha = 0.8, 0.25
@@ -157,35 +157,35 @@ function mod.SetForeverBagSectionColors(labelText, lineTex, depth)
         shade, alpha = 0.65, 0.15
     end
     labelText:SetTextColor(0.88 * shade, 0.77 * shade, 0.58 * shade)
-    lineTex:SetColorTexture(0.56, 0.41, 0.26, alpha)
+    line:SetColorTexture(0.56, 0.41, 0.26, alpha)
 end
 
-function mod.AddForeverBagPortrait(headerFrame, texturePath)
-    local border = headerFrame:GetParent()._foreverBagPortraitFrame
-    local art = border or headerFrame
+function mod.AddForeverBagPortrait(header, texturePath)
+    local border = header:GetParent()._foreverBagPortraitFrame
+    local art = border or header
     local icon = art:CreateTexture(nil, "ARTWORK")
-    local dim = border and 36 or 28
-    icon:SetSize(dim, dim)
+    local size = border and 36 or 28
+    icon:SetSize(size, size)
     icon:SetTexture(texturePath)
 
-    local maskTex = art:CreateMaskTexture()
+    local mask = art:CreateMaskTexture()
     if border then
         icon:SetPoint("TOPLEFT", border, "TOPLEFT", -4, 1)
-        maskTex:SetPoint("TOPLEFT", icon, "TOPLEFT", 2, 0)
-        maskTex:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -2, 4)
+        mask:SetPoint("TOPLEFT", icon, "TOPLEFT", 2, 0)
+        mask:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -2, 4)
     else
-        icon:SetPoint("CENTER", headerFrame, "TOPLEFT", 16, -18)
-        maskTex:SetAllPoints(icon)
+        icon:SetPoint("CENTER", header, "TOPLEFT", 16, -18)
+        mask:SetAllPoints(icon)
     end
-    maskTex:SetTexture(
+    mask:SetTexture(
         "Interface\\CharacterFrame\\TempPortraitAlphaMask",
         "CLAMPTOBLACKADDITIVE",
         "CLAMPTOBLACKADDITIVE"
     )
-    icon:AddMaskTexture(maskTex)
+    icon:AddMaskTexture(mask)
 
     if not border and C_Texture.GetAtlasInfo("UI-Frame-Portrait") then
-        local rim = headerFrame:CreateTexture(nil, "ARTWORK", nil, 1)
+        local rim = header:CreateTexture(nil, "ARTWORK", nil, 1)
         rim:SetAtlas("UI-Frame-Portrait")
         rim:SetSize(40, 40)
         rim:SetPoint("CENTER", icon)
@@ -193,12 +193,12 @@ function mod.AddForeverBagPortrait(headerFrame, texturePath)
 end
 
 function mod.PositionForeverBagClose(close)
-    local headerFrame = close:GetParent()
-    local scale = headerFrame:GetParent()._foreverBagFrameScale or 1
+    local header = close:GetParent()
+    local scale = header:GetParent()._foreverBagFrameScale or 1
     close:ClearAllPoints()
-    close:SetPoint("CENTER", headerFrame, "TOPRIGHT", -12, 1 - 13 * scale)
-    local dim = 25 * scale
-    close:SetSize(dim, dim)
+    close:SetPoint("CENTER", header, "TOPRIGHT", -12, 1 - 13 * scale)
+    local size = 25 * scale
+    close:SetSize(size, size)
     if not C_Texture.GetAtlasInfo("RedButton-Exit") then
         return
     end

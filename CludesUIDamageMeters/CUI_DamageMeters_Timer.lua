@@ -19,7 +19,7 @@ Inner.broken = true
 
 local CUI = CludesUI
 
-local SavedDB, MAX_WINDOWS, _windows = Inner.DB, Inner.MAX_WINDOWS, Inner._windows
+local DB, MAX_WINDOWS, _windows = Inner.DB, Inner.MAX_WINDOWS, Inner._windows
 local GetCurrentViewDuration, FormatTimer = Inner.GetCurrentViewDuration, Inner.FormatTimer
 local FormatTimerDecimal, GetAccentRGB = Inner.FormatTimerDecimal, Inner.GetAccentRGB
 local SetDMFont, SetSATimer = Inner.SetDMFont, Inner.SetSATimer
@@ -55,13 +55,13 @@ local _saTimerPreview = false
 local _saTimerLive = false -- last live/idle state seen (drives OOC desaturation)
 
 local function GetSATimerPreviewText()
-    return SavedDB().standaloneTimerDecimal and "11:37.0" or "11:37"
+    return DB().standaloneTimerDecimal and "11:37.0" or "11:37"
 end
 
 -- Per-user font override for the standalone timer only (standaloneTimerFont,
 -- a dropdown key: "__global"/nil = follow the Damage Meters module font).
 local function GetSATimerFontOverride()
-    local key = SavedDB().standaloneTimerFont
+    local key = DB().standaloneTimerFont
     if key and key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
         if filePath and filePath ~= "" then
@@ -72,7 +72,7 @@ local function GetSATimerFontOverride()
 end
 
 local function GetSATimerColor()
-    local conf = SavedDB()
+    local conf = DB()
     if conf.standaloneTimerUseAccent then
         return GetAccentRGB()
     end
@@ -84,7 +84,7 @@ local function ApplySATimerColor()
     if not _saTimerFS then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
     local r, g, b = GetSATimerColor()
     if conf.standaloneTimerDesatOOC and not (_inCombat or _needsFinalRefresh) then
         -- Luminance gray: desaturation keeps the configured color's brightness
@@ -98,7 +98,7 @@ local function ApplySATimerStyle()
     if not _saTimer or not _saTimerFS then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
     _saTimer:SetFrameStrata(conf.standaloneTimerStrata or "HIGH")
 
     local outline = conf.standaloneTimerOutline or "INHERIT"
@@ -159,11 +159,11 @@ local function ApplySATimerStyle()
     -- a value in the new three-way alignment control.
     local textAlign = conf.standaloneTimerTextAlign
     if not textAlign then
-        local anchorFrame = conf.standaloneTimerAnchor or "free"
-        if anchorFrame == "free" then
+        local anchor = conf.standaloneTimerAnchor or "free"
+        if anchor == "free" then
             textAlign = conf.standaloneTimerAlignLeft and "LEFT" or "RIGHT"
         else
-            textAlign = (anchorFrame == "topleft" or anchorFrame == "bottomleft") and "LEFT" or "RIGHT"
+            textAlign = (anchor == "topleft" or anchor == "bottomleft") and "LEFT" or "RIGHT"
         end
     end
     _saTimerFS:SetJustifyH(textAlign)
@@ -177,7 +177,7 @@ UpdateSATimerText = function()
     if not _saTimer or not _saTimerFS then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
     if not conf.standaloneTimer then
         return
     end
@@ -240,17 +240,17 @@ local function RepositionSATimer()
     if not _saTimer then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
     -- While the timer has a live unlock anchor link, the anchor system owns
     -- its position -- do not fight it.
     if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EDM_CombatTimer") then
         return
     end
-    local anchorFrame = conf.standaloneTimerAnchor or "free"
+    local anchor = conf.standaloneTimerAnchor or "free"
 
     _saTimer:ClearAllPoints()
 
-    if anchorFrame == "free" then
+    if anchor == "free" then
         -- Lock Position & Disable Click: click-through and immovable; the
         -- shift+drag lane only exists while unlocked. Our own frame, so the
         -- direct mouse-state writes are safe.
@@ -307,8 +307,8 @@ local function RepositionSATimer()
         end
     end
 
-    local isTop = anchorFrame == "topleft" or anchorFrame == "topright"
-    local isLeft = anchorFrame == "topleft" or anchorFrame == "bottomleft"
+    local isTop = anchor == "topleft" or anchor == "topright"
+    local isLeft = anchor == "topleft" or anchor == "bottomleft"
     local ref = isTop and topWin or botWin
 
     if not ref or not ref.frame then
@@ -345,7 +345,7 @@ local function CreateSATimer()
     if _saTimer then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
 
     SetSATimer(CreateFrame("Frame", "CludesUIDMStandaloneTimer", UIParent))
     _saTimer:SetSize(1, 1)
@@ -353,7 +353,7 @@ local function CreateSATimer()
     _saTimer:SetFrameStrata("HIGH")
     _saTimer:SetScript("OnMouseDown", function(self, btnFrame)
         if btnFrame == "LeftButton" and IsShiftKeyDown() then
-            local c = SavedDB()
+            local c = DB()
             -- Belt and braces: locked timers are click-through (EnableMouse
             -- off), so this handler should never fire while locked.
             if c.standaloneTimerLocked then
@@ -366,7 +366,7 @@ local function CreateSATimer()
     end)
     _saTimer:SetScript("OnMouseUp", function(self)
         self:StopMovingOrSizing()
-        local c = SavedDB()
+        local c = DB()
         if (c.standaloneTimerAnchor or "free") == "free" then
             local leftX, topY = self:GetLeft(), self:GetTop()
             if leftX and topY then
@@ -391,7 +391,7 @@ local function CreateSATimer()
 end
 
 mod.ApplySATimer = function()
-    local conf = SavedDB()
+    local conf = DB()
     if conf.standaloneTimer then
         if not _saTimer then
             CreateSATimer()
@@ -420,7 +420,7 @@ mod.ShowSATimerPreview = function()
         return
     end
     -- Show Out of Combat already keeps real data on screen (last segment duration, or 0:00) -- never clobber it with the preview value
-    if SavedDB().standaloneTimerShowOOC then
+    if DB().standaloneTimerShowOOC then
         UpdateSATimerText()
         return
     end
@@ -434,7 +434,7 @@ mod.HideSATimerPreview = function()
     if not _saTimer then
         return
     end
-    local conf = SavedDB()
+    local conf = DB()
     if conf.standaloneTimer and conf.standaloneTimerShowOOC then
         -- Show Out of Combat was enabled during this preview session: swap the preview value for the real one (last segment, or 0:00)
         if wasPreview then
@@ -470,7 +470,7 @@ mod.ApplyDMToggleState = function(includeSpellHistory)
         UpdateSATimerText()
     end
     if includeSpellHistory == nil then
-        includeSpellHistory = SavedDB().toggleIncludeSpellHistory
+        includeSpellHistory = DB().toggleIncludeSpellHistory
     end
     if includeSpellHistory and mod.ApplySpellHistory then
         mod.ApplySpellHistory()
@@ -514,7 +514,7 @@ do
     end
 
     mod.ApplyDMKeybinds = function()
-        local c = SavedDB()
+        local c = DB()
         local wantReset, wantToggle = WantKey(c.resetDataKey), WantKey(c.toggleWindowsKey)
         if not wantReset and not wantToggle and not appliedReset and not appliedToggle then
             kbFrame:UnregisterEvent("UPDATE_BINDINGS")
@@ -564,7 +564,7 @@ CUI.RegAccent({
         if not _saTimer or not _saTimerFS then
             return
         end
-        local conf = SavedDB()
+        local conf = DB()
         if conf.standaloneTimerUseAccent then
             ApplySATimerColor()
         end
@@ -590,10 +590,10 @@ mod.MakeSATimerUnlockElement = function(MK)
             return 60, 20
         end,
         isHidden = function()
-            return not SavedDB().standaloneTimer
+            return not DB().standaloneTimer
         end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
-            local conf = SavedDB()
+            local conf = DB()
             conf.standaloneTimerPos =
                 { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             -- A manual unlock-mode move implies free placement: un-snap the window-anchor mode or RepositionSATimer would fight the drag
@@ -602,7 +602,7 @@ mod.MakeSATimerUnlockElement = function(MK)
             end
         end,
         loadPos = function()
-            local place = SavedDB().standaloneTimerPos
+            local place = DB().standaloneTimerPos
             if not place then
                 return nil
             end
@@ -616,7 +616,7 @@ mod.MakeSATimerUnlockElement = function(MK)
             return nil
         end,
         clearPos = function()
-            SavedDB().standaloneTimerPos = nil
+            DB().standaloneTimerPos = nil
         end,
         applyPos = function()
             RepositionSATimer()

@@ -66,7 +66,7 @@ local function Data()
 end
 
 -- A map pin link in chat (as /way prints it); a click on it places the pin.
-local function Link(titleText, map, posX, posY, note)
+local function Link(title, map, posX, posY, note)
     if not (map and C_Map.CanSetUserWaypointOnMap(map)) then
         return Print("this place cannot take a map pin.")
     end
@@ -81,7 +81,7 @@ local function Link(titleText, map, posX, posY, note)
             "|cff4cc9f0Discovery:|r "
                 .. itemLink
                 .. " "
-                .. titleText
+                .. title
                 .. (note and (" " .. Muted(note)) or "")
                 .. " "
                 .. Muted(("%.1f, %.1f"):format(posX, posY))
@@ -488,23 +488,18 @@ local function LootOpened()
     LootForget()
     local fishing = IsFishingLoot()
     local known = Lookup()
-    for slotIndex = 1, GetNumLootItems() do
-        local itemLink = GetLootSlotLink(slotIndex)
-        local itemInfo = itemLink and Plain(itemLink) and C_Item.GetItemInfoInstant(itemLink) or nil
+    for slot = 1, GetNumLootItems() do
+        local itemLink = GetLootSlotLink(slot)
+        local item = itemLink and Plain(itemLink) and C_Item.GetItemInfoInstant(itemLink) or nil
         local page
-        if itemInfo and fishing and known.fish[itemInfo] then
+        if item and fishing and known.fish[item] then
             page = "fish"
-        elseif
-            itemInfo
-            and not fishing
-            and known.herbs[itemInfo]
-            and FromNode(GetLootSourceInfo(slotIndex))
-        then
+        elseif item and not fishing and known.herbs[item] and FromNode(GetLootSourceInfo(slot)) then
             page = "herbs"
         end
-        local _, _, quantity = GetLootSlotInfo(slotIndex)
+        local _, _, quantity = GetLootSlotInfo(slot)
         if page and Plain(quantity) and quantity and quantity > 0 then
-            lootPage[slotIndex], lootItem[slotIndex], lootQty[slotIndex] = page, itemInfo, quantity
+            lootPage[slot], lootItem[slot], lootQty[slot] = page, item, quantity
         end
     end
 end
@@ -576,20 +571,20 @@ local function NearCheck()
     end
     local range = Get("nearbyRange")
     local mx, my = me:GetXY()
-    for _, targetUnit in ipairs(nearTargets) do
-        local tx, ty = targetUnit[3]:GetXY()
+    for _, target in ipairs(nearTargets) do
+        local tx, ty = target[3]:GetXY()
         local dist = math.sqrt((tx - mx) ^ 2 + (ty - my) ^ 2)
-        local quest = targetUnit[1].quest
+        local quest = target[1].quest
         if dist <= range and not alerted[quest] then
             alerted[quest] = true
             if Get("nearbyPing") then
                 PlaySound(SOUNDKIT.MAP_PING, "Master")
             end
             if Get("nearbyChat") then
-                local place = targetUnit[2][SPOT_PLACE]
+                local place = target[2][SPOT_PLACE]
                 Print(
                     ("library book nearby: %s, %d yards%s"):format(
-                        targetUnit[1].name,
+                        target[1].name,
                         math.floor(dist),
                         place and (" - " .. place) or ""
                     )
@@ -617,11 +612,11 @@ local function NearRefresh()
     end
     local ident = PlayerZone()
     local entries = {}
-    for _, itemInfo in ipairs(Library.Spots(ident, "find")) do
-        local spot = itemInfo[2]
+    for _, item in ipairs(Library.Spots(ident, "find")) do
+        local spot = item[2]
         local pos = WorldPos(ident, spot[SPOT_X] / 100, spot[SPOT_Y] / 100)
         if pos then
-            entries[#entries + 1] = { itemInfo[1], spot, pos }
+            entries[#entries + 1] = { item[1], spot, pos }
         end
     end
     if #entries == 0 then
@@ -720,8 +715,8 @@ local function NewRows(contentFrame)
         local r = Acquire()
         local width = contentFrame:GetWidth()
         local indent = options.indent or 0
-        local dim = options.size or 12
-        CludesUI.Kit.Font(r.text, dim, "essentials")
+        local size = options.size or 12
+        CludesUI.Kit.Font(r.text, size, "essentials")
         r.text:SetTextColor(unpack(options.colour or { 1, 1, 1 }))
         local leftX = indent
         if options.icon then
@@ -773,8 +768,8 @@ local Redraw
 
 local function TabOrder()
     local entries = {}
-    for key, tabButton in pairs(tabs) do
-        entries[#entries + 1] = tabButton
+    for key, tab in pairs(tabs) do
+        entries[#entries + 1] = tab
     end
     table.sort(entries, function(a, b)
         return a.order < b.order
@@ -794,11 +789,11 @@ local function BuildWindow()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:SetFrameStrata("HIGH")
     window:SetClampedToScreen(true)
-    local titleText = window:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(titleText, 15, "essentials")
-    titleText:SetPoint("TOPLEFT", 10, -8)
-    titleText:SetText("Discovery")
-    CludesUI.Kit.AccentText(titleText)
+    local title = window:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(title, 15, "essentials")
+    title:SetPoint("TOPLEFT", 10, -8)
+    title:SetText("Discovery")
+    CludesUI.Kit.AccentText(title)
     local close = CludesUI.Kit.Glyph(window, "x", function()
         window:Hide()
     end, nil, "essentials")
@@ -822,22 +817,22 @@ end
 
 local function PaintTabs()
     local posX = 0
-    for idx, tabButton in ipairs(TabOrder()) do
+    for idx, tab in ipairs(TabOrder()) do
         local b = tabButtons[idx]
         if not b then
             b = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
             b:SetHeight(22)
             tabButtons[idx] = b
         end
-        b:SetText(tabButton.label)
+        b:SetText(tab.label)
         b:SetWidth(math.max(80, b:GetTextWidth() + 24))
         b:ClearAllPoints()
         b:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
         b:SetScript("OnClick", function()
-            currentTab = tabButton.key
+            currentTab = tab.key
             Redraw()
         end)
-        if tabButton.key == currentTab then
+        if tab.key == currentTab then
             b:SetActive(true)
         else
             b:SetActive(false)
@@ -857,9 +852,9 @@ function Redraw()
     for _, childFrame in ipairs({ window.tools:GetChildren() }) do
         childFrame:Hide()
     end
-    local tabButton = tabs[currentTab] or TabOrder()[1]
-    currentTab = tabButton.key
-    tabButton.draw(rowList, window.tools)
+    local tab = tabs[currentTab] or TabOrder()[1]
+    currentTab = tab.key
+    tab.draw(rowList, window.tools)
     contentFrame:SetHeight(rowList:Height() + 10)
 end
 
@@ -876,20 +871,20 @@ local function RedrawSoon()
 end
 OnFieldChange = RedrawSoon
 
-local function OpenWindow(tabButton)
+local function OpenWindow(tab)
     if not window then
         BuildWindow()
     end
-    if tabButton then
-        currentTab = tabButton
+    if tab then
+        currentTab = tab
     end
     window:Show()
     Redraw()
 end
 
 --- Other files add a tab: { key, label, order, draw = function(rows, tools) }.
-function module.DiscoveryAddTab(tabButton)
-    tabs[tabButton.key] = tabButton
+function module.DiscoveryAddTab(tab)
+    tabs[tab.key] = tab
 end
 module.DiscoveryRows = NewRows
 module.DiscoveryRedraw = RedrawSoon
@@ -984,12 +979,12 @@ local function DrawBooks(R)
                 or stored == "bank" and "in your bank"
                 or nil
             local spot = book.spots[1]
-            local glyph = C_Item.GetItemIconByID(book.item) or 134400
+            local icon = C_Item.GetItemIconByID(book.item) or 134400
             local where = book.unplaced and "Not found on Forever yet"
                 or spot and (ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot))
                 or ""
             R:Line(Library.Title(book) .. "\n" .. Muted(where), {
-                icon = glyph,
+                icon = icon,
                 right = right,
                 rightColour = right == "handed in" and MUTED or GOLD,
                 tip = BookTip(book, spot),
@@ -1246,8 +1241,8 @@ local function FillTracker(zone)
                     end,
                 })
             end
-            for _, itemInfo in ipairs(find) do
-                local book, spot = itemInfo[1], itemInfo[2]
+            for _, item in ipairs(find) do
+                local book, spot = item[1], item[2]
                 R:Line(
                     book.name
                         .. "\n"
@@ -1358,7 +1353,7 @@ local function ClearPins()
     pinsUsed = 0
 end
 
-local function Pin(posX, posY, glyph, tipText, onClick)
+local function Pin(posX, posY, icon, tipText, onClick)
     pinsUsed = pinsUsed + 1
     local p = pins[pinsUsed]
     if not p then
@@ -1390,10 +1385,10 @@ local function Pin(posX, posY, glyph, tipText, onClick)
         end
         pins[pinsUsed] = p
     end
-    local dim = Get("pinSize")
-    p:SetSize(dim, dim)
+    local size = Get("pinSize")
+    p:SetSize(size, size)
     p.x, p.y = posX / 100, posY / 100
-    p.icon:SetTexture(glyph)
+    p.icon:SetTexture(icon)
     p.tip, p.onClick = tipText, onClick
     Anchor(p)
     p:Show()
@@ -1409,8 +1404,8 @@ local function DrawPins()
         return
     end
     if Get("mapPins") then
-        for _, itemInfo in ipairs(Library.Spots(mapID, "find")) do
-            local book, spot = itemInfo[1], itemInfo[2]
+        for _, item in ipairs(Library.Spots(mapID, "find")) do
+            local book, spot = item[1], item[2]
             Pin(
                 spot[SPOT_X],
                 spot[SPOT_Y],
@@ -1425,12 +1420,12 @@ local function DrawPins()
             local counts = {}
             for _, book in ipairs(Data().LibraryBooks) do
                 if Library.ForMe(book) and Library.Stored(book) then
-                    local kindOf = book.turnIn or TURN_IN
-                    counts[kindOf] = (counts[kindOf] or 0) + 1
+                    local kind = book.turnIn or TURN_IN
+                    counts[kind] = (counts[kind] or 0) + 1
                 end
             end
-            for kindOf, num in pairs(counts) do
-                local npc = Data().LibraryTurnIns[kindOf][Side()]
+            for kind, num in pairs(counts) do
+                local npc = Data().LibraryTurnIns[kind][Side()]
                 if npc.map == mapID then
                     Pin(npc.x, npc.y, "Interface\\Icons\\INV_Misc_Book_07", function(tipText)
                         tipText:SetText(npc.name, 1, 1, 1)

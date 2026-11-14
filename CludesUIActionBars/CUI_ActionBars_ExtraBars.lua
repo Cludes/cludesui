@@ -480,13 +480,13 @@ local function FadeForeverBarArt(barId)
         end
         return
     end
-    local barFrame = _G.BagsBar
-    if not barFrame then
+    local bar = _G.BagsBar
+    if not bar then
         return
     end
     if not fvBagArt then
         fvBagArt = {}
-        local regions = { barFrame:GetRegions() }
+        local regions = { bar:GetRegions() }
         for i = 1, #regions do
             local r = regions[i]
             local atlas = r.GetAtlas and r:GetAtlas()

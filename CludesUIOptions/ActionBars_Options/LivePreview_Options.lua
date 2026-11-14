@@ -127,9 +127,9 @@ local function BuildLivePreview(hostFrame, yOff)
         bf:SetSize(baseBtnW, baseBtnH)
         bf:Hide()
 
-        local glyph = bf:CreateTexture(nil, "ARTWORK")
-        glyph:SetAllPoints()
-        glyph:SetColorTexture(0.062, 0.070, 0.082, 1)
+        local icon = bf:CreateTexture(nil, "ARTWORK")
+        icon:SetAllPoints()
+        icon:SetColorTexture(0.062, 0.070, 0.082, 1)
 
         local bT = bf:CreateTexture(nil, "OVERLAY")
         local bB = bf:CreateTexture(nil, "OVERLAY")
@@ -174,7 +174,7 @@ local function BuildLivePreview(hostFrame, yOff)
 
         buttons[i] = {
             frame = bf,
-            icon = glyph,
+            icon = icon,
             borders = { bT, bB, bL, bR },
             keybind = keybindFS,
             count = countFS,
@@ -191,7 +191,7 @@ local function BuildLivePreview(hostFrame, yOff)
     -- CUI border, shape or backdrop either way. Built once per button,
     -- re-sized per pass; the kit not in use steps aside.
     local blizzMaskInfo
-    local function ApplyBlizzPreviewButton(record, bf, glyph, classic, filled)
+    local function ApplyBlizzPreviewButton(record, bf, icon, classic, filled)
         local bT, bB, bL, bR = record.borders[1], record.borders[2], record.borders[3], record.borders[4]
         bT:Hide()
         bB:Hide()
@@ -204,12 +204,12 @@ local function BuildLivePreview(hostFrame, yOff)
             record.shapeBorderTex:Hide()
         end
         if record.shapeMask and record._prevMasked then
-            pcall(glyph.RemoveMaskTexture, glyph, record.shapeMask)
+            pcall(icon.RemoveMaskTexture, icon, record.shapeMask)
             record.shapeMask:Hide()
             record._prevMasked = false
         end
-        glyph:ClearAllPoints()
-        glyph:SetAllPoints(bf)
+        icon:ClearAllPoints()
+        icon:SetAllPoints(bf)
         local wid, hgt = bf:GetSize()
         if classic then
             if record.blizzMask then
@@ -236,12 +236,12 @@ local function BuildLivePreview(hostFrame, yOff)
         if record.classicRing then
             record.classicRing:Hide()
         end
-        local maskTex = record.blizzMask
-        if not maskTex then
-            maskTex = bf:CreateMaskTexture()
-            maskTex:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
-            glyph:AddMaskTexture(maskTex)
-            record.blizzMask = maskTex
+        local mask = record.blizzMask
+        if not mask then
+            mask = bf:CreateMaskTexture()
+            mask:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
+            icon:AddMaskTexture(mask)
+            record.blizzMask = mask
             -- Above the icon, below the OVERLAY texts (a NormalTexture on
             -- the live button sits under its font strings the same way).
             local ring = bf:CreateTexture(nil, "ARTWORK", nil, 2)
@@ -253,14 +253,14 @@ local function BuildLivePreview(hostFrame, yOff)
             blizzMaskInfo = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Mask") or false
         end
         local sx, sy = wid / 45, hgt / 45
-        maskTex:ClearAllPoints()
-        maskTex:SetPoint("CENTER", glyph, "CENTER", 0, 0)
+        mask:ClearAllPoints()
+        mask:SetPoint("CENTER", icon, "CENTER", 0, 0)
         if blizzMaskInfo then
-            maskTex:SetSize(blizzMaskInfo.width * sx, blizzMaskInfo.height * sy)
+            mask:SetSize(blizzMaskInfo.width * sx, blizzMaskInfo.height * sy)
         else
-            maskTex:SetSize(wid, hgt)
+            mask:SetSize(wid, hgt)
         end
-        maskTex:Show()
+        mask:Show()
         local ring = record.blizzRing
         ring:ClearAllPoints()
         ring:SetPoint("TOPLEFT", bf, "TOPLEFT", 0, 0)
@@ -513,27 +513,27 @@ local function BuildLivePreview(hostFrame, yOff)
         for i = 1, maxBtns do
             local record = buttons[i]
             local bf = record.frame
-            local glyph = record.icon
+            local icon = record.icon
 
             if i >= leftmost and i <= previewCount then
                 local position = i - leftmost -- 0-based index
-                local column, rowFrame
+                local col, row
                 if isVertical then
                     if cornerFill then
                         -- Corner modes fill across columns (gridCols) first, then wrap down.
-                        column = position % gridCols
-                        rowFrame = math.floor(position / gridCols)
+                        col = position % gridCols
+                        row = math.floor(position / gridCols)
                     else
-                        column = math.floor(position / stride)
-                        rowFrame = position % stride
+                        col = math.floor(position / stride)
+                        row = position % stride
                     end
                 else
-                    column = position % stride
-                    rowFrame = math.floor(position / stride)
+                    col = position % stride
+                    row = math.floor(position / stride)
                 end
                 -- dispCol/dispRow = visual position after order flips; col stays the content
                 -- column so vertical-centering math below still measures the right buttons.
-                local dispCol, dispRow = column, rowFrame
+                local dispCol, dispRow = col, row
                 if isVertical then
                     if colFlip then
                         dispCol = gridCols - 1 - dispCol
@@ -556,9 +556,9 @@ local function BuildLivePreview(hostFrame, yOff)
                     local countInCol
                     if cornerFill then
                         -- Row-major fill: column c holds every gridCols-th button.
-                        countInCol = math.floor((previewCount - 1 - column) / gridCols) + 1
+                        countInCol = math.floor((previewCount - 1 - col) / gridCols) + 1
                     else
-                        local colStart = column * stride + 1
+                        local colStart = col * stride + 1
                         local colEnd = math.min(colStart + stride - 1, previewCount)
                         countInCol = colEnd - colStart + 1
                     end
@@ -589,26 +589,26 @@ local function BuildLivePreview(hostFrame, yOff)
                     bf:Hide()
                 else
                     if not iconTex then
-                        glyph:SetColorTexture(0, 0, 0, 0.5)
-                        UnsnapTex(glyph)
-                        glyph:SetTexCoord(0, 1, 0, 1)
+                        icon:SetColorTexture(0, 0, 0, 0.5)
+                        UnsnapTex(icon)
+                        icon:SetTexCoord(0, 1, 0, 1)
                     else
-                        glyph:SetTexture(iconTex)
+                        icon:SetTexture(iconTex)
                         if not blizzAB and (square or zoom > 0 or btnShape == "cropped") then
                             local z = zoom
                             if btnShape == "cropped" then
                                 -- Preserve aspect ratio: trim top/bottom by 10%
-                                glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+                                icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
                             else
-                                glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+                                icon:SetTexCoord(z, 1 - z, z, 1 - z)
                             end
                         else
-                            glyph:SetTexCoord(0, 1, 0, 1)
+                            icon:SetTexCoord(0, 1, 0, 1)
                         end
                     end
 
                     if blizzAB then
-                        ApplyBlizzPreviewButton(record, bf, glyph, classicAB, iconTex and true or false)
+                        ApplyBlizzPreviewButton(record, bf, icon, classicAB, iconTex and true or false)
                     else
                         -- The styles' rings and mask step aside on the CUI look (the
                         -- flag is a live read: a profile switch can flip it mid-page).
@@ -791,9 +791,9 @@ local function BuildLivePreview(hostFrame, yOff)
                             )
                             record.shapeMask:Show()
                             if record._prevMasked then
-                                pcall(glyph.RemoveMaskTexture, glyph, record.shapeMask)
+                                pcall(icon.RemoveMaskTexture, icon, record.shapeMask)
                             end
-                            glyph:AddMaskTexture(record.shapeMask)
+                            icon:AddMaskTexture(record.shapeMask)
                             record._prevMasked = true
                             -- Expand icon beyond bf for SHAPE_ICON_EXPAND (icon only, NOT mask)
                             local SHAPE_ICON_EXPAND_OFFSETS = {
@@ -814,9 +814,9 @@ local function BuildLivePreview(hostFrame, yOff)
                                 iconExp = 0
                             end
                             local halfIE = iconExp / 2
-                            glyph:ClearAllPoints()
-                            Pix.Point(glyph, "TOPLEFT", bf, "TOPLEFT", -halfIE, halfIE)
-                            Pix.Point(glyph, "BOTTOMRIGHT", bf, "BOTTOMRIGHT", halfIE, -halfIE)
+                            icon:ClearAllPoints()
+                            Pix.Point(icon, "TOPLEFT", bf, "TOPLEFT", -halfIE, halfIE)
+                            Pix.Point(icon, "BOTTOMRIGHT", bf, "BOTTOMRIGHT", halfIE, -halfIE)
                             -- Mask: inset 1px when border is on (matches unit frames)
                             record.shapeMask:ClearAllPoints()
                             if shapeBrdSize >= 1 then
@@ -830,7 +830,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             local insetPx = SHAPE_INSETS[btnShape] or 17
                             local visRatio = (128 - 2 * insetPx) / 128
                             local expand = ((1 / visRatio) - 1) * 0.5
-                            glyph:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+                            icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
                             bT:Hide()
                             bB:Hide()
                             bL:Hide()
@@ -861,25 +861,25 @@ local function BuildLivePreview(hostFrame, yOff)
                         else
                             -- None/Cropped: remove mask if previously applied
                             if record.shapeMask and record._prevMasked then
-                                pcall(glyph.RemoveMaskTexture, glyph, record.shapeMask)
+                                pcall(icon.RemoveMaskTexture, icon, record.shapeMask)
                                 record.shapeMask:Hide()
                                 record._prevMasked = false
                             end
                             if record.shapeBorderTex then
                                 record.shapeBorderTex:Hide()
                             end
-                            glyph:ClearAllPoints()
-                            glyph:SetAllPoints(bf)
+                            icon:ClearAllPoints()
+                            icon:SetAllPoints(bf)
                             -- Texcoords: cropped trims top/bottom, none uses zoom only
-                            if glyph.SetTexCoord then
+                            if icon.SetTexCoord then
                                 local z = zoom
                                 if btnShape == "cropped" then
-                                    glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+                                    icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
                                 else
                                     if z > 0 or square then
-                                        glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+                                        icon:SetTexCoord(z, 1 - z, z, 1 - z)
                                     else
-                                        glyph:SetTexCoord(0, 1, 0, 1)
+                                        icon:SetTexCoord(0, 1, 0, 1)
                                     end
                                 end
                             end

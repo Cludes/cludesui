@@ -30,11 +30,11 @@ local lastLayout -- target[name] = group from before the last sort
 local widget = CreateFrame("Frame")
 
 local function Say(textValue)
-    local lineTex = "|cff4cc9f0Raid Lead:|r " .. textValue
+    local line = "|cff4cc9f0Raid Lead:|r " .. textValue
     if CludesUI and CludesUI.Print then
-        CludesUI.Print(lineTex)
+        CludesUI.Print(line)
     else
-        print(lineTex)
+        print(line)
     end
 end
 
@@ -44,16 +44,16 @@ end
 local function Roster()
     local members = {}
     for idx = 1, GetNumGroupMembers() do
-        local name, _, subgroup, _, _, classFile, _, _, _, _, _, combatRole = GetRaidRosterInfo(idx)
+        local name, _, subgroup, _, _, class, _, _, _, _, _, combatRole = GetRaidRosterInfo(idx)
         local hidden = issecretvalue
-            and (issecretvalue(name) or issecretvalue(subgroup) or issecretvalue(classFile))
+            and (issecretvalue(name) or issecretvalue(subgroup) or issecretvalue(class))
         if name and not hidden then
             members[#members + 1] = {
                 index = idx,
                 name = name,
                 group = subgroup,
                 role = combatRole or "NONE",
-                class = classFile,
+                class = class,
             }
         end
     end
@@ -146,17 +146,17 @@ local function KindLine(c)
     return table.concat(parts, ", ")
 end
 
-local function Start(labelText, targetUnit, members, keepUndo)
+local function Start(labelText, target, members, keepUndo)
     if not keepUndo then
         lastLayout = Planner.Snapshot(members)
     end
-    local summary = Planner.Summary(members, targetUnit)
+    local summary = Planner.Summary(members, target)
     for g = 1, 8 do
         if summary[g] then
             Say("group " .. g .. ": " .. KindLine(summary[g]))
         end
     end
-    job = { target = targetUnit, moves = 0, seen = 0, label = labelText }
+    job = { target = target, moves = 0, seen = 0, label = labelText }
     widget:RegisterEvent("GROUP_ROSTER_UPDATE")
     widget:RegisterEvent("PLAYER_REGEN_DISABLED")
     Step()
@@ -211,13 +211,13 @@ local function Command(msg)
         if not lastLayout then
             return Say("there is no earlier layout to go back to.")
         end
-        local targetUnit = lastLayout
+        local target = lastLayout
         lastLayout = nil
-        Start("Undo", targetUnit, members, true)
+        Start("Undo", target, members, true)
     elseif cmd == "roles" then
         Start("Sort by role", Planner.ByRole(members), members)
     else
-        local targetUnit, perSide = Planner.Split(members)
+        local target, perSide = Planner.Split(members)
         Say(
             "side one is groups 1 to "
                 .. perSide
@@ -227,7 +227,7 @@ local function Command(msg)
                 .. (perSide * 2)
                 .. "."
         )
-        Start("Split", targetUnit, members)
+        Start("Split", target, members)
     end
 end
 

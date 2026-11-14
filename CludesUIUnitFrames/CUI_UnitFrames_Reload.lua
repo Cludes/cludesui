@@ -2509,8 +2509,8 @@ ReloadFramesBody = function()
     local RAID_MARKER_UNITS = { "player", "target", "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
     for _, rmUnit in ipairs(RAID_MARKER_UNITS) do
         local rmFrame = frameList[rmUnit]
-        local glyph = rmFrame and rmFrame._raidMarkerIcon
-        if rmFrame and glyph then
+        local icon = rmFrame and rmFrame._raidMarkerIcon
+        if rmFrame and icon then
             local rmS = GetSettingsForUnit(rmUnit)
             local rmSize = (rmS and rmS.raidMarkerSize) or 28
             local rmAlign = (rmS and rmS.raidMarkerAlign) or "right"
@@ -2518,32 +2518,32 @@ ReloadFramesBody = function()
             local rmY = (rmS and rmS.raidMarkerY) or 0
             local rmEnabled = rmS and rmS.raidMarkerEnabled
             local isBoss = rmUnit:match("^boss%d$")
-            glyph:SetSize(rmSize, rmSize)
-            glyph:ClearAllPoints()
+            icon:SetSize(rmSize, rmSize)
+            icon:ClearAllPoints()
             if isBoss then
                 if rmAlign == "left" then
-                    glyph:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
+                    icon:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
                 elseif rmAlign == "center" then
-                    glyph:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
+                    icon:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
                 else
-                    glyph:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
+                    icon:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
                 end
             else
                 local rmAnchor = (rmAlign == "left") and "TOPLEFT"
                     or (rmAlign == "center") and "TOP"
                     or "TOPRIGHT"
-                glyph:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
+                icon:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
             end
             if rmEnabled then
-                rmFrame.RaidTargetIndicator = glyph
+                rmFrame.RaidTargetIndicator = icon
                 rmFrame:EnableElement("RaidTargetIndicator")
-                if glyph.ForceUpdate then
-                    glyph:ForceUpdate()
+                if icon.ForceUpdate then
+                    icon:ForceUpdate()
                 end
             else
                 rmFrame:DisableElement("RaidTargetIndicator")
                 rmFrame.RaidTargetIndicator = nil
-                glyph:Hide()
+                icon:Hide()
             end
         end
     end
@@ -2598,11 +2598,11 @@ ReloadFramesBody = function()
             -- shares its outline (the frame keeps the far corners).
             local pCorners = corners
             if det and us.cornerJoinPower then
-                local upper, lower = CludesUI.RoundedJoinCorners(corners)
+                local max, lower = CludesUI.RoundedJoinCorners(corners)
                 if pp == "detached_bottom" then
-                    corners, pCorners = upper, lower
+                    corners, pCorners = max, lower
                 else
-                    corners, pCorners = lower, upper
+                    corners, pCorners = lower, max
                 end
             end
             if radius > 0 then

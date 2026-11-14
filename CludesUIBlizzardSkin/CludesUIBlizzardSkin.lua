@@ -171,14 +171,14 @@ do
         for _, key in ipairs(newKeys) do
             isNew[key] = true
         end
-        local offset, modern, cui = 0, 0, 0
+        local off, modern, cui = 0, 0, 0
         for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
             -- A window that starts at Blizz Default says nothing of the
             -- player's taste.
             if not isNew[winKey] and not STOCK_WINDOWS[winKey] then
                 -- A Blizz Default character sheet keeps Blizzard's look.
                 if CludesUIDB[ek] == false or (styles and styles[winKey] == "blizzard") then
-                    offset = offset + 1
+                    off = off + 1
                 elseif styles and styles[winKey] == "modern" then
                     modern = modern + 1
                 else
@@ -190,9 +190,9 @@ do
             local ek = WINDOW_ENABLE_KEYS[winKey]
             local touched = CludesUIDB[ek] ~= nil or (styles and styles[winKey] ~= nil)
             if not touched then
-                if offset > cui and offset > modern then
+                if off > cui and off > modern then
                     CludesUIDB[ek] = false
-                elseif modern > cui and modern >= offset then
+                elseif modern > cui and modern >= off then
                     if not styles then
                         styles = {}
                         CludesUIDB.blizzWindowSkinStyles = styles
@@ -209,9 +209,9 @@ do
     local function FontLookOf(db, name, prof)
         local fonts = (name == (db.activeProfile or "Default")) and db.fonts or prof.fonts
         local fontStr = type(fonts) == "table" and fonts._styleSlots
-        local look = type(fontStr) == "table" and fontStr.active
-        if look == "cui" or look == "blizzard" or look == "classic" then
-            return look
+        local style = type(fontStr) == "table" and fontStr.active
+        if style == "cui" or style == "blizzard" or style == "classic" then
+            return style
         end
         return nil
     end
@@ -271,8 +271,8 @@ do
             and p.charSheetUseBlizzardStyle == nil
             and p.charSheetUseClassicStyle == nil
         then
-            local look = p.windowSkinLook or FontLookOf(db, name, p)
-            stock = look == "blizzard" or look == "classic"
+            local style = p.windowSkinLook or FontLookOf(db, name, p)
+            stock = style == "blizzard" or style == "classic"
         end
         if not stock then
             return
@@ -427,14 +427,14 @@ end
 -- whole). WoW Forever leaves the micro menu and the bag bar at Blizz Default,
 -- every look a window that starts there.
 local FOREVER_STOCK = { micromenu = true, bagbar = true }
-local function LookSkinsWindows(look, winKey)
+local function LookSkinsWindows(style, winKey)
     if winKey and STOCK_WINDOWS[winKey] then
         return false
     end
-    if look == "forever" then
+    if style == "forever" then
         return not (winKey and FOREVER_STOCK[winKey])
     end
-    return look == "cui"
+    return style == "cui"
 end
 function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     if not CludesUIDB then
@@ -444,8 +444,8 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     if type(slots) ~= "table" then
         slots = nil
     end
-    local recd = CludesUIDB.windowSkinsStockSeeded
-    local from = (slots and slots.active) or (type(recd) == "table" and (legacyStock or "blizzard")) or "cui"
+    local rec = CludesUIDB.windowSkinsStockSeeded
+    local from = (slots and slots.active) or (type(rec) == "table" and (legacyStock or "blizzard")) or "cui"
     if from == to then
         return false
     end
@@ -454,11 +454,11 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     end
     if not slots then
         slots = {}
-        if type(recd) == "table" then
+        if type(rec) == "table" then
             local cui = {}
             for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
                 if WindowInSlots(winKey) then
-                    cui[ek] = recd[winKey] and true or EnabledValue(winKey, CludesUIDB[ek])
+                    cui[ek] = rec[winKey] and true or EnabledValue(winKey, CludesUIDB[ek])
                 end
             end
             slots.cui = cui
@@ -536,20 +536,20 @@ function CludesUI.ProfileWindowSkinLook(prof, liveFonts)
     if type(prof) ~= "table" then
         return nil
     end
-    local look = prof.windowSkinLook
+    local style = prof.windowSkinLook
     -- WoW Forever's own window look; a Forever profile imported on retail
     -- renders Blizzard Style there, so it takes that look's windows.
-    if look == "forever" then
+    if style == "forever" then
         return CludesUI.IS_FOREVER and "forever" or "blizzard"
     end
-    if look == "cui" or look == "blizzard" or look == "classic" then
-        return look
+    if style == "cui" or style == "blizzard" or style == "classic" then
+        return style
     end
     local fonts = liveFonts or prof.fonts
     local fontStr = type(fonts) == "table" and fonts._styleSlots
-    look = type(fontStr) == "table" and fontStr.active
-    if look == "cui" or look == "blizzard" or look == "classic" then
-        return look
+    style = type(fontStr) == "table" and fontStr.active
+    if style == "cui" or style == "blizzard" or style == "classic" then
+        return style
     end
     if CludesUIDB and type(CludesUIDB.windowSkinStyleSlots) == "table" then
         return "cui"
@@ -569,9 +569,9 @@ function CludesUI.ReconcileWindowSkinLook()
         return
     end
     local prof = CludesUI.GetActiveProfileData()
-    local look = CludesUI.ProfileWindowSkinLook(prof, db.fonts)
-    if look then
-        CludesUI.SwapWindowSkinStyle(look, false, look ~= "cui" and look or nil)
+    local style = CludesUI.ProfileWindowSkinLook(prof, db.fonts)
+    if style then
+        CludesUI.SwapWindowSkinStyle(style, false, style ~= "cui" and style or nil)
     end
 end
 

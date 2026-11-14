@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local upper = math.max
+local max = math.max
 
 local TBB_DEFAULT_BAR = Inner.TBB_DEFAULT_BAR
 
@@ -93,9 +93,9 @@ do
         end
         for k, val in pairs(storage) do
             if type(k) == "string" then
-                local slotIndex = k:match("^TBB_(%d+)$")
-                if slotIndex then
-                    dest[slotIndex] = CopyEntry(val)
+                local slot = k:match("^TBB_(%d+)$")
+                if slot then
+                    dest[slot] = CopyEntry(val)
                 end
             end
         end
@@ -169,8 +169,8 @@ do
                 storage[k] = nil
             end
         end
-        for slotIndex, val in pairs(source) do
-            storage["TBB_" .. slotIndex] = CopyEntry(val)
+        for slot, val in pairs(source) do
+            storage["TBB_" .. slot] = CopyEntry(val)
         end
     end
 
@@ -210,16 +210,16 @@ do
             local barList = (t and t.bars) or {}
             local sets = { b.anchors, b.wm, b.hm }
             for i = 1, 3 do
-                local group, drop = sets[i], nil
-                for slotIndex in pairs(group) do
-                    if not barList[tonumber(slotIndex)] then
+                local set, drop = sets[i], nil
+                for slot in pairs(set) do
+                    if not barList[tonumber(slot)] then
                         drop = drop or {}
-                        drop[#drop + 1] = slotIndex
+                        drop[#drop + 1] = slot
                     end
                 end
                 if drop then
-                    for _, slotIndex in ipairs(drop) do
-                        group[slotIndex] = nil
+                    for _, slot in ipairs(drop) do
+                        set[slot] = nil
                     end
                 end
             end
@@ -228,11 +228,11 @@ do
             BankExtra(b, "hmx", "unlockHeightMatchExtra")
             local xsets = { b.wmx, b.hmx }
             for i = 1, 2 do
-                local group = xsets[i]
-                if group then
-                    for slotIndex in pairs(group) do
-                        if not barList[tonumber(slotIndex)] then
-                            group[slotIndex] = nil
+                local set = xsets[i]
+                if set then
+                    for slot in pairs(set) do
+                        if not barList[tonumber(slot)] then
+                            set[slot] = nil
                         end
                     end
                 end
@@ -425,7 +425,7 @@ function mod.RemoveTrackedBuffBar(position)
         CludesUI.ShiftIndexedAnchorKeys("TBB_", position, oldCount)
     end
     if tbb.selectedBar > #tbb.bars then
-        tbb.selectedBar = upper(1, #tbb.bars)
+        tbb.selectedBar = max(1, #tbb.bars)
     end
     mod.BuildTrackedBuffBars()
 end
@@ -453,7 +453,7 @@ function mod.MoveTrackedBuffBarInGroup(position, place)
             end
         end
     end
-    place = upper(1, math.min(place, #slots))
+    place = max(1, math.min(place, #slots))
     if place == from then
         return position
     end
@@ -511,8 +511,8 @@ function mod.IsTrackedBuffBarBroadcast(conf)
     if not key then
         return false
     end
-    local group = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
-    return group ~= nil and group[key] == true
+    local set = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
+    return set ~= nil and set[key] == true
 end
 
 -- Copy a configured bar (preset or custom buff) into every OTHER spec of the player's
@@ -613,13 +613,11 @@ function mod.AddBarToAllSpecs(srcIdx)
 
     -- Mark broadcast so the button flips to "Remove..." in every spec; set even when added == 0 (all specs already held it).
     -- WoW Forever copies nowhere (see above), so nothing is marked there.
-    local group = not CludesUI.IS_FOREVER
-        and mod.GetActiveTBBBroadcastSet
-        and mod.GetActiveTBBBroadcastSet()
-    if group then
+    local set = not CludesUI.IS_FOREVER and mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
+    if set then
         local key = mod.TBBBroadcastKey(srcBar)
         if key then
-            group[key] = true
+            set[key] = true
         end
     end
 
@@ -698,9 +696,9 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
     end
 
     -- Clear the broadcast flag so the button flips back to "Add...".
-    local group = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
-    if group then
-        group[broadcastKey] = nil
+    local set = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
+    if set then
+        set[broadcastKey] = nil
     end
 
     return removed

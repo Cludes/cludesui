@@ -13,7 +13,7 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 CUI_NS.unlockParts = CUI_NS.unlockParts or {}
 CUI_NS.unlockParts.Tools = function(LM)
     local mod, ABAR, floor, abs = CUI_NS, LM.EAB, LM.floor, LM.abs
-    local min, upper, sqrt, sin = LM.min, LM.max, LM.sqrt, LM.sin
+    local min, max, sqrt, sin = LM.min, LM.max, LM.sqrt, LM.sin
     local Pix, FONT_PATH, GRID_SPACING, SNAP_THRESH = LM.PP, LM.FONT_PATH, LM.GRID_SPACING, LM.SNAP_THRESH
     local MOVER_ALPHA, MOVER_HOVER, BAR_LOOKUP, registeredElements =
         LM.MOVER_ALPHA, LM.MOVER_HOVER, LM.BAR_LOOKUP, LM.registeredElements
@@ -276,7 +276,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                         local isW = texture._isWhite
 
                         if texture._isVert then
-                            local spanStart = upper(0, cy - halfSpan)
+                            local spanStart = max(0, cy - halfSpan)
                             local spanEnd = min(screenH, cy + halfSpan)
                             local segY = spanStart
                             while segY < spanEnd do
@@ -305,7 +305,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                                 segY = segEnd
                             end
                         else
-                            local spanStart = upper(0, cx - halfSpan)
+                            local spanStart = max(0, cx - halfSpan)
                             local spanEnd = min(screenW, cx + halfSpan)
                             local segX = spanStart
                             while segX < spanEnd do
@@ -436,13 +436,13 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
         snapHighlightAnim:SetScript("OnUpdate", function(self, dt)
             snapHighlightElapsed = snapHighlightElapsed + dt
-            local targetUnit = movers[snapHighlightKey]
-            if not targetUnit or not targetUnit._snapBrd then
+            local target = movers[snapHighlightKey]
+            if not target or not target._snapBrd then
                 ClearSnapHighlight()
                 return
             end
             local alpha = 0.45 + 0.45 * sin(snapHighlightElapsed * 9.42)
-            targetUnit._snapBrd:SetColor(1, 1, 1, alpha * 0.9)
+            target._snapBrd:SetColor(1, 1, 1, alpha * 0.9)
         end)
         snapHighlightAnim:Show()
     end
@@ -1439,14 +1439,14 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     -- Menus and anchor ghosts follow the stack when late registrations re-sort it.
-    function LM.SetMoverOverlayLevel(widget, offset)
-        offset = offset or 0
+    function LM.SetMoverOverlayLevel(widget, off)
+        off = off or 0
         LM.moverOverlays = LM.moverOverlays or {}
         if widget._moverOverlayOffset == nil then
             LM.moverOverlays[#LM.moverOverlays + 1] = widget
         end
-        widget._moverOverlayOffset = offset
-        widget:SetFrameLevel((LM.moverOverlayLevel or 250) + offset)
+        widget._moverOverlayOffset = off
+        widget:SetFrameLevel((LM.moverOverlayLevel or 250) + off)
     end
 
     -------------------------------------------------------------------------------
@@ -1514,7 +1514,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         },
     }
 
-    local function CreateBlizzOwnedOverlay(spec_def, hostFrame)
+    local function CreateBlizzOwnedOverlay(def, hostFrame)
         local ar, ag, ab = GetAccent()
         local shade = CreateFrame("Frame", nil, hostFrame)
         shade:EnableMouse(true)
@@ -1531,7 +1531,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         nameFs:SetFont(FONT_PATH, 10 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
         nameFs:SetPoint("CENTER", shade, "CENTER", 0, 0)
         nameFs:SetTextColor(1, 1, 1, 0.75)
-        nameFs:SetText(CludesUI.L(spec_def.label))
+        nameFs:SetText(CludesUI.L(def.label))
         nameFs:SetWordWrap(false)
         shade._nameFs = nameFs
         -- Action text (hidden at idle, fades in on hover)
@@ -1641,16 +1641,16 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     local function ShowBlizzOwnedOverlays(hostFrame)
-        for _, spec_def in ipairs(BLIZZ_OWNED_OVERLAY_DEFS) do
-            local anchorFrame = spec_def.frame()
-            if not anchorFrame then
+        for _, def in ipairs(BLIZZ_OWNED_OVERLAY_DEFS) do
+            local anchor = def.frame()
+            if not anchor then
             -- frame doesn't exist at all, skip
-            elseif anchorFrame:IsShown() and anchorFrame:GetWidth() > 1 then
+            elseif anchor:IsShown() and anchor:GetWidth() > 1 then
                 -- Visible frame: anchor directly
-                local shade = _blizzOwnedOverlays[spec_def.label]
+                local shade = _blizzOwnedOverlays[def.label]
                 if not shade then
-                    shade = CreateBlizzOwnedOverlay(spec_def, hostFrame)
-                    _blizzOwnedOverlays[spec_def.label] = shade
+                    shade = CreateBlizzOwnedOverlay(def, hostFrame)
+                    _blizzOwnedOverlays[def.label] = shade
                 end
                 -- Same strata as the regular movers (FULLSCREEN_DIALOG) but a lower level
                 -- (movers sit at unlockFrame+20), so non-Blizzard overlays always render
@@ -1658,29 +1658,29 @@ CUI_NS.unlockParts.Tools = function(LM)
                 shade:SetFrameStrata("FULLSCREEN_DIALOG")
                 shade:SetFrameLevel(hostFrame:GetFrameLevel() + 15)
                 shade:ClearAllPoints()
-                if spec_def.anchor then
-                    spec_def.anchor(shade, anchorFrame)
+                if def.anchor then
+                    def.anchor(shade, anchor)
                 else
-                    shade:SetAllPoints(anchorFrame)
+                    shade:SetAllPoints(anchor)
                 end
                 shade._forceCollapse()
                 shade:Show()
-            elseif spec_def.showAlways then
+            elseif def.showAlways then
                 -- Hidden frame but showAlways: position at frame's location with fallback size
-                local shade = _blizzOwnedOverlays[spec_def.label]
+                local shade = _blizzOwnedOverlays[def.label]
                 if not shade then
-                    shade = CreateBlizzOwnedOverlay(spec_def, hostFrame)
-                    _blizzOwnedOverlays[spec_def.label] = shade
+                    shade = CreateBlizzOwnedOverlay(def, hostFrame)
+                    _blizzOwnedOverlays[def.label] = shade
                 end
                 -- FULLSCREEN_DIALOG (below movers at +20, above the dimmer at +1) so
                 -- non-Blizzard overlays always render above Blizzard Edit Mode overlays.
                 shade:SetFrameStrata("FULLSCREEN_DIALOG")
                 shade:SetFrameLevel(hostFrame:GetFrameLevel() + 15)
                 shade:ClearAllPoints()
-                shade:SetSize(spec_def.fallbackW or 200, spec_def.fallbackH or 40)
+                shade:SetSize(def.fallbackW or 200, def.fallbackH or 40)
                 -- Read the frame's current anchor or fall back to bottom center
-                local pt, rel, rpt, ox, oy = anchorFrame:GetPoint(1)
-                local yAdj = spec_def.yOffset or 0
+                local pt, rel, rpt, ox, oy = anchor:GetPoint(1)
+                local yAdj = def.yOffset or 0
                 if pt and rel then
                     shade:SetPoint(pt, rel, rpt or pt, ox or 0, (oy or 0) + yAdj)
                 else

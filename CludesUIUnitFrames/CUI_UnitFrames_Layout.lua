@@ -278,9 +278,9 @@ local function ApplyClassColor(fontStr, unitToken, useClassColor, customR, custo
         -- directly, so recover the real color here the same way the health bar does:
         -- the user's custom color when the unit matches a group member, else Blizzard's.
         if UnitIsPlayer(unitToken) or (UnitInPartyIsAI and UnitInPartyIsAI(unitToken)) then
-            local _, classFile = UnitClass(unitToken)
-            if issecretvalue(classFile) then
-                local success, sr, sg, scrollBar = ResolveRestrictedClassColor(unitToken, classFile)
+            local _, class = UnitClass(unitToken)
+            if issecretvalue(class) then
+                local success, sr, sg, scrollBar = ResolveRestrictedClassColor(unitToken, class)
                 if success then
                     fontStr:SetTextColor(sr, sg, scrollBar)
                     return
@@ -402,7 +402,7 @@ CludesUI._UFRecolorAllTexts = function()
 end
 
 -- Bottom text bar frame: below the health+power area, above the castbar.
-local function CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, xOffset, overrideWidth)
+local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, overrideWidth)
     local btbH = prefs.bottomTextBarHeight or 16
     local btbPos = prefs.btbPosition or "bottom"
     local isDetached = (btbPos == "detached_top" or btbPos == "detached_bottom")
@@ -414,13 +414,13 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, xOffse
     btb._isDetached = isDetached
 
     if btbPos == "top" then
-        Pix.Point(btb, "BOTTOMLEFT", widget.Health or anchorFrame, "TOPLEFT", xOffset or 0, 0)
+        Pix.Point(btb, "BOTTOMLEFT", widget.Health or anchor, "TOPLEFT", xOffset or 0, 0)
     elseif btbPos == "detached_top" then
         btb:SetPoint("BOTTOM", widget, "TOP", prefs.btbX or 0, 15 + (prefs.btbY or 0))
     elseif btbPos == "detached_bottom" then
         btb:SetPoint("TOP", widget, "BOTTOM", prefs.btbX or 0, -15 + (prefs.btbY or 0))
     else -- "bottom"
-        Pix.Point(btb, "TOPLEFT", anchorFrame, "BOTTOMLEFT", xOffset or 0, 0)
+        Pix.Point(btb, "TOPLEFT", anchor, "BOTTOMLEFT", xOffset or 0, 0)
     end
 
     local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
@@ -586,8 +586,8 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, xOffse
     btb.ClassIcon = classIconTex
 
     local function ApplyBTBClassIcon(s)
-        local look = s.btbClassIcon or "none"
-        if look == "none" then
+        local style = s.btbClassIcon or "none"
+        if style == "none" then
             classIconTex:Hide()
             return
         end
@@ -596,7 +596,7 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, xOffse
             classIconTex:Hide()
             return
         end
-        if not ApplyClassIconTexture(classIconTex, classToken, look) then
+        if not ApplyClassIconTexture(classIconTex, classToken, style) then
             classIconTex:Hide()
             return
         end
@@ -1065,30 +1065,27 @@ end
 -- axes and already read correctly at any bar shape, so rotating them fights the tiling
 -- and must NOT happen. Tiling is read back off the live fill texture rather than passed
 -- in, so this stays correct no matter which style function last touched the bar.
-function mod.ApplyFillRotation(barFrame)
-    if not (barFrame and barFrame.SetRotatesTexture) then
+function mod.ApplyFillRotation(bar)
+    if not (bar and bar.SetRotatesTexture) then
         return
     end
-    local vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
-    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
-    local tiled = fillTex
-        and (
-            (fillTex.GetHorizTile and fillTex:GetHorizTile())
-            or (fillTex.GetVertTile and fillTex:GetVertTile())
-        )
-    barFrame:SetRotatesTexture((vert and not tiled) and true or false)
+    local vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    local tiled = fill
+        and ((fill.GetHorizTile and fill:GetHorizTile()) or (fill.GetVertTile and fill:GetVertTile()))
+    bar:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
 -- Vertical health fill. SetOrientation drives the fill AXIS; healthReverseFill still
 -- flips direction WITHIN that axis (horizontal: left-right/right-left; vertical:
 -- bottom-top/top-bottom). On ns so the options preview paints the same way.
-function mod.ApplyHealthOrientation(barFrame, prefs)
-    if not barFrame then
+function mod.ApplyHealthOrientation(bar, prefs)
+    if not bar then
         return
     end
     local vert = (prefs and prefs.healthVerticalFill) and true or false
-    barFrame:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
-    mod.ApplyFillRotation(barFrame)
+    bar:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
+    mod.ApplyFillRotation(bar)
     return vert
 end
 
@@ -1101,46 +1098,46 @@ local function CreateHealthBar(widget, unitToken, height, xOffset, prefs, rightI
     local ppPos = mod.UF_PowerPos(prefs)
     local powerAboveOff = (ppPos == "above") and (prefs.powerHeight or 0) or 0
 
-    local healthBar = CreateFrame("StatusBar", nil, widget)
-    healthBar:SetFrameStrata(widget:GetFrameStrata())
-    healthBar:SetFrameLevel(widget:GetFrameLevel() + 2)
+    local health = CreateFrame("StatusBar", nil, widget)
+    health:SetFrameStrata(widget:GetFrameStrata())
+    health:SetFrameLevel(widget:GetFrameLevel() + 2)
     -- Two-point horizontal anchoring: width derives from the frame, so it can
     -- never exceed the frame boundary regardless of pixel-snapping rounding.
-    Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", xOffset, -powerAboveOff)
-    Pix.Point(healthBar, "RIGHT", widget, "RIGHT", -rightInset, 0)
-    Pix.Height(healthBar, height)
-    healthBar._xOffset = xOffset -- class power repositioning
-    healthBar._rightInset = rightInset -- class power repositioning
-    healthBar._topOffset = powerAboveOff -- SnapLayout re-anchoring
-    healthBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", xOffset, -powerAboveOff)
+    Pix.Point(health, "RIGHT", widget, "RIGHT", -rightInset, 0)
+    Pix.Height(health, height)
+    health._xOffset = xOffset -- class power repositioning
+    health._rightInset = rightInset -- class power repositioning
+    health._topOffset = powerAboveOff -- SnapLayout re-anchoring
+    health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    health:GetStatusBarTexture():SetHorizTile(false)
 
-    local bg = healthBar:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bg, "TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    Pix.Point(bg, "BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+    local bg = health:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bg, "TOPLEFT", health, "TOPLEFT", 0, 0)
+    Pix.Point(bg, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     bg:SetColorTexture(0, 0, 0, 0.5)
-    healthBar.bg = bg
+    health.bg = bg
 
-    healthBar.colorClass = true
-    healthBar.colorReaction = true
-    healthBar.colorTapped = true
-    healthBar.colorDisconnected = true
-    healthBar._cuiUnitKey = UnitToSettingsKey(unitToken)
+    health.colorClass = true
+    health.colorReaction = true
+    health.colorTapped = true
+    health.colorDisconnected = true
+    health._cuiUnitKey = UnitToSettingsKey(unitToken)
 
-    ApplyHealthBarTexture(healthBar, UnitToSettingsKey(unitToken))
-    ApplyHealthBarAlpha(healthBar, UnitToSettingsKey(unitToken))
-    healthBar:SetReverseFill(prefs.healthReverseFill and true or false)
-    mod.ApplyHealthOrientation(healthBar, prefs)
-    ApplyDarkTheme(healthBar, unitToken)
+    ApplyHealthBarTexture(health, UnitToSettingsKey(unitToken))
+    ApplyHealthBarAlpha(health, UnitToSettingsKey(unitToken))
+    health:SetReverseFill(prefs.healthReverseFill and true or false)
+    mod.ApplyHealthOrientation(health, prefs)
+    ApplyDarkTheme(health, unitToken)
 
     -- Smooth bar interpolation (opt-in).
     if prefs.smoothBars then
-        healthBar.smoothing = Enum
+        health.smoothing = Enum
             and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
     end
 
-    return healthBar
+    return health
 end
 
 Inner.SlotWidthMul, Inner.EstimateUFTextWidth, Inner.ApplyClassColor =

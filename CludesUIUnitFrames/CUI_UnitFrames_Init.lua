@@ -76,8 +76,8 @@ local function InitializeFrames()
     -- Only take over the Blizzard class power bar when the CUI player frame is
     -- actually being spawned; otherwise leave it to Blizzard's player frame.
     if classPowerStyle == "blizzard" and playerFrameSource == "cui" then
-        local _, classFile = UnitClass("player")
-        local frameName = BLIZZARD_CP_FRAMES[classFile]
+        local _, class = UnitClass("player")
+        local frameName = BLIZZARD_CP_FRAMES[class]
         local cpFrame = frameName and _G[frameName]
         if cpFrame then
             savedClassPowerBar = cpFrame
@@ -442,17 +442,17 @@ local function InitializeFrames()
     -- UIParent-parented bars).
     local _cpExpectedParent = nil
 
-    local function PositionClassPowerBar(barFrame)
-        if not barFrame or not frameList.player then
+    local function PositionClassPowerBar(bar)
+        if not bar or not frameList.player then
             return
         end
-        barFrame:ClearAllPoints()
+        bar:ClearAllPoints()
         -- Stock styles: the health bar keeps the kit's spot (the stock pass
         -- places it, and skips in combat), so only the pips move here.
         local stock = mod.UF_Blizz()
-        local look = saved.profile.player.classPowerStyle or "none"
+        local style = saved.profile.player.classPowerStyle or "none"
         if mod.UF_ForeverCPStyle then
-            look = mod.UF_ForeverCPStyle(look)
+            style = mod.UF_ForeverCPStyle(style)
         end
         local position = saved.profile.player.classPowerPosition or "top"
         local offsetX = saved.profile.player.classPowerBarX or 0
@@ -463,13 +463,13 @@ local function InitializeFrames()
         mod._cpWatchTick.Stop()
         mod._cpCastWatcher:Hide()
 
-        if look == "modern" and position == "above" then
+        if style == "modern" and position == "above" then
             -- Above health bar, inside the frame -- pips stretch to fill health bar width
             -- Bottom of pips flush with top of health bar, top of pips flush with top of border
             _cpExpectedParent = frameList.player
-            barFrame:SetParent(frameList.player)
+            bar:SetParent(frameList.player)
             local anchorFrame = frameList.player.Health
-            local pipH = barFrame._pipH or 3
+            local pipH = bar._pipH or 3
             -- Resize frame/portrait BEFORE anchoring health bar so _xOffset is correct
             ResizeFrameForClassPower(pipH)
             local btbOff = 0
@@ -489,25 +489,25 @@ local function InitializeFrames()
                 )
                 anchorFrame:SetPoint("RIGHT", frameList.player, "RIGHT", -(anchorFrame._rightInset or 0), 0)
             end
-            Pix.Point(barFrame, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
-            Pix.Point(barFrame, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
+            Pix.Point(bar, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
+            Pix.Point(bar, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
             local fw = saved.profile.player.frameWidth or 181
-            if barFrame._repositionForWidth then
-                barFrame._repositionForWidth(fw)
+            if bar._repositionForWidth then
+                bar._repositionForWidth(fw)
             end
             -- Show 1px bottom border matching frame border color
-            if barFrame._bottomBdrFrame then
+            if bar._bottomBdrFrame then
                 local bdrC = saved.profile.player.borderColor or { r = 0, g = 0, b = 0 }
-                barFrame._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
-                barFrame._bottomBdrFrame:Show()
+                bar._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
+                bar._bottomBdrFrame:Show()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
             end
-        elseif look == "modern" and position == "top" then
+        elseif style == "modern" and position == "top" then
             -- "top" floats above the frame (like "bottom" floats below) -- does NOT become part of the frame
             _cpExpectedParent = frameList.player
-            barFrame:SetParent(frameList.player)
+            bar:SetParent(frameList.player)
             ResizeFrameForClassPower(0)
             -- Reset health bar to normal position
             if frameList.player.Health and not stock then
@@ -533,9 +533,9 @@ local function InitializeFrames()
                 )
             end
             -- Center on health bar (ignores portrait)
-            Pix.Point(barFrame, "BOTTOM", frameList.player.Health, "TOP", offsetX, offsetY)
-            if barFrame._bottomBdrFrame then
-                barFrame._bottomBdrFrame:Hide()
+            Pix.Point(bar, "BOTTOM", frameList.player.Health, "TOP", offsetX, offsetY)
+            if bar._bottomBdrFrame then
+                bar._bottomBdrFrame:Hide()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
@@ -565,16 +565,16 @@ local function InitializeFrames()
                 )
             end
             _cpExpectedParent = UIParent
-            barFrame:SetParent(UIParent)
+            bar:SetParent(UIParent)
             local place = saved.profile.positions.classPower
             if place then
-                Pix.Point(barFrame, place.point, UIParent, place.point, place.x, place.y)
+                Pix.Point(bar, place.point, UIParent, place.point, place.x, place.y)
             else
-                Pix.Point(barFrame, "CENTER", UIParent, "CENTER", 0, -220)
+                Pix.Point(bar, "CENTER", UIParent, "CENTER", 0, -220)
             end
             ResizeFrameForClassPower(0)
-            if barFrame._bottomBdrFrame then
-                barFrame._bottomBdrFrame:Hide()
+            if bar._bottomBdrFrame then
+                bar._bottomBdrFrame:Hide()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
@@ -605,12 +605,12 @@ local function InitializeFrames()
             end
             -- "bottom" position -- flush with bottom of frame; shifts below castbar when visible (unless user set Y offset)
             _cpExpectedParent = frameList.player
-            barFrame:SetParent(frameList.player)
-            if barFrame._bottomBdrFrame then
-                barFrame._bottomBdrFrame:Hide()
+            bar:SetParent(frameList.player)
+            if bar._bottomBdrFrame then
+                bar._bottomBdrFrame:Hide()
             end
             local function AnchorBottom()
-                barFrame:ClearAllPoints()
+                bar:ClearAllPoints()
                 local baseY = -1 + offsetY
                 if offsetY == 0 then
                     local castbarBg = frameList.player.Castbar and frameList.player.Castbar:GetParent()
@@ -626,7 +626,7 @@ local function InitializeFrames()
                         baseY = -1 - ch
                     end
                 end
-                Pix.Point(barFrame, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
+                Pix.Point(bar, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
             end
             AnchorBottom()
             -- Stock styles: the stock pass re-seats the kit.
@@ -642,8 +642,8 @@ local function InitializeFrames()
                 -- this closure, never on the bar (Blizzard's own frame under the
                 -- Blizzard style).
                 local watcher = mod._cpCastWatcher
-                if watcher:GetParent() ~= barFrame then
-                    watcher:SetParent(barFrame)
+                if watcher:GetParent() ~= bar then
+                    watcher:SetParent(bar)
                 end
                 local playerFrame = frameList.player
                 local lastCastVis
@@ -664,9 +664,9 @@ local function InitializeFrames()
             end
             ResizeFrameForClassPower(0)
         end
-        barFrame:SetFrameStrata(frameList.player:GetFrameStrata())
-        barFrame:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
-        barFrame:Show()
+        bar:SetFrameStrata(frameList.player:GetFrameStrata())
+        bar:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
+        bar:Show()
     end
 
     -- Hook Blizzard class power bar so form/spec changes can't steal it back. Hooks
@@ -793,13 +793,13 @@ local function InitializeFrames()
 
     -- Live toggle for class power bar (no reload needed)
     -- Called with the style string: "none", "modern", or "blizzard"
-    frameList._toggleClassPower = function(look)
+    frameList._toggleClassPower = function(style)
         -- Class power is a player-frame feature; if the player is on Blizzard's
         -- default frame (or hidden), there is no CUI frame to attach it to.
         if not frameList.player then
             return
         end
-        look = look or saved.profile.player.classPowerStyle or "none"
+        style = style or saved.profile.player.classPowerStyle or "none"
         -- What is actually BUILT right now. Read by the reload pass below to
         -- notice a style that changed through a path which never calls this
         -- function (see the reload hook).
@@ -807,15 +807,15 @@ local function InitializeFrames()
         -- Blizzard's class resource frame; it re-judges when the built style
         -- crosses "blizzard" (below) instead of waiting for its next rebuild.
         local wasBlizz = frameList._classPowerBuiltStyle == "blizzard"
-        frameList._classPowerBuiltStyle = look
+        frameList._classPowerBuiltStyle = style
         -- Keep showClassPowerBar in sync with style
-        saved.profile.player.showClassPowerBar = (look ~= "none")
-        saved.profile.player.classPowerStyle = look
+        saved.profile.player.showClassPowerBar = (style ~= "none")
+        saved.profile.player.classPowerStyle = style
         -- WoW Forever: the saved style stays as given; its effective style
         -- (ns.UF_ForeverCPStyle) is what builds and what the marker records.
         if mod.UF_ForeverCPStyle then
-            look = mod.UF_ForeverCPStyle(look)
-            frameList._classPowerBuiltStyle = look
+            style = mod.UF_ForeverCPStyle(style)
+            frameList._classPowerBuiltStyle = style
         end
         -- WoW Forever: the "Blizzard" entry is the combo point arc on the
         -- frame Combo Points names (returns at once everywhere else).
@@ -835,7 +835,7 @@ local function InitializeFrames()
             mod._cpCastWatcher:Hide()
             -- Handed on to Resource Bars' Blizzard Class Resource Art: left shown, so
             -- it appears there at once (Blizzard only re-shows it from its own Setup).
-            if not (look ~= "blizzard" and _G._CURB_BlizzArtWanted and _G._CURB_BlizzArtWanted()) then
+            if not (style ~= "blizzard" and _G._CURB_BlizzArtWanted and _G._CURB_BlizzArtWanted()) then
                 frameList._classPowerBar:Hide()
             end
             frameList._classPowerBar:ClearAllPoints()
@@ -848,7 +848,7 @@ local function InitializeFrames()
         -- Class Resource Art (if on) claims it now rather than at its next rebuild.
         if
             wasBlizz
-            and look ~= "blizzard"
+            and style ~= "blizzard"
             and _G._CURB_BlizzArtWanted
             and _G._CURB_BlizzArtWanted()
             and _G._CURB_Apply
@@ -856,7 +856,7 @@ local function InitializeFrames()
             _G._CURB_Apply()
         end
 
-        if look == "none" then
+        if style == "none" then
             -- Reset health bar to normal position (a stock style's kit owns it)
             if frameList.player and frameList.player.Health and not mod.UF_Blizz() then
                 local btbOff = 0
@@ -884,9 +884,9 @@ local function InitializeFrames()
             return
         end
 
-        if look == "blizzard" then
-            local _, classFile = UnitClass("player")
-            local frameName = BLIZZARD_CP_FRAMES[classFile]
+        if style == "blizzard" then
+            local _, class = UnitClass("player")
+            local frameName = BLIZZARD_CP_FRAMES[class]
             local cpFrame = frameName and _G[frameName]
             if cpFrame then
                 -- A Blizzard parent only (see the login takeover above).
@@ -911,7 +911,7 @@ local function InitializeFrames()
             end
         else
             -- Modern
-            local custom = CreateCustomClassPower(frameList.player, look)
+            local custom = CreateCustomClassPower(frameList.player, style)
             if custom then
                 frameList._customClassPower = custom
                 frameList._classPowerBar = custom
@@ -1115,8 +1115,8 @@ local function InitializeFrames()
 
             -- Helper: resolve which texture file + coords to use
             local function ApplyCombatTexture()
-                local look = ps.combatIndicatorStyle or ciDefStyle
-                if look == "none" then
+                local style = ps.combatIndicatorStyle or ciDefStyle
+                if style == "none" then
                     combat:Hide()
                     return
                 end
@@ -1158,15 +1158,15 @@ local function InitializeFrames()
                 -- All custom combat icons (Arcade/Dungeoneer/Classic/Cross/Circle/Square =
                 -- combat0..5) are shown exactly as authored: no class theming, no tint, no
                 -- desaturation. Standard/Class Theme below are tinted by the colour mode.
-                if look:find("^combat%d") then
-                    combat:SetTexture(COMBAT_MEDIA .. look .. ".tga")
+                if style:find("^combat%d") then
+                    combat:SetTexture(COMBAT_MEDIA .. style .. ".tga")
                     combat:SetTexCoord(0, 1, 0, 1)
                     if combat.SetDesaturated then
                         combat:SetDesaturated(false)
                     end
                     combat:SetVertexColor(1, 1, 1, 1)
                 else
-                    if look == "class" then
+                    if style == "class" then
                         combat:SetTexture(COMBAT_MEDIA .. "combat-indicator-class-custom.png")
                         local coords = classToken and CLASS_FULL_COORDS[classToken]
                         if coords then
@@ -1209,8 +1209,8 @@ local function InitializeFrames()
             end
             local combatFrame = popFrame._combatEventFrame
             combatFrame:SetScript("OnEvent", function()
-                local look = ps.combatIndicatorStyle or ciDefStyle
-                if look ~= "none" and UnitAffectingCombat(ciUnit) then
+                local style = ps.combatIndicatorStyle or ciDefStyle
+                if style ~= "none" and UnitAffectingCombat(ciUnit) then
                     ApplyCombatTexture()
                     combat:Show()
                 else
@@ -1219,8 +1219,8 @@ local function InitializeFrames()
             end)
 
             -- Set correct initial state
-            local look = ps.combatIndicatorStyle or ciDefStyle
-            if look ~= "none" and UnitAffectingCombat(ciUnit) then
+            local style = ps.combatIndicatorStyle or ciDefStyle
+            if style ~= "none" and UnitAffectingCombat(ciUnit) then
                 ApplyCombatTexture()
                 combat:Show()
             end
@@ -1533,17 +1533,12 @@ local function InitializeFrames()
                 return
             end
             local texture = uf._factionIndicator
-            local modeName = s.factionIndicatorMode or "off"
+            local mode = s.factionIndicatorMode or "off"
             -- The frame's base unit, not its live token: the player frame swaps to
             -- "vehicle" on a ride, but this badge (like Blizzard's PvP icon) and
             -- the UNIT_FACTION registration below are about the player.
             local unitToken = uf._cuiBaseUnit
-            if
-                modeName == "off"
-                or not unitToken
-                or issecretvalue(unitToken)
-                or not UnitExists(unitToken)
-            then
+            if mode == "off" or not unitToken or issecretvalue(unitToken) or not UnitExists(unitToken) then
                 texture:Hide()
                 return
             end
@@ -1564,7 +1559,7 @@ local function InitializeFrames()
             if atlas and unitToken == "player" and UnitIsMercenary("player") then
                 fac = (fac == "Horde") and "Alliance" or "Horde"
             end
-            if atlas and modeName == "opposite" and unitToken ~= "player" then
+            if atlas and mode == "opposite" and unitToken ~= "player" then
                 local mine = UnitFactionGroup("player")
                 if issecretvalue(mine) then
                     atlas = nil
@@ -1598,17 +1593,17 @@ local function InitializeFrames()
                 -- Paint only on a real change: faction, style, dim and the honor
                 -- badge are the paint's only inputs (the texture is ours, so the
                 -- memo lives on it).
-                local look = s.factionIndicatorStyle or "pvp"
-                local badge = CludesUI.FactionBadgeFor(look, unitToken)
+                local style = s.factionIndicatorStyle or "pvp"
+                local badge = CludesUI.FactionBadgeFor(style, unitToken)
                 if
                     texture._facFac ~= fac
-                    or texture._facStyle ~= look
+                    or texture._facStyle ~= style
                     or texture._facDim ~= dim
                     or texture._facBadge ~= badge
                 then
                     texture._facFac, texture._facStyle, texture._facDim, texture._facBadge =
-                        fac, look, dim, badge
-                    CludesUI.SetFactionArt(texture, look, fac, badge)
+                        fac, style, dim, badge
+                    CludesUI.SetFactionArt(texture, style, fac, badge)
                     texture:SetDesaturated(dim)
                     texture:SetAlpha(dim and 0.6 or 1)
                 end

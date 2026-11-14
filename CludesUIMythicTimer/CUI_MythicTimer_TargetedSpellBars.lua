@@ -31,8 +31,8 @@ end
 --------------------------------------------------------------------------------
 -- A bar's target text names a player, so the bar texts take a font family
 -- (Cyrillic, Korean and Chinese names draw); no plain SetFont may reach them after it.
-local function SetFSFont(fontStr, dim)
-    CludesUI.ApplyModuleFontFamily(fontStr, nil, dim, "mythicTimer")
+local function SetFSFont(fontStr, size)
+    CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer")
 end
 
 --------------------------------------------------------------------------------
@@ -395,14 +395,14 @@ end
 
 -- anchor: the frame the slot stacks from (the options header sample's host);
 -- the live group passes nothing and stacks from its container.
-local function PositionBar(holderFrame, slotIndex, conf, anchorFrame)
-    anchorFrame = anchorFrame or boxHolder
+local function PositionBar(holderFrame, slot, conf, anchor)
+    anchor = anchor or boxHolder
     holderFrame:ClearAllPoints()
-    local offset = (slotIndex - 1) * ((conf.height or 20) + (conf.spacing or 4))
+    local off = (slot - 1) * ((conf.height or 20) + (conf.spacing or 4))
     if conf.growUp then
-        holderFrame:SetPoint("BOTTOMLEFT", anchorFrame, "BOTTOMLEFT", 0, offset)
+        holderFrame:SetPoint("BOTTOMLEFT", anchor, "BOTTOMLEFT", 0, off)
     else
-        holderFrame:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, -offset)
+        holderFrame:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, -off)
     end
 end
 
@@ -529,7 +529,7 @@ local impScratch = {}
 local function ApplyCastColor(e, conf, offCd)
     local holderFrame = e.bar
     holderFrame.overlay:SetAlphaFromBoolean(e._kickProtected)
-    local baseValue = conf.barColor or { r = 0.70, g = 0.40, b = 0.90 }
+    local base = conf.barColor or { r = 0.70, g = 0.40, b = 0.90 }
     local ev = C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean
     if conf.importantEnabled and ev then
         local imp = e._important
@@ -537,19 +537,19 @@ local function ApplyCastColor(e, conf, offCd)
             imp = false
         end
         local ic = conf.importantColor or { r = 1, g = 0.2, b = 0.2 }
-        impScratch.r = ev(imp, ic.r, baseValue.r)
-        impScratch.g = ev(imp, ic.g, baseValue.g)
-        impScratch.b = ev(imp, ic.b, baseValue.b)
-        baseValue = impScratch
+        impScratch.r = ev(imp, ic.r, base.r)
+        impScratch.g = ev(imp, ic.g, base.g)
+        impScratch.b = ev(imp, ic.b, base.b)
+        base = impScratch
     end
-    local cr, cg, cb = baseValue.r, baseValue.g, baseValue.b
+    local cr, cg, cb = base.r, base.g, base.b
     local ready = conf.interruptReady or { r = 0.92, g = 0.35, b = 0.20 }
     if type(offCd) ~= "nil" and ev then
-        cr = ev(offCd, baseValue.r, ready.r)
-        cg = ev(offCd, baseValue.g, ready.g)
-        cb = ev(offCd, baseValue.b, ready.b)
+        cr = ev(offCd, base.r, ready.r)
+        cg = ev(offCd, base.g, ready.g)
+        cb = ev(offCd, base.b, ready.b)
     elseif ComputeCastBarTint then
-        cr, cg, cb = ComputeCastBarTint(ready, baseValue)
+        cr, cg, cb = ComputeCastBarTint(ready, base)
     end
     holderFrame.sb:GetStatusBarTexture():SetVertexColor(cr, cg, cb)
 end
@@ -630,18 +630,18 @@ end
 --  miss or before any kind has been cached, so behaviour never regresses.
 --------------------------------------------------------------------------------
 local function GetDurationObj(e)
-    local kindOf = e.durKind
-    if kindOf == "cast" then
+    local kind = e.durKind
+    if kind == "cast" then
         local d = UnitCastingDuration(e.unit)
         if d then
             return d
         end
-    elseif kindOf == "empowered" then
+    elseif kind == "empowered" then
         local d = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(e.unit, true)
         if d then
             return d
         end
-    elseif kindOf == "channel" then
+    elseif kind == "channel" then
         local d = UnitChannelDuration and UnitChannelDuration(e.unit)
         if d then
             return d
@@ -792,9 +792,9 @@ local function PaintTarget(e, conf)
         return
     end
     if conf.targetClassColor ~= false and type(spellTargetClass) ~= "nil" and C_ClassColor then
-        local column = C_ClassColor.GetClassColor(spellTargetClass)
-        if column then
-            fontStr:SetTextColor(column:GetRGB())
+        local col = C_ClassColor.GetClassColor(spellTargetClass)
+        if col then
+            fontStr:SetTextColor(col:GetRGB())
         else
             fontStr:SetTextColor(1, 1, 1, 1)
         end
@@ -1270,9 +1270,9 @@ local PREVIEW_ROWS = {
 -- container) and paint the static content. `e` is an entry table (e.bar,
 -- e._important), shared by the on-screen preview and the options header
 -- sample.
-local function PaintSampleRow(e, conf, sample, slotIndex, anchorFrame)
+local function PaintSampleRow(e, conf, sample, slot, anchor)
     StyleBar(e.bar, conf)
-    PositionBar(e.bar, slotIndex, conf, anchorFrame)
+    PositionBar(e.bar, slot, conf, anchor)
     e.bar:SetAlpha(1)
     e.bar.icon:SetTexture(134400)
     local hasTarget = conf.showTarget ~= false
@@ -1281,9 +1281,9 @@ local function PaintSampleRow(e, conf, sample, slotIndex, anchorFrame)
         if conf.targetClassColor ~= false and C_ClassColor and UnitClassBase then
             -- Class token only: UnitClassBase also returns the class ID, which
             -- would land in GetClassColor's optional tint color argument.
-            local column = C_ClassColor.GetClassColor((UnitClassBase("player")))
-            if column then
-                e.bar.target:SetTextColor(column:GetRGB())
+            local col = C_ClassColor.GetClassColor((UnitClassBase("player")))
+            if col then
+                e.bar.target:SetTextColor(col:GetRGB())
             end
         elseif tc then
             e.bar.target:SetTextColor(tc.r, tc.g, tc.b, 1)
@@ -1370,18 +1370,18 @@ local sampleEntry = { unit = "sample", preview = true }
 
 -- Hangs the sample at the host's TOPLEFT and returns its size (width, height
 -- in the host's units); nil before the settings exist.
-function mod.TSB_PaintSample(hostRegion)
+function mod.TSB_PaintSample(host)
     local conf = Cfg()
     if not conf then
         return nil
     end
     if not sampleBar then
-        sampleBar = BuildBar(hostRegion)
+        sampleBar = BuildBar(host)
     end
     sampleEntry.bar = sampleBar
-    sampleBar:SetParent(hostRegion)
+    sampleBar:SetParent(host)
     sampleBar._styleGen = nil
-    PaintSampleRow(sampleEntry, conf, PREVIEW_ROWS[1], 1, hostRegion)
+    PaintSampleRow(sampleEntry, conf, PREVIEW_ROWS[1], 1, host)
     return conf.width or 240, conf.height or 20
 end
 

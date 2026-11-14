@@ -23,7 +23,7 @@ end
 
 local CUI = CludesUI
 local Theme = Skin.Theme
-local floor, min, upper = math.floor, math.min, math.max
+local floor, min, max = math.floor, math.min, math.max
 local band = bit.band
 local MAX_COSTS = MAX_ITEM_COST or 3
 
@@ -64,13 +64,13 @@ local function BagRoom(itemId, stackSize)
             fits = not bagFamily or bagFamily == 0 or band(bagFamily, family) ~= 0
         end
         if fits then
-            for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-                local ident = C_Container.GetContainerItemID(bag, slotIndex)
+            for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                local ident = C_Container.GetContainerItemID(bag, slot)
                 if not ident then
                     room = room + stackSize
                 elseif ident == itemId then
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
-                    local free = upper(stackSize - (details and details.stackCount or stackSize), 0)
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
+                    local free = max(stackSize - (details and details.stackCount or stackSize), 0)
                     room = room + free
                     partial = partial + free
                 end
@@ -84,7 +84,7 @@ end
 -- currency cost allow. Each limit goes into limits for the tooltips: fit,
 -- afford (math.huge for a free item) and stock (-1 for unlimited) in
 -- purchases, partial in items.
-local function MaxBundles(slotPos, details, itemId, step, stackSize)
+local function MaxBundles(index, details, itemId, step, stackSize)
     local room, partial = BagRoom(itemId, stackSize)
     local fit = floor(min(room, 999999) / step)
     local afford = math.huge
@@ -92,7 +92,7 @@ local function MaxBundles(slotPos, details, itemId, step, stackSize)
         afford = floor(GetMoney() / details.price)
     end
     for idx = 1, MAX_COSTS do
-        local _, value, itemLink, currencyName = GetMerchantItemCostItem(slotPos, idx)
+        local _, value, itemLink, currencyName = GetMerchantItemCostItem(index, idx)
         if itemLink and value and value > 0 then
             local have
             if currencyName then
@@ -111,17 +111,17 @@ local function MaxBundles(slotPos, details, itemId, step, stackSize)
         num = min(num, details.numAvailable)
     end
     limits.fit, limits.afford, limits.stock, limits.partial = fit, afford, details.numAvailable, partial
-    return upper(num, 0)
+    return max(num, 0)
 end
 
-local function CostText(slotPos, details, bundles)
+local function CostText(index, details, bundles)
     local parts = costParts
     wipe(parts)
     if details.price > 0 then
         parts[#parts + 1] = C_CurrencyInfo.GetCoinTextureString(details.price * bundles)
     end
     for idx = 1, MAX_COSTS do
-        local texture, value = GetMerchantItemCostItem(slotPos, idx)
+        local texture, value = GetMerchantItemCostItem(index, idx)
         if texture and value and value > 0 then
             parts[#parts + 1] = (value * bundles) .. " |T" .. texture .. ":0|t"
         end
@@ -131,11 +131,11 @@ end
 
 -- A purchase paid in a limited currency: Blizzard confirms it with its own
 -- prompt, which says when it is the last one you can make.
-local function LimitedCurrencyCost(slotPos)
-    if (GetMerchantItemCostInfo(slotPos) or 0) ~= 1 then
+local function LimitedCurrencyCost(index)
+    if (GetMerchantItemCostInfo(index) or 0) ~= 1 then
         return false
     end
-    local _, _, itemLink = GetMerchantItemCostItem(slotPos, 1)
+    local _, _, itemLink = GetMerchantItemCostItem(index, 1)
     local limited = C_Item.GetLimitedCurrencyItemInfo
     return itemLink ~= nil and limited ~= nil and limited(itemLink) ~= nil
 end
@@ -166,7 +166,7 @@ local function StopJob()
     end
     local got = C_Item.GetItemCount(jdx.itemID) - jdx.base
     if got < jdx.target then
-        CUI.Print(CludesUI.Lf("Bulk Buy stopped after %1$d of %2$d.", upper(got, 0), jdx.target))
+        CUI.Print(CludesUI.Lf("Bulk Buy stopped after %1$d of %2$d.", max(got, 0), jdx.target))
     end
 end
 
@@ -197,16 +197,16 @@ local function StepJob()
 end
 
 -- One order at a time: a new one ends the run still going (and says so).
-local function StartJob(slotPos, itemId, qty, step, chunk)
+local function StartJob(index, itemId, qty, step, chunk)
     if job then
         StopJob()
     end
-    if GetMerchantItemID(slotPos) ~= itemId then
+    if GetMerchantItemID(index) ~= itemId then
         return
     end
     local total = C_Item.GetItemCount(itemId)
     job = {
-        index = slotPos,
+        index = index,
         itemID = itemId,
         target = qty,
         step = step,
@@ -232,20 +232,20 @@ end
 -- or money changes) and closes the window once its button moved on.
 local function Refresh()
     local d = dialog
-    local slotPos, ownerFrame = d._index, d._owner
-    local details = (MerchantFrame.selectedTab or 1) == 1 and C_MerchantFrame.GetItemInfo(slotPos)
+    local index, ownerFrame = d._index, d._owner
+    local details = (MerchantFrame.selectedTab or 1) == 1 and C_MerchantFrame.GetItemInfo(index)
     if
         not details
-        or GetMerchantItemID(slotPos) ~= d._itemID
+        or GetMerchantItemID(index) ~= d._itemID
         or not ownerFrame:IsVisible()
-        or ownerFrame:GetID() ~= slotPos
+        or ownerFrame:GetID() ~= index
     then
         d:Hide()
         return
     end
     d._info = details
-    local step = upper(details.stackCount, 1)
-    d:SetRange(step, MaxBundles(slotPos, details, d._itemID, step, d._stackSize) * step, d._chunk)
+    local step = max(details.stackCount, 1)
+    d:SetRange(step, MaxBundles(index, details, d._itemID, step, d._stackSize) * step, d._chunk)
     if d._eb:HasFocus() and d._eb:GetNumber() <= d._max then
         ShowCost(d:Current())
     else
@@ -256,7 +256,7 @@ end
 local function DoBuy()
     local d = dialog
     local qty = d:Current()
-    local slotPos, itemId, step, chunk, details = d._index, d._itemID, d._step, d._chunk, d._info
+    local index, itemId, step, chunk, details = d._index, d._itemID, d._step, d._chunk, d._info
     d:Hide()
     if qty < step then
         return
@@ -264,16 +264,16 @@ local function DoBuy()
     local bundles = qty / step
     local function start()
         confirm = nil
-        StartJob(slotPos, itemId, qty, step, chunk)
+        StartJob(index, itemId, qty, step, chunk)
     end
     if details.hasExtendedCost or details.price * bundles >= (MERCHANT_HIGH_PRICE_COST or 1500000) then
         local msg = CludesUI.Lf(
             "Buy %1$d x %2$s for %3$s?",
             qty,
-            GetMerchantItemLink(slotPos) or details.name or "",
-            CostText(slotPos, details, bundles)
+            GetMerchantItemLink(index) or details.name or "",
+            CostText(index, details, bundles)
         )
-        if not C_MerchantFrame.IsMerchantItemRefundable(slotPos) then
+        if not C_MerchantFrame.IsMerchantItemRefundable(index) then
             msg = msg .. "\n\n" .. CludesUI.L("This purchase is not refundable.")
         end
         confirm = CUI:ShowConfirmPopup({
@@ -348,7 +348,7 @@ end
 local function StackTip()
     local d = dialog
     local num = floor(min(NextStack(), d._max) / d._step) * d._step
-    local t = CludesUI.Lf("+1 Stack goes to: %s", Accent(upper(num, 0)))
+    local t = CludesUI.Lf("+1 Stack goes to: %s", Accent(max(num, 0)))
         .. "\n"
         .. CludesUI.Lf("Stack size: %d", d._stackSize)
     if limits.partial > 0 then
@@ -372,8 +372,8 @@ local SKIN = {
         Skin.SolidTex(d, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, 1):SetAllPoints()
         Skin.AddBorder(d)
     end,
-    font = function(fontStr, dim)
-        Skin.Font(fontStr, nil, nil, nil, dim)
+    font = function(fontStr, size)
+        Skin.Font(fontStr, nil, nil, nil, size)
     end,
     button = function(hostFrame, wid, hgt, labelText)
         local b = CUI.MakePopupButton(
@@ -481,11 +481,11 @@ local refreshSoon = Skin.Debounce(Validate)
 
 -- A shift-click on an item sold one at a time, unless it went into a focused
 -- edit box (not the window's own) as a link.
-local function SingleBuyClick(slotPos)
+local function SingleBuyClick(index)
     local focus = GetCurrentKeyBoardFocus()
     return (MerchantFrame.selectedTab or 1) == 1
         and IsModifiedClick("SPLITSTACK")
-        and GetMerchantItemMaxStack(slotPos) == 1
+        and GetMerchantItemMaxStack(index) == 1
         and (not focus or (dialog ~= nil and focus == dialog._eb))
         and not CUI.PadGamepadUI()
 end
@@ -494,26 +494,26 @@ local function TakeOver(btnFrame)
     if not Enabled() then
         return
     end
-    local slotPos = btnFrame:GetID()
+    local index = btnFrame:GetID()
     local split = CUI.StackSplitFor(btnFrame)
-    if not split and not (slotPos and SingleBuyClick(slotPos)) then
+    if not split and not (index and SingleBuyClick(index)) then
         return
     end
-    local itemId = slotPos and GetMerchantItemID(slotPos)
-    local details = itemId and C_MerchantFrame.GetItemInfo(slotPos)
-    if not details or details.currencyID or LimitedCurrencyCost(slotPos) then
+    local itemId = index and GetMerchantItemID(index)
+    local details = itemId and C_MerchantFrame.GetItemInfo(index)
+    if not details or details.currencyID or LimitedCurrencyCost(index) then
         return
     end
     if split then
         CUI.TakeStackSplit()
     end
     dialog = dialog or CreateDialog()
-    local step = upper(details.stackCount, 1)
-    dialog._owner, dialog._index, dialog._itemID = btnFrame, slotPos, itemId
-    local maxStack = GetMerchantItemMaxStack(slotPos)
-    dialog._chunk = upper(floor((maxStack or step) / step) * step, step)
+    local step = max(details.stackCount, 1)
+    dialog._owner, dialog._index, dialog._itemID = btnFrame, index, itemId
+    local maxStack = GetMerchantItemMaxStack(index)
+    dialog._chunk = max(floor((maxStack or step) / step) * step, step)
     -- An item not loaded yet reads no stack size: one purchase's cap stands in.
-    dialog._stackSize = upper(C_Item.GetItemMaxStackSizeByID(itemId) or maxStack or step, 1)
+    dialog._stackSize = max(C_Item.GetItemMaxStackSizeByID(itemId) or maxStack or step, 1)
     dialog._eb:SetText(tostring(step))
     -- Buy wears the accent, read on every open (it can change at any time).
     local b = dialog._buttons

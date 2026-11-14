@@ -57,13 +57,13 @@ end
 -- other players' writing): the chosen font draws what it can, Blizzard's Cyrillic,
 -- Korean and Chinese faces the rest. Once a string has its family, every later font
 -- write to it goes through this helper (or SetFontFamily), never a plain SetFont.
-local function SetFSFont(fontStr, dim, flags)
+local function SetFSFont(fontStr, size, flags)
     -- "Never Show Slug": gates the explicit-flag path so hardcoded aura
     -- "OUTLINE, SLUG" literals drop the slug (body text is gated at the source).
     CludesUI.ApplyModuleFontFamily(
         fontStr,
         nil,
-        dim or 11,
+        size or 11,
         "nameplates",
         CludesUI.SlugFlag(flags or GetNPOutline())
     )
@@ -1006,7 +1006,7 @@ function mod.ApplyCustomBorderStyle(backing, szOverride)
     if not szOverride then
         px = CludesUI.BorderPx(p and p.customBorderSizePx, sz, texture)
     end
-    local column = (p and p.customBorderColor) or defaultSet.customBorderColor
+    local col = (p and p.customBorderColor) or defaultSet.customBorderColor
     local a = (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
     local behind = p and p.customBorderBehind
     if behind == nil then
@@ -1030,9 +1030,9 @@ function mod.ApplyCustomBorderStyle(backing, szOverride)
     CludesUI.ApplyBorderStyle(
         bf,
         sz,
-        column.r,
-        column.g,
-        column.b,
+        col.r,
+        col.g,
+        col.b,
         a,
         texture,
         p and p.customBorderOffset,
@@ -1065,9 +1065,9 @@ function mod.ApplyCustomBorderColor(backing)
     if not (CludesUI and CludesUI.SetBorderStyleColor) then
         return
     end
-    local column = (p and p.customBorderColor) or defaultSet.customBorderColor
+    local col = (p and p.customBorderColor) or defaultSet.customBorderColor
     local a = (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
-    CludesUI.SetBorderStyleColor(backing._customBorder, column.r, column.g, column.b, a)
+    CludesUI.SetBorderStyleColor(backing._customBorder, col.r, col.g, col.b, a)
 end
 function mod.HideCustomBorder(backing)
     local bf = backing and backing._customBorder
@@ -1252,8 +1252,8 @@ function mod.NP_UpdateCustomBorderWrap(backing)
         backing.castLeftBorder:Hide()
     end
     -- Tint the full-size cast icon's border like the wrapped bar (the Basic wrap's rule).
-    local glyph = backing.castIconFrame
-    if glyph and Pix.GetBorders(glyph) then
+    local icon = backing.castIconFrame
+    if icon and Pix.GetBorders(icon) then
         if
             p
             and p.castIconTargetBorder
@@ -1263,9 +1263,9 @@ function mod.NP_UpdateCustomBorderWrap(backing)
             and UnitIsUnit(backing.unit, "target")
             and mod.GetTargetGlowBorderColor()
         then
-            Pix.SetBorderColor(glyph, r, g, b, a)
+            Pix.SetBorderColor(icon, r, g, b, a)
         else
-            Pix.SetBorderColor(glyph, 0, 0, 0, 1)
+            Pix.SetBorderColor(icon, 0, 0, 0, 1)
         end
     end
 end
@@ -1365,9 +1365,9 @@ function mod.NP_DropCustomWrapLower(backing)
     end
 end
 function mod.NP_UnwrapCustomBorder(backing)
-    local modeName = backing._cbWrapMode
+    local mode = backing._cbWrapMode
     backing._cbWrapActive, backing._cbWrapMode = nil, nil
-    if modeName == "split" then
+    if mode == "split" then
         mod.NP_DropCustomWrapLower(backing)
     else
         local bf = backing._customBorder
@@ -1395,40 +1395,39 @@ end
 -- (a border frame we own) above its border art, tinted like the live border.
 -- tex / step / px = the texture key, size step and exact px the border is drawn at.
 -- Shared by the live plates and the options preview.
-function mod.NP_SetWrapSeam(ownerFrame, anchorFrame, show, texture, step, px, r, g, b, a, healthBar)
-    local hostRegion = ownerFrame and ownerFrame._cbSeamHost
+function mod.NP_SetWrapSeam(ownerFrame, anchor, show, texture, step, px, r, g, b, a, health)
+    local host = ownerFrame and ownerFrame._cbSeamHost
     if not show or not mod.NP_CanShowWrapSeam(texture) then
-        if hostRegion and hostRegion:IsShown() then
-            hostRegion:Hide()
-            CludesUI.RegisterPxReapply(hostRegion, nil)
+        if host and host:IsShown() then
+            host:Hide()
+            CludesUI.RegisterPxReapply(host, nil)
         end
         return
     end
-    if not hostRegion then
-        hostRegion = Pool.CreateFrame("Frame", nil, ownerFrame)
-        hostRegion:SetAllPoints(ownerFrame)
-        hostRegion._seam = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
-        ownerFrame._cbSeamHost = hostRegion
+    if not host then
+        host = Pool.CreateFrame("Frame", nil, ownerFrame)
+        host:SetAllPoints(ownerFrame)
+        host._seam = host:CreateTexture(nil, "OVERLAY", nil, 7)
+        ownerFrame._cbSeamHost = host
     end
     -- Above the border's backdrop (owner level) and its pixel strips (owner level + 1).
-    hostRegion:SetFrameLevel(ownerFrame:GetFrameLevel() + 2)
-    hostRegion._seamAnchor, hostRegion._seamTex, hostRegion._seamStep, hostRegion._seamPx =
-        anchorFrame, texture, step, px
-    hostRegion._seamHealth = healthBar
-    hostRegion._seam:SetVertexColor(r, g, b, a)
-    hostRegion:Show()
-    mod.NP_LayoutWrapSeam(hostRegion)
+    host:SetFrameLevel(ownerFrame:GetFrameLevel() + 2)
+    host._seamAnchor, host._seamTex, host._seamStep, host._seamPx = anchor, texture, step, px
+    host._seamHealth = health
+    host._seam:SetVertexColor(r, g, b, a)
+    host:Show()
+    mod.NP_LayoutWrapSeam(host)
     -- An exact size is pixels at UIParent scale: re-lay the seam when the pixel grid moves.
-    CludesUI.RegisterPxReapply(hostRegion, px and mod.NP_LayoutWrapSeam or nil)
+    CludesUI.RegisterPxReapply(host, px and mod.NP_LayoutWrapSeam or nil)
 end
-function mod.NP_LayoutWrapSeam(hostRegion)
-    local t, anchorFrame, healthBar = hostRegion._seam, hostRegion._seamAnchor, hostRegion._seamHealth
-    if not (t and anchorFrame and healthBar) then
+function mod.NP_LayoutWrapSeam(host)
+    local t, anchor, health = host._seam, host._seamAnchor, host._seamHealth
+    if not (t and anchor and health) then
         return
     end
     local CUI = CludesUI
-    local texture, step, px = hostRegion._seamTex, hostRegion._seamStep, hostRegion._seamPx
-    local es = hostRegion:GetEffectiveScale()
+    local texture, step, px = host._seamTex, host._seamStep, host._seamPx
+    local es = host:GetEffectiveScale()
     if not (es and es > 0.01) then
         es = UIParent:GetEffectiveScale()
     end
@@ -1441,23 +1440,23 @@ function mod.NP_LayoutWrapSeam(hostRegion)
     -- The strip's line sits near its top edge: raising it 3/16 of its thickness
     -- puts the line on the join, where the border's own line runs.
     local raise = Pix.SnapForES(thick * 3 / 16, es)
-    if hostRegion._seamPath ~= filePath then
+    if host._seamPath ~= filePath then
         t:SetTexture(filePath)
-        hostRegion._seamPath = filePath
+        host._seamPath = filePath
     end
     if
-        hostRegion._lThick ~= thick
-        or hostRegion._lRaise ~= raise
-        or hostRegion._lAnchor ~= anchorFrame
-        or hostRegion._lHealth ~= healthBar
+        host._lThick ~= thick
+        or host._lRaise ~= raise
+        or host._lAnchor ~= anchor
+        or host._lHealth ~= health
     then
         t:ClearAllPoints()
-        t:SetPoint("TOP", anchorFrame, "TOP", 0, raise)
-        t:SetPoint("LEFT", healthBar, "LEFT", 0, 0)
-        t:SetPoint("RIGHT", healthBar, "RIGHT", 0, 0)
+        t:SetPoint("TOP", anchor, "TOP", 0, raise)
+        t:SetPoint("LEFT", health, "LEFT", 0, 0)
+        t:SetPoint("RIGHT", health, "RIGHT", 0, 0)
         t:SetHeight(thick)
-        hostRegion._lThick, hostRegion._lRaise, hostRegion._lAnchor = thick, raise, anchorFrame
-        hostRegion._lHealth = healthBar
+        host._lThick, host._lRaise, host._lAnchor = thick, raise, anchor
+        host._lHealth = health
     end
     t:Show()
 end

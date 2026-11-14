@@ -218,8 +218,8 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function ShowEditOverlay(barId)
-        local targetUnit = GetEditOverlayTarget(barId)
-        if not targetUnit then
+        local target = GetEditOverlayTarget(barId)
+        if not target then
             if editOverlayFrame then
                 editOverlayFrame:Hide()
             end
@@ -256,13 +256,13 @@ initFrame:SetScript("OnEvent", function(self)
             editOverlayFrame._label = label
         end
 
-        local s = targetUnit:GetEffectiveScale()
+        local s = target:GetEffectiveScale()
         local uiS = UIParent:GetEffectiveScale()
-        local wid = (targetUnit:GetWidth() or 50) * s / uiS
-        local hgt = (targetUnit:GetHeight() or 50) * s / uiS
+        local wid = (target:GetWidth() or 50) * s / uiS
+        local hgt = (target:GetHeight() or 50) * s / uiS
         editOverlayFrame:SetSize(wid, hgt)
 
-        local leftX, topY = targetUnit:GetLeft(), targetUnit:GetTop()
+        local leftX, topY = target:GetLeft(), target:GetTop()
         if leftX and topY then
             local uiH = UIParent:GetHeight()
             local cx = leftX * s / uiS + wid * 0.5
@@ -572,9 +572,9 @@ initFrame:SetScript("OnEvent", function(self)
             -- The checklist has no disabled state of its own: grey it and
             -- block clicks on a vertical bar (the row label explains).
             local function ApplyCapsDisabled()
-                local offset = C.Vertical()
-                cbDD:SetAlpha(offset and 0.3 or 1)
-                cbDD:EnableMouse(not offset)
+                local off = C.Vertical()
+                cbDD:SetAlpha(off and 0.3 or 1)
+                cbDD:EnableMouse(not off)
             end
             ApplyCapsDisabled()
             CludesUI.RegisterWidgetRefresh(ApplyCapsDisabled)
@@ -740,17 +740,17 @@ initFrame:SetScript("OnEvent", function(self)
         -- stock lines hold their own spacing). Opting in, moving between positions
         -- and going back to Default therefore never move the text by the spacing,
         -- whatever the boxes held (a Cropped shape's preset included).
-        local function SSeedTextOffsets(kindOf, anchorKey, oxKey, oyKey, anchorFrame)
+        local function SSeedTextOffsets(kind, anchorKey, oxKey, oyKey, anchor)
             local prev = SVal(anchorKey, nil)
-            if prev == anchorFrame then
+            if prev == anchor then
                 return
             end
             local px, py, nx, ny = 0, 0, 0, 0
             if prev then
-                px, py = ABAR.StockTextOffsets(kindOf, prev)
+                px, py = ABAR.StockTextOffsets(kind, prev)
             end
-            if anchorFrame then
-                nx, ny = ABAR.StockTextOffsets(kindOf, anchorFrame)
+            if anchor then
+                nx, ny = ABAR.StockTextOffsets(kind, anchor)
             end
             SB()[oxKey] = SVal(oxKey, 0) - px + nx
             SB()[oyKey] = SVal(oyKey, 0) - py + ny
@@ -1147,19 +1147,19 @@ initFrame:SetScript("OnEvent", function(self)
                     else
                         _abPreviewHintFS:SetAlpha(0.45)
                         _abPreviewHintFS:Show()
-                        local hostRegion = _abPreviewHintFS:GetParent()
-                        if hostRegion then
+                        local host = _abPreviewHintFS:GetParent()
+                        if host then
                             -- The spec change handler built a bars header for
                             -- another page and took the host along (page reuse
                             -- gives each page its own header): back into this one.
                             if _abDisplayHdr and _abHintHdr ~= _abDisplayHdr then
                                 _abHintHdr = _abDisplayHdr
-                                hostRegion:SetParent(_abDisplayHdr)
-                                hostRegion:SetFrameLevel(_abDisplayHdr:GetFrameLevel() + 1)
+                                host:SetParent(_abDisplayHdr)
+                                host:SetFrameLevel(_abDisplayHdr:GetFrameLevel() + 1)
                                 _abPreviewHintFS:ClearAllPoints()
                                 _abPreviewHintFS:SetPoint("BOTTOM", _abDisplayHdr, "BOTTOM", 0, 17)
                             end
-                            hostRegion:Show()
+                            host:Show()
                         end
                     end
                 end

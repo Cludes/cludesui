@@ -147,7 +147,7 @@ if not CludesUI.ReapplyOwnAnchor then
             return
         end
 
-        local sideName = details.side
+        local side = details.side
         local uiS = UIParent:GetEffectiveScale()
         local tS = targetBar:GetEffectiveScale()
         local cS = childBar:GetEffectiveScale()
@@ -164,16 +164,16 @@ if not CludesUI.ReapplyOwnAnchor then
 
         local cx, cy
         if details.offsetX and details.offsetY then
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 cx = tL + details.offsetX - cW / 2
                 cy = tCY + details.offsetY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 cx = tR + details.offsetX + cW / 2
                 cy = tCY + details.offsetY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 cx = tCX + details.offsetX
                 cy = tT + details.offsetY + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 cx = tCX + details.offsetX
                 cy = tB + details.offsetY - cH / 2
             else
@@ -181,16 +181,16 @@ if not CludesUI.ReapplyOwnAnchor then
                 cy = tCY + details.offsetY
             end
         else
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 cx = tL - cW / 2
                 cy = tCY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 cx = tR + cW / 2
                 cy = tCY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 cx = tCX
                 cy = tT + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 cx = tCX
                 cy = tB - cH / 2
             else
@@ -289,21 +289,21 @@ if not CludesUI.NotifyElementResized then
         local fh = widget:GetHeight() or 0
         -- Raw fw/2, fh/2 (not floor): odd-dimension frames with integer+0.5 centers
         -- reverse to exact pixel edges; floor() loses the .5 (1px drift).
-        local anchorFrame, adjX, adjY
+        local anchor, adjX, adjY
         if growDir == "RIGHT" then
-            anchorFrame = "LEFT"
+            anchor = "LEFT"
             adjX = cx - fw / 2
             adjY = cy
         elseif growDir == "LEFT" then
-            anchorFrame = "RIGHT"
+            anchor = "RIGHT"
             adjX = cx + fw / 2
             adjY = cy
         elseif growDir == "DOWN" then
-            anchorFrame = "TOP"
+            anchor = "TOP"
             adjX = cx
             adjY = cy + fh / 2
         elseif growDir == "UP" then
-            anchorFrame = "BOTTOM"
+            anchor = "BOTTOM"
             adjX = cx
             adjY = cy - fh / 2
         else
@@ -313,7 +313,7 @@ if not CludesUI.NotifyElementResized then
         -- No explicit snap: cx +/- dim/2 reproduces the pixel-aligned edge within float epsilon; snapping can round the wrong way (1px drift/reload).
         pcall(function()
             CludesUI.ClearFramePoints(widget)
-            CludesUI.SetFramePoint(widget, anchorFrame, UIParent, "CENTER", adjX, adjY)
+            CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
         end)
     end
 end
@@ -416,19 +416,19 @@ do
     local function NoSave() end
 
     local elements = {}
-    for key, spec_def in pairs(EDGES) do
+    for key, def in pairs(EDGES) do
         local f = CreateFrame("Frame", nil, UIParent)
-        if spec_def[6] == "W" then
+        if def[6] == "W" then
             f:SetWidth(1)
         else
             f:SetHeight(1)
         end
-        f:SetPoint(spec_def[1], UIParent, spec_def[2], 0, 0)
-        f:SetPoint(spec_def[3], UIParent, spec_def[4], 0, 0)
+        f:SetPoint(def[1], UIParent, def[2], 0, 0)
+        f:SetPoint(def[3], UIParent, def[4], 0, 0)
         strips[key] = f
         elements[#elements + 1] = {
             key = key,
-            label = spec_def[5],
+            label = def[5],
             getFrame = GetStrip,
             savePosition = NoSave,
             isHidden = IsHidden,

@@ -135,13 +135,13 @@ local function SuppressTexture(texture)
     end
 end
 
-local function ApplyFont(fontString, theme, dim, r, g, b, a, flags)
+local function ApplyFont(fontString, theme, size, r, g, b, a, flags)
     if not fontString then
         return
     end
 
     CludesUI.PrimeFontShadow(fontString, true)
-    fontString:SetFont((theme and theme.fontPath) or STANDARD_TEXT_FONT, dim, flags or "")
+    fontString:SetFont((theme and theme.fontPath) or STANDARD_TEXT_FONT, size, flags or "")
     fontString:SetTextColor(r or 1, g or 1, b or 1, a or 1)
 end
 
@@ -225,19 +225,19 @@ local function EnsureProgressBar(widget, anchorFrame)
 
     local d = GetFFD(widget)
     if not d.progressBarFrame then
-        local barFrame = CreateFrame("Frame", nil, widget)
-        local track = barFrame:CreateTexture(nil, "BACKGROUND", nil, -4)
-        local fillTex = barFrame:CreateTexture(nil, "ARTWORK", nil, -3)
+        local bar = CreateFrame("Frame", nil, widget)
+        local track = bar:CreateTexture(nil, "BACKGROUND", nil, -4)
+        local fill = bar:CreateTexture(nil, "ARTWORK", nil, -3)
 
         track:SetAllPoints()
         track._cuiOwned = true
-        fillTex:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-        fillTex:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
-        fillTex._cuiOwned = true
+        fill:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        fill:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+        fill._cuiOwned = true
 
-        barFrame._cuiTrack = track
-        barFrame._cuiFill = fillTex
-        barFrame:SetScript("OnSizeChanged", function(self)
+        bar._cuiTrack = track
+        bar._cuiFill = fill
+        bar:SetScript("OnSizeChanged", function(self)
             if self._cuiFill then
                 local ratio = self._cuiRatio or 0
                 local width = math.max(0, self:GetWidth() * ratio)
@@ -246,18 +246,18 @@ local function EnsureProgressBar(widget, anchorFrame)
             end
         end)
 
-        d.progressBarFrame = barFrame
+        d.progressBarFrame = bar
     end
 
-    local barFrame = d.progressBarFrame
+    local bar = d.progressBarFrame
     local anchor = anchorFrame or widget
     local pp = CludesUI.PP or CludesUI.PanelPP
     local px = pp and pp.Scale and pp.Scale(1) or 1
-    barFrame:ClearAllPoints()
-    barFrame:SetPoint("BOTTOMLEFT", anchor, "BOTTOMLEFT", px, px)
-    barFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -px, px)
-    barFrame:SetHeight(STYLE.sizes.progressBarHeight)
-    return barFrame
+    bar:ClearAllPoints()
+    bar:SetPoint("BOTTOMLEFT", anchor, "BOTTOMLEFT", px, px)
+    bar:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -px, px)
+    bar:SetHeight(STYLE.sizes.progressBarHeight)
+    return bar
 end
 
 local function EnsureLockIcon(widget, anchorFrame)
@@ -346,7 +346,7 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
         return
     end
 
-    local glyph = itemFrame.Icon
+    local icon = itemFrame.Icon
     local pad = STYLE.paddings.icon
     local pp = theme.borderAPI
     local d = GetFFD(itemFrame)
@@ -358,8 +358,8 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
     end
 
     d.iconBg:ClearAllPoints()
-    d.iconBg:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
-    d.iconBg:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
+    d.iconBg:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
+    d.iconBg:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
     ApplyColorTexture(d.iconBg, STYLE.colors.itemSlotBackground)
 
     if not d.iconBorder then
@@ -373,8 +373,8 @@ local function EnsureIconChrome(itemFrame, theme, borderColor)
 
     local borderHost = d.iconBorder
     borderHost:ClearAllPoints()
-    borderHost:SetPoint("TOPLEFT", glyph, "TOPLEFT", -pad, pad)
-    borderHost:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", pad, -pad)
+    borderHost:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
+    borderHost:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
     borderHost:SetFrameLevel(itemFrame:GetFrameLevel() + 1)
     SetBorderColor(borderHost, theme, borderColor or STYLE.colors.itemDefaultBorder, 1)
 
@@ -533,12 +533,12 @@ local function RefreshActivityItemState(itemFrame, activityFrame, theme)
             if not IsGreatVaultSkinEnabled() then
                 return
             end
-            local hostRegion = GetFFD(self).iconBorder
-            if not hostRegion then
+            local host = GetFFD(self).iconBorder
+            if not host then
                 return
             end
             local link = ResolveWeeklyRewardItemLink(self:GetParent(), self)
-            SetBorderColor(hostRegion, BuildThemeContext(), ResolveItemBorderColor(link), 1)
+            SetBorderColor(host, BuildThemeContext(), ResolveItemBorderColor(link), 1)
         end)
     end
 
@@ -577,19 +577,19 @@ local function SetActivityProgressBar(widget, ratio, color, alpha, trackAlpha)
         return
     end
 
-    local barFrame = d.progressBarFrame
+    local bar = d.progressBarFrame
     local clampedRatio = math.max(0, math.min(1, ratio or 0))
-    barFrame._cuiRatio = clampedRatio
+    bar._cuiRatio = clampedRatio
 
-    if barFrame._cuiTrack then
-        barFrame._cuiTrack:SetColorTexture(1, 1, 1, trackAlpha or STYLE.alpha.progressLockedTrack)
+    if bar._cuiTrack then
+        bar._cuiTrack:SetColorTexture(1, 1, 1, trackAlpha or STYLE.alpha.progressLockedTrack)
     end
 
-    if barFrame._cuiFill then
-        ApplyColorTexture(barFrame._cuiFill, color or STYLE.colors.white, alpha or 1)
-        local width = math.max(0, barFrame:GetWidth() * clampedRatio)
-        barFrame._cuiFill:SetWidth(width)
-        barFrame._cuiFill:SetShown(width > 0)
+    if bar._cuiFill then
+        ApplyColorTexture(bar._cuiFill, color or STYLE.colors.white, alpha or 1)
+        local width = math.max(0, bar:GetWidth() * clampedRatio)
+        bar._cuiFill:SetWidth(width)
+        bar._cuiFill:SetShown(width > 0)
     end
 end
 

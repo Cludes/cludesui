@@ -119,15 +119,15 @@ do
     local givers, spare, giverAt = {}, {}, {}
     local blocking = {}
 
-    local function HasBit(maskTex, bit)
-        return math.floor(maskTex / 2 ^ bit) % 2 == 1
+    local function HasBit(mask, bit)
+        return math.floor(mask / 2 ^ bit) % 2 == 1
     end
 
-    local function ForMe(quest, sideName, raceBit, classBit)
-        if quest[SIDE] == ALLIANCE and sideName ~= ALLIANCE then
+    local function ForMe(quest, side, raceBit, classBit)
+        if quest[SIDE] == ALLIANCE and side ~= ALLIANCE then
             return false
         end
-        if quest[SIDE] == HORDE and sideName ~= HORDE then
+        if quest[SIDE] == HORDE and side ~= HORDE then
             return false
         end
         if quest[RACES] > 0 and raceBit and not HasBit(quest[RACES], raceBit) then
@@ -185,20 +185,20 @@ do
             D.Profession or NONE, D.Recipe or NONE, D.SkillRank or NONE, D.Until or NONE
         maxLevels, minReps, maxReps = D.MaxLevel or NONE, D.MinReputation or NONE, D.MaxReputation or NONE
         local groupOf = {}
-        for _, group in ipairs(D.Exclusive or NONE) do
-            for _, ident in ipairs(group) do
-                groupOf[ident] = group
-                for _, other in ipairs(group) do
+        for _, set in ipairs(D.Exclusive or NONE) do
+            for _, ident in ipairs(set) do
+                groupOf[ident] = set
+                for _, other in ipairs(set) do
                     if other ~= ident then
                         AddCloser(ident, other)
                     end
                 end
             end
         end
-        for ident, targetUnit in pairs(D.Breadcrumb or NONE) do
-            AddCloser(ident, targetUnit)
-            for _, other in ipairs(groupOf[targetUnit] or NONE) do
-                if other ~= targetUnit then
+        for ident, target in pairs(D.Breadcrumb or NONE) do
+            AddCloser(ident, target)
+            for _, other in ipairs(groupOf[target] or NONE) do
+                if other ~= target then
                     AddCloser(ident, other)
                 end
             end
@@ -236,12 +236,12 @@ do
         end
         D = QuestData()
         mine, zoneOf, chains, chainOf = {}, {}, {}, {}
-        local sideName = UnitFactionGroup("player") == "Horde" and HORDE or ALLIANCE
+        local side = UnitFactionGroup("player") == "Horde" and HORDE or ALLIANCE
         local raceBit = RACE_BITS[select(3, UnitRace("player"))]
         local classID = select(3, UnitClass("player"))
         local classBit = classID and classID - 1
         for ident, quest in pairs(D.Quests) do
-            if ForMe(quest, sideName, raceBit, classBit) then
+            if ForMe(quest, side, raceBit, classBit) then
                 mine[ident] = true
             end
         end
@@ -267,11 +267,11 @@ do
 
     local function AddSkills(...)
         for idx = 1, select("#", ...) do
-            local slotPos = select(idx, ...)
-            if slotPos then
-                local rank, _, _, _, lineTex = select(3, GetProfessionInfo(slotPos))
-                if lineTex then
-                    skills[lineTex] = rank
+            local index = select(idx, ...)
+            if index then
+                local rank, _, _, _, line = select(3, GetProfessionInfo(index))
+                if line then
+                    skills[line] = rank
                 end
             end
         end
@@ -1005,8 +1005,8 @@ do
         if type(unitGuid) ~= "string" or Secret(unitGuid) then
             return
         end
-        local kindOf, _, _, _, _, ident = strsplit("-", unitGuid)
-        if kindOf == "Creature" or kindOf == "Vehicle" then
+        local kind, _, _, _, _, ident = strsplit("-", unitGuid)
+        if kind == "Creature" or kind == "Vehicle" then
             return tonumber(ident)
         end
     end
@@ -1203,15 +1203,15 @@ do
         end
         tipText:AddLine(" ")
         tipText:AddLine("Drops", unpack(GOLD))
-        for _, itemInfo in ipairs(loot) do
-            local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[itemInfo[LOOT_QUALITY]]
+        for _, item in ipairs(loot) do
+            local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item[LOOT_QUALITY]]
                 or { r = 1, g = 1, b = 1 }
-            local glyph = C_Item.GetItemIconByID(itemInfo[LOOT_ID])
-            local name = (glyph and ("|T%s:14:14|t "):format(glyph) or "")
-                .. itemInfo[LOOT_NAME]
-                .. (itemInfo[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
-                .. (R.Dropped(npc, itemInfo[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
-            local chance = itemInfo[LOOT_CHANCE]
+            local icon = C_Item.GetItemIconByID(item[LOOT_ID])
+            local name = (icon and ("|T%s:14:14|t "):format(icon) or "")
+                .. item[LOOT_NAME]
+                .. (item[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
+                .. (R.Dropped(npc, item[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
+            local chance = item[LOOT_CHANCE]
             tipText:AddDoubleLine(
                 name,
                 chance >= 1 and ("%d%%"):format(math.floor(chance + 0.5)) or ("%.1f%%"):format(chance),
@@ -1303,13 +1303,13 @@ do
             end
             StopWatching()
         elseif evt == "LOOT_READY" then
-            for slotIndex = 1, GetNumLootItems() do
-                local itemLink = GetLootSlotLink(slotIndex)
+            for slot = 1, GetNumLootItems() do
+                local itemLink = GetLootSlotLink(slot)
                 local itemId = type(itemLink) == "string"
                         and not Secret(itemLink)
                         and tonumber(itemLink:match("item:(%d+)"))
                     or nil
-                local sources = { GetLootSourceInfo(slotIndex) }
+                local sources = { GetLootSourceInfo(slot) }
                 for idx = 1, #sources, 2 do
                     local unitGuid = sources[idx]
                     if not Secret(unitGuid) then
@@ -1333,14 +1333,14 @@ local alertEvents = CreateFrame("Frame")
 do
     local AGAIN_AFTER = 300
     local RARE = { rare = true, rareelite = true }
-    local Widgets, H = 260, 64
-    local cardFrame, targetUnit
+    local W, H = 260, 64
+    local cardFrame, target
     local shownNpc, shownGuid
     local alerted = {}
 
     local function HideTarget()
-        if targetUnit and targetUnit:IsShown() and not InCombatLockdown() then
-            targetUnit:Hide()
+        if target and target:IsShown() and not InCombatLockdown() then
+            target:Hide()
         end
     end
 
@@ -1357,33 +1357,33 @@ do
     RareAlert.Hide = HideAlert
 
     local function BuildTarget()
-        targetUnit = CreateFrame("Button", "CludesUIRareAlertTarget", UIParent, "SecureActionButtonTemplate")
-        targetUnit:SetFrameStrata("DIALOG")
-        targetUnit:RegisterForClicks("AnyUp", "AnyDown")
-        targetUnit:SetAttribute("type1", "macro")
-        targetUnit:SetScript("PostClick", function(_, btnFrame, down)
+        target = CreateFrame("Button", "CludesUIRareAlertTarget", UIParent, "SecureActionButtonTemplate")
+        target:SetFrameStrata("DIALOG")
+        target:RegisterForClicks("AnyUp", "AnyDown")
+        target:SetAttribute("type1", "macro")
+        target:SetScript("PostClick", function(_, btnFrame, down)
             if btnFrame == "RightButton" and not down then
                 HideAlert()
             end
         end)
-        targetUnit:SetScript("OnEnter", function()
+        target:SetScript("OnEnter", function()
             GameTooltip:SetOwner(cardFrame, "ANCHOR_TOP")
             GameTooltip:SetText(cardFrame.name:GetText() or "Rare", 1, 1, 1)
             GameTooltip:AddLine("Left-click to target it. Right-click to close it.", unpack(ACCENT))
             GameTooltip:Show()
         end)
-        targetUnit:SetScript("OnLeave", function()
+        target:SetScript("OnLeave", function()
             GameTooltip:Hide()
             HideTarget()
         end)
-        targetUnit:SetScript("OnShow", function(self)
+        target:SetScript("OnShow", function(self)
             self:RegisterEvent("PLAYER_REGEN_DISABLED")
         end)
-        targetUnit:SetScript("OnHide", function(self)
+        target:SetScript("OnHide", function(self)
             self:UnregisterEvent("PLAYER_REGEN_DISABLED")
         end)
-        targetUnit:SetScript("OnEvent", targetUnit.Hide)
-        targetUnit:Hide()
+        target:SetScript("OnEvent", target.Hide)
+        target:Hide()
     end
 
     -- A secure button of its own over the card (never its child, so the card
@@ -1398,27 +1398,21 @@ do
         if not (name and leftX) then
             return HideTarget()
         end
-        if not targetUnit then
+        if not target then
             BuildTarget()
         end
         local scale = cardFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
         local macro = Get("rareAlertSkull") and "/cleartarget\n/targetexact %s\n/tm !8" or "/targetexact %s"
-        targetUnit:SetAttribute("macrotext1", macro:format(name))
-        targetUnit:ClearAllPoints()
-        targetUnit:SetPoint(
-            "BOTTOMLEFT",
-            UIParent,
-            "BOTTOMLEFT",
-            leftX * scale,
-            cardFrame:GetBottom() * scale
-        )
-        targetUnit:SetSize(cardFrame:GetWidth() * scale, cardFrame:GetHeight() * scale)
-        targetUnit:Show()
+        target:SetAttribute("macrotext1", macro:format(name))
+        target:ClearAllPoints()
+        target:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", leftX * scale, cardFrame:GetBottom() * scale)
+        target:SetSize(cardFrame:GetWidth() * scale, cardFrame:GetHeight() * scale)
+        target:Show()
     end
 
     local function Build()
         cardFrame = CreateFrame("Button", "CludesUIRareAlert", UIParent)
-        cardFrame:SetSize(Widgets, H)
+        cardFrame:SetSize(W, H)
         cardFrame:SetFrameStrata("HIGH")
         cardFrame:SetClampedToScreen(true)
         CludesUI.Kit.Panel(cardFrame, 0.92)
@@ -1436,7 +1430,7 @@ do
             GameTooltip:Show()
         end)
         cardFrame:SetScript("OnLeave", function()
-            if targetUnit and targetUnit:IsShown() and targetUnit:IsMouseOver() then
+            if target and target:IsShown() and target:IsMouseOver() then
                 return
             end
             GameTooltip:Hide()
@@ -1532,7 +1526,7 @@ do
         cardFrame.fade:Stop()
         cardFrame:SetAlpha(1)
         cardFrame:Show()
-        if targetUnit and targetUnit:IsShown() then
+        if target and target:IsShown() then
             CoverCard()
         end
         if not quiet then
@@ -1581,8 +1575,8 @@ do
         if not UnitExists(unitToken) then
             return
         end
-        local kindOf = UnitClassification(unitToken)
-        if Secret(kindOf) or not RARE[kindOf] then
+        local kind = UnitClassification(unitToken)
+        if Secret(kind) or not RARE[kind] then
             return
         end
         local unitGuid = UnitGUID(unitToken)
@@ -1617,7 +1611,7 @@ do
             npc = npc,
             guid = unitGuid,
             unit = unitToken,
-            elite = kindOf == "rareelite",
+            elite = kind == "rareelite",
             tapped = not Secret(denied) and denied or nil,
         })
     end
@@ -1781,11 +1775,11 @@ local function NewPin()
     return p
 end
 
-local function Pin(posX, posY, dim, tipText, onClick)
+local function Pin(posX, posY, size, tipText, onClick)
     pinsUsed = pinsUsed + 1
     local p = pins[pinsUsed] or NewPin()
     pins[pinsUsed] = p
-    p:SetSize(dim, dim)
+    p:SetSize(size, size)
     p.x, p.y = posX / 100, posY / 100
     p.icon:SetVertexColor(1, 1, 1)
     p.icon:SetDesaturated(false)
@@ -1871,12 +1865,12 @@ local function DrawPins()
     if not mapID then
         return
     end
-    local dim = Get("pinSize")
+    local size = Get("pinSize")
     if Get("questPins") then
         Q.Refresh()
         for _, giver in ipairs(Q.Givers(mapID, Get("pinGrey"), Get("chainsOnly"))) do
             local quests = giver.quests
-            local p = Pin(giver.x, giver.y, dim * 0.8, function(tipText)
+            local p = Pin(giver.x, giver.y, size * 0.8, function(tipText)
                 for idx, ident in ipairs(quests) do
                     if idx > 1 then
                         tipText:AddLine(" ")
@@ -1909,7 +1903,7 @@ local function DrawPins()
         for _, npc in ipairs(R.OnMap(mapID)) do
             if Get("rarePinsKilled") or not R.Killed(npc) then
                 local spots = R.Spots(npc)
-                local p = Pin(spots[1], spots[2], dim, RareTip(npc), function()
+                local p = Pin(spots[1], spots[2], size, RareTip(npc), function()
                     R.Link(npc)
                 end)
                 if not (C_Texture.GetAtlasInfo("VignetteKill") and p.icon:SetAtlas("VignetteKill")) then
@@ -1994,11 +1988,11 @@ local function ZoneMenu(ownerFrame, zones, progress, choose)
         end)
         for _, part in ipairs({ { 0, "Eastern Kingdoms" }, { 1, "Kalimdor" } }) do
             local continent, labelText = part[1], part[2]
-            local subFrame = root:CreateButton(labelText)
+            local sub = root:CreateButton(labelText)
             for _, zone in ipairs(zones) do
                 if zone.continent == continent then
                     local num, sum = progress(zone)
-                    subFrame:CreateButton(("%s  %d/%d"):format(zone.name, num, sum), function()
+                    sub:CreateButton(("%s  %d/%d"):format(zone.name, num, sum), function()
                         choose(zone)
                     end)
                 end
@@ -2060,7 +2054,7 @@ local function QuestRow(R2, ident, indent)
     if status == "done" then
         name = CHECK .. " " .. Muted(("[%d] %s"):format(Q.Level(ident), Q.Name(ident)))
     end
-    local subFrame
+    local sub
     if status == "later" then
         local nameList = {}
         for idx, before in ipairs(Q.Blocking(ident)) do
@@ -2070,11 +2064,11 @@ local function QuestRow(R2, ident, indent)
             end
             nameList[#nameList + 1] = Q.Title(before) or ("quest " .. before)
         end
-        subFrame = "Requires: " .. table.concat(nameList, ", ")
+        sub = "Requires: " .. table.concat(nameList, ", ")
     elseif Q.Giver(ident) and status ~= "done" then
-        subFrame = Q.Giver(ident)
+        sub = Q.Giver(ident)
     end
-    R2:Line(name .. (subFrame and ("\n" .. Muted(subFrame)) or ""), {
+    R2:Line(name .. (sub and ("\n" .. Muted(sub)) or ""), {
         indent = indent,
         right = status ~= "done" and StateText(ident, status) or nil,
         rightColour = STATE_COLOUR[status] or MUTED,

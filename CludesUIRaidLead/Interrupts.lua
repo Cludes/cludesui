@@ -22,7 +22,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local Widgets, H = 180, 34
+local W, H = 180, 34
 
 function mod.KickSettings()
     local p = mod.RaidLeadDB()
@@ -51,15 +51,15 @@ end
 function mod.ParseKickBlock(textValue)
     local lines, inside = {}, false
     for raw in (textValue or ""):gmatch("[^\r\n]+") do
-        local lineTex = raw:gsub("|+c%x%x%x%x%x%x%x%x", ""):gsub("|+r", ""):match("^%s*(.-)%s*$")
-        local l = Lower(lineTex)
+        local line = raw:gsub("|+c%x%x%x%x%x%x%x%x", ""):gsub("|+r", ""):match("^%s*(.-)%s*$")
+        local l = Lower(line)
         if l == "intstart" then
             inside = true
         elseif l == "intend" then
             break
-        elseif inside and lineTex ~= "" then
+        elseif inside and line ~= "" then
             local nameList = {}
-            for n in lineTex:gmatch("%S+") do
+            for n in line:gmatch("%S+") do
                 nameList[#nameList + 1] = n
             end
             if #nameList > 0 then
@@ -102,7 +102,7 @@ end
 -------------------------------------------------------------------------------
 --  Display
 -------------------------------------------------------------------------------
-local boxFrame, num, labelText
+local box, num, labelText
 local rot -- { names, mine, count, casting }
 
 local function Font()
@@ -110,37 +110,37 @@ local function Font()
 end
 
 local function Build()
-    if boxFrame then
+    if box then
         return
     end
-    boxFrame = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
-    boxFrame:SetSize(Widgets, H)
-    CludesUI.Kit.Panel(boxFrame)
-    num = boxFrame:CreateFontString(nil, "OVERLAY")
+    box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
+    box:SetSize(W, H)
+    CludesUI.Kit.Panel(box)
+    num = box:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(num, 20, nil)
     num:SetPoint("LEFT", 8, 0)
-    labelText = boxFrame:CreateFontString(nil, "OVERLAY")
+    labelText = box:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(labelText, 15, nil)
     labelText:SetPoint("LEFT", num, "RIGHT", 10, 0)
-    boxFrame:Hide()
+    box:Hide()
     mod.ApplyKickPosition()
 end
 
 function mod.ApplyKickPosition()
-    if not boxFrame or InCombatLockdown() then
+    if not box or InCombatLockdown() then
         return
     end
     local p = mod.KickSettings().pos
-    boxFrame:ClearAllPoints()
+    box:ClearAllPoints()
     if p then
-        boxFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        box:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        boxFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
+        box:SetPoint("CENTER", UIParent, "CENTER", 0, 180)
     end
 end
 
 local function Paint()
-    if not (boxFrame and rot) then
+    if not (box and rot) then
         return
     end
     local n = #rot.names
@@ -149,19 +149,19 @@ local function Paint()
     local display = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
     num:SetText(rot.count)
     if rot.count == rot.mine and rot.casting then
-        boxFrame._kitBg:SetColorTexture(0.80, 0.15, 0.12, 0.95)
+        box._kitBg:SetColorTexture(0.80, 0.15, 0.12, 0.95)
         labelText:SetText("KICK NOW")
     elseif rot.count == rot.mine then
-        boxFrame._kitBg:SetColorTexture(0.85, 0.65, 0.10, 0.95)
+        box._kitBg:SetColorTexture(0.85, 0.65, 0.10, 0.95)
         labelText:SetText("You are next")
     elseif nextUp == rot.mine then
-        boxFrame._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
+        box._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
         labelText:SetText(display .. "  |cffffd060then you|r")
     else
-        boxFrame._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
+        box._kitBg:SetColorTexture(0.10, 0.11, 0.14, 0.92)
         labelText:SetText(display)
     end
-    boxFrame:Show()
+    box:Show()
 end
 
 local ev = CreateFrame("Frame")
@@ -173,8 +173,8 @@ local function Stop()
     ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
     ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
     ev:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    if boxFrame then
-        boxFrame:Hide()
+    if box then
+        box:Hide()
     end
 end
 mod.StopKicks = Stop
@@ -249,10 +249,10 @@ boss:SetScript("OnEvent", function(_, evt, _, encounterName)
                     return not mod.KickSettings().enabled
                 end,
                 getFrame = function()
-                    return boxFrame
+                    return box
                 end,
                 getSize = function()
-                    return Widgets, H
+                    return W, H
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     mod.KickSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }

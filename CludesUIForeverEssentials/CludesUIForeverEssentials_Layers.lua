@@ -37,8 +37,8 @@ local function LayerOf(unitGuid)
     if type(unitGuid) ~= "string" or Secret(unitGuid) then
         return
     end
-    local kindOf, _, server, _, zone = strsplit("-", unitGuid)
-    if not NPC_KINDS[kindOf] then
+    local kind, _, server, _, zone = strsplit("-", unitGuid)
+    if not NPC_KINDS[kind] then
         return
     end
     server, zone = tonumber(server), tonumber(zone)
@@ -324,13 +324,13 @@ F.Start(Apply, {
 -------------------------------------------------------------------------------
 --  Auto-Accept Layer Swap
 -------------------------------------------------------------------------------
-local Stl = module.Feature("layerSwap", { enabled = false })
+local S = module.Feature("layerSwap", { enabled = false })
 local swapEv = CreateFrame("Frame")
 local hooked
 
 local function Accept()
     local prompt = _G.ShardTransferImminentFrame
-    if not (Stl.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then
+    if not (S.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then
         return
     end
     local wasUp = StaticPopup1 and StaticPopup1:IsShown()
@@ -354,8 +354,8 @@ swapEv:SetScript("OnEvent", function()
     Accept()
 end)
 
-Stl.Start(function()
-    if Stl.Enabled() then
+S.Start(function()
+    if S.Enabled() then
         swapEv:RegisterEvent("GROUP_JOINED")
         Hook()
     else
@@ -364,4 +364,4 @@ Stl.Start(function()
 end)
 
 CludesUI._Layers =
-    { tracker = { Get = Get, Cfg = F.Cfg, Apply = Apply }, swap = { Get = Stl.Get, Cfg = Stl.Cfg } }
+    { tracker = { Get = Get, Cfg = F.Cfg, Apply = Apply }, swap = { Get = S.Get, Cfg = S.Cfg } }

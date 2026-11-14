@@ -28,7 +28,7 @@ local _emptyP = {}
 local function BP()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
-local ceil, floor, upper, min = math.ceil, math.floor, math.max, math.min
+local ceil, floor, max, min = math.ceil, math.floor, math.max, math.min
 
 local SLOT_SIZE, SPACING = mod.SLOT_SIZE, mod.SPACING
 local PITCH = SLOT_SIZE + SPACING
@@ -64,8 +64,8 @@ local BuildSlotBuckets = mod.BuildSlotBuckets
 local BuildExpansionBuckets = mod.BuildExpansionBuckets
 
 -- Height of a label band for a label font size (default: the bags' Category Title Size)
-function mod.CompactBandHeight(dim)
-    return (dim or GetCatTitleSize()) + BAND_PAD
+function mod.CompactBandHeight(size)
+    return (size or GetCatTitleSize()) + BAND_PAD
 end
 
 -- The bank display ("grid" | "list" | "compact") from the bank profile keys:
@@ -456,7 +456,7 @@ end
 -- CompactNewOut; out.contentW: the px width the window gives the grid, see
 -- below) and returns cells, bands, bottomY (6 px below the last band, like a
 -- grid section end).
-function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
+function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
     if num < 1 then
         result.contentW = nil
         return 0, 0, startY
@@ -476,7 +476,7 @@ function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
         and result._mGap == GAP_EXTRA
     local band = 0
     for g = 1, num do
-        local s, lw = dim[g], ceil(labelW[g])
+        local s, lw = size[g], ceil(labelW[g])
         if lw > 0 then
             band = bandH
         end
@@ -495,7 +495,7 @@ function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
         result._mPitch, result._mGap = PITCH, GAP_EXTRA
         pSize, pColumns, pCap, pBand = mSize, columns, columns * PITCH, band
         for g = 1, num do
-            pLabel[g] = upper(1, ceil((mLabel[g] + 2 * SPACING - BLOCK_GAP) / PITCH))
+            pLabel[g] = max(1, ceil((mLabel[g] + 2 * SPACING - BLOCK_GAP) / PITCH))
         end
         Plan(num, result)
     end
@@ -514,7 +514,7 @@ function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
         bandTop[b], bandHeight[b] = posY, hgt
         local last, posX = pLast[b], 0
         for g = pFirst[b], last do
-            local cols, s = pCols[g], dim[g]
+            local cols, s = pCols[g], size[g]
             local rowList = (s > 0) and ceil(s / cols) or 0
             local wid = pWidth[g] * PITCH - SPACING
             groupX[g], groupY[g] = posX, posY
@@ -530,10 +530,10 @@ function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
             end
             local topY = posY - band
             for t = 0, s - 1 do
-                local rowFrame = floor(t / cols)
+                local row = floor(t / cols)
                 ci = ci + 1
-                cellX[ci] = posX + (t - rowFrame * cols) * PITCH
-                cellY[ci] = topY - rowFrame * PITCH
+                cellX[ci] = posX + (t - row * cols) * PITCH
+                cellY[ci] = topY - row * PITCH
             end
             posX = posX + wid + BLOCK_GAP
         end
@@ -551,7 +551,7 @@ function mod.CompactPack(dim, labelW, num, columns, bandH, startY, result)
     result.contentW = edge + SPACING
     for b = 1, nb do
         local g = pLast[b]
-        labelRoom[g] = upper(edge - groupX[g], groupW[g] + BLOCK_GAP - LABEL_PAD)
+        labelRoom[g] = max(edge - groupX[g], groupW[g] + BLOCK_GAP - LABEL_PAD)
     end
     return ci, nb, posY - 6
 end
@@ -590,7 +590,7 @@ do
         return s
     end
 
-    function mod.CompactSegmentLayout(layout, dim, labelText, labelEntry)
+    function mod.CompactSegmentLayout(layout, size, labelText, labelEntry)
         local num, wid, sum = 0, 0, #layout
         local chainLast, freshMin, curDepth, maxDepth = nil, nil, 0, -1
         for i = 1, sum do
@@ -611,23 +611,23 @@ do
             else
                 if chainLast then
                     num = num + 1
-                    dim[num], labelText[num], labelEntry[num] =
+                    size[num], labelText[num], labelEntry[num] =
                         0, ChainLabel(freshMin, curDepth, chainLast), chainLast
                     wid = wid + 1
                     layout[wid] = chainLast
                     chainLast, freshMin = nil, nil
                 elseif num == 0 then
                     num = 1
-                    dim[1], labelText[1], labelEntry[1] = 0, false, false
+                    size[1], labelText[1], labelEntry[1] = 0, false, false
                 end
-                dim[num] = dim[num] + 1
+                size[num] = size[num] + 1
                 wid = wid + 1
                 layout[wid] = e
             end
         end
         if chainLast and num == 0 then
             num = 1
-            dim[1], labelText[1], labelEntry[1] = 0, ChainLabel(freshMin, curDepth, chainLast), chainLast
+            size[1], labelText[1], labelEntry[1] = 0, ChainLabel(freshMin, curDepth, chainLast), chainLast
             wid = 1
             layout[1] = chainLast
         end
@@ -684,11 +684,11 @@ function mod.CompactLabel(pool, position, ownerFrame)
     lf._label = fontStr
     -- The divider: the Grid display's category header line (colour, alpha,
     -- one physical pixel thick)
-    local lineTex = lf:CreateTexture(nil, "ARTWORK")
-    lineTex:SetHeight(CUI.PP.mult)
-    lineTex:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-    lineTex:Hide()
-    lf._line = lineTex
+    local line = lf:CreateTexture(nil, "ARTWORK")
+    line:SetHeight(CUI.PP.mult)
+    line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
+    line:Hide()
+    lf._line = line
     lf:SetScript("OnEnter", LabelOnEnter)
     lf:SetScript("OnLeave", LabelOnLeave)
     -- After the scripts, which can turn mouse input on: the label never takes
@@ -702,9 +702,9 @@ function mod.CompactLabel(pool, position, ownerFrame)
 end
 
 -- Sets the label's font and text and returns the text's full width in px.
-function mod.CompactMeasureLabel(lf, textValue, dim)
+function mod.CompactMeasureLabel(lf, textValue, size)
     local fontStr = lf._label
-    SetBagFont(fontStr, dim)
+    SetBagFont(fontStr, size)
     fontStr:SetText(textValue)
     lf._text = textValue
     return fontStr:GetUnboundedStringWidth() or 0
@@ -761,16 +761,16 @@ function mod.CompactShowLabel(
     lf._shownW = shownW
     lf:SetHitRectInsets(0, room - shownW, 0, 0)
     lf:SetMouseMotionEnabled((lf._cut or lf._hint ~= nil) and PassClicks(lf))
-    local lineTex = lf._line
+    local line = lf._line
     local lineX = (lf._cut and wid or textW) + LINE_GAP
     local lineEnd = lineW and min(lineW, room - reserveRight) or 0
     if lineEnd - lineX >= LINE_MIN then
-        lineTex:ClearAllPoints()
-        lineTex:SetPoint("LEFT", lf, "LEFT", lineX, 0)
-        lineTex:SetWidth(lineEnd - lineX)
-        lineTex:Show()
+        line:ClearAllPoints()
+        line:SetPoint("LEFT", lf, "LEFT", lineX, 0)
+        line:SetWidth(lineEnd - lineX)
+        line:Show()
     else
-        lineTex:Hide()
+        line:Hide()
     end
     lf:Show()
 end
@@ -842,9 +842,9 @@ end
 -- A nested section becomes one group per bucket; the first is named
 -- "<section>: <bucket>", the others by their bucket. Labels end in their
 -- item count.
-function mod.CompactBagsSection(name, itemList, kindOf, assignKey, keepEmpty, hint)
+function mod.CompactBagsSection(name, itemList, kind, assignKey, keepEmpty, hint)
     local count = #itemList
-    local pin = kindOf == "pinned"
+    local pin = kind == "pinned"
     local zone = false
     if zonesOn then
         if pin then
@@ -853,8 +853,8 @@ function mod.CompactBagsSection(name, itemList, kindOf, assignKey, keepEmpty, hi
             zone = ZONE_ASSIGN
         end
     end
-    if (kindOf == "slot" or kindOf == "exp") and count > 0 then
-        local buckets = (kindOf == "slot") and BuildSlotBuckets(itemList) or BuildExpansionBuckets(itemList)
+    if (kind == "slot" or kind == "exp") and count > 0 then
+        local buckets = (kind == "slot") and BuildSlotBuckets(itemList) or BuildExpansionBuckets(itemList)
         local first = true
         for b = 1, #buckets do
             local bucket = buckets[b]
@@ -881,7 +881,7 @@ function mod.CompactBagsSection(name, itemList, kindOf, assignKey, keepEmpty, hi
     end
     local clear = false
     hint = hint or false
-    if pin or kindOf == "recent" then
+    if pin or kind == "recent" then
         hint = pin and CludesUI.L("Middle Click to Add or Remove")
             or CludesUI.L("Extra quickview display, your items are also in their category")
         local recent = CUI_Bags._recentItems
@@ -1042,15 +1042,15 @@ end
 local function PlaceZones(childFrame, startX, result, num)
     local zn, zin, ci = 0, 0, 0
     for g = 1, num do
-        local s, kindOf = gSize[g], gZone[g]
-        if kindOf then
+        local s, kind = gSize[g], gZone[g]
+        if kind then
             zn = zn + 1
             local z = GetZone(zn)
             local hgt = result.groupH[g]
             -- A block with no icons also takes the empty space below its
             -- label, down to its band's bottom
             if s == 0 then
-                hgt = upper(result.bandH[result.groupBand[g]] - SPACING, result.labelBand)
+                hgt = max(result.bandH[result.groupBand[g]] - SPACING, result.labelBand)
             end
             if z:GetParent() ~= childFrame then
                 z:SetParent(childFrame)
@@ -1060,7 +1060,7 @@ local function PlaceZones(childFrame, startX, result, num)
             z:ClearAllPoints()
             z:SetPoint("TOPLEFT", childFrame, "TOPLEFT", startX + result.groupX[g], result.groupY[g])
             z:SetSize(result.groupW[g], hgt)
-            local pin = kindOf == ZONE_PIN
+            local pin = kind == ZONE_PIN
             z._pin, z._key = pin, gKey[g]
             z._plusTip = pin and mod.PIN_PLUS_TIP or mod.ASSIGN_PLUS_TIP
             -- Plain item IDs: the item tables are recycled by the next refresh.
@@ -1106,13 +1106,13 @@ end
 -- zones; returns the advanced slotIdx and the content bottom (curY)
 function mod.CompactBagsPlace(childFrame, startX, startY, columns, slotIdx)
     local num = gN
-    local dim = GetCatTitleSize()
+    local size = GetCatTitleSize()
     local k = 0
     for g = 1, num do
         local textValue = gLabel[g]
         if textValue then
             k = k + 1
-            local wid = mod.CompactMeasureLabel(mod.CompactLabel(bagLabels, k, CUI_Bags), textValue, dim)
+            local wid = mod.CompactMeasureLabel(mod.CompactLabel(bagLabels, k, CUI_Bags), textValue, size)
             gW[g], gLi[g] = wid, k
             -- Recent Items' Clear link is planned into its block's width
             gPlanW[g] = gClear[g] and (wid + CLEAR_RESERVE) or wid
@@ -1133,7 +1133,7 @@ function mod.CompactBagsPlace(childFrame, startX, startY, columns, slotIdx)
         bagOut = mod.CompactNewOut()
     end
     local result = bagOut
-    local bandH = dim + BAND_PAD
+    local bandH = size + BAND_PAD
     local _, _, bottomY = mod.CompactPack(gSize, gPlanW, num, columns, bandH, startY, result)
     local groupX, groupY, groupW = result.groupX, result.groupY, result.groupW
 

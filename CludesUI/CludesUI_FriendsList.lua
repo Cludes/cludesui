@@ -125,8 +125,8 @@ local FAV, UNGROUPED = "_favorites", "_ungrouped"
 local KIND_HEADER, KIND_FRIEND = 0, 1
 
 -- The kit's host (settings, look, font): set once by FL.Start
-local hostRegion
-local driver, root, scrollFrame, contentFrame, barFrame, flusher, ev, filterX
+local host
+local driver, root, scrollFrame, contentFrame, bar, flusher, ev, filterX
 local isActive = false -- live: shown, listening
 local covering = false -- Blizzard's list is hidden under ours
 local viewH, rowW = 0, 0
@@ -147,7 +147,7 @@ local rendered, renderedCount = {}, 0
 local menuHandles = {}
 
 local function Settings()
-    return hostRegion and hostRegion.Settings()
+    return host and host.Settings()
 end
 
 local function View()
@@ -299,9 +299,9 @@ local function FriendKey(details)
     if type(tag) == "string" and not IsSecret(tag) and tag ~= "" then
         key = tag
     elseif C_BattleNet.GetDefaultTitleWhisperTarget then
-        local targetUnit = C_BattleNet.GetDefaultTitleWhisperTarget(ident)
-        if type(targetUnit) == "string" and not IsSecret(targetUnit) and targetUnit ~= "" then
-            key = "title:" .. targetUnit
+        local target = C_BattleNet.GetDefaultTitleWhisperTarget(ident)
+        if type(target) == "string" and not IsSecret(target) and target ~= "" then
+            key = "title:" .. target
         end
     end
     keyById[ident] = key or false
@@ -426,8 +426,8 @@ end
 
 -- Blizzard's search box holds text
 local function SearchTextOn(view)
-    local barFrame = view.FilterBar and view.FilterBar.SearchBar
-    local textValue = barFrame and barFrame.GetText and barFrame:GetText()
+    local bar = view.FilterBar and view.FilterBar.SearchBar
+    local textValue = bar and bar.GetText and bar:GetText()
     return IsSecret(textValue) or (type(textValue) == "string" and textValue ~= "")
 end
 
@@ -439,9 +439,9 @@ local function ReadBlizzardList(view, into)
         local nodes = sections[idx]:GetNodes()
         for k = 1, #nodes do
             local payload = nodes[k]:GetData()
-            local slotPos = payload and payload.friendIndex
-            if slotPos then
-                into[slotPos] = true
+            local index = payload and payload.friendIndex
+            if index then
+                into[index] = true
             end
         end
     end
@@ -475,14 +475,14 @@ local function CompareRecords(a, b)
     return a.index < b.index
 end
 
-local function NewItem(kindOf, y, hgt)
+local function NewItem(kind, y, hgt)
     itemCount = itemCount + 1
     local it = itemList[itemCount]
     if not it then
         it = {}
         itemList[itemCount] = it
     end
-    it.kind, it.y, it.h, it.gen, it.rec = kindOf, y, hgt, modelGen, nil
+    it.kind, it.y, it.h, it.gen, it.rec = kind, y, hgt, modelGen, nil
     return it
 end
 
@@ -517,29 +517,29 @@ local function Rebuild()
             local details = C_BattleNet.GetFriendAccountInfo(idx)
             if details then
                 num = num + 1
-                local recd = records[num]
-                if not recd then
-                    recd = {}
-                    records[num] = recd
+                local rec = records[num]
+                if not rec then
+                    rec = {}
+                    records[num] = rec
                 end
                 local gi = details.gameAccountInfo
                 local ident = details.bnetAccountID
-                recd.index, recd.id, recd.info = idx, ident, details
-                recd.online = gi ~= nil and gi.isOnline == true
-                recd.priority = Priority(gi)
-                recd.sortName = SortName(details)
-                recd.key = FriendKey(details)
-                recd.bucket = BucketOf(g, details, recd.key)
-                byId[ident] = recd
-                byIndex[idx] = recd
-                local entries = buckets[recd.bucket]
+                rec.index, rec.id, rec.info = idx, ident, details
+                rec.online = gi ~= nil and gi.isOnline == true
+                rec.priority = Priority(gi)
+                rec.sortName = SortName(details)
+                rec.key = FriendKey(details)
+                rec.bucket = BucketOf(g, details, rec.key)
+                byId[ident] = rec
+                byIndex[idx] = rec
+                local entries = buckets[rec.bucket]
                 if not entries then
                     entries = {}
-                    buckets[recd.bucket] = entries
+                    buckets[rec.bucket] = entries
                 end
-                entries[#entries + 1] = recd
-                if recd.online then
-                    onlineIn[recd.bucket] = (onlineIn[recd.bucket] or 0) + 1
+                entries[#entries + 1] = rec
+                if rec.online then
+                    onlineIn[rec.bucket] = (onlineIn[rec.bucket] or 0) + 1
                 end
             end
         end
@@ -687,15 +687,15 @@ end
 -- Puts a friend in one section: a custom group (ours alone; it wins over
 -- Favorites, so Battle.net is not asked), Favorites or the ungrouped friends
 -- (no custom group, and Battle.net's favorite switch on or off)
-local function PlaceFriend(ident, key, targetUnit)
+local function PlaceFriend(ident, key, target)
     local byTag = Store().friendGroupsByTag
-    if targetUnit == FAV or targetUnit == UNGROUPED then
+    if target == FAV or target == UNGROUPED then
         if key then
             byTag[key] = nil
         end
-        AskFavorite(ident, targetUnit == FAV)
+        AskFavorite(ident, target == FAV)
     elseif key then
-        byTag[key] = targetUnit
+        byTag[key] = target
     else
         return
     end
@@ -786,15 +786,15 @@ end
 --  Tooltips (ours: never the game tooltip)
 -------------------------------------------------------------------------------
 local tipBuf = {}
-local function FriendTooltip(recd)
-    local details = recd.info
+local function FriendTooltip(rec)
+    local details = rec.info
     local gi = details.gameAccountInfo
     local U = FriendsListUtil
     wipe(tipBuf)
     local num = 1
     tipBuf[1] = T.Name(details)
-    if recd.online and gi then
-        if recd.priority == 1 and gi.characterName then
+    if rec.online and gi then
+        if rec.priority == 1 and gi.characterName then
             local realm = T.Ruleset(details) or gi.realmDisplayName or gi.realmName
             num = num + 1
             tipBuf[num] = (realm and realm ~= "") and (gi.characterName .. "-" .. realm) or gi.characterName
@@ -880,9 +880,9 @@ local function ToggleSelected(f)
     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     selectedId = (selectedId ~= f.rec.id) and f.rec.id or nil
     for idx = 1, #rowList do
-        local rowFrame = rowList[idx]
-        if rowFrame.item then
-            SetSelected(rowFrame, rowFrame.rec.id == selectedId)
+        local row = rowList[idx]
+        if row.item then
+            SetSelected(row, row.rec.id == selectedId)
         end
     end
 end
@@ -944,22 +944,22 @@ end
 -------------------------------------------------------------------------------
 -- The friend's index, only while it still names this friend (the game
 -- renumbers friends as they come and go; a rebuild follows within a frame)
-local function LiveIndex(recd)
-    local details = recd and C_BattleNet.GetFriendAccountInfo(recd.index)
-    if details and details.bnetAccountID == recd.id then
-        return recd.index
+local function LiveIndex(rec)
+    local details = rec and C_BattleNet.GetFriendAccountInfo(rec.index)
+    if details and details.bnetAccountID == rec.id then
+        return rec.index
     end
 end
 
 -- What the button would do, and in red why it cannot (Blizzard's invite
 -- restriction)
 local function InviteEnter(btn)
-    local slotPos = LiveIndex(btn:GetParent().rec)
+    local index = LiveIndex(btn:GetParent().rec)
     local U = FriendsListUtil
-    if not (slotPos and U and U.GetBattleNetFriendInviteInfo) then
+    if not (index and U and U.GetBattleNetFriendInviteInfo) then
         return
     end
-    local textValue = U.GetBattleNetFriendInviteTypeLabel(U.GetBattleNetFriendInviteInfo(slotPos).inviteType)
+    local textValue = U.GetBattleNetFriendInviteTypeLabel(U.GetBattleNetFriendInviteInfo(index).inviteType)
         or ""
     local why
     if not btn:IsEnabled() and btn.restriction and U.GetBattleNetFriendPartyInviteRestrictionText then
@@ -992,22 +992,22 @@ end
 -- An atlas's own size (the icon keeps it, scaled with the button)
 local atlasSize = {}
 local function AtlasSize(atlas)
-    local dim = atlasSize[atlas]
-    if not dim then
+    local size = atlasSize[atlas]
+    if not size then
         local details = C_Texture.GetAtlasInfo(atlas)
-        dim = { details and details.width or 20, details and details.height or 20 }
-        atlasSize[atlas] = dim
+        size = { details and details.width or 20, details and details.height or 20 }
+        atlasSize[atlas] = size
     end
-    return dim[1], dim[2]
+    return size[1], size[2]
 end
 
 -- A friend on several characters: which one to invite
-local function ShowAccountMenu(btn, slotPos)
+local function ShowAccountMenu(btn, index)
     local U = FriendsListUtil
     local none = BattleNetFriendPartyInviteRestrictionType.None
     local dropMenu = {}
-    for idx = 1, C_BattleNet.GetFriendNumGameAccounts(slotPos) do
-        local gi = C_BattleNet.GetFriendGameAccountInfo(slotPos, idx)
+    for idx = 1, C_BattleNet.GetFriendNumGameAccounts(index) do
+        local gi = C_BattleNet.GetFriendGameAccountInfo(index, idx)
         if gi then
             local canInvite = U.IsPlayingWoW(gi) and U.GetGameAccountPartyInviteRestriction(gi) == none
             local labelText = gi.characterName or gi.richPresence or ""
@@ -1041,17 +1041,17 @@ local function InviteClick(btn)
     if not btn:IsEnabled() then
         return
     end
-    local slotPos = LiveIndex(btn:GetParent().rec)
+    local index = LiveIndex(btn:GetParent().rec)
     local U = FriendsListUtil
-    if not (slotPos and U and U.InviteOrRequestToJoin) then
+    if not (index and U and U.InviteOrRequestToJoin) then
         return
     end
-    local direct = U.GetBattleNetFriendGameAccountInfoIfExactlyOneDirectInviteTargetExists(slotPos)
+    local direct = U.GetBattleNetFriendGameAccountInfoIfExactlyOneDirectInviteTargetExists(index)
     if direct then
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         U.InviteOrRequestToJoin(direct.playerGuid, direct.gameAccountID)
-    elseif U.HasMultipleGameAccounts(slotPos) then
-        ShowAccountMenu(btn, slotPos)
+    elseif U.HasMultipleGameAccounts(index) then
+        ShowAccountMenu(btn, index)
     end
 end
 
@@ -1059,7 +1059,7 @@ end
 -- their character): an offline friend, or one in another game, has nobody to
 -- invite. Off, with its icon greyed, while Blizzard's rules do not let you
 -- invite them. Returns whether the button shows.
-local function UpdateInvite(f, recd)
+local function UpdateInvite(f, rec)
     local btn = f.PartyButton
     local U = FriendsListUtil
     if
@@ -1073,9 +1073,9 @@ local function UpdateInvite(f, recd)
         btn:Hide()
         return false
     end
-    local restriction = U.GetBattleNetFriendPartyInviteRestriction(recd.index)
+    local restriction = U.GetBattleNetFriendPartyInviteRestriction(rec.index)
     local enabled = restriction == BattleNetFriendPartyInviteRestrictionType.None
-    local unitGuid = recd.info.gameAccountInfo.playerGuid
+    local unitGuid = rec.info.gameAccountInfo.playerGuid
     local inGroup = unitGuid ~= nil
         and C_SocialQueue ~= nil
         and C_SocialQueue.IsSystemSupported ~= nil
@@ -1106,7 +1106,7 @@ end
 -------------------------------------------------------------------------------
 --  Friend rows
 -------------------------------------------------------------------------------
-local function MakeRow(slotIndex)
+local function MakeRow(slot)
     local f = CreateFrame("Frame", nil, contentFrame)
     -- Tile art and the text lines: the kit's, as on Blizzard's cards. Its
     -- state for this frame is the kit's frame data. The status after the
@@ -1118,12 +1118,12 @@ local function MakeRow(slotIndex)
     -- Blizzard's own card, which an online friend's row wears (PaintRow), at
     -- the host's alpha for it: whole, it takes the place of the tile's shade
     -- and online tint; fainter, it lies under them
-    if hostRegion.onlineCards then
+    if host.onlineCards then
         f.card = f:CreateTexture(nil, "BACKGROUND", nil, 1)
         f.card:SetAllPoints()
-        f.card:SetAlpha(hostRegion.onlineCards)
+        f.card:SetAlpha(host.onlineCards)
         f.card:Hide()
-        f.cardWhole = hostRegion.onlineCards >= 1
+        f.cardWhole = host.onlineCards >= 1
     end
 
     -- The invite button, in the art of the one on Blizzard's card. Named as
@@ -1183,7 +1183,7 @@ local function MakeRow(slotIndex)
     f.link = itemLink
 
     f:Hide()
-    rowPool[slotIndex] = f
+    rowPool[slot] = f
     rowList[#rowList + 1] = f
     return f
 end
@@ -1201,11 +1201,11 @@ local function StyleRow(f)
     -- (the sizes checked in game on rows of 24, 40 and 64): its line box is
     -- the link's live zone. The text is cut to whole letters, so the block
     -- runs two letters past the row's right edge.
-    local dim = tileH + LINK_TALLER
-    f.link:SetFont(STANDARD_TEXT_FONT, dim, "")
+    local size = tileH + LINK_TALLER
+    f.link:SetFont(STANDARD_TEXT_FONT, size, "")
     f.link:ClearAllPoints()
     f.link:SetPoint("TOPLEFT", f.hit, "TOPLEFT", -4, LINK_ABOVE)
-    f.link:SetPoint("RIGHT", f.hit, "RIGHT", 2 * dim + 12, 0)
+    f.link:SetPoint("RIGHT", f.hit, "RIGHT", 2 * size + 12, 0)
 
     local share = math.max(BTN_MIN, math.min(BTN_NATIVE, tileH * BTN_SHARE))
     local btnSize = math.floor((share + math.min(BTN_FLAT, tileH - 6)) / 2 + 0.5) + BTN_EXTRA
@@ -1314,8 +1314,8 @@ local function LayoutText(f, hasChar, stop, reserve)
         details:SetPoint("LEFT", status, "RIGHT", 8, -STATUS_DY)
     else
         local gap = tier == 3 and 5 or 3
-        local blockData = f.nameSize + gap + f.lineSize
-        name:SetPoint("TOPLEFT", f, "TOPLEFT", posX, -math.max(0, (tileH - blockData) / 2))
+        local block = f.nameSize + gap + f.lineSize
+        name:SetPoint("TOPLEFT", f, "TOPLEFT", posX, -math.max(0, (tileH - block) / 2))
         details:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -gap)
     end
     if stop then
@@ -1359,58 +1359,58 @@ local function Presence(details)
 end
 
 local function UpdateIcon(f, details, p)
-    local glyph = f.d.classIcon
+    local icon = f.d.classIcon
     if p and p.showClassIcons == false then
-        glyph:Hide()
+        icon:Hide()
         return
     end
     local state = T.State(details)
     local hgt = tileH - 4
     if state == "retail" then
-        local classFile = T.ClassFile(details)
-        if not classFile then
-            glyph:Hide()
+        local class = T.ClassFile(details)
+        if not class then
+            icon:Hide()
             return
         end
         if f.iconMode ~= 1 then
             f.iconMode = 1
-            local dim = hgt - 2 * math.floor(hgt * 0.025 + 0.5)
-            glyph:ClearAllPoints()
-            glyph:SetSize(dim, dim)
-            glyph:SetPoint("LEFT", f, "LEFT", 4 + (hgt - dim) / 2, 0)
+            local size = hgt - 2 * math.floor(hgt * 0.025 + 0.5)
+            icon:ClearAllPoints()
+            icon:SetSize(size, size)
+            icon:SetPoint("LEFT", f, "LEFT", 4 + (hgt - size) / 2, 0)
         end
-        T.ClassIconTex(glyph, (p and p.iconStyle) or "modern", classFile)
-        glyph:SetAlpha(1)
+        T.ClassIconTex(icon, (p and p.iconStyle) or "modern", class)
+        icon:SetAlpha(1)
     else
         if f.iconMode ~= 2 then
             f.iconMode = 2
-            local dim = math.floor(hgt * 0.75)
-            glyph:ClearAllPoints()
-            glyph:SetSize(dim, dim)
-            glyph:SetPoint("LEFT", f, "LEFT", 4 + math.floor((hgt - dim) / 2), 0)
+            local size = math.floor(hgt * 0.75)
+            icon:ClearAllPoints()
+            icon:SetSize(size, size)
+            icon:SetPoint("LEFT", f, "LEFT", 4 + math.floor((hgt - size) / 2), 0)
         end
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexCoord(0, 1, 0, 1)
         if state == "other_game" and C_Texture.SetTitleIconTexture then
             local gi = details.gameAccountInfo
-            C_Texture.SetTitleIconTexture(glyph, gi.clientProgram, Enum.TitleIconVersion.Medium, gi.subIcon)
-            glyph:SetAlpha(1)
+            C_Texture.SetTitleIconTexture(icon, gi.clientProgram, Enum.TitleIconVersion.Medium, gi.subIcon)
+            icon:SetAlpha(1)
         else
-            glyph:SetTexture(T.OFFLINE_ICON)
-            glyph:SetAlpha(0.5)
+            icon:SetTexture(T.OFFLINE_ICON)
+            icon:SetAlpha(0.5)
         end
     end
-    glyph:SetDesaturated(false)
-    glyph:Show()
+    icon:SetDesaturated(false)
+    icon:Show()
 end
 
 local function PaintRow(f, it)
-    local recd = it.rec
-    local details = recd.info
+    local rec = it.rec
+    local details = rec.info
     local d = f.d
     if f.style ~= styleGen then
         StyleRow(f)
     end
-    f.item, f.gen, f.rec = it, it.gen, recd
+    f.item, f.gen, f.rec = it, it.gen, rec
 
     SetLink(f)
 
@@ -1430,7 +1430,7 @@ local function PaintRow(f, it)
         f.regionFor = tileH
         regionFrame:SetSize(regionSize, regionSize)
     end
-    local invite = UpdateInvite(f, recd)
+    local invite = UpdateInvite(f, rec)
     if regionFrame and f.regionBy ~= invite then
         f.regionBy = invite
         regionFrame:ClearAllPoints()
@@ -1471,7 +1471,7 @@ local function PaintRow(f, it)
         -- hides the tile's shade (MakeRow). The file is at Lua's local cap,
         -- hence no constants of its own.
         local atlas
-        if recd.online then
+        if rec.online then
             local level, levels = details.friendLevel, Enum.BattleNetFriendLevel
             atlas = (levels and not IsSecret(level) and level == levels.Title) and "friends-card-default"
                 or "friends-card-battleNet"
@@ -1488,14 +1488,14 @@ local function PaintRow(f, it)
         end
     end
     if not f.cardWhole then
-        d.onlineBg:SetShown(recd.online)
+        d.onlineBg:SetShown(rec.online)
     end
     T.Faction(f, d, details)
-    SetSelected(f, recd.id == selectedId)
+    SetSelected(f, rec.id == selectedId)
 
     -- A reused row under the pointer shows the new friend's tooltip
     if hoverRow == f then
-        CludesUI.ShowWidgetTooltip(f, FriendTooltip(recd), TIP_OPTS)
+        CludesUI.ShowWidgetTooltip(f, FriendTooltip(rec), TIP_OPTS)
     end
 end
 
@@ -1538,9 +1538,9 @@ local function HeaderIcon(hostFrame, texture, onClick, tipText)
     local btn = CreateFrame("Button", nil, hostFrame)
     btn:SetSize(14, 14)
     btn:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-    local glyph = btn:CreateTexture(nil, "OVERLAY")
-    glyph:SetAllPoints()
-    glyph:SetTexture(ICONS .. texture)
+    local icon = btn:CreateTexture(nil, "OVERLAY")
+    icon:SetAllPoints()
+    icon:SetTexture(ICONS .. texture)
     btn:SetAlpha(ICON_ALPHA)
     btn.tip = tipText
     btn:SetScript("OnEnter", HeaderIconEnter)
@@ -1600,7 +1600,7 @@ local RepaintHeaders -- defined with the header painter below
 -- The colour picker for a section's name (it lives in the options addon,
 -- which the game will not load in combat). Each pick repaints the section
 -- names in view, and a cancel puts the old colour back.
-local function PickSectionColor(key, anchorFrame, onChange)
+local function PickSectionColor(key, anchor, onChange)
     if not key or InCombatLockdown() then
         return
     end
@@ -1635,7 +1635,7 @@ local function PickSectionColor(key, anchorFrame, onChange)
         cancelFunc = function()
             Set(was)
         end,
-    }, anchorFrame)
+    }, anchor)
 end
 
 -- A custom group's name and colour in one popup: the swatch beside the name
@@ -1680,7 +1680,7 @@ local function EditTip(btn)
     return btn:GetParent().custom and "Edit Group" or "Change Color"
 end
 
-local function MakeHeader(slotIndex)
+local function MakeHeader(slot)
     local hgt = CreateFrame("Button", nil, contentFrame)
     hgt:SetHeight(HEADER_H)
     local backdrop = hgt:CreateTexture(nil, "BACKGROUND")
@@ -1718,14 +1718,14 @@ local function MakeHeader(slotIndex)
     hgt:SetScript("OnEnter", HeaderEnter)
     hgt:SetScript("OnLeave", HeaderLeave)
     hgt:Hide()
-    headerPool[slotIndex] = hgt
+    headerPool[slot] = hgt
     headerList[#headerList + 1] = hgt
     return hgt
 end
 
-local function SetIconOff(btn, offset)
-    btn.off = offset
-    btn:SetAlpha(offset and ICON_OFF or ICON_ALPHA)
+local function SetIconOff(btn, off)
+    btn.off = off
+    btn:SetAlpha(off and ICON_OFF or ICON_ALPHA)
 end
 
 local function PaintHeader(hgt, it)
@@ -1816,15 +1816,15 @@ local function LayoutVisible()
             if it.y >= bottom then
                 break
             end
-            local slotIndex = (idx - 1) % ring + 1
+            local slot = (idx - 1) % ring + 1
             local f
             if it.kind == KIND_FRIEND then
-                f = rowPool[slotIndex] or MakeRow(slotIndex)
+                f = rowPool[slot] or MakeRow(slot)
                 if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then
                     PaintRow(f, it)
                 end
             else
-                f = headerPool[slotIndex] or MakeHeader(slotIndex)
+                f = headerPool[slot] or MakeHeader(slot)
                 if f.item ~= it or f.gen ~= it.gen or f.style ~= styleGen then
                     PaintHeader(f, it)
                 end
@@ -1860,7 +1860,7 @@ end
 local function SyncBarSpot()
     local range = ScrollRange()
     barBusy = true
-    barFrame:SetScrollPercentage(range > 0 and scrollFrame:GetVerticalScroll() / range or 0, true)
+    bar:SetScrollPercentage(range > 0 and scrollFrame:GetVerticalScroll() / range or 0, true)
     barBusy = false
 end
 
@@ -1868,9 +1868,9 @@ end
 local function SyncBar()
     local range = ScrollRange()
     barBusy = true
-    barFrame:SetVisibleExtentPercentage(range > 0 and scrollFrame:GetHeight() / contentFrame:GetHeight() or 1)
-    barFrame:SetPanExtentPercentage(range > 0 and (tileH + ROW_GAP) / range or 0)
-    barFrame:SetScrollPercentage(range > 0 and scrollFrame:GetVerticalScroll() / range or 0, true)
+    bar:SetVisibleExtentPercentage(range > 0 and scrollFrame:GetHeight() / contentFrame:GetHeight() or 1)
+    bar:SetPanExtentPercentage(range > 0 and (tileH + ROW_GAP) / range or 0)
+    bar:SetScrollPercentage(range > 0 and scrollFrame:GetVerticalScroll() / range or 0, true)
     barBusy = false
 end
 
@@ -1927,39 +1927,39 @@ local function ApplyMetrics()
     -- Every row those slots can need is made now, so a scroll never has to
     -- make one
     if viewH > 0 then
-        for slotIndex = 1, ring do
-            if not rowPool[slotIndex] then
-                MakeRow(slotIndex)
+        for slot = 1, ring do
+            if not rowPool[slot] then
+                MakeRow(slot)
             end
         end
     end
 end
 
 -- One friend changed and nothing that places it did: its row alone repaints
-local function TryRowDelta(slotPos)
+local function TryRowDelta(index)
     if searchActive then
         return false
     end
-    local recd = byIndex[slotPos]
-    if not recd then
+    local rec = byIndex[index]
+    if not rec then
         return false
     end
-    local details = C_BattleNet.GetFriendAccountInfo(slotPos)
-    if not details or details.bnetAccountID ~= recd.id then
+    local details = C_BattleNet.GetFriendAccountInfo(index)
+    if not details or details.bnetAccountID ~= rec.id then
         return false
     end
     local gi = details.gameAccountInfo
     if
-        (gi ~= nil and gi.isOnline == true) ~= recd.online
-        or Priority(gi) ~= recd.priority
-        or BucketOf(Store(), details, recd.key) ~= recd.bucket
+        (gi ~= nil and gi.isOnline == true) ~= rec.online
+        or Priority(gi) ~= rec.priority
+        or BucketOf(Store(), details, rec.key) ~= rec.bucket
     then
         return false
     end
-    recd.info = details
+    rec.info = details
     for idx = 1, #rowList do
         local f = rowList[idx]
-        if f.rec == recd and f.item then
+        if f.rec == rec and f.item then
             PaintRow(f, f.item)
             break
         end
@@ -2056,21 +2056,21 @@ end
 
 -- Blizzard's friend tags as checkboxes: one set for the interests and the
 -- roles, sent whole on every tick
-local function AddTagEntries(subFrame, ident, details)
-    local group = {}
+local function AddTagEntries(sub, ident, details)
+    local set = {}
     local have = details.friendTags
     if type(have) == "table" then
         for idx = 1, #have do
-            group[have[idx]] = true
+            set[have[idx]] = true
         end
     end
     local function IsOn(tag)
-        return group[tag] == true
+        return set[tag] == true
     end
     local function Toggle(tag)
-        group[tag] = not group[tag] or nil
+        set[tag] = not set[tag] or nil
         local entries = {}
-        for t in pairs(group) do
+        for t in pairs(set) do
             entries[#entries + 1] = t
         end
         C_BattleNet.SetFriendTags(ident, entries)
@@ -2080,12 +2080,7 @@ local function AddTagEntries(subFrame, ident, details)
             return
         end
         for idx = 1, #tags do
-            subFrame:CreateCheckbox(
-                SocialUIUtil.GetLabelForBattleNetFriendTag(tags[idx]),
-                IsOn,
-                Toggle,
-                tags[idx]
-            )
+            sub:CreateCheckbox(SocialUIUtil.GetLabelForBattleNetFriendTag(tags[idx]), IsOn, Toggle, tags[idx])
         end
     end
     Add(SocialUIUtil.GetSupportedBattleNetFriendTagInterestsForCurrentGameType())
@@ -2100,12 +2095,12 @@ local function AddMenuEntries(_, dropMenu, contextData)
     if type(contextData) ~= "table" or contextData.friendsList then
         return
     end
-    local recd = byId[tonumber(contextData.bnetIDAccount) or 0]
-    local details = recd and recd.info
+    local rec = byId[tonumber(contextData.bnetIDAccount) or 0]
+    local details = rec and rec.info
     if not details then
         return
     end
-    local ident, key = recd.id, recd.key
+    local ident, key = rec.id, rec.key
     local g = Store()
     local current = BucketOf(g, details, key)
 
@@ -2146,31 +2141,31 @@ local function AddMenuEntries(_, dropMenu, contextData)
         dropMenu:CreateDivider()
         dropMenu:CreateTitle("CludesUI")
         local grouped = current ~= UNGROUPED
-        local subFrame =
+        local sub =
             dropMenu:CreateButton(grouped and CludesUI.L("Move to Group") or CludesUI.L("Add to Group"))
-        subFrame:CreateButton(CludesUI.L("New Group..."), function()
+        sub:CreateButton(CludesUI.L("New Group..."), function()
             PromptNewGroup(key)
         end)
         local entries = g.friendGroups
         if current ~= FAV or #entries > 0 then
-            subFrame:CreateDivider()
+            sub:CreateDivider()
         end
         if current ~= FAV then
-            subFrame:CreateButton(FAVORITES or CludesUI.L("Favorites"), function()
+            sub:CreateButton(FAVORITES or CludesUI.L("Favorites"), function()
                 PlaceFriend(ident, key, FAV)
             end)
         end
         for idx = 1, #entries do
             local name = entries[idx].name
             if name ~= current then
-                subFrame:CreateButton(name, function()
+                sub:CreateButton(name, function()
                     PlaceFriend(ident, key, name)
                 end)
             end
         end
         if grouped then
-            subFrame:CreateDivider()
-            subFrame:CreateButton(CludesUI.L("Remove from Group"), function()
+            sub:CreateDivider()
+            sub:CreateButton(CludesUI.L("Remove from Group"), function()
                 PlaceFriend(ident, key, UNGROUPED)
             end)
         end
@@ -2199,14 +2194,14 @@ local function Build()
     contentFrame = CreateFrame("Frame", nil, scrollFrame)
     contentFrame:SetSize(1, 1)
     scrollFrame:SetScrollChild(contentFrame)
-    barFrame = CreateFrame("EventFrame", nil, root, "MinimalScrollBar")
-    barFrame:SetAllPoints(view.ScrollBar)
-    barFrame:RegisterCallback(ScrollBarMixin.Event.OnScroll, OnBarScroll, barFrame)
+    bar = CreateFrame("EventFrame", nil, root, "MinimalScrollBar")
+    bar:SetAllPoints(view.ScrollBar)
+    bar:RegisterCallback(ScrollBarMixin.Event.OnScroll, OnBarScroll, bar)
     -- The wheel over the list is the bar's own (the template's handler over
     -- the bar): two tiles a tick, at once
     scrollFrame:EnableMouseWheel(true)
     scrollFrame:SetScript("OnMouseWheel", function(_, delta)
-        barFrame:OnMouseWheel(delta)
+        bar:OnMouseWheel(delta)
     end)
     scrollFrame:SetScript("OnSizeChanged", function()
         if not isActive then
@@ -2383,7 +2378,7 @@ end
 
 -- A setting changed (the host's options call this), or the list starts
 function FL.Refresh()
-    if not hostRegion then
+    if not host then
         return
     end
     local p = Settings()
@@ -2410,13 +2405,13 @@ end
 -- host's settings and font, and only under the CludesUI look (a stock
 -- look keeps Blizzard's list).
 function FL.Start()
-    if hostRegion then
+    if host then
         return
     end
     local hgt = T.Host()
     if not hgt or hgt.style ~= "cui" then
         return
     end
-    hostRegion = hgt
+    host = hgt
     FL.Refresh()
 end

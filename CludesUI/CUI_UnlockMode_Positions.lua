@@ -87,14 +87,14 @@ CUI_NS.unlockParts.Positions = function(LM)
             local tCY = (tT + tB) / 2
             local cW = (childBar:GetWidth() or 50) * cS / uiS
             local cH = (childBar:GetHeight() or 50) * cS / uiS
-            local sideName = itemLink.side
-            if sideName == "LEFT" then
+            local side = itemLink.side
+            if side == "LEFT" then
                 return tL - cW / 2, tCY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 return tR + cW / 2, tCY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 return tCX, tT + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 return tCX, tB - cH / 2
             end
             return tCX, tCY
@@ -310,9 +310,9 @@ CUI_NS.unlockParts.Positions = function(LM)
             return g
         end
 
-        local group = { ghosts = ghosts, Hide = HideGhost, Sync = SyncGhost, Create = CreateGhost }
+        local set = { ghosts = ghosts, Hide = HideGhost, Sync = SyncGhost, Create = CreateGhost }
 
-        function group.HideAll()
+        function set.HideAll()
             for _, g in pairs(ghosts) do
                 HideGhost(g)
             end
@@ -320,7 +320,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- Fade support for the unlock open animation: scales the resting ghost
         -- alpha by 0..1 so ghosts ride the same fade-in curve as the movers.
-        function group.SetAlpha(mult)
+        function set.SetAlpha(mult)
             for _, g in pairs(ghosts) do
                 if g:IsShown() then
                     g:SetAlpha(GHOST_ALPHA * (mult or 1))
@@ -328,7 +328,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
         end
 
-        function group.Deselect()
+        function set.Deselect()
             if selectedGhost then
                 SetGhostSelected(selectedGhost, false)
                 selectedGhost = nil
@@ -338,7 +338,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Clear per-session temp-hides (Shift+Right Click): unlock entry calls this
         -- alongside the mover/Blizz-overlay clears so every session starts with all
         -- ghosts visible again.
-        function group.ClearTempHides()
+        function set.ClearTempHides()
             for _, g in pairs(ghosts) do
                 g._tempHidden = nil
             end
@@ -348,7 +348,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- anchored element: the exact delta is added to the stored offsets (never a
         -- live geometry read-back) and the shared preview/runtime pipeline pixel-snaps
         -- the landed center. Returns true when consumed.
-        function group.Nudge(dx, dy)
+        function set.Nudge(dx, dy)
             local g = selectedGhost
             if not g or not g:IsShown() then
                 return false
@@ -364,7 +364,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             return true
         end
 
-        return group
+        return set
     end
 
     -------------------------------------------------------------------------------
@@ -373,7 +373,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     --  unlock mode is open, only for elements that opted into a fallback.
     -------------------------------------------------------------------------------
     do
-        local group = MakeGhostSet({
+        local set = MakeGhostSet({
             getLink = function(g)
                 local saved = GetAnchorDB()
                 local details = saved and saved[g._childKey]
@@ -400,13 +400,13 @@ CUI_NS.unlockParts.Positions = function(LM)
             end,
             deselectOther = "_DeselectOverrideGhosts",
         })
-        local ghosts = group.ghosts
+        local ghosts = set.ghosts
 
-        CludesUI._HideFallbackGhosts = group.HideAll
-        CludesUI._SetFallbackGhostsAlpha = group.SetAlpha
-        CludesUI._DeselectFallbackGhosts = group.Deselect
-        CludesUI._ClearFallbackGhostTempHides = group.ClearTempHides
-        CludesUI._NudgeSelectedFallbackGhost = group.Nudge
+        CludesUI._HideFallbackGhosts = set.HideAll
+        CludesUI._SetFallbackGhostsAlpha = set.SetAlpha
+        CludesUI._DeselectFallbackGhosts = set.Deselect
+        CludesUI._ClearFallbackGhostTempHides = set.ClearTempHides
+        CludesUI._NudgeSelectedFallbackGhost = set.Nudge
 
         function CludesUI._RefreshFallbackGhosts()
             if not LM.isUnlocked or not LM.unlockFrame then
@@ -417,7 +417,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             for key, g in pairs(ghosts) do
                 local details = saved and saved[key]
                 if not (details and details.fallback and details.fallback.target) then
-                    group.Hide(g)
+                    set.Hide(g)
                 end
             end
             if not saved then
@@ -428,10 +428,10 @@ CUI_NS.unlockParts.Positions = function(LM)
                 if fb and fb.target then
                     local g = ghosts[childKey]
                     if not g then
-                        g = group.Create(childKey)
+                        g = set.Create(childKey)
                         ghosts[childKey] = g
                     end
-                    group.Sync(g)
+                    set.Sync(g)
                 end
             end
         end
@@ -602,7 +602,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- Target unavailable (absent frame / no bounds yet): hold position.
                 return true
             end
-            local sideName = shade.side
+            local side = shade.side
             local uiS = UIParent:GetEffectiveScale()
             local tS = tgt:GetEffectiveScale()
             local cS = childBar:GetEffectiveScale()
@@ -614,15 +614,15 @@ CUI_NS.unlockParts.Positions = function(LM)
             local tCY = (tT + tB) / 2
             -- Growth-edge extent applies to the override target too.
             if CludesUI._GetAnchorTargetExtent then
-                local ext = CludesUI._GetAnchorTargetExtent(shade.target, sideName)
+                local ext = CludesUI._GetAnchorTargetExtent(shade.target, side)
                 if ext then
-                    if sideName == "TOP" then
+                    if side == "TOP" then
                         tT = ext
-                    elseif sideName == "BOTTOM" then
+                    elseif side == "BOTTOM" then
                         tB = ext
-                    elseif sideName == "LEFT" then
+                    elseif side == "LEFT" then
                         tL = ext
-                    elseif sideName == "RIGHT" then
+                    elseif side == "RIGHT" then
                         tR = ext
                     end
                 end
@@ -630,13 +630,13 @@ CUI_NS.unlockParts.Positions = function(LM)
             local cW = (childBar:GetWidth() or 50) * cS / uiS
             local cH = (childBar:GetHeight() or 50) * cS / uiS
             local cx, cy
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 cx, cy = tL - cW / 2, tCY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 cx, cy = tR + cW / 2, tCY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 cx, cy = tCX, tT + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 cx, cy = tCX, tB - cH / 2
             else
                 cx, cy = tCX, tCY
@@ -646,7 +646,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             cy = cy + (shade.offsetY or 0)
             -- Keep the growth-fixed edge pinned on the cross axis (inert for
             -- center-growth / non-bar children), like the fallback apply.
-            local gsx, gsy = CludesUI._FallbackGrowShift(childKey, sideName, cW, cH)
+            local gsx, gsy = CludesUI._FallbackGrowShift(childKey, side, cW, cH)
             cx = cx + gsx
             cy = cy + gsy
             -- Temporary per-target visual shift (e.g. "Shift Elements if No
@@ -742,7 +742,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- the same element pick mode as regular anchoring. Re-picking the SAME
         -- target keeps the dragged offsets (only the side changed); a new target
         -- resets them, exactly like re-anchoring invalidates a fallback.
-        function CludesUI._SetOverrideAnchor(childKey, groupId, targetKey, sideName)
+        function CludesUI._SetOverrideAnchor(childKey, groupId, targetKey, side)
             if not childKey or not groupId or not targetKey or targetKey == childKey then
                 return
             end
@@ -759,7 +759,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             local keepOff = type(prev) == "table" and prev.target == targetKey
             ent[groupId] = {
                 target = targetKey,
-                side = sideName or "BOTTOM",
+                side = side or "BOTTOM",
                 offsetX = keepOff and prev.offsetX or nil,
                 offsetY = keepOff and prev.offsetY or nil,
             }
@@ -864,7 +864,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             return shade
         end
 
-        local group = MakeGhostSet({
+        local set = MakeGhostSet({
             getLink = GhostPos,
             init = function(g, childKey, groupId)
                 g._childKey = childKey
@@ -887,13 +887,13 @@ CUI_NS.unlockParts.Positions = function(LM)
             end,
             deselectOther = "_DeselectFallbackGhosts",
         })
-        local ghosts = group.ghosts
+        local ghosts = set.ghosts
 
-        CludesUI._HideOverrideGhosts = group.HideAll
-        CludesUI._SetOverrideGhostsAlpha = group.SetAlpha
-        CludesUI._DeselectOverrideGhosts = group.Deselect
-        CludesUI._ClearOverrideGhostTempHides = group.ClearTempHides
-        CludesUI._NudgeSelectedOverrideGhost = group.Nudge
+        CludesUI._HideOverrideGhosts = set.HideAll
+        CludesUI._SetOverrideGhostsAlpha = set.SetAlpha
+        CludesUI._DeselectOverrideGhosts = set.Deselect
+        CludesUI._ClearOverrideGhostTempHides = set.ClearTempHides
+        CludesUI._NudgeSelectedOverrideGhost = set.Nudge
 
         function CludesUI._RefreshOverrideGhosts()
             if not LM.isUnlocked or not LM.unlockFrame then
@@ -921,7 +921,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
             for _, g in pairs(ghosts) do
                 if not GhostPos(g) then
-                    group.Hide(g)
+                    set.Hide(g)
                 end
             end
             if not storage then
@@ -932,10 +932,10 @@ CUI_NS.unlockParts.Positions = function(LM)
                     local gk = ck .. "|" .. tostring(groupId)
                     local g = ghosts[gk]
                     if not g then
-                        g = group.Create(ck, groupId)
+                        g = set.Create(ck, groupId)
                         ghosts[gk] = g
                     end
-                    group.Sync(g)
+                    set.Sync(g)
                 end
             end
         end
@@ -981,7 +981,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- side's target edge (honoring the growth-edge extent override); a perpendicular
     -- side pins to the near edge, chosen once by which half of the target the fixed
     -- edge sits in, so runtime straddling can never flip it.
-    CludesUI._unlockCaptureGrowPin = function(childKey, ai, sideName)
+    CludesUI._unlockCaptureGrowPin = function(childKey, ai, side)
         if not ai or not ai.target then
             return false
         end
@@ -1012,15 +1012,15 @@ CUI_NS.unlockParts.Positions = function(LM)
         local tT = (targetBar:GetTop() or 0) * tS / uiS
         local tB = (targetBar:GetBottom() or 0) * tS / uiS
         if CludesUI._GetAnchorTargetExtent then
-            local ext = CludesUI._GetAnchorTargetExtent(ai.target, sideName)
+            local ext = CludesUI._GetAnchorTargetExtent(ai.target, side)
             if ext then
-                if sideName == "TOP" then
+                if side == "TOP" then
                     tT = ext
-                elseif sideName == "BOTTOM" then
+                elseif side == "BOTTOM" then
                     tB = ext
-                elseif sideName == "LEFT" then
+                elseif side == "LEFT" then
                     tL = ext
-                elseif sideName == "RIGHT" then
+                elseif side == "RIGHT" then
                     tR = ext
                 end
             end
@@ -1029,9 +1029,9 @@ CUI_NS.unlockParts.Positions = function(LM)
         if growDir == "LEFT" or growDir == "RIGHT" then
             local fixedX = ((growDir == "RIGHT") and childBar:GetLeft() or childBar:GetRight()) * cS / uiS
             local refX
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 refX = "LEFT"
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 refX = "RIGHT"
             -- A screen edge spans the full width: hold against the screen's horizontal
             -- center like every other element on that edge, not its left or right.
@@ -1047,9 +1047,9 @@ CUI_NS.unlockParts.Positions = function(LM)
         else
             local fixedY = ((growDir == "UP") and childBar:GetBottom() or childBar:GetTop()) * cS / uiS
             local refY
-            if sideName == "TOP" then
+            if side == "TOP" then
                 refY = "TOP"
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 refY = "BOTTOM"
             -- A screen edge spans the full height: hold against the screen's vertical
             -- center like every other element on that edge, not its top or bottom.
@@ -1103,7 +1103,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- the anchored side, center on the cross axis. The element's own extra offset (the
     -- raid container's per-tier offset) comes out, because every anchored apply folds
     -- it back in. Returns nil when either rect is missing.
-    CludesUI._CaptureAnchorOffsets = function(childKey, targetKey, sideName)
+    CludesUI._CaptureAnchorOffsets = function(childKey, targetKey, side)
         local details = GetAnchorInfo(childKey)
         if details and details.mode == "POINT" and details.target == targetKey then
             return mod.PointAnchors.Capture(childKey, details)
@@ -1122,16 +1122,16 @@ CUI_NS.unlockParts.Positions = function(LM)
         local tT, tB = tgt:GetTop() * tS, tgt:GetBottom() * tS
         local cCX, cCY = (cL + cR) / 2, (cT + cB) / 2
         local tCX, tCY = (tL + tR) / 2, (tT + tB) / 2
-        if sideName == "LEFT" then
+        if side == "LEFT" then
             return cR - tL, cCY - tCY
         end
-        if sideName == "RIGHT" then
+        if side == "RIGHT" then
             return cL - tR, cCY - tCY
         end
-        if sideName == "TOP" then
+        if side == "TOP" then
             return cCX - tCX, cB - tT
         end
-        if sideName == "BOTTOM" then
+        if side == "BOTTOM" then
             return cCX - tCX, cT - tB
         end
         return cCX - tCX, cCY - tCY
@@ -1153,20 +1153,20 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Own host frame in the top strata: on the unlock overlay itself the line went
         -- behind every bar and frame that sits in a higher strata. It is a child of the
         -- overlay, so it still disappears with unlock mode.
-        local hostRegion = storage.host
-        if not hostRegion then
-            hostRegion = CreateFrame("Frame", nil, LM.unlockFrame)
-            hostRegion:SetFrameStrata("TOOLTIP")
-            hostRegion:SetFrameLevel(400)
-            hostRegion:SetAllPoints(UIParent)
-            storage.host = hostRegion
+        local host = storage.host
+        if not host then
+            host = CreateFrame("Frame", nil, LM.unlockFrame)
+            host:SetFrameStrata("TOOLTIP")
+            host:SetFrameLevel(400)
+            host:SetAllPoints(UIParent)
+            storage.host = host
         end
-        hostRegion:Show()
+        host:Show()
         local m = storage[edgeKey]
         if not m then
             local vertical = (edgeKey == "SCREEN_LEFT" or edgeKey == "SCREEN_RIGHT")
             local thick = (Pix and Pix.mult or 1) * 5
-            m = hostRegion:CreateTexture(nil, "OVERLAY")
+            m = host:CreateTexture(nil, "OVERLAY")
             if m.SetSnapToPixelGrid then
                 m:SetSnapToPixelGrid(false)
                 m:SetTexelSnappingBias(0)
@@ -1208,8 +1208,8 @@ CUI_NS.unlockParts.Positions = function(LM)
 
     -- The single number a cross-axis screen edge needs: the capture above, reduced to
     -- the axis that edge governs.
-    CludesUI._CaptureScreenEdgeOffset = function(childKey, edgeKey, sideName)
-        local offX, offY = CludesUI._CaptureAnchorOffsets(childKey, edgeKey, sideName)
+    CludesUI._CaptureScreenEdgeOffset = function(childKey, edgeKey, side)
+        local offX, offY = CludesUI._CaptureAnchorOffsets(childKey, edgeKey, side)
         if offX == nil then
             return nil
         end
@@ -1281,7 +1281,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         end
     end
 
-    LM.ApplyAnchorPosition = function(childKey, targetKey, sideName, noMark, noMove, fromCascade)
+    LM.ApplyAnchorPosition = function(childKey, targetKey, side, noMark, noMove, fromCascade)
         -- A screen edge is a fixed target, never a child: a stray link from bad data
         -- would re-point its strip and skew every screen-edge link.
         if CludesUI.IsScreenEdgeKey(childKey) then
@@ -1374,15 +1374,15 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- bar of an upward-growing tracking bar group). Provider returns nil for every
         -- other target/side (keeping the frame's own bounds); cross-axis centering stays on the anchor frame.
         if CludesUI._GetAnchorTargetExtent then
-            local ext = CludesUI._GetAnchorTargetExtent(targetKey, sideName)
+            local ext = CludesUI._GetAnchorTargetExtent(targetKey, side)
             if ext then
-                if sideName == "TOP" then
+                if side == "TOP" then
                     tT = ext
-                elseif sideName == "BOTTOM" then
+                elseif side == "BOTTOM" then
                     tB = ext
-                elseif sideName == "LEFT" then
+                elseif side == "LEFT" then
                     tL = ext
-                elseif sideName == "RIGHT" then
+                elseif side == "RIGHT" then
                     tR = ext
                 end
             end
@@ -1424,22 +1424,22 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- Edge-to-edge offset mode: the offset runs from the child's near edge to
             -- the target's anchor edge, so a resized child keeps that near edge fixed.
             local edgeX, edgeY
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 edgeX = tL
                 edgeY = tCY
                 cx = edgeX + ai.offsetX - cW / 2
                 cy = edgeY + ai.offsetY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 edgeX = tR
                 edgeY = tCY
                 cx = edgeX + ai.offsetX + cW / 2
                 cy = edgeY + ai.offsetY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 edgeX = tCX
                 edgeY = tT
                 cx = edgeX + ai.offsetX
                 cy = edgeY + ai.offsetY + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 edgeX = tCX
                 edgeY = tB
                 cx = edgeX + ai.offsetX
@@ -1452,16 +1452,16 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
         else
             -- Side-snap mode (initial placement or legacy)
-            if sideName == "LEFT" then
+            if side == "LEFT" then
                 cx = tL - cW / 2
                 cy = tCY
-            elseif sideName == "RIGHT" then
+            elseif side == "RIGHT" then
                 cx = tR + cW / 2
                 cy = tCY
-            elseif sideName == "TOP" then
+            elseif side == "TOP" then
                 cx = tCX
                 cy = tT + cH / 2
-            elseif sideName == "BOTTOM" then
+            elseif side == "BOTTOM" then
                 cx = tCX
                 cy = tB - cH / 2
             else
@@ -1476,22 +1476,22 @@ CUI_NS.unlockParts.Positions = function(LM)
                         return math.floor(val + 0.5)
                     end
                 local edgeX, edgeY
-                if sideName == "LEFT" then
+                if side == "LEFT" then
                     edgeX = tL
                     edgeY = tCY
                     ai.offsetX = snap((cx + cW / 2) - edgeX)
                     ai.offsetY = snap(cy - edgeY)
-                elseif sideName == "RIGHT" then
+                elseif side == "RIGHT" then
                     edgeX = tR
                     edgeY = tCY
                     ai.offsetX = snap((cx - cW / 2) - edgeX)
                     ai.offsetY = snap(cy - edgeY)
-                elseif sideName == "TOP" then
+                elseif side == "TOP" then
                     edgeX = tCX
                     edgeY = tT
                     ai.offsetX = snap(cx - edgeX)
                     ai.offsetY = snap((cy - cH / 2) - edgeY)
-                elseif sideName == "BOTTOM" then
+                elseif side == "BOTTOM" then
                     edgeX = tCX
                     edgeY = tB
                     ai.offsetX = snap(cx - edgeX)
@@ -1540,7 +1540,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                     and not CludesUI._RectHeldByClamp(childKey, childBar)
                     and not CludesUI._RectHeldByClamp(targetKey, targetBar)
                 then
-                    CludesUI._unlockCaptureGrowPin(childKey, ai, sideName)
+                    CludesUI._unlockCaptureGrowPin(childKey, ai, side)
                 end
                 if ai.refFor == gd then
                     if gd == "LEFT" or gd == "RIGHT" then
@@ -1710,13 +1710,13 @@ CUI_NS.unlockParts.Positions = function(LM)
                         end
                         if ai and ai.offsetX ~= nil and savedEdge.x then
                             local childEdgeX = (uw / 2 + savedEdge.x) * ratio
-                            if sideName == "RIGHT" and growDir == "RIGHT" then
+                            if side == "RIGHT" and growDir == "RIGHT" then
                                 dTX = tR - (childEdgeX - ai.offsetX)
-                            elseif sideName == "LEFT" and growDir == "LEFT" then
+                            elseif side == "LEFT" and growDir == "LEFT" then
                                 dTX = tL - (childEdgeX - ai.offsetX)
                             elseif
                                 (targetIsCDM or MatchH.ChainDrivenToBar(targetKey, "width"))
-                                and (sideName == "TOP" or sideName == "BOTTOM")
+                                and (side == "TOP" or side == "BOTTOM")
                                 and (growDir == "RIGHT" or growDir == "LEFT")
                                 and bTgtL
                                 and bTgtR
@@ -1734,12 +1734,12 @@ CUI_NS.unlockParts.Positions = function(LM)
                                 else
                                     dTX = tR - bTgtR
                                 end
-                            elseif childKey == "StanceBar" and sideName == "LEFT" and bTgtL then
+                            elseif childKey == "StanceBar" and side == "LEFT" and bTgtL then
                                 -- Opposite-grow side anchor (snapped to target's LEFT while
                                 -- growing RIGHT): near-edge recovery can't apply (saved
                                 -- growth edge is the FAR edge), so track the snapped-to edge.
                                 dTX = tL - bTgtL
-                            elseif childKey == "StanceBar" and sideName == "RIGHT" and bTgtR then
+                            elseif childKey == "StanceBar" and side == "RIGHT" and bTgtR then
                                 dTX = tR - bTgtR
                             elseif bTgtx then
                                 dTX = tCX - bTgtx
@@ -1749,13 +1749,13 @@ CUI_NS.unlockParts.Positions = function(LM)
                         end
                         if ai and ai.offsetY ~= nil and savedEdge.y then
                             local childEdgeY = (uh / 2 + savedEdge.y) * ratio
-                            if sideName == "TOP" and growDir == "UP" then
+                            if side == "TOP" and growDir == "UP" then
                                 dTY = tT - (childEdgeY - ai.offsetY)
-                            elseif sideName == "BOTTOM" and growDir == "DOWN" then
+                            elseif side == "BOTTOM" and growDir == "DOWN" then
                                 dTY = tB - (childEdgeY - ai.offsetY)
                             elseif
                                 (targetIsCDM or MatchH.ChainDrivenToBar(targetKey, "height"))
-                                and (sideName == "LEFT" or sideName == "RIGHT")
+                                and (side == "LEFT" or side == "RIGHT")
                                 and (growDir == "UP" or growDir == "DOWN")
                                 and bTgtT
                                 and bTgtB
@@ -1768,10 +1768,10 @@ CUI_NS.unlockParts.Positions = function(LM)
                                 else
                                     dTY = tT - bTgtT
                                 end
-                            elseif childKey == "StanceBar" and sideName == "TOP" and bTgtT then
+                            elseif childKey == "StanceBar" and side == "TOP" and bTgtT then
                                 -- Opposite-grow side anchor, vertical symmetric case.
                                 dTY = tT - bTgtT
-                            elseif childKey == "StanceBar" and sideName == "BOTTOM" and bTgtB then
+                            elseif childKey == "StanceBar" and side == "BOTTOM" and bTgtB then
                                 dTY = tB - bTgtB
                             elseif bTgty then
                                 dTY = tCY - bTgty
@@ -1835,7 +1835,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                         local ratio = childBar:GetEffectiveScale() / uiS
                         local uw, uh = UIParent:GetSize()
                         if
-                            (sideName == "TOP" or sideName == "BOTTOM")
+                            (side == "TOP" or side == "BOTTOM")
                             and (growDir == "LEFT" or growDir == "RIGHT")
                             and sp.x
                             and sp.tgtx
@@ -1856,7 +1856,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                                 cx = (uw / 2 + sp.x) * ratio + cW / 2 + dTX
                             end
                         elseif
-                            (sideName == "LEFT" or sideName == "RIGHT")
+                            (side == "LEFT" or side == "RIGHT")
                             and (growDir == "UP" or growDir == "DOWN")
                             and sp.y
                             and sp.tgty
@@ -1925,8 +1925,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Follow provider (opt-in): a frame the child anchors to instead of taking
         -- an absolute position, for a target edge the engine moves (see the branch below).
         local follow
-        if sideName == "BOTTOM" and CludesUI._GetAnchorFollowFrame then
-            follow = CludesUI._GetAnchorFollowFrame(childKey, targetKey, sideName)
+        if side == "BOTTOM" and CludesUI._GetAnchorFollowFrame then
+            follow = CludesUI._GetAnchorFollowFrame(childKey, targetKey, side)
         end
 
         -- Only move the actual bar frame when noMove is not set
@@ -2162,16 +2162,16 @@ CUI_NS.unlockParts.Positions = function(LM)
                     or function(val)
                         return math.floor(val + 0.5)
                     end
-                if sideName == "LEFT" then
+                if side == "LEFT" then
                     ai.offsetX = snap((actualCX + actualHW) - tL)
                     ai.offsetY = snap(actualCY - tCY)
-                elseif sideName == "RIGHT" then
+                elseif side == "RIGHT" then
                     ai.offsetX = snap((actualCX - actualHW) - tR)
                     ai.offsetY = snap(actualCY - tCY)
-                elseif sideName == "TOP" then
+                elseif side == "TOP" then
                     ai.offsetX = snap(actualCX - tCX)
                     ai.offsetY = snap((actualCY - actualHH) - tT)
-                elseif sideName == "BOTTOM" then
+                elseif side == "BOTTOM" then
                     ai.offsetX = snap(actualCX - tCX)
                     ai.offsetY = snap((actualCY + actualHH) - tB)
                 else
@@ -2780,26 +2780,26 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- Determine grow anchor from unlock-mode anchor relationship
         local anchorInfo = anchorDB and anchorDB[barId]
-        local anchorFrame = "CENTER"
+        local anchor = "CENTER"
         local adjX, adjY = cx, cy
 
         if anchorInfo and anchorInfo.target and anchorInfo.side then
-            local sideName = anchorInfo.side
+            local side = anchorInfo.side
             local fw = (widget:GetWidth() or 0) * fRatio
             local fh = (widget:GetHeight() or 0) * fRatio
             -- Raw half-dimensions (fw/2, fh/2), never floor(): for odd-pixel-height
             -- frames the center cy is integer+0.5, so cy +/- raw fh/2 lands back on integer pixels; floor(fh/2) would compute a half-pixel-off edge.
-            if sideName == "LEFT" then
-                anchorFrame = "RIGHT"
+            if side == "LEFT" then
+                anchor = "RIGHT"
                 adjX = cx + fw / 2
-            elseif sideName == "RIGHT" then
-                anchorFrame = "LEFT"
+            elseif side == "RIGHT" then
+                anchor = "LEFT"
                 adjX = cx - fw / 2
-            elseif sideName == "TOP" then
-                anchorFrame = "BOTTOM"
+            elseif side == "TOP" then
+                anchor = "BOTTOM"
                 adjY = cy + fh / 2
-            elseif sideName == "BOTTOM" then
-                anchorFrame = "TOP"
+            elseif side == "BOTTOM" then
+                anchor = "TOP"
                 adjY = cy - fh / 2
             end
         else
@@ -2807,7 +2807,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- Prefer growEdge (width-independent absolute edge offset); fall back to CENTER +/- width/2 (width-dependent) only for positions without one.
             local ge = place.growEdge
             if ge and ge.anchor and ge.x and ge.y then
-                anchorFrame = ge.anchor
+                anchor = ge.anchor
                 adjX = ge.x
                 adjY = ge.y
             else
@@ -2818,19 +2818,19 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- (not laid out): CENTER avoids wrong edge placement from zero-size math; the bar is re-positioned after LayoutBar runs.
                 if growDir and growDir ~= "CENTER" and fw >= 1 and fh >= 1 then
                     if growDir == "RIGHT" then
-                        anchorFrame = "LEFT"
+                        anchor = "LEFT"
                         adjX = cx - fw / 2
                         adjY = cy
                     elseif growDir == "LEFT" then
-                        anchorFrame = "RIGHT"
+                        anchor = "RIGHT"
                         adjX = cx + fw / 2
                         adjY = cy
                     elseif growDir == "DOWN" then
-                        anchorFrame = "TOP"
+                        anchor = "TOP"
                         adjY = cy + fh / 2
                         adjX = cx
                     elseif growDir == "UP" then
-                        anchorFrame = "BOTTOM"
+                        anchor = "BOTTOM"
                         adjY = cy - fh / 2
                         adjX = cx
                     end
@@ -2853,7 +2853,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         local PPap = CludesUI and CludesUI.PP
         if PPap and PPap.SnapCenterForDim then
             local es = uiS
-            if anchorFrame == "CENTER" then
+            if anchor == "CENTER" then
                 adjX = PPap.SnapCenterForDim(adjX, (widget:GetWidth() or 0) * fRatio, es)
                 adjY = PPap.SnapCenterForDim(adjY, (widget:GetHeight() or 0) * fRatio, es)
             elseif PPap.SnapForES then
@@ -2874,13 +2874,13 @@ CUI_NS.unlockParts.Positions = function(LM)
                 CludesUI._UnlockCombatQueue.Defer(widget, function()
                     pcall(function()
                         CludesUI.ClearFramePoints(widget)
-                        CludesUI.SetFramePoint(widget, anchorFrame, UIParent, "CENTER", adjX, adjY)
+                        CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
                     end)
                 end)
                 return
             end
             CludesUI.ClearFramePoints(widget)
-            CludesUI.SetFramePoint(widget, anchorFrame, UIParent, "CENTER", adjX, adjY)
+            CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
         end)
         return true
     end
@@ -3063,8 +3063,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         local saved = LM.GetPositionDB()
         if saved and not inCombat then
             for barId, place in pairs(saved) do
-                local barFrame = LM.GetBarFrame(barId)
-                MigrateAndApplyPosition(barId, place, barFrame)
+                local bar = LM.GetBarFrame(barId)
+                MigrateAndApplyPosition(barId, place, bar)
             end
         end
         -- Hook all known action bar frames for auto-propagation on resize
@@ -3190,13 +3190,10 @@ CUI_NS.unlockParts.Positions = function(LM)
                     local still = {}
                     for childKey, details in pairs(unresolved) do
                         local childFrame = LM.GetBarFrame(childKey)
-                        local targetUnit = LM.GetBarFrame(details.target)
+                        local target = LM.GetBarFrame(details.target)
                         if
                             childFrame
-                            and (
-                                (targetUnit and targetUnit:GetLeft())
-                                or (not targetUnit and details.fallback ~= nil)
-                            )
+                            and ((target and target:GetLeft()) or (not target and details.fallback ~= nil))
                         then
                             LM.ApplyAnchorPosition(childKey, details.target, details.side, true)
                         else
@@ -3274,15 +3271,15 @@ CUI_NS.unlockParts.Positions = function(LM)
     -------------------------------------------------------------------------------
     local anchorGuardedBars = {} -- { [barFrame] = true }
 
-    local function InstallAnchorGuard(barFrame, barId)
-        if anchorGuardedBars[barFrame] then
+    local function InstallAnchorGuard(bar, barId)
+        if anchorGuardedBars[bar] then
             return
         end
-        if not barFrame.ApplySystemAnchor then
+        if not bar.ApplySystemAnchor then
             return
         end
-        anchorGuardedBars[barFrame] = true
-        hooksecurefunc(barFrame, "ApplySystemAnchor", function(self)
+        anchorGuardedBars[bar] = true
+        hooksecurefunc(bar, "ApplySystemAnchor", function(self)
             local saved = LM.GetPositionDB()
             if saved and saved[barId] and saved[barId].point then
                 -- Defer so we don't taint the secure execution context
@@ -3317,9 +3314,9 @@ CUI_NS.unlockParts.Positions = function(LM)
             return
         end
         for barId, _ in pairs(saved) do
-            local barFrame = LM.GetBarFrame(barId)
-            if barFrame then
-                InstallAnchorGuard(barFrame, barId)
+            local bar = LM.GetBarFrame(barId)
+            if bar then
+                InstallAnchorGuard(bar, barId)
             end
         end
     end

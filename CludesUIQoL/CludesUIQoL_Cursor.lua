@@ -104,17 +104,17 @@ local UpdateVisibility
 local lastUseClassColor
 
 local function CursorSize(p)
-    local dim = floor((p.baseSize or DEF_BASESIZE) * (p.scale or DEF_SCALE) + 0.5)
-    if dim < 8 then
+    local size = floor((p.baseSize or DEF_BASESIZE) * (p.scale or DEF_SCALE) + 0.5)
+    if size < 8 then
         return 8
     end
-    if dim > 512 then
+    if size > 512 then
         return 512
     end
-    return dim
+    return size
 end
 
-local function ApplyReticle(p, dim, r, g, b, a)
+local function ApplyReticle(p, size, r, g, b, a)
     if not reticle then
         return
     end
@@ -123,7 +123,7 @@ local function ApplyReticle(p, dim, r, g, b, a)
         return
     end
     -- ~20% of the ring so the mask has enough pixels to stay circular.
-    local dot = max(4, floor(dim * 0.2 + 0.5))
+    local dot = max(4, floor(size * 0.2 + 0.5))
     reticle:SetSize(dot, dot)
     reticle:SetColorTexture(r, g, b, a)
     reticle:Show()
@@ -136,10 +136,10 @@ local function Apply()
     local p = ECL.db.profile
 
     local scale = p.scale or DEF_SCALE
-    local dim = CursorSize(p)
+    local size = CursorSize(p)
     if scale ~= lastScale then
         lastScale = scale
-        f:SetSize(dim, dim)
+        f:SetSize(size, size)
     end
 
     local hex = p.hex or DEF_HEX
@@ -171,7 +171,7 @@ local function Apply()
     if not r then
         r, g, b = ResolveColor(p)
     end
-    ApplyReticle(p, dim, r, g, b, a)
+    ApplyReticle(p, size, r, g, b, a)
 
     UpdateVisibility()
 end
@@ -669,18 +669,18 @@ UpdateVisibility = function()
     end
     -- Standard visibility mode (mouseover treated as always for cursor)
     if shouldShow then
-        local modeName = p.visibility or "always"
-        if modeName == "never" then
+        local mode = p.visibility or "always"
+        if mode == "never" then
             shouldShow = false
-        elseif modeName == "in_combat" then
+        elseif mode == "in_combat" then
             shouldShow = _G._CUBS_InCombat and _G._CUBS_InCombat() or false
-        elseif modeName == "out_of_combat" then
+        elseif mode == "out_of_combat" then
             shouldShow = not (_G._CUBS_InCombat and _G._CUBS_InCombat())
-        elseif modeName == "in_raid" then
+        elseif mode == "in_raid" then
             shouldShow = IsInRaid()
-        elseif modeName == "in_party" then
+        elseif mode == "in_party" then
             shouldShow = IsInGroup() and not IsInRaid()
-        elseif modeName == "solo" then
+        elseif mode == "solo" then
             shouldShow = not IsInGroup()
             -- "always" and "mouseover" both show (cursor is always at mouse)
         end

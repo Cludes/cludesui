@@ -754,17 +754,17 @@ CludesUI.MINI_TO_FULL = MINI_TO_FULL
 --  Class colour escape per class file (lazy-built cache)
 -------------------------------------------------------------------------------
 local classColorCodes = {}
-function Kit.ClassColorCode(classFile)
-    local code = classColorCodes[classFile]
+function Kit.ClassColorCode(class)
+    local code = classColorCodes[class]
     if code then
         return code
     end
-    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if not cc then
         return nil
     end
     code = CludesUI.HexColor(cc.r, cc.g, cc.b)
-    classColorCodes[classFile] = code
+    classColorCodes[class] = code
     return code
 end
 
@@ -900,15 +900,15 @@ local FACTION_TEX_NEUTRAL = MEDIA .. "neutral.png"
 
 local CLASS_ICON_SPRITE_BASE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\"
 local CLASS_ICON_SPRITE_TEX = {}
-for _, look in ipairs({ "modern", "dark", "light", "clean" }) do
-    CLASS_ICON_SPRITE_TEX[look] = CLASS_ICON_SPRITE_BASE .. look .. ".tga"
+for _, style in ipairs({ "modern", "dark", "light", "clean" }) do
+    CLASS_ICON_SPRITE_TEX[style] = CLASS_ICON_SPRITE_BASE .. style .. ".tga"
 end
 local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
 -- The class icon sprite sheet of a Class Icon Theme style (the tiles and the
 -- Friends module's legacy rows)
-function Kit.ClassIconSprite(look)
-    return CLASS_ICON_SPRITE_TEX[look] or (CLASS_ICON_SPRITE_BASE .. look .. ".tga")
+function Kit.ClassIconSprite(style)
+    return CLASS_ICON_SPRITE_TEX[style] or (CLASS_ICON_SPRITE_BASE .. style .. ".tga")
 end
 
 local MINI_DISPLAY = {
@@ -957,10 +957,10 @@ end
 -- The host this session (Kit.StartTiles): its settings table (the Friends
 -- List profile's friends table, or the Blizzard Skins+ card's), its look and
 -- its font key.
-local hostRegion
+local host
 
 local function Settings()
-    return hostRegion and hostRegion.Settings()
+    return host and host.Settings()
 end
 
 local function Enabled()
@@ -969,7 +969,7 @@ local function Enabled()
 end
 
 local function FontPath()
-    return (CludesUI.GetFontPath(hostRegion.fontKey)) or STANDARD_TEXT_FONT
+    return (CludesUI.GetFontPath(host.fontKey)) or STANDARD_TEXT_FONT
 end
 
 local function GetClassFile(accountInfo)
@@ -978,9 +978,9 @@ local function GetClassFile(accountInfo)
         return nil
     end
     if gi.classID and gi.classID > 0 then
-        local _, classFile = GetClassInfo(gi.classID)
-        if classFile then
-            return classFile
+        local _, class = GetClassInfo(gi.classID)
+        if class then
+            return class
         end
     end
     if gi.className then
@@ -1285,17 +1285,17 @@ end
 
 -- The chosen Class Icon Theme's art for one class on `icon`. Shared by the
 -- CludesUI tile and the stock-style decoration.
-local function SetClassIconTex(icon, look, classFile)
-    if look == "blizzard" then
+local function SetClassIconTex(icon, style, class)
+    if style == "blizzard" then
         icon:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
-        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
+        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
             icon:SetTexCoord(unpack(coords))
         end
     else
-        local coords = CLASS_SPRITE_COORDS[classFile]
+        local coords = CLASS_SPRITE_COORDS[class]
         if coords then
-            icon:SetTexture(Kit.ClassIconSprite(look))
+            icon:SetTexture(Kit.ClassIconSprite(style))
             icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
         end
     end
@@ -1327,13 +1327,13 @@ local function UpdateClassIcon(cardFrame, d, accountInfo)
             icon:SetWidth(iconH)
         end
 
-        local classFile = GetClassFile(accountInfo)
-        if not classFile then
+        local class = GetClassFile(accountInfo)
+        if not class then
             icon:Hide()
             return
         end
 
-        SetClassIconTex(icon, p.iconStyle or "modern", classFile)
+        SetClassIconTex(icon, p.iconStyle or "modern", class)
         icon:SetDesaturated(false)
         icon:SetAlpha(1)
     else
@@ -1466,7 +1466,7 @@ end
 local function RegionOnLeave()
     CludesUI.HideWidgetTooltip()
 end
-function Kit.UpdateRegionButton(widget, d, gameAccountInfo, anchorFrame, show)
+function Kit.UpdateRegionButton(widget, d, gameAccountInfo, anchor, show)
     -- Same-region friends never carry a mark.
     local mini = show
         and gameAccountInfo
@@ -1490,8 +1490,8 @@ function Kit.UpdateRegionButton(widget, d, gameAccountInfo, anchorFrame, show)
         rb:SetScript("OnLeave", RegionOnLeave)
         local iconH = math.floor((widget:GetHeight() or 40) * 0.8)
         rb:SetSize(iconH, iconH)
-        if anchorFrame then
-            rb:SetPoint("RIGHT", anchorFrame, "LEFT", -2, 0)
+        if anchor then
+            rb:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
         else
             rb:SetPoint("RIGHT", widget, "RIGHT", -30, 0)
         end
@@ -1571,9 +1571,9 @@ local function PaintCard(cardFrame)
     local rowH = cardFrame:GetHeight()
     if rowH and rowH > 0 then
         local gap = -TILE_LINE_GAP
-        local blockData = TILE_NAME_SIZE + gap + TILE_INFO_SIZE
+        local block = TILE_NAME_SIZE + gap + TILE_INFO_SIZE
         if hasChar then
-            blockData = blockData + TILE_CHAR_SIZE + gap
+            block = block + TILE_CHAR_SIZE + gap
         end
         d.name:ClearAllPoints()
         d.name:SetPoint(
@@ -1581,7 +1581,7 @@ local function PaintCard(cardFrame)
             cardFrame,
             "TOPLEFT",
             rowH + TILE_TEXT_GAP,
-            -math.max(0, (rowH - blockData) / 2)
+            -math.max(0, (rowH - block) / 2)
         )
     end
 
@@ -1609,7 +1609,7 @@ end
 -- the colour the character line's level takes.
 Kit._tile = {
     Host = function()
-        return hostRegion
+        return host
     end,
     FontPath = FontPath,
     Skin = SkinStructure,
@@ -1650,9 +1650,9 @@ local function DecorateStockCard(cardFrame)
     local d = GetFFD(cardFrame)
     local p = Settings()
     local gi = accountInfo.gameAccountInfo
-    local classFile
+    local class
     if IsSameProjectOnline(gi) then
-        classFile = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
+        class = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
     end
 
     -- Class icon: a region of the holder, so it follows Blizzard's own show and
@@ -1664,12 +1664,12 @@ local function DecorateStockCard(cardFrame)
         local icon = d.stockClassIcon
         -- Only a class the icon theme has art for takes the slot; any other
         -- token (a special game-mode class) keeps Blizzard's own logo.
-        local look = (p and p.iconStyle) or "modern"
-        local hasArt = classFile
+        local style = (p and p.iconStyle) or "modern"
+        local hasArt = class
             and not (p and p.showClassIcons == false)
             and (
-                (look == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
-                or (look ~= "blizzard" and CLASS_SPRITE_COORDS[classFile])
+                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
+                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[class])
             )
         if hasArt then
             if not icon then
@@ -1677,9 +1677,9 @@ local function DecorateStockCard(cardFrame)
                 icon:SetAllPoints(holderFrame)
                 d.stockClassIcon = icon
             end
-            if d.stockIconClass ~= classFile or d.stockIconStyle ~= look then
-                d.stockIconClass, d.stockIconStyle = classFile, look
-                SetClassIconTex(icon, look, classFile)
+            if d.stockIconClass ~= class or d.stockIconStyle ~= style then
+                d.stockIconClass, d.stockIconStyle = class, style
+                SetClassIconTex(icon, style, class)
             end
             icon:Show()
             if holderFrame.Icon then
@@ -1705,7 +1705,7 @@ local function DecorateStockCard(cardFrame)
     local name = cardFrame.Name
     if name then
         local shade = d.stockName
-        local code = classFile and p and p.classColorNames and name:IsShown() and ClassColorCode(classFile)
+        local code = class and p and p.classColorNames and name:IsShown() and ClassColorCode(class)
         if code then
             if not shade then
                 shade = cardFrame:CreateFontString(nil, "OVERLAY")
@@ -1804,17 +1804,17 @@ local function DecorateStockRow(btnFrame, restore)
         return
     end
 
-    local accountInfo, gi, details, classFile
+    local accountInfo, gi, details, class
     if isBNet then
         accountInfo = C_BattleNet.GetFriendAccountInfo(btnFrame.id)
         gi = accountInfo and accountInfo.gameAccountInfo
         if IsSameProjectOnline(gi) then
-            classFile = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
+            class = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
         end
     else
         details = C_FriendList.GetFriendInfoByIndex(btnFrame.id)
         if details and details.connected and details.className then
-            classFile = CludesUI.ClassTokenFromLocalized(details.className)
+            class = CludesUI.ClassTokenFromLocalized(details.className)
         end
     end
 
@@ -1825,13 +1825,13 @@ local function DecorateStockRow(btnFrame, restore)
     local logo = btnFrame.gameIcon
     if logo then
         local icon = d.stockClassIcon
-        local look = (p and p.iconStyle) or "modern"
+        local style = (p and p.iconStyle) or "modern"
         local hasArt = (isWoW or logo:IsShown())
-            and classFile
+            and class
             and not (p and p.showClassIcons == false)
             and (
-                (look == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile])
-                or (look ~= "blizzard" and CLASS_SPRITE_COORDS[classFile])
+                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
+                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[class])
             )
         if hasArt then
             if not icon then
@@ -1839,9 +1839,9 @@ local function DecorateStockRow(btnFrame, restore)
                 icon:SetAllPoints(logo)
                 d.stockClassIcon = icon
             end
-            if d.stockIconClass ~= classFile or d.stockIconStyle ~= look then
-                d.stockIconClass, d.stockIconStyle = classFile, look
-                SetClassIconTex(icon, look, classFile)
+            if d.stockIconClass ~= class or d.stockIconStyle ~= style then
+                d.stockIconClass, d.stockIconStyle = class, style
+                SetClassIconTex(icon, style, class)
             end
             icon:Show()
             if isBNet then
@@ -1866,7 +1866,7 @@ local function DecorateStockRow(btnFrame, restore)
     -- A friend Blizzard greys out as unable to group keeps its grey.
     local name = btnFrame.name
     if name then
-        local code = classFile and p and p.classColorNames and ClassColorCode(classFile)
+        local code = class and p and p.classColorNames and ClassColorCode(class)
         if
             code
             and isBNet
@@ -1975,10 +1975,10 @@ local activeDecorator
 -- these pieces), with no hook on Blizzard's cards, which stay Blizzard's own.
 -- Such a host may start later in the session: it waits for no card.
 function Kit.StartTiles(hgt)
-    if hostRegion then
+    if host then
         return
     end
-    hostRegion = hgt
+    host = hgt
     if hgt.cards == false then
         return
     end

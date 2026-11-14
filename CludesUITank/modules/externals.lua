@@ -13,7 +13,7 @@ end
 --
 --  Both the co-tank frame and this row are placed with CludesUI Layout Mode.
 -------------------------------------------------------------------------------
-local Keys = mod.K
+local K = mod.K
 
 local EXT_DEFAULT_COUNT = 4
 local EXT_MAX_COUNT = 8
@@ -29,16 +29,16 @@ mod.EXT = {
     MAX_SIZE = EXT_MAX_SIZE,
 }
 
-local anchorFrame -- the row's frame; Layout Mode moves this
+local anchor -- the row's frame; Layout Mode moves this
 local boxHolder -- the AuraContainer inside it
 local rejected = false -- the game refused the filter: do not retry
 
-local function SavedDB()
+local function DB()
     return mod.DB()
 end
 
 function mod.ExternalsEnabled()
-    local val = SavedDB().extEnabled
+    local val = DB().extEnabled
     return val == nil or val == true
 end
 
@@ -49,7 +49,7 @@ local function Size()
     return mod.SettingNumber("extSize", EXT_DEFAULT_SIZE)
 end
 local function Gap()
-    return mod.SettingNumber("extSpacing", Keys.DEBUFF_SPACING)
+    return mod.SettingNumber("extSpacing", K.DEBUFF_SPACING)
 end
 
 --- True while the player's current spec is a tank spec.
@@ -67,37 +67,37 @@ local function RowSize()
 end
 
 local function ApplyAnchorPosition()
-    if not anchorFrame or InCombatLockdown() then
+    if not anchor or InCombatLockdown() then
         return
     end
-    local p = SavedDB().extPos
-    anchorFrame:ClearAllPoints()
+    local p = DB().extPos
+    anchor:ClearAllPoints()
     if p then
-        anchorFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        anchor:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        anchorFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -170)
+        anchor:SetPoint("CENTER", UIParent, "CENTER", 0, -170)
     end
 end
 
 local function ApplyAnchorSize()
-    if not anchorFrame or InCombatLockdown() then
+    if not anchor or InCombatLockdown() then
         return
     end
-    anchorFrame:SetSize(RowSize())
+    anchor:SetSize(RowSize())
 end
 
 --- Builds the row. AuraContainers cannot be created in combat, so this runs
 --- from the out-of-combat init and retries after combat.
 function mod.CreateExternals()
-    if anchorFrame or rejected or InCombatLockdown() then
+    if anchor or rejected or InCombatLockdown() then
         return
     end
     if not mod.HasAuraContainers() then
         return
     end
 
-    anchorFrame = CreateFrame("Frame", "CludesUITankExternals", UIParent)
-    anchorFrame:SetFrameStrata("MEDIUM")
+    anchor = CreateFrame("Frame", "CludesUITankExternals", UIParent)
+    anchor:SetFrameStrata("MEDIUM")
     ApplyAnchorSize()
     ApplyAnchorPosition()
 
@@ -105,11 +105,11 @@ function mod.CreateExternals()
         CreateFrame,
         "AuraContainer",
         nil,
-        anchorFrame,
+        anchor,
         "CustomAuraContainerTemplate, DisableUntrustedLayoutScriptsTemplate"
     )
     if not success or not c then
-        success, c = pcall(CreateFrame, "AuraContainer", nil, anchorFrame, "CustomAuraContainerTemplate")
+        success, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
     end
     if not success or not c then
         return
@@ -119,7 +119,7 @@ function mod.CreateExternals()
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
     c:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Right, AnchorUtil.FlowDirection.Down)
     c:SetFlowLayoutPadding(0, 0, 0, 0)
-    c:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
+    c:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
 
     local addOk, err = pcall(c.AddAuraGroup, c, "externals", EXT_FILTER, {
         maxFrameCount = math.max(Count(), 0),
@@ -200,12 +200,12 @@ local function RegisterLayoutMode()
                 return widget
             end,
             getSize = function()
-                return mod.SettingNumber("frameWidth", Keys.DEFAULT_WIDTH),
-                    mod.SettingNumber("frameHeight", Keys.DEFAULT_HEIGHT)
+                return mod.SettingNumber("frameWidth", K.DEFAULT_WIDTH),
+                    mod.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
             end,
             setWidth = function(_, wid)
-                wid = math.max(Keys.MIN_WIDTH, math.min(Keys.MAX_WIDTH, math.floor(wid + 0.5)))
-                SavedDB().frameWidth = wid
+                wid = math.max(K.MIN_WIDTH, math.min(K.MAX_WIDTH, math.floor(wid + 0.5)))
+                DB().frameWidth = wid
                 if not InCombatLockdown() then
                     widget:SetWidth(wid)
                     widget:FitNameToWidth()
@@ -213,8 +213,8 @@ local function RegisterLayoutMode()
                 Reposition("TANK_CoTank")
             end,
             setHeight = function(_, hgt)
-                hgt = math.max(Keys.MIN_HEIGHT, math.min(Keys.MAX_HEIGHT, math.floor(hgt + 0.5)))
-                SavedDB().frameHeight = hgt
+                hgt = math.max(K.MIN_HEIGHT, math.min(K.MAX_HEIGHT, math.floor(hgt + 0.5)))
+                DB().frameHeight = hgt
                 if not InCombatLockdown() then
                     widget:SetHeight(hgt)
                 end
@@ -223,11 +223,11 @@ local function RegisterLayoutMode()
                 Reposition("TANK_CoTank")
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
-                local saved = SavedDB()
+                local saved = DB()
                 saved.point, saved.relPoint, saved.x, saved.y = anchorPoint, relPoint, posX, posY
             end,
             loadPos = function()
-                local saved = SavedDB()
+                local saved = DB()
                 if saved.point then
                     return {
                         point = saved.point,
@@ -239,7 +239,7 @@ local function RegisterLayoutMode()
                 return nil
             end,
             clearPos = function()
-                local saved = SavedDB()
+                local saved = DB()
                 saved.point, saved.relPoint, saved.x, saved.y = nil, nil, nil, nil
             end,
             applyPos = function()
@@ -256,28 +256,28 @@ local function RegisterLayoutMode()
                 return not mod.ExternalsEnabled() or Count() == 0
             end,
             getFrame = function()
-                if not anchorFrame then
+                if not anchor then
                     mod.CreateExternals()
                 end
-                return anchorFrame
+                return anchor
             end,
             getSize = function()
                 return RowSize()
             end,
             setWidth = function() end,
             setHeight = function(_, hgt)
-                SavedDB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(hgt + 0.5)))
+                DB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(hgt + 0.5)))
                 mod.RefreshExternals()
                 Reposition("TANK_Externals")
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
-                SavedDB().extPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
+                DB().extPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
             loadPos = function()
-                return SavedDB().extPos
+                return DB().extPos
             end,
             clearPos = function()
-                SavedDB().extPos = nil
+                DB().extPos = nil
             end,
             applyPos = ApplyAnchorPosition,
         }),

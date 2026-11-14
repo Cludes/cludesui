@@ -43,7 +43,7 @@ local previewPowerValues = {}
 mod.previewHealAbsorbValues = {}
 
 -- roles, classTokens: the party preview hands in its own tables for this call.
-local function ApplyPreviewData(f, slotPos, roles, classTokens)
+local function ApplyPreviewData(f, index, roles, classTokens)
     local previewRoles = roles or previewRoles
     local previewClassTokens = classTokens or previewClassTokens
     -- The main raid preview is a base "20 Man" mockup: RefreshPreview lays out from the
@@ -56,11 +56,11 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
     -- captured keys to panel-closed values and is NOT tier-scaled, so this holds.
     local s = mod._previewSettingsOverride or mod._pvOverlayProxy or saved.profile
     local compact = mod.RF_ButtonCompact(f, s)
-    local classToken = previewClassTokens[slotPos]
-        or mod._PV_CLASS_TOKENS[((slotPos - 1) % #mod._PV_CLASS_TOKENS) + 1]
+    local classToken = previewClassTokens[index]
+        or mod._PV_CLASS_TOKENS[((index - 1) % #mod._PV_CLASS_TOKENS) + 1]
     local playerSlot = previewRoles._playerSlot or 1
     local name
-    if slotPos == playerSlot then
+    if index == playerSlot then
         name = UnitName("player") or "Player"
         if Ambiguate then
             name = Ambiguate(name, "short")
@@ -72,10 +72,10 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         local legend = not mod._partyPvActive
             and not mod._previewSettingsOverride
             and mod._pvNames
-            and mod._pvNames[slotPos]
-        name = legend or mod._PV_NAMES[((slotPos - 1) % #mod._PV_NAMES) + 1]
+            and mod._pvNames[index]
+        name = legend or mod._PV_NAMES[((index - 1) % #mod._PV_NAMES) + 1]
     end
-    local healthPct = previewHealthValues[slotPos] or (40 + math.random(60))
+    local healthPct = previewHealthValues[index] or (40 + math.random(60))
 
     local wid = PixelSnap(s.frameWidth or 72)
     local hgt = PixelSnap(s.frameHeight or 46)
@@ -116,15 +116,15 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         f._healthPct = healthPct
         f._classToken = classToken
 
-        local modeName = s.healthColorMode or "class"
+        local mode = s.healthColorMode or "class"
         local fillTex = f._health:GetStatusBarTexture()
-        if modeName == "dark" then
+        if mode == "dark" then
             local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
             f._health:SetStatusBarColor(dfr, dfg, dfb, 1)
             if fillTex then
                 fillTex:SetAlpha(dfa)
             end
-        elseif modeName == "classic" then
+        elseif mode == "classic" then
             if fillTex then
                 fillTex:SetAlpha(1)
             end
@@ -132,19 +132,19 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
             local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
             local g = pct > 0.5 and 1 or (pct * 2)
             f._health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
-        elseif modeName == "customDynamic" then
+        elseif mode == "customDynamic" then
             if fillTex then
                 fillTex:SetAlpha(1)
             end
             local r, g, b = mod.ResolveDynamicColor(s, healthPct / 100)
             f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
-        elseif modeName == "classReactive" then
+        elseif mode == "classReactive" then
             if fillTex then
                 fillTex:SetAlpha(1)
             end
             local r, g, b = mod.ResolveClassReactiveColor(s, classToken, healthPct / 100)
             f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
-        elseif modeName == "custom" then
+        elseif mode == "custom" then
             if fillTex then
                 fillTex:SetAlpha(1)
             end
@@ -246,7 +246,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         elseif not mod._absorbsPreviewVisible then
             absStyle = "none"
         end
-        local absorbAmt = mod.previewAbsorbValues[slotPos] or 0
+        local absorbAmt = mod.previewAbsorbValues[index] or 0
         local fw = f._absorbBar._forward
         -- Absorb Bar (solid bar above the frame): same preview gating as the
         -- shield styles (indicators / test mode / absorbs eyeball).
@@ -299,7 +299,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                 elseif not mod._absorbsPreviewVisible then
                     healBarOn = false
                 end
-                local haAmtPv = mod.previewHealAbsorbValues[slotPos] or 0
+                local haAmtPv = mod.previewHealAbsorbValues[index] or 0
                 if healBarOn and haAmtPv > 0 then
                     local hbc = s.healAbsorbBarColor or { r = 200 / 255, g = 29 / 255, b = 29 / 255 }
                     mod.ApplyStripBarLayout(
@@ -338,7 +338,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
             -- (the Party Frames kit's health bar is its own rect)
             local hpW = f.kitG and f.kitG.health.w or wid
             local hpH = f.kitG and f.kitG.health.h or healthH
-            local maskTex = f._absorbBar._mask
+            local mask = f._absorbBar._mask
             local ac = s.absorbColor or { r = 1, g = 1, b = 1 }
 
             f._absorbBar:SetWidth(hpW)
@@ -351,7 +351,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
             if modern then
                 -- Forward = modern texture; backfill = flat 10% white overshield (mirrors live).
                 if fw then
-                    mod.ApplyModernAbsorbBar(fw, maskTex)
+                    mod.ApplyModernAbsorbBar(fw, mask)
                 end
                 mod.HideModernAbsorbBase(f._absorbBar)
                 f._absorbBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -361,8 +361,8 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                     bfFill:SetDrawLayer("ARTWORK", 1)
                     bfFill:SetHorizTile(false)
                     bfFill:SetVertTile(false)
-                    if maskTex then
-                        mod.RF_AddMaskOnce(bfFill, maskTex)
+                    if mask then
+                        mod.RF_AddMaskOnce(bfFill, mask)
                     end
                 end
             else
@@ -379,8 +379,8 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                     bfFill:SetDrawLayer("ARTWORK", 1)
                     bfFill:SetHorizTile(tiled)
                     bfFill:SetVertTile(tiled)
-                    if maskTex then
-                        mod.RF_AddMaskOnce(bfFill, maskTex)
+                    if mask then
+                        mod.RF_AddMaskOnce(bfFill, mask)
                     end
                 end
 
@@ -393,8 +393,8 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                         fwFill:SetDrawLayer("ARTWORK", 1)
                         fwFill:SetHorizTile(tiled)
                         fwFill:SetVertTile(tiled)
-                        if maskTex then
-                            mod.RF_AddMaskOnce(fwFill, maskTex)
+                        if mask then
+                            mod.RF_AddMaskOnce(fwFill, mask)
                         end
                     end
                 end
@@ -691,7 +691,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         elseif not mod._absorbsPreviewVisible then
             haStyle = "none"
         end
-        local haAmt = mod.previewHealAbsorbValues[slotPos] or 0
+        local haAmt = mod.previewHealAbsorbValues[index] or 0
         if haStyle ~= "none" and haAmt > 0 then
             local haTex = mod.ResolveAbsorbStyleTex(haStyle, "Interface\\Buttons\\WHITE8X8")
             local haAlpha = (s.healAbsorbOpacity or 75) / 100
@@ -716,7 +716,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
             )
             local hpW = f.kitG and f.kitG.health.w or wid
             local hpH = f.kitG and f.kitG.health.h or healthH
-            local maskTex = f._healAbsorbBar._mask
+            local mask = f._healAbsorbBar._mask
             f._healAbsorbBar:SetStatusBarTexture(haTex)
             f._healAbsorbBar:SetStatusBarColor(hc.r or 0.8, hc.g or 0.15, hc.b or 0.15, haAlpha)
             f._healAbsorbBar:SetWidth(hpW)
@@ -726,8 +726,8 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                 haFillPv:SetDrawLayer("ARTWORK", 2)
                 haFillPv:SetHorizTile(tiled)
                 haFillPv:SetVertTile(tiled)
-                if maskTex then
-                    mod.RF_AddMaskOnce(haFillPv, maskTex)
+                if mask then
+                    mod.RF_AddMaskOnce(haFillPv, mask)
                 end
             end
             f._healAbsorbBar:SetMinMaxValues(0, 100)
@@ -808,7 +808,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
 
     -- Heal prediction preview
     if f._healPredBar then
-        local predAmt = mod.previewHealPredValues and mod.previewHealPredValues[slotPos] or 0
+        local predAmt = mod.previewHealPredValues and mod.previewHealPredValues[index] or 0
         local wantPred = s.healPrediction
         if mod._indicatorsVisible then
             wantPred = false
@@ -851,7 +851,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
 
     -- Reduced max health preview
     if f._reducedMaxHealthBar then
-        local rmhAmt = mod.previewReducedMaxHealth and mod.previewReducedMaxHealth[slotPos] or 0
+        local rmhAmt = mod.previewReducedMaxHealth and mod.previewReducedMaxHealth[index] or 0
         local rmhStyle = s.maxHealthStyle or "maxHealthStripes"
         -- Show in the Full Preview (Reduced Max Health test toggle) AND in the
         -- Absorbs-section preview (the shield-effects eye), mirroring Heal Absorb.
@@ -877,7 +877,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
     end
 
     -- Power (filtered by role, hidden if class has no power)
-    local role = previewRoles[slotPos] or "DAMAGER"
+    local role = previewRoles[index] or "DAMAGER"
     local showForRole = (role == "HEALER" and s.powerShowForHealer)
         or (role == "TANK" and s.powerShowForTank)
         or (role == "DAMAGER" and s.powerShowForDPS)
@@ -892,7 +892,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
             f._power:SetHeight(powerH)
             f._power:SetStatusBarTexture(ResolveHealthTexture())
             f._power:GetStatusBarTexture():SetHorizTile(false)
-            local pwPct = previewPowerValues[slotPos] or (60 + math.random(40))
+            local pwPct = previewPowerValues[index] or (60 + math.random(40))
             f._power:SetMinMaxValues(0, 100)
             f._power:SetValue(pwPct)
             f._powerPct = pwPct
@@ -1098,7 +1098,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         end
         local showThreat = wantThreat
             and (mod._testMode or mod._healthAnimActive)
-            and previewRoles._threatIndex == slotPos
+            and previewRoles._threatIndex == index
         local agg
         if f.stockHl then
             f._threatFrame:Hide()
@@ -1121,7 +1121,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
     -- Dispel visuals (border, overlay, icon)
     local dispVis = mod._dispelsVisible ~= false
     local dispelMap = previewRoles._dispelMap
-    local dispelType = dispelMap and dispelMap[slotPos]
+    local dispelType = dispelMap and dispelMap[index]
     local dispelDC = dispelType and GetDispelColor(dispelType, s)
     -- Color Custom Borders: the border takes the type color (PvApplyBorderColor,
     -- below hover/target and aggro), only over a custom border like the real
@@ -1322,12 +1322,12 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
     if f._raidMarker then
         local isMarked = indVis
             and s.showRaidMarker
-            and (slotPos == previewRoles._markerSlot1 or slotPos == previewRoles._markerSlot2)
+            and (index == previewRoles._markerSlot1 or index == previewRoles._markerSlot2)
         if isMarked then
             local rmSz = PixelSnap(s.raidMarkerSize or 16)
             f._raidMarker:SetSize(rmSz, rmSz)
             -- Use custom marker PNGs
-            if slotPos == previewRoles._markerSlot1 then
+            if index == previewRoles._markerSlot1 then
                 f._raidMarker:SetTexture("Interface\\AddOns\\CludesUI\\media\\marker.png")
                 f._raidMarker:SetTexCoord(0, 1, 0, 1)
             else
@@ -1367,13 +1367,13 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
 
     -- WoW Forever: Missing Buffs (CUI_RaidFrames_ForeverMissingBuffs.lua).
     if mod.RF_FvMissingPreview then
-        mod.RF_FvMissingPreview(f, slotPos, s, indVis)
+        mod.RF_FvMissingPreview(f, index, s, indVis)
     end
 
     -- Ready check icon
     if f._readyCheck then
         local rcStatuses = previewRoles._readyCheck
-        local rcStatus = rcStatuses and rcStatuses[slotPos]
+        local rcStatus = rcStatuses and rcStatuses[index]
         local isSummon = rcStatus and rcStatus:sub(1, 6) == "summon"
         local isRez = rcStatus == "rez"
         local showRC = indVis
@@ -1443,13 +1443,13 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
     -- Dead/offline/AFK states (only when indicators eyeball is on). The rez slot is
     -- a second corpse (dimmed, no "DEAD" text) that shows an incoming-rez icon in
     -- place of the status text -- mirrors the live "hide DEAD while rezzing" behavior.
-    local isRezCorpse = indVis and slotPos == previewRoles._rezSlot
-    local isDead = indVis and (slotPos == previewRoles._deadSlot or isRezCorpse)
-    local isOffline = indVis and slotPos == previewRoles._offlineSlot
+    local isRezCorpse = indVis and index == previewRoles._rezSlot
+    local isDead = indVis and (index == previewRoles._deadSlot or isRezCorpse)
+    local isOffline = indVis and index == previewRoles._offlineSlot
     -- Mark dead/offline preview frames so the animated-preview ticker skips them
     -- (their health bar is emptied and health text hidden -- never animated).
     f._pvHideHealthText = (isDead or isOffline) or nil
-    local isAfk = indVis and slotPos == previewRoles._afkSlot
+    local isAfk = indVis and index == previewRoles._afkSlot
 
     -- The texts from this member's made-up values, kept on the frame (f._pv) for the
     -- animated previews: health and power as its bars show them, a heal absorb of 3000 per
@@ -1567,13 +1567,13 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
         if f._roleIcon._roleText then
             f._roleIcon._roleText:Hide()
         end
-        local look = s.roleIconStyle or "modern"
-        if s.roleText or look ~= "none" then
-            local role = previewRoles[slotPos] or "DAMAGER"
+        local style = s.roleIconStyle or "modern"
+        if s.roleText or style ~= "none" then
+            local role = previewRoles[index] or "DAMAGER"
             local showForRole = (role == "TANK" and s.showRoleForTank)
                 or (role == "HEALER" and s.showRoleForHealer)
                 or (role == "DAMAGER" and s.showRoleForDPS)
-            if showForRole ~= false and (s.roleText or ApplyRoleIcon(f._roleIcon, role, look)) then
+            if showForRole ~= false and (s.roleText or ApplyRoleIcon(f._roleIcon, role, style)) then
                 local riSz = PixelSnap(s.roleIconSize or 14)
                 f._roleIcon:SetSize(riSz, riSz)
                 -- Mirror the live carrier's "Show Behind Border" level (see AnchorRoleIcon).
@@ -1627,7 +1627,7 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
 
     -- Leader icon: show on slot 1 (player = leader in preview)
     if f._leaderIcon then
-        if s.showLeaderIcon and slotPos == 1 then
+        if s.showLeaderIcon and index == 1 then
             local liSz = PixelSnap(s.leaderIconSize or 14)
             f._leaderIcon:SetSize(liSz, liSz)
             f._leaderIcon:ClearAllPoints()
@@ -1660,17 +1660,17 @@ local function ApplyPreviewData(f, slotPos, roles, classTokens)
                 s.combatIndicatorOffsetX or 0,
                 s.combatIndicatorOffsetY or 0
             )
-            local look = s.combatIndicatorStyle or "standard"
+            local style = s.combatIndicatorStyle or "standard"
             local MEDIA = mod._COMBAT_MEDIA
-            if look:find("^combat%d") then
-                f._combatIcon:SetTexture(MEDIA .. look .. ".tga")
+            if style:find("^combat%d") then
+                f._combatIcon:SetTexture(MEDIA .. style .. ".tga")
                 f._combatIcon:SetTexCoord(0, 1, 0, 1)
                 if f._combatIcon.SetDesaturated then
                     f._combatIcon:SetDesaturated(false)
                 end
                 f._combatIcon:SetVertexColor(1, 1, 1, 1)
             else
-                if look == "class" then
+                if style == "class" then
                     f._combatIcon:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
                     local coords = classToken and mod._COMBAT_CLASS_COORDS[classToken]
                     if coords then
@@ -1720,8 +1720,8 @@ local function InitPreviewHealthValues()
     -- Assign shields: at least 1 per group of 5, plus a few random extras
     for g = 0, 3 do
         -- Guaranteed 1 per group
-        local slotIndex = g * 5 + math.random(5)
-        mod.previewAbsorbValues[slotIndex] = 5 + math.random(25)
+        local slot = g * 5 + math.random(5)
+        mod.previewAbsorbValues[slot] = 5 + math.random(25)
         -- 50% chance of a second in the group
         if math.random() > 0.5 then
             local slot2 = g * 5 + math.random(5)

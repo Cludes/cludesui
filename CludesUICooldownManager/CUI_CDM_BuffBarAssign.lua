@@ -268,9 +268,9 @@ local function CfgWantsSID(conf, spellRef)
     return false
 end
 
-local function FrameIsActive(frameList, targetUnit)
+local function FrameIsActive(frameList, target)
     for i = 1, #frameList do
-        if frameList[i] == targetUnit then
+        if frameList[i] == target then
             return true
         end
     end
@@ -427,7 +427,7 @@ end
 -- persistently after re-acquire, so unproven slots never paint secret labels.
 local _tbbVariantSlot = {}
 
-local function TbbSlotVariantLabeled(barFrame, cdID)
+local function TbbSlotVariantLabeled(bar, cdID)
     if type(cdID) ~= "number" or (issecretvalue and issecretvalue(cdID)) then
         return false
     end
@@ -438,8 +438,8 @@ local function TbbSlotVariantLabeled(barFrame, cdID)
     -- In combat one indefinite probe is pinned per binding (secret linked ids
     -- would otherwise re-derive at 60Hz); out of combat retries until the
     -- verdict is definite (spell data load is the only wait).
-    if barFrame._varProbeCd == cdID and InCombatLockdown() then
-        return barFrame._varProbeVal or false
+    if bar._varProbeCd == cdID and InCombatLockdown() then
+        return bar._varProbeVal or false
     end
     local verdict, complete = false, false
     if C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
@@ -497,7 +497,7 @@ local function TbbSlotVariantLabeled(barFrame, cdID)
     if verdict or complete then
         _tbbVariantSlot[cdID] = verdict
     else
-        barFrame._varProbeCd, barFrame._varProbeVal = cdID, verdict
+        bar._varProbeCd, bar._varProbeVal = cdID, verdict
     end
     return verdict
 end
@@ -945,9 +945,9 @@ function mod.GetTrackedBarSpells(includeUntalented)
     local function ResolveName(spellRef)
         local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRef)
         if name and C_Spell.GetSpellSubtext then
-            local subFrame = C_Spell.GetSpellSubtext(spellRef)
-            if subFrame and subFrame ~= "" then
-                name = name .. " (" .. subFrame .. ")"
+            local sub = C_Spell.GetSpellSubtext(spellRef)
+            if sub and sub ~= "" then
+                name = name .. " (" .. sub .. ")"
             end
         end
         return name
@@ -960,12 +960,12 @@ function mod.GetTrackedBarSpells(includeUntalented)
                 local spellRef = GetCanonical and GetCanonical(widget)
                 if spellRef and spellRef > 0 and not seen[spellRef] then
                     seen[spellRef] = true
-                    local glyph = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
+                    local icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
                     result[#result + 1] = {
                         spellID = spellRef,
                         cdID = widget.cooldownID,
                         name = ResolveName(spellRef) or ("Spell " .. spellRef),
-                        icon = glyph,
+                        icon = icon,
                         layoutIndex = widget.layoutIndex or 0,
                         -- Live pool members are always learned; catalog entries appended below may not be.
                         isKnown = true,
@@ -991,13 +991,13 @@ function mod.GetTrackedBarSpells(includeUntalented)
                     local nm = ResolveName(ce.sid)
                     if nm then
                         local known = (IsPlayerSpell and IsPlayerSpell(ce.sid)) and true or false
-                        local glyph = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ce.sid)
+                        local icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ce.sid)
                         extra = extra + 1
                         result[#result + 1] = {
                             spellID = ce.sid,
                             cdID = ce.cdID,
                             name = nm,
-                            icon = glyph,
+                            icon = icon,
                             -- No live frame -> no layoutIndex; sort after live entries, keeping catalog order among themselves.
                             layoutIndex = 100000 + extra,
                             isKnown = known,

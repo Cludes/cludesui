@@ -81,72 +81,72 @@ local function GetConfiguredBuffSpells()
     return spells
 end
 
-mod.PvBuffAnchor = function(glyph, f, spellInfo, prevIcon)
+mod.PvBuffAnchor = function(icon, f, spellInfo, prevIcon)
     if not f._health then
         return
     end
-    glyph:SetSize(spellInfo.size, spellInfo.size)
-    glyph:ClearAllPoints()
+    icon:SetSize(spellInfo.size, spellInfo.size)
+    icon:ClearAllPoints()
     if prevIcon then
         -- Chain from previous icon using growth direction
         local spc = PixelSnap(spellInfo.spacing or 0)
         local grow = spellInfo.growDirection or "RIGHT"
         if grow == "RIGHT" then
-            glyph:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
+            icon:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
         elseif grow == "LEFT" then
-            glyph:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
+            icon:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
         elseif grow == "UP" then
-            glyph:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
+            icon:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
         elseif grow == "DOWN" then
-            glyph:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
+            icon:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
         end
     else
         local place = spellInfo.position and spellInfo.position:upper() or "BOTTOMLEFT"
         local ox, oy = spellInfo.offsetX or 0, spellInfo.offsetY or 0
-        glyph:SetPoint(place, mod.RF_AnchorHost(f._health, PvSettings()), place, ox, oy)
+        icon:SetPoint(place, mod.RF_AnchorHost(f._health, PvSettings()), place, ox, oy)
     end
 end
 
-mod.PvBuffApply = function(spellInfo, frameIndex, slotIndex)
+mod.PvBuffApply = function(spellInfo, frameIndex, slot)
     local f = previewFrames[frameIndex]
     if not f or not f._pvBuffs then
         return
     end
-    local glyph = f._pvBuffs[slotIndex]
-    if not glyph then
+    local icon = f._pvBuffs[slot]
+    if not icon then
         return
     end
 
     if spellInfo.indType == "icon" then
-        glyph._tex:SetTexture(spellInfo.icon or 136243)
-        glyph._tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        glyph._tex:SetVertexColor(1, 1, 1)
+        icon._tex:SetTexture(spellInfo.icon or 136243)
+        icon._tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        icon._tex:SetVertexColor(1, 1, 1)
     else
         local c = spellInfo.color or { r = 0.30, g = 0.79, b = 0.94 }
-        glyph._tex:SetColorTexture(c.r, c.g, c.b, 1)
-        glyph._tex:SetTexCoord(0, 1, 0, 1)
+        icon._tex:SetColorTexture(c.r, c.g, c.b, 1)
+        icon._tex:SetTexCoord(0, 1, 0, 1)
     end
 
-    mod.PvBuffAnchor(glyph, f, spellInfo)
+    mod.PvBuffAnchor(icon, f, spellInfo)
 
     -- Border
-    mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, spellInfo.indicator, "indBorder")
+    mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, spellInfo.indicator, "indBorder")
 
     -- Cooldown
-    if glyph._cooldown then
+    if icon._cooldown then
         if not spellInfo.permanent then
             local dur = 15
             local startTime = GetTime() - math.random() * 10
-            glyph._cooldown:SetCooldown(startTime, dur)
-            glyph._cooldown:SetDrawSwipe(true)
-            glyph._cooldown:SetHideCountdownNumbers(true)
-            glyph._cooldown:Show()
+            icon._cooldown:SetCooldown(startTime, dur)
+            icon._cooldown:SetDrawSwipe(true)
+            icon._cooldown:SetHideCountdownNumbers(true)
+            icon._cooldown:Show()
         else
-            glyph._cooldown:Hide()
+            icon._cooldown:Hide()
         end
     end
 
-    glyph:Show()
+    icon:Show()
 end
 
 mod.PvBuffTick = function()
@@ -229,10 +229,10 @@ mod.StartPvBuffTicker = function()
                 end
                 local prev = posLastIcon[place]
                 mod.PvBuffApply(sp, 1, playerSlot)
-                local glyph = playerF._pvBuffs[playerSlot]
-                if glyph then
-                    mod.PvBuffAnchor(glyph, playerF, sp, prev)
-                    posLastIcon[place] = glyph
+                local icon = playerF._pvBuffs[playerSlot]
+                if icon then
+                    mod.PvBuffAnchor(icon, playerF, sp, prev)
+                    posLastIcon[place] = icon
                 end
                 mod._pvBuffAssignments[sp.id .. ":p"] = {
                     spellInfo = sp,
@@ -250,18 +250,18 @@ mod.StartPvBuffTicker = function()
     for idx, sp in ipairs(spells) do
         local fi = ((idx - 1) % (PREVIEW_COUNT2 - 1)) + 2
         frameSlotsUsed[fi] = (frameSlotsUsed[fi] or 0) + 1
-        local slotIndex = frameSlotsUsed[fi]
-        if slotIndex > 4 then
+        local slot = frameSlotsUsed[fi]
+        if slot > 4 then
             break
         end
         mod._pvBuffAssignments[sp.id] = {
             spellInfo = sp,
             frameIndex = fi,
-            slot = slotIndex,
+            slot = slot,
             expTime = sp.permanent and (nowTime + 99999) or (nowTime + math.random(3, 15)),
             permanent = sp.permanent,
         }
-        mod.PvBuffApply(sp, fi, slotIndex)
+        mod.PvBuffApply(sp, fi, slot)
     end
 
     mod._pvBuffTicker = C_Timer.NewTicker(0.5, mod.PvBuffTick)

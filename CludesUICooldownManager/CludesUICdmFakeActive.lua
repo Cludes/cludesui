@@ -175,10 +175,10 @@ local function RefreshSlotItemKeys()
     if not slots then
         return
     end
-    for slotIndex in pairs(slots) do
-        local ident = GetInventoryItemID and GetInventoryItemID("player", slotIndex)
+    for slot in pairs(slots) do
+        local ident = GetInventoryItemID and GetInventoryItemID("player", slot)
         if ident then
-            _slotItemKey[-slotIndex] = -ident
+            _slotItemKey[-slot] = -ident
         end
     end
 end
@@ -233,15 +233,15 @@ GetOverlay = function(iconFrame)
     f:SetAlpha(0)
     o.frame = f
 
-    local glyph = f:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints(f)
-    o.icon = glyph
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints(f)
+    o.icon = icon
     -- Blizzard Style: the copy rounds off with the art it copies (the
     -- viewer's mask on pooled frames, ours on own frames).
     if mod.CdmBlizzIcons and mod.CdmBlizzIcons() and mod.CdmBlizzIconMask then
         local m = mod.CdmBlizzIconMask(iconFrame)
         if m then
-            pcall(glyph.AddMaskTexture, glyph, m)
+            pcall(icon.AddMaskTexture, icon, m)
         end
     end
 
@@ -1320,9 +1320,9 @@ ResolveCastSpells = function(key)
             end
         end
         local itemId
-        local slotIndex = mod.SlotIDFromKey and mod.SlotIDFromKey(key)
-        if slotIndex then
-            itemId = GetInventoryItemID and GetInventoryItemID("player", slotIndex)
+        local slot = mod.SlotIDFromKey and mod.SlotIDFromKey(key)
+        if slot then
+            itemId = GetInventoryItemID and GetInventoryItemID("player", slot)
         else
             itemId = -key
         end
@@ -1595,8 +1595,8 @@ ApplyCdState = function(widget, fc, cas, hide, glow, hideCD, onCD, ready)
     local isOnCdGlow = (glow == "glowOnCD")
     local wantsGlow = isOnCdGlow and onCD or (not isOnCdGlow and not onCD)
     if wantsGlow then
-        local look = mod.CdReadyGlowStyle(glow, cas)
-        local styleEntry = mod.GLOW_STYLES[look]
+        local style = mod.CdReadyGlowStyle(glow, cas)
+        local styleEntry = mod.GLOW_STYLES[style]
         -- A branch, not `and/or`: the Blackout frame does not exist before
         -- its first start, and the shared overlay must not stand in for it.
         local shade
@@ -1613,8 +1613,8 @@ ApplyCdState = function(widget, fc, cas, hide, glow, hideCD, onCD, ready)
         -- proc or active-state glow keeps the shared overlay (ns.StartCdGlow
         -- returns nil), and the memo stays off until a later pass lights it.
         if not fd._presetCdGlowOn or not (shade and shade._glowActive) then
-            local cr, cg, cb = mod.CdReadyGlowColor(look, cas)
-            fd._presetCdGlowOn = mod.StartCdGlow(fd, look, cr, cg, cb, mod.CdReadyGlowAlpha(cas)) ~= nil
+            local cr, cg, cb = mod.CdReadyGlowColor(style, cas)
+            fd._presetCdGlowOn = mod.StartCdGlow(fd, style, cr, cg, cb, mod.CdReadyGlowAlpha(cas)) ~= nil
         end
     elseif fd._presetCdGlowOn then
         mod.StopCdGlow(fd)
@@ -2046,11 +2046,11 @@ function mod.FakeActive_Rearm()
     end
 
     -- 1. Built-in rules (class/spec gated).
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local specIdx = GetSpecialization()
     for idx = 1, #FAKE_ACTIVE_RULES do
         local rule = FAKE_ACTIVE_RULES[idx]
-        if (not rule.class or rule.class == classFile) and (not rule.spec or rule.spec == specIdx) then
+        if (not rule.class or rule.class == class) and (not rule.spec or rule.spec == specIdx) then
             if FA121 and rule.trigger == "aura" then
                 -- 12.1: aura rules ride the engine slot, never the numeric
                 -- GetPlayerAuraBySpellID window (dead for secret-flagged
@@ -2145,12 +2145,12 @@ function mod.FakeActive_Rearm()
         -- item's own entry (per-spell menu settings) chains over it per key,
         -- so per-trinket choices win. Cast + cooldown already resolve the
         -- slot's CURRENT item via ResolveCastSpells / PresetOnCD.
-        for slotIndex = 13, 14 do
-            local slotE = storage[-slotIndex]
+        for slot = 13, 14 do
+            local slotE = storage[-slot]
             if type(slotE) ~= "table" then
                 slotE = nil
             end
-            local itemId = (slotIndex == 13) and eq13 or eq14
+            local itemId = (slot == 13) and eq13 or eq14
             local itemE = itemId and storage[-itemId] or nil
             if type(itemE) ~= "table" then
                 itemE = nil
@@ -2160,7 +2160,7 @@ function mod.FakeActive_Rearm()
                 if itemE and mod.ChainSettings then
                     mod.ChainSettings(itemE, slotE)
                 end
-                AddUserRule(-slotIndex, -slotIndex, eff)
+                AddUserRule(-slot, -slot, eff)
             end
         end
     end

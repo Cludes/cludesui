@@ -42,7 +42,7 @@ end
 
 local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local environ = mod._CDMO_OptEnv
-    local AnyIconAlwaysShowOn, BuildKeybindStyleControls, SavedDB, durationPositionOrder =
+    local AnyIconAlwaysShowOn, BuildKeybindStyleControls, DB, durationPositionOrder =
         environ.AnyIconAlwaysShowOn,
         environ.BuildKeybindStyleControls,
         environ.DB,
@@ -57,7 +57,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local posY = yOffset
     local _, hgt, heading
 
-    local p = SavedDB()
+    local p = DB()
     if not p or not p.cdmBars then
         return math.abs(yOffset)
     end
@@ -97,10 +97,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local ROW_H = 30
         local MAX_VISIBLE = 10 -- rows shown before the list scrolls
         local MAX_LIST_H = MAX_VISIBLE * ROW_H
-        local Prm = mod._rptSrcPopup
-        if not Prm then
-            Prm = { rows = {} }
-            mod._rptSrcPopup = Prm
+        local P = mod._rptSrcPopup
+        if not P then
+            P = { rows = {} }
+            mod._rptSrcPopup = P
             local scale = (CludesUI.GetPopupScale()) or 1
             local dimmer = CreateFrame("Frame", nil, UIParent)
             dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -120,7 +120,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0.062, 0.070, 0.082, 1)
-            Prm.brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
+            P.brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, backdrop)
             local titleFs = CludesUI.MakeFont(dialog, 15, nil, 1, 1, 1, 1)
             titleFs:SetPoint("TOP", dialog, "TOP", 0, -14)
             titleFs:SetText("Sync From")
@@ -200,26 +200,25 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 dimmer:Hide()
             end)
             dialog:SetScript("OnMouseDown", function() end)
-            Prm.dimmer, Prm.popup, Prm.search, Prm.ph, Prm.list, Prm.DDW =
-                dimmer, dialog, search, ph, listF, DDW
-            Prm.scroll, Prm.updateThumb = scrollF, UpdateThumb
+            P.dimmer, P.popup, P.search, P.ph, P.list, P.DDW = dimmer, dialog, search, ph, listF, DDW
+            P.scroll, P.updateThumb = scrollF, UpdateThumb
         end
 
         local function Rebuild()
-            local filter = (Prm.search:GetText() or ""):lower()
+            local filter = (P.search:GetText() or ""):lower()
             local isShown = 0
-            for _, r in ipairs(Prm.rows) do
+            for _, r in ipairs(P.rows) do
                 r:Hide()
             end
             for _, s in ipairs(details) do
                 local nm = s.name or ""
                 if filter == "" or nm:lower():find(filter, 1, true) then
                     isShown = isShown + 1
-                    local r = Prm.rows[isShown]
+                    local r = P.rows[isShown]
                     if not r then
-                        r = CreateFrame("Button", nil, Prm.list)
-                        Pix.Size(r, Prm.DDW, ROW_H)
-                        r:SetFrameLevel(Prm.list:GetFrameLevel() + 1)
+                        r = CreateFrame("Button", nil, P.list)
+                        Pix.Size(r, P.DDW, ROW_H)
+                        r:SetFrameLevel(P.list:GetFrameLevel() + 1)
                         local highlight = r:CreateTexture(nil, "ARTWORK")
                         highlight:SetAllPoints()
                         highlight:SetColorTexture(1, 1, 1, 0.06)
@@ -240,10 +239,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 self._hl:Hide()
                             end
                         end)
-                        Prm.rows[isShown] = r
+                        P.rows[isShown] = r
                     end
                     r:ClearAllPoints()
-                    r:SetPoint("TOPLEFT", Prm.list, "TOPLEFT", 0, -((isShown - 1) * ROW_H))
+                    r:SetPoint("TOPLEFT", P.list, "TOPLEFT", 0, -((isShown - 1) * ROW_H))
                     if s.icon then
                         r._ic:SetTexture(s.icon)
                         r._ic:Show()
@@ -255,7 +254,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     r._hl:SetShown(r._isDefault)
                     local key = s.key
                     r:SetScript("OnClick", function()
-                        Prm.dimmer:Hide()
+                        P.dimmer:Hide()
                         if onSelect then
                             onSelect(key)
                         end
@@ -264,27 +263,27 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end
             end
             local listH = math.max(ROW_H, isShown * ROW_H)
-            Prm.list:SetHeight(listH)
+            P.list:SetHeight(listH)
             local visH = math.min(listH, MAX_LIST_H)
-            Prm.scroll:SetHeight(visH)
-            Prm.popup:SetHeight(110 + visH)
+            P.scroll:SetHeight(visH)
+            P.popup:SetHeight(110 + visH)
             -- Rebuilt while shown (search typing): refit the outline's bottom edge.
-            Prm.brd:Fit()
-            Prm.scroll:SetVerticalScroll(0)
-            if Prm.updateThumb then
-                Prm.updateThumb()
+            P.brd:Fit()
+            P.scroll:SetVerticalScroll(0)
+            if P.updateThumb then
+                P.updateThumb()
             end
         end
-        Prm.search:SetScript("OnTextChanged", function(self)
-            Prm.ph:SetShown((self:GetText() or "") == "")
+        P.search:SetScript("OnTextChanged", function(self)
+            P.ph:SetShown((self:GetText() or "") == "")
             Rebuild()
         end)
-        Prm.search:SetText("")
-        Prm.ph:Show()
+        P.search:SetText("")
+        P.ph:Show()
         Rebuild()
-        Prm.dimmer:Show()
+        P.dimmer:Show()
         C_Timer.After(0.05, function()
-            Prm.search:SetFocus()
+            P.search:SetFocus()
         end)
     end
 
@@ -492,7 +491,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
     local barId = barInfo.key
     local function BD()
-        local pp = SavedDB()
+        local pp = DB()
         if not pp or not pp.cdmBars or not pp.cdmBars.bars then
             return barInfo
         end
@@ -722,26 +721,26 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         mH = mH + 18
                     end
 
-                    local itemInfo = CreateFrame("Button", nil, dropMenu)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local item = CreateFrame("Button", nil, dropMenu)
+                    item:SetHeight(ITEM_H)
+                    item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                     if reorderable and ordByKey[b.key] then
-                        customRows[#customRows + 1] = { item = itemInfo, key = b.key, topY = -mH }
+                        customRows[#customRows + 1] = { item = item, key = b.key, topY = -mH }
                     end
 
-                    local iLbl = itemInfo:CreateFontString(nil, "OVERLAY")
+                    local iLbl = item:CreateFontString(nil, "OVERLAY")
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetWordWrap(false)
                     iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
+                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
                     local displayName = CludesUI.L(b.name or b.key)
                     iLbl:SetText(displayName)
 
-                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local iHl = item:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
@@ -749,10 +748,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- Delete + Rename buttons for custom bars
                     local delBtn, editBtn
                     if isCustom then
-                        delBtn = CreateFrame("Button", nil, itemInfo)
+                        delBtn = CreateFrame("Button", nil, item)
                         delBtn:SetSize(ICON_SZ, ICON_SZ)
-                        delBtn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
-                        delBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                        delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+                        delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                         local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                         delIcon:SetSize(ICON_SZ, ICON_SZ)
                         delIcon:SetPoint("CENTER", delBtn, "CENTER", 0, 0)
@@ -763,10 +762,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
                         delBtn:SetAlpha(0.75)
 
-                        editBtn = CreateFrame("Button", nil, itemInfo)
+                        editBtn = CreateFrame("Button", nil, item)
                         editBtn:SetSize(ICON_SZ, ICON_SZ)
                         editBtn:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
-                        editBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                        editBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                         local edIcon = editBtn:CreateTexture(nil, "OVERLAY")
                         edIcon:SetSize(ICON_SZ, ICON_SZ)
                         edIcon:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
@@ -785,11 +784,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- shared reorder widget. Drop writes the display key
                         -- list and re-renders this menu in place.
                         if reorderable and ordByKey[b.key] then
-                            iLbl:SetPoint("LEFT", itemInfo, "LEFT", 24, 0)
-                            local gripBtn = CreateFrame("Button", nil, itemInfo)
+                            iLbl:SetPoint("LEFT", item, "LEFT", 24, 0)
+                            local gripBtn = CreateFrame("Button", nil, item)
                             gripBtn:SetSize(16, ITEM_H)
-                            gripBtn:SetPoint("LEFT", itemInfo, "LEFT", 4, 0)
-                            gripBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                            gripBtn:SetPoint("LEFT", item, "LEFT", 4, 0)
+                            gripBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                             local grip = gripBtn:CreateFontString(nil, "OVERLAY")
                             grip:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                             grip:SetPoint("CENTER", gripBtn, "CENTER", 0, 0)
@@ -799,7 +798,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 grip:SetTextColor(1, 1, 1, 0.6)
                             end)
                             gripBtn:SetScript("OnLeave", function()
-                                if not (dragState.row == itemInfo and dragState.active) then
+                                if not (dragState.row == item and dragState.active) then
                                     grip:SetTextColor(1, 1, 1, 0.2)
                                 end
                             end)
@@ -808,13 +807,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     return
                                 end
                                 local _, cy = GetCursorPosition()
-                                dragState.row = itemInfo
+                                dragState.row = item
                                 dragState.startY = cy
                                 dragState.active = false
                                 dragState.slot = nil
                             end)
                             gripBtn:SetScript("OnUpdate", function()
-                                if dragState.row ~= itemInfo or not dragState.startY then
+                                if dragState.row ~= item or not dragState.startY then
                                     return
                                 end
                                 local _, cy = GetCursorPosition()
@@ -823,8 +822,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     dragState.active = true
-                                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
-                                    itemInfo:SetAlpha(0.8)
+                                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
+                                    item:SetAlpha(0.8)
                                     grip:SetTextColor(1, 1, 1, 0.6)
                                 end
                                 local sc = dropMenu:GetEffectiveScale()
@@ -833,7 +832,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 -- Insertion slot among the custom rows (skip self).
                                 local iI = #customRows
                                 for ri, r2 in ipairs(customRows) do
-                                    if r2.item ~= itemInfo then
+                                    if r2.item ~= item then
                                         local rm = mT + r2.topY - ITEM_H / 2
                                         if cY > rm then
                                             iI = ri
@@ -850,16 +849,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 insLine:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 8, lnY)
                                 insLine:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -8, lnY)
                                 insLine:Show()
-                                itemInfo:ClearAllPoints()
-                                itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, cY - mT)
-                                itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, cY - mT)
+                                item:ClearAllPoints()
+                                item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, cY - mT)
+                                item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, cY - mT)
                             end)
                             gripBtn:SetScript("OnMouseUp", function(_, mb)
-                                if mb ~= "LeftButton" or dragState.row ~= itemInfo then
+                                if mb ~= "LeftButton" or dragState.row ~= item then
                                     return
                                 end
                                 local wasActive = dragState.active
-                                local slotIndex = dragState.slot
+                                local slot = dragState.slot
                                 dragState.row = nil
                                 dragState.startY = nil
                                 dragState.active = false
@@ -874,11 +873,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local keyList = {}
                                 for ri, r2 in ipairs(customRows) do
                                     keyList[ri] = r2.key
-                                    if r2.item == itemInfo then
+                                    if r2.item == item then
                                         from = ri
                                     end
                                 end
-                                local to = slotIndex or from
+                                local to = slot or from
                                 if from and to then
                                     if from < to then
                                         to = to - 1
@@ -887,7 +886,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     if from ~= to then
                                         local mv = table.remove(keyList, from)
                                         table.insert(keyList, to, mv)
-                                        local pp = SavedDB()
+                                        local pp = DB()
                                         if pp and pp.cdmBars then
                                             pp.cdmBars.customBarMenuOrder = keyList
                                         end
@@ -907,7 +906,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             editBtn:SetAlpha(0.85)
                         end
                         local function InlineBtnLeave(self)
-                            if itemInfo:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
+                            if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
                                 self:SetAlpha(0.85)
                                 return
                             end
@@ -988,7 +987,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         end)
                     end
 
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                         if delBtn then
@@ -998,7 +997,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             editBtn:SetAlpha(1)
                         end
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         if delBtn and delBtn:IsMouseOver() then
                             return
                         end
@@ -1014,7 +1013,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             editBtn:SetAlpha(0.75)
                         end
                     end)
-                    itemInfo:SetScript("OnClick", function()
+                    item:SetScript("OnClick", function()
                         dropMenu:Hide()
                         optionState.selectedCDMBarIndex = position
                         -- The rebuild builds this page's header with the page,
@@ -1183,7 +1182,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Sync helper: all bars except ghost/focuskick. FocusKick is a nameplate-anchored
     -- identity and never receives global syncs.
     local function ForEachSyncBar(func)
-        local pp = SavedDB()
+        local pp = DB()
         if not pp or not pp.cdmBars then
             return
         end
@@ -1392,14 +1391,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                local blockData = CreateFrame("Frame", nil, bgSwatch)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(bgSwatch:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, bgSwatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(bgSwatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(bgSwatch, CludesUI.DisabledTooltip("Bar Background"))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 CludesUI.RegisterWidgetRefresh(function()
@@ -1409,17 +1408,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local enabled = BD().barBgEnabled == true
                     bgSwatch:SetAlpha(enabled and 1 or 0.3)
                     if enabled then
-                        blockData:Hide()
+                        block:Hide()
                     else
-                        blockData:Show()
+                        block:Show()
                     end
                 end)
                 local enabled = BD().barBgEnabled == true
                 bgSwatch:SetAlpha(enabled and 1 or 0.3)
                 if enabled then
-                    blockData:Hide()
+                    block:Hide()
                 else
-                    blockData:Show()
+                    block:Show()
                 end
             end
         end
@@ -1790,7 +1789,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- icons ignore the recipient's cap and never chain onward, so a cap on a recipient
             -- would promise behavior that does not exist. Recipient = ANY bar (enabled or not -- re-enabling must not create the forbidden state) with an active cap+target pair pointing here.
             local function BarIsOverflowRecipient(key)
-                local pp = SavedDB()
+                local pp = DB()
                 if not (pp and pp.cdmBars) then
                     return false
                 end
@@ -1803,7 +1802,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
             local ofVals, ofOrder = { [""] = "None" }, { "" }
             do
-                local pp = SavedDB()
+                local pp = DB()
                 if pp and pp.cdmBars then
                     for _, b in ipairs(pp.cdmBars.bars) do
                         local bt = mod.GetBarType and mod.GetBarType(b) or b.barType
@@ -3132,8 +3131,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     leftRgn,
                     buffBsRow:GetFrameLevel() + 3,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -3815,8 +3814,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     rightRgn,
                     bsRow:GetFrameLevel() + 3,
                     function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
@@ -4928,14 +4927,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 disabledTooltip = "This option requires Blizzard's Assisted Highlight to be enabled",
                 rawTooltip = true,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p
                         and p.cdmBars
                         and not p.cdmBars.hideRotationHelper
                         and mod.RotationAssistAvailable()
                 end,
                 setValue = function(v)
-                    local p = SavedDB()
+                    local p = DB()
                     if p and p.cdmBars then
                         p.cdmBars.hideRotationHelper = not v
                         if mod.UpdateRotationHighlights then
@@ -4958,7 +4957,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- the swatches display Class while the renderer still read Custom.
         local function RotationBars()
             local runtime = mod.ECME and mod.ECME.db and mod.ECME.db.profile
-            local fallback = SavedDB()
+            local fallback = DB()
             return (runtime and runtime.cdmBars) or (fallback and fallback.cdmBars)
         end
         -- Which of the Thickness / Outset rows the current style reads (the renderer
@@ -5046,7 +5045,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 local c = RotationBars()
                                 return (c and c.rotationAssistColorMode) or "default"
                             end,
-                            setMode = function(modeName)
+                            setMode = function(mode)
                                 local c = RotationBars()
                                 if not c or c.rotationAssistStyle == "blizzard" then
                                     return
@@ -5054,7 +5053,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 -- Spec Overrides: the slot this write belongs to, read
                                 -- before the write (as the widget factory does).
                                 local snap = CludesUI._SOAttribution(colorRgn)
-                                c.rotationAssistColorMode = modeName
+                                c.rotationAssistColorMode = mode
                                 if mod.UpdateRotationHighlights then
                                     mod.UpdateRotationHighlights()
                                 end
@@ -5089,10 +5088,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     Pix.Point(defaultSwatch, "RIGHT", colorSwatch, "LEFT", -8, 0)
 
                     local function UpdateRotSwatchMouse()
-                        local offset = rotColorOff()
-                        colorSwatch:EnableMouse(not offset)
-                        defaultSwatch:EnableMouse(not offset)
-                        classSwatch:EnableMouse(not offset)
+                        local off = rotColorOff()
+                        colorSwatch:EnableMouse(not off)
+                        defaultSwatch:EnableMouse(not off)
+                        classSwatch:EnableMouse(not off)
                     end
                     CludesUI.RegisterWidgetRefresh(UpdateRotSwatchMouse)
                     UpdateRotSwatchMouse()
@@ -5109,10 +5108,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     local c = RotationBars()
                                     return (c and c.rotationAssistColorMode) or "default"
                                 end,
-                                setValue = function(modeName)
+                                setValue = function(mode)
                                     local c = RotationBars()
                                     if c then
-                                        c.rotationAssistColorMode = modeName
+                                        c.rotationAssistColorMode = mode
                                     end
                                     if mod.UpdateRotationHighlights then
                                         mod.UpdateRotationHighlights()
@@ -5284,11 +5283,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             text = "Show Glows Only in Combat (global)",
             tooltip = "Hide every Cooldown Manager glow out of combat and bring them all back the moment you enter combat.",
             getValue = function()
-                local p = SavedDB()
+                local p = DB()
                 return (p and p.cdmBars and p.cdmBars.glowsOnlyInCombat) == true
             end,
             setValue = function(v)
-                local p = SavedDB()
+                local p = DB()
                 if not p or not p.cdmBars then
                     return
                 end

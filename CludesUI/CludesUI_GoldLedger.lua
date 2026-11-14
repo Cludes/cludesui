@@ -239,11 +239,11 @@ local function Build()
             e = {}
             chars[key] = e
         end
-        local _, classFile = UnitClass("player")
+        local _, class = UnitClass("player")
         -- The full name whatever the show-surname preference.
         local name, surname = (UnitNameUnmodified or UnitName)("player")
         e.money, e.class, e.name, e.realm, e.updated =
-            money, classFile, CUI.WithSurname(name, surname, true), CUI.RealmGroupName(), time()
+            money, class, CUI.WithSurname(name, surname, true), CUI.RealmGroupName(), time()
         return money
     end
 

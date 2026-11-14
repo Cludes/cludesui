@@ -207,9 +207,9 @@ function mod.NP_ForeverSide()
 end
 -- One side of it ("left" | "right"), for the many places that gap a single
 -- element off one edge of the bar.
-function mod.NP_ClassicSide(sideName, k)
+function mod.NP_ClassicSide(side, k)
     local l, r = mod.NP_ClassicBarReserve(k)
-    if sideName == "right" then
+    if side == "right" then
         return r
     end
     return l
@@ -226,10 +226,10 @@ function mod.NP_ClassicCastLayout(footprintW, kh, kc)
 end
 -- Three pieces of a sheet on `host` (its art cut at the window's two ends);
 -- created once, seated by NP_SeatClassicBorder.
-function mod.NP_ClassicBorderPieces(hostRegion, sheet)
+function mod.NP_ClassicBorderPieces(host, sheet)
     local p = { sheet = sheet }
     for idx = 1, 3 do
-        local t = hostRegion:CreateTexture(nil, "OVERLAY", nil, 0)
+        local t = host:CreateTexture(nil, "OVERLAY", nil, 0)
         t:SetTexture(sheet.file)
         t:SetSnapToPixelGrid(false)
         t:SetTexelSnappingBias(0)
@@ -243,11 +243,11 @@ end
 -- Seats the pieces round `bar` at k (the bar's height): both plates keep
 -- the art's own proportion, the window stretches between them. Memoized;
 -- every layout pass may call it.
-function mod.NP_SeatClassicBorder(p, barFrame, k)
-    if p._k == k and p._bar == barFrame then
+function mod.NP_SeatClassicBorder(p, bar, k)
+    if p._k == k and p._bar == bar then
         return
     end
-    p._k, p._bar = k, barFrame
+    p._k, p._bar = k, bar
     local C = mod.NP_CLASSIC
     local sheet = p.sheet
     local l, r = sheet.reachL * k, sheet.reachR * k
@@ -255,11 +255,11 @@ function mod.NP_SeatClassicBorder(p, barFrame, k)
     for idx = 1, 3 do
         p[idx]:ClearAllPoints()
     end
-    p[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -l, t)
-    p[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -l, -b)
+    p[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", -l, t)
+    p[1]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", -l, -b)
     p[1]:SetWidth(sheet.capL * k)
-    p[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", r, t)
-    p[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", r, -b)
+    p[3]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", r, t)
+    p[3]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", r, -b)
     p[3]:SetWidth(sheet.capR * k)
     p[2]:SetPoint("TOPLEFT", p[1], "TOPRIGHT", 0, 0)
     p[2]:SetPoint("BOTTOMRIGHT", p[3], "BOTTOMLEFT", 0, 0)
@@ -269,22 +269,22 @@ end
 -- the border's plate. The pieces ride a host above the fill, the absorbs
 -- and the class icon and under the texts; a height change re-seats them.
 function mod.NP_ApplyClassicHealthArt(backing, hgt)
-    local healthBar = backing and backing.health
-    if not healthBar then
+    local health = backing and backing.health
+    if not health then
         return
     end
     local C = mod.NP_CLASSIC
-    local hostRegion = backing._classicHealthHost
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, healthBar)
-        hostRegion:SetAllPoints(healthBar)
-        hostRegion:EnableMouse(false)
-        backing._classicHealthHost = hostRegion
-        backing._classicHealthArt = mod.NP_ClassicBorderPieces(hostRegion, C.health)
+    local host = backing._classicHealthHost
+    if not host then
+        host = CreateFrame("Frame", nil, health)
+        host:SetAllPoints(health)
+        host:EnableMouse(false)
+        backing._classicHealthHost = host
+        backing._classicHealthArt = mod.NP_ClassicBorderPieces(host, C.health)
     end
-    hostRegion:SetFrameLevel(healthBar:GetFrameLevel() + 6)
-    local k = hgt or healthBar:GetHeight()
-    mod.NP_SeatClassicBorder(backing._classicHealthArt, healthBar, k)
+    host:SetFrameLevel(health:GetFrameLevel() + 6)
+    local k = hgt or health:GetHeight()
+    mod.NP_SeatClassicBorder(backing._classicHealthArt, health, k)
     -- The art carries a level plate, so it must never render empty: a plate
     -- with no text frame of its own (the friendly plates) gets a host here,
     -- one level above the border art.
@@ -292,12 +292,12 @@ function mod.NP_ApplyClassicHealthArt(backing, hgt)
     if not tf then
         tf = backing._classicLevelHost
         if not tf then
-            tf = CreateFrame("Frame", nil, healthBar)
-            tf:SetAllPoints(healthBar)
+            tf = CreateFrame("Frame", nil, health)
+            tf:SetAllPoints(health)
             tf:EnableMouse(false)
             backing._classicLevelHost = tf
         end
-        tf:SetFrameLevel(hostRegion:GetFrameLevel() + 1)
+        tf:SetFrameLevel(host:GetFrameLevel() + 1)
     end
     local fontStr, sk = backing._classicLevel, backing._classicSkull
     if not fontStr then
@@ -314,12 +314,12 @@ function mod.NP_ApplyClassicHealthArt(backing, hgt)
     mod.SetFSFont(fontStr, mod.NP_ClassicLevelSize(k))
     local lx, ly = mod.NP_ClassicLevelOffset(k)
     fontStr:ClearAllPoints()
-    fontStr:SetPoint("CENTER", healthBar, "RIGHT", lx, ly)
+    fontStr:SetPoint("CENTER", health, "RIGHT", lx, ly)
     local sx, sy = mod.NP_ClassicSkullOffset(k)
     local ss = mod.NP_ClassicSkullSize(k)
     sk:ClearAllPoints()
     sk:SetSize(ss, ss)
-    sk:SetPoint("CENTER", healthBar, "RIGHT", sx, sy)
+    sk:SetPoint("CENTER", health, "RIGHT", sx, sy)
     mod.NP_UpdateClassicLevel(backing)
 end
 -- The level in the health border's plate: the effective level in its
@@ -377,15 +377,15 @@ function mod.NP_ApplyClassicCastArt(backing, castH)
     end
     local C = mod.NP_CLASSIC
     local k = castH or cast:GetHeight()
-    local hostRegion = backing._classicCastHost
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, cast)
-        hostRegion:SetAllPoints(cast)
-        hostRegion:EnableMouse(false)
-        backing._classicCastHost = hostRegion
-        backing._classicCastArt = mod.NP_ClassicBorderPieces(hostRegion, C.cast)
+    local host = backing._classicCastHost
+    if not host then
+        host = CreateFrame("Frame", nil, cast)
+        host:SetAllPoints(cast)
+        host:EnableMouse(false)
+        backing._classicCastHost = host
+        backing._classicCastArt = mod.NP_ClassicBorderPieces(host, C.cast)
     end
-    hostRegion:SetFrameLevel(cast:GetFrameLevel() + 2)
+    host:SetFrameLevel(cast:GetFrameLevel() + 2)
     mod.NP_SeatClassicBorder(backing._classicCastArt, cast, k)
     -- The pool builds the cast bar BEFORE its icon frame, spark, shield and
     -- seam line, and lays the bar out in between, so the first pass through
@@ -411,7 +411,7 @@ function mod.NP_ApplyClassicCastArt(backing, castH)
     -- the cast bar is a plain child of the plate, so the host's own level
     -- alone would drop the icon below the health bar rather than lift it.
     backing.castIconFrame:SetFrameLevel(
-        math.max(hostRegion:GetFrameLevel() + 1, backing.health:GetFrameLevel() + 1)
+        math.max(host:GetFrameLevel() + 1, backing.health:GetFrameLevel() + 1)
     )
     mod.NP_ClassicSpark(backing, k)
     backing.castShield:SetTexture(C.shield)
@@ -510,13 +510,13 @@ mod._npShadeClear = CreateColor(0, 0, 0, 0)
 mod._npShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._npShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._npShadeEnd = CreateColor(0, 0, 0, 0.35)
-function mod.NP_BlizzBarShadow(barFrame, hgt, maskTex)
-    local sh = barFrame._blizzShadow
+function mod.NP_BlizzBarShadow(bar, hgt, mask)
+    local sh = bar._blizzShadow
     if not sh then
         sh = {}
-        barFrame._blizzShadow = sh
+        bar._blizzShadow = sh
         for idx = 1, 4 do
-            local texture = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
+            local texture = bar:CreateTexture(nil, "OVERLAY", nil, -3)
             texture:SetTexture("Interface\\Buttons\\WHITE8X8")
             if texture.SetSnapToPixelGrid then
                 texture:SetSnapToPixelGrid(false)
@@ -530,7 +530,7 @@ function mod.NP_BlizzBarShadow(barFrame, hgt, maskTex)
         sh[3]:SetGradient("HORIZONTAL", mod._npShadeEnd, mod._npShadeClear)
         sh[4]:SetGradient("HORIZONTAL", mod._npShadeClear, mod._npShadeEnd)
     end
-    hgt = hgt or barFrame:GetHeight() or 10
+    hgt = hgt or bar:GetHeight() or 10
     -- The strips hang off the bar's edges, so only the height sizes them:
     -- one compare per plate show once laid out (plates show constantly).
     if sh._h ~= hgt then
@@ -542,34 +542,34 @@ function mod.NP_BlizzBarShadow(barFrame, hgt, maskTex)
         -- The bottom strip sits on the fill's bottom edge (ns.NP_SeatBarMask).
         local lift = mod.NP_Forever() and mod.NP_FOREVER_FILL_LIFT or 0
         sh[1]:ClearAllPoints()
-        sh[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-        sh[1]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+        sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
         sh[1]:SetHeight(topY)
         sh[2]:ClearAllPoints()
-        sh[2]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, lift)
-        sh[2]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, lift)
+        sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, lift)
+        sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, lift)
         sh[2]:SetHeight(bottom)
         sh[3]:ClearAllPoints()
-        sh[3]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-        sh[3]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
+        sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
         sh[3]:SetWidth(ends)
         sh[4]:ClearAllPoints()
-        sh[4]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
-        sh[4]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
+        sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+        sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
         sh[4]:SetWidth(ends)
         for idx = 1, 4 do
             sh[idx]:Show()
         end
     end
     -- Bar-shape mask, seated once per mask object.
-    if maskTex and sh._mask ~= maskTex then
+    if mask and sh._mask ~= mask then
         for idx = 1, 4 do
             if sh._mask then
                 pcall(sh[idx].RemoveMaskTexture, sh[idx], sh._mask)
             end
-            sh[idx]:AddMaskTexture(maskTex)
+            sh[idx]:AddMaskTexture(mask)
         end
-        sh._mask = maskTex
+        sh._mask = mask
     end
 end
 -- The stock fill-footprint mask on a health bar: the whole bar, except under
@@ -577,13 +577,13 @@ end
 -- up over the bar's bottom edge (field-measured), so there the mask stops
 -- that far up and the fill meets the rim. Shared with the options preview.
 mod.NP_FOREVER_FILL_LIFT = 1
-function mod.NP_SeatBarMask(maskTex, healthBar)
-    maskTex:ClearAllPoints()
+function mod.NP_SeatBarMask(mask, health)
+    mask:ClearAllPoints()
     if mod.NP_Forever() then
-        maskTex:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-        maskTex:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, mod.NP_FOREVER_FILL_LIFT)
+        mask:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        mask:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, mod.NP_FOREVER_FILL_LIFT)
     else
-        maskTex:SetAllPoints(healthBar)
+        mask:SetAllPoints(health)
     end
 end
 -- Health bar: the stock shadowed background hugging the bar the way the
@@ -592,7 +592,7 @@ end
 -- every colour rule), so colours, textures and opacity render as on the
 -- CUI look.
 function mod.NP_ApplyBlizzBarArt(backing)
-    local healthBar = backing.health
+    local health = backing.health
     local B = mod.NP_BLIZZ
     local backdrop = backing.healthBG
     if backdrop and not backing._blizzBarBg and mod.NP_AtlasOK(B.barBg) then
@@ -600,43 +600,43 @@ function mod.NP_ApplyBlizzBarArt(backing)
         backdrop:SetAtlas(B.barBg)
         backdrop:SetVertexColor(1, 1, 1, 1)
         backdrop:ClearAllPoints()
-        backdrop:SetPoint("TOPLEFT", healthBar, "TOPLEFT", -2, 3)
-        backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 6, -6)
+        backdrop:SetPoint("TOPLEFT", health, "TOPLEFT", -2, 3)
+        backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 6, -6)
     end
     -- The stock fill art's own footprint (rounded, soft-edged, inside the
     -- background's rim) as a mask over the bar for the fill, the highlights
     -- and the shadow: the user's texture sits inside the rim exactly as the
     -- stock fill does instead of painting over it. Seated per texture object
     -- (a status bar texture path swap mints a new fill object).
-    local maskTex = backing._blizzBarMask
-    if not maskTex and mod.NP_AtlasOK(B.bar) then
-        maskTex = healthBar:CreateMaskTexture()
-        maskTex:SetAtlas(B.bar)
-        mod.NP_SeatBarMask(maskTex, healthBar)
-        backing._blizzBarMask = maskTex
+    local mask = backing._blizzBarMask
+    if not mask and mod.NP_AtlasOK(B.bar) then
+        mask = health:CreateMaskTexture()
+        mask:SetAtlas(B.bar)
+        mod.NP_SeatBarMask(mask, health)
+        backing._blizzBarMask = mask
     end
-    if maskTex then
-        local fill = healthBar:GetStatusBarTexture()
+    if mask then
+        local fill = health:GetStatusBarTexture()
         if fill and backing._blizzMaskedFill ~= fill then
-            pcall(fill.RemoveMaskTexture, fill, maskTex)
-            fill:AddMaskTexture(maskTex)
+            pcall(fill.RemoveMaskTexture, fill, mask)
+            fill:AddMaskTexture(mask)
             backing._blizzMaskedFill = fill
         end
         if backing.highlight and not backing._blizzMaskedHover then
-            backing.highlight:AddMaskTexture(maskTex)
+            backing.highlight:AddMaskTexture(mask)
             backing._blizzMaskedHover = true
         end
         if backing.targetHighlight and not backing._blizzMaskedTarget then
-            backing.targetHighlight:AddMaskTexture(maskTex)
+            backing.targetHighlight:AddMaskTexture(mask)
             backing._blizzMaskedTarget = true
         end
         if backing.castTintInt and not backing._blizzMaskedCastTints then
-            backing.castTintInt:AddMaskTexture(maskTex)
-            backing.castTintUnint:AddMaskTexture(maskTex)
+            backing.castTintInt:AddMaskTexture(mask)
+            backing.castTintUnint:AddMaskTexture(mask)
             backing._blizzMaskedCastTints = true
         end
     end
-    mod.NP_BlizzBarShadow(healthBar, nil, maskTex)
+    mod.NP_BlizzBarShadow(health, nil, mask)
 end
 -- Hand-built aura icons (the cast-lockout icon, the options preview mocks):
 -- the stock nameplate aura item look -- the rounded mask over the icon art
@@ -644,8 +644,8 @@ end
 -- frame. Our own frames, so the state lives on them: one-time structure,
 -- size-memoized ring geometry. The engine cells get the same look through
 -- AuraKit's blizzRoundArt lane (CUI_Nameplates_AuraContainers BuildNPStyle).
-function mod.NP_ApplyBlizzIconArt(widget, glyph, wid, hgt)
-    if not (widget and glyph) then
+function mod.NP_ApplyBlizzIconArt(widget, icon, wid, hgt)
+    if not (widget and icon) then
         return
     end
     local B = mod.NP_BLIZZ
@@ -654,11 +654,11 @@ function mod.NP_ApplyBlizzIconArt(widget, glyph, wid, hgt)
     end
     local ring = widget._blizzIconRing
     if not ring then
-        local maskTex = widget:CreateMaskTexture()
-        maskTex:SetAtlas(B.auraMask)
-        maskTex:SetAllPoints(widget)
-        glyph:AddMaskTexture(maskTex)
-        widget._blizzIconMask = maskTex
+        local mask = widget:CreateMaskTexture()
+        mask:SetAtlas(B.auraMask)
+        mask:SetAllPoints(widget)
+        icon:AddMaskTexture(mask)
+        widget._blizzIconMask = mask
         ring = widget:CreateTexture(nil, "OVERLAY", nil, 5)
         mod.NP_StockAtlas(ring, B.auraRing)
         ring:SetSnapToPixelGrid(false)
@@ -691,21 +691,21 @@ function mod.NP_ApplyClassicIconArt(widget, wid, hgt)
     if not mod.NP_AtlasOK(atlas) then
         return
     end
-    local hostRegion = widget._classicIconHost
+    local host = widget._classicIconHost
     local border = widget._classicIconBorder
     if not border then
-        hostRegion = Pool.CreateFrame("Frame", nil, widget)
-        hostRegion:SetAllPoints(widget)
-        hostRegion:EnableMouse(false)
-        border = hostRegion:CreateTexture(nil, "OVERLAY", nil, 5)
+        host = Pool.CreateFrame("Frame", nil, widget)
+        host:SetAllPoints(widget)
+        host:EnableMouse(false)
+        border = host:CreateTexture(nil, "OVERLAY", nil, 5)
         border:SetAtlas(atlas)
         border:SetSnapToPixelGrid(false)
         border:SetTexelSnappingBias(0)
-        widget._classicIconHost = hostRegion
+        widget._classicIconHost = host
         widget._classicIconBorder = border
     end
     -- Re-asserted each pass: the host follows any relevel of its frame.
-    hostRegion:SetFrameLevel(widget:GetFrameLevel() + 2)
+    host:SetFrameLevel(widget:GetFrameLevel() + 2)
     wid = wid or widget:GetWidth()
     hgt = hgt or widget:GetHeight()
     if widget._classicIconW ~= wid or widget._classicIconH ~= hgt then
@@ -719,8 +719,8 @@ end
 -- carries. Called from the target/focus change paths (never per tick);
 -- isTarget is passed by callers that already resolved it.
 function mod.NP_ApplyBlizzSelection(backing, isTarget)
-    local healthBar = backing and backing.health
-    if not healthBar or not backing.unit then
+    local health = backing and backing.health
+    if not health or not backing.unit then
         return
     end
     local B = mod.NP_BLIZZ
@@ -730,8 +730,8 @@ function mod.NP_ApplyBlizzSelection(backing, isTarget)
         if not ((fv or mod.NP_AtlasOK(B.selected)) and mod.NP_AtlasOK(B.deselected)) then
             return
         end
-        local backdrop = backing.healthBG or healthBar
-        sel = healthBar:CreateTexture(nil, "OVERLAY", nil, 5)
+        local backdrop = backing.healthBG or health
+        sel = health:CreateTexture(nil, "OVERLAY", nil, 5)
         if fv then
             -- WoW Forever's ring: a thin yellow outline hung off the
             -- background art's corners, as that client's own plates.
@@ -745,10 +745,10 @@ function mod.NP_ApplyBlizzSelection(backing, isTarget)
         end
         sel:Hide()
         backing._blizzSelected = sel
-        desel = healthBar:CreateTexture(nil, "OVERLAY", nil, 4)
+        desel = health:CreateTexture(nil, "OVERLAY", nil, 4)
         desel:SetAtlas(B.deselected)
-        desel:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 1)
-        desel:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, -1)
+        desel:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 1)
+        desel:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, -1)
         backing._blizzDeselected = desel
     end
     if isTarget == nil then
@@ -804,81 +804,81 @@ end
 -- hidden skull and the hidden selection border (nil when the client lacks
 -- its atlas). nil when the client lacks the box art. Shared with the options
 -- preview; the caller sizes it.
-function mod.NP_BuildForeverLevelBox(healthBar)
+function mod.NP_BuildForeverLevelBox(health)
     local B, L = mod.NP_BLIZZ, mod.NP_FOREVER_LVL
     if not mod.NP_AtlasOK(B.lvlBg) then
         return nil
     end
-    local boxFrame = Pool.CreateFrame("Frame", nil, healthBar)
-    boxFrame:EnableMouse(false)
-    boxFrame:SetFrameLevel(healthBar:GetFrameLevel() + 6)
+    local box = Pool.CreateFrame("Frame", nil, health)
+    box:EnableMouse(false)
+    box:SetFrameLevel(health:GetFrameLevel() + 6)
     -- As the stock plate hangs it: L.pad taller than the bar, 3 of it above.
-    boxFrame:SetPoint("LEFT", healthBar, "RIGHT", L.gap, 0.5)
-    local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
+    box:SetPoint("LEFT", health, "RIGHT", L.gap, 0.5)
+    local backdrop = box:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAtlas(B.lvlBg)
-    backdrop:SetAllPoints(boxFrame)
-    local fontStr = boxFrame:CreateFontString(nil, "OVERLAY")
+    backdrop:SetAllPoints(box)
+    local fontStr = box:CreateFontString(nil, "OVERLAY")
     fontStr:SetJustifyH("CENTER")
-    fontStr:SetPoint("CENTER", boxFrame, "CENTER", 0, 0)
-    boxFrame._fs = fontStr
-    local sk = boxFrame:CreateTexture(nil, "OVERLAY")
+    fontStr:SetPoint("CENTER", box, "CENTER", 0, 0)
+    box._fs = fontStr
+    local sk = box:CreateTexture(nil, "OVERLAY")
     if mod.NP_AtlasOK(B.lvlSkull) then
         sk:SetAtlas(B.lvlSkull)
     end
-    sk:SetPoint("CENTER", boxFrame, "CENTER", 0, 0)
+    sk:SetPoint("CENTER", box, "CENTER", 0, 0)
     sk:Hide()
-    boxFrame._skull = sk
+    box._skull = sk
     if mod.NP_AtlasOK(B.lvlSel) then
         -- Where the stock plate hangs it (3 past the box's top and 4 past its
         -- bottom, so 6 past the bar's each way), level with the bar's own
         -- selection ring.
-        local sel = boxFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+        local sel = box:CreateTexture(nil, "OVERLAY", nil, 1)
         sel:SetAtlas(B.lvlSel)
-        sel:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", -3, 3)
-        sel:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", 3, -4)
+        sel:SetPoint("TOPLEFT", box, "TOPLEFT", -3, 3)
+        sel:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 3, -4)
         sel:Hide()
-        boxFrame._sel = sel
+        box._sel = sel
     end
-    return boxFrame
+    return box
 end
 -- Builds the box once per plate, then sizes it to the bar's height `h` (nil
 -- = the bar's own) and paints the plate's unit. Runs from the plate's border
 -- pass and size changes. With Show Level Box off, a built box is parked
 -- (hidden, off the field every box path tests) for a switch back.
 function mod.NP_ApplyForeverLevelBox(backing, hgt)
-    local healthBar = backing and backing.health
-    if not healthBar then
+    local health = backing and backing.health
+    if not health then
         return
     end
-    local boxFrame = backing._fvLevelBox
+    local box = backing._fvLevelBox
     if p and p.foreverHideLevelBox then
-        if boxFrame then
-            boxFrame:Hide()
-            backing._fvLevelBox, backing._fvLevelBoxSpare = nil, boxFrame
+        if box then
+            box:Hide()
+            backing._fvLevelBox, backing._fvLevelBoxSpare = nil, box
         end
         return
     end
     local L = mod.NP_FOREVER_LVL
-    if not boxFrame then
-        boxFrame = backing._fvLevelBoxSpare or mod.NP_BuildForeverLevelBox(healthBar)
-        if not boxFrame then
+    if not box then
+        box = backing._fvLevelBoxSpare or mod.NP_BuildForeverLevelBox(health)
+        if not box then
             return
         end
-        backing._fvLevelBox, backing._fvLevelBoxSpare = boxFrame, nil
+        backing._fvLevelBox, backing._fvLevelBoxSpare = box, nil
         -- The selection state may already be set on this plate.
         mod.NP_ForeverLevelSel(backing)
     end
-    boxFrame:SetFrameLevel(healthBar:GetFrameLevel() + 6)
-    local bh = (hgt or healthBar:GetHeight()) + L.pad
-    if boxFrame._h ~= bh then
-        boxFrame._h = bh
-        boxFrame:SetSize(L.w, bh)
+    box:SetFrameLevel(health:GetFrameLevel() + 6)
+    local bh = (hgt or health:GetHeight()) + L.pad
+    if box._h ~= bh then
+        box._h = bh
+        box:SetSize(L.w, bh)
         -- The stock skull size (the bar's height + 3).
-        boxFrame._skull:SetSize(bh - 2, bh - 2)
+        box._skull:SetSize(bh - 2, bh - 2)
     end
     -- The user's nameplate font and outline, like every other plate text
     -- (and it guarantees a font before any SetText).
-    mod.SetFSFont(boxFrame._fs, mod.NP_ForeverLevelFont(bh))
+    mod.SetFSFont(box._fs, mod.NP_ForeverLevelFont(bh))
     mod.NP_UpdateForeverLevel(backing)
 end
 -- The unit's level in the box: its difficulty colour against yours when you
@@ -886,24 +886,24 @@ end
 -- client hides (a boss). No box on a game object. Every unit read is treated
 -- as possibly secret: a secret level is shown as it comes, in the gold.
 function mod.NP_UpdateForeverLevel(backing)
-    local boxFrame = backing._fvLevelBox
-    if not boxFrame then
+    local box = backing._fvLevelBox
+    if not box then
         return
     end
     local unitToken = backing.unit
     if not unitToken or not UnitExists(unitToken) then
-        boxFrame:Hide()
+        box:Hide()
         return
     end
-    local offset = UnitIsGameObject(unitToken)
-    if issecretvalue and issecretvalue(offset) then
-        offset = false
+    local off = UnitIsGameObject(unitToken)
+    if issecretvalue and issecretvalue(off) then
+        off = false
     end
-    if offset then
-        boxFrame:Hide()
+    if off then
+        box:Hide()
         return
     end
-    local fontStr, sk = boxFrame._fs, boxFrame._skull
+    local fontStr, sk = box._fs, box._skull
     local lvl = UnitEffectiveLevel(unitToken)
     local secret = issecretvalue and issecretvalue(lvl)
     if not secret and (type(lvl) ~= "number" or lvl <= 0) then
@@ -922,14 +922,14 @@ function mod.NP_UpdateForeverLevel(backing)
         fontStr:SetTextColor(r, g, b, 1)
         fontStr:Show()
     end
-    boxFrame:Show()
+    box:Show()
 end
 -- The box's border for the plate's selection state (the one
 -- ns.NP_ApplyBlizzSelection memoizes): white for the target, orange for the
 -- focus, hidden otherwise.
 function mod.NP_ForeverLevelSel(backing)
-    local boxFrame = backing._fvLevelBox
-    local sel = boxFrame and boxFrame._sel
+    local box = backing._fvLevelBox
+    local sel = box and box._sel
     if not sel then
         return
     end
@@ -999,19 +999,19 @@ function mod.NP_ForeverWatchLevels()
 end
 -- Cast fill per cast kind ("cast" | "channel" | "interrupted"); one field test
 -- when the style is off, memoized per plate.
-function mod.NP_SetBlizzCastFill(backing, kindOf)
+function mod.NP_SetBlizzCastFill(backing, kind)
     if not backing._blizzCastArt then
         return
     end
-    kindOf = kindOf or "cast"
-    if backing._blizzCastKind == kindOf then
+    kind = kind or "cast"
+    if backing._blizzCastKind == kind then
         return
     end
-    local atlas = mod.NP_BLIZZ[kindOf]
+    local atlas = mod.NP_BLIZZ[kind]
     if not mod.NP_AtlasOK(atlas) then
         return
     end
-    backing._blizzCastKind = kindOf
+    backing._blizzCastKind = kind
     backing.cast:GetStatusBarTexture():SetAtlas(atlas)
 end
 -- Cast bar: stock background, fills, pip and shield; the uninterruptible
@@ -1149,17 +1149,17 @@ local function NoTintFlag(saved, key)
 end
 
 local function ApplyHealthBarTexture(backing)
-    local healthBar = backing.health
-    if not healthBar then
+    local health = backing.health
+    if not health then
         return
     end
     local texKey = (p and p.healthBarTexture) or defaultSet.healthBarTexture or "none"
     local filePath =
         CludesUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
-    healthBar:SetStatusBarTexture(filePath)
+    health:SetStatusBarTexture(filePath)
     -- A path swap mints a new fill object: the shield anchors follow it.
-    if backing.absorb and backing._absFill ~= healthBar:GetStatusBarTexture() then
-        mod.NP_LayoutAbsorbBars(backing, healthBar, backing._absEdge)
+    if backing.absorb and backing._absFill ~= health:GetStatusBarTexture() then
+        mod.NP_LayoutAbsorbBars(backing, health, backing._absEdge)
     end
     if backing.castTintInt then
         mod.NP_LayoutCastTints(backing)
@@ -1188,8 +1188,8 @@ local NO_ROOTS, HP_ROOTS, HP_TEX, CAST_TEX = {}, {}, {}, {}
 local HP_OPTS = { roots = HP_ROOTS, textures = HP_TEX }
 local CAST_OPTS = { roots = NO_ROOTS, textures = CAST_TEX }
 function mod.NP_ApplyRounding(backing, part, cornersOnly)
-    local healthBar = backing.health
-    if not healthBar then
+    local health = backing.health
+    if not health then
         return
     end
     local radius = (not mod.NP_Blizz() and p and p.cornerRadius) or 0
@@ -1197,8 +1197,8 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
         radius = 0
     end
     local customOn = radius > 0 and mod.IsCustomBorderEnabled()
-    local look = customOn and ((p and p.customBorderTexture) or defaultSet.customBorderTexture) or "solid"
-    if not CludesUI.RoundedStyleOK(look) then
+    local style = customOn and ((p and p.customBorderTexture) or defaultSet.customBorderTexture) or "solid"
+    if not CludesUI.RoundedStyleOK(style) then
         radius = 0
     end
     -- Join Cast Bar: while a cast shows, the health bar and the cast bar under
@@ -1222,14 +1222,14 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
     -- on its own frame, which ApplyBorder builds and rounds right after.
     local custom = customOn and backing._customBorder
     if part ~= "cast" and (custom or not customOn) then
-        local shape = custom or healthBar
-        HP_OPTS.rect, HP_OPTS.border, HP_OPTS.style = shape, shape, look
+        local shape = custom or health
+        HP_OPTS.rect, HP_OPTS.border, HP_OPTS.style = shape, shape, style
         HP_OPTS.corners = p and p.cornerMask
         if join and backing.cast and backing.cast:IsShown() then
             HP_OPTS.corners = CludesUI.RoundedJoinCorners(HP_OPTS.corners)
         end
         local ab, fw = backing.absorb, backing.absorbForward
-        HP_TEX[1], HP_TEX[2], HP_TEX[3] = healthBar:GetStatusBarTexture(), backing.healthBG, backing.hashLine
+        HP_TEX[1], HP_TEX[2], HP_TEX[3] = health:GetStatusBarTexture(), backing.healthBG, backing.hashLine
         HP_TEX[4], HP_TEX[5] = backing.highlight, backing.targetHighlight
         HP_TEX[6] = ab and ab:GetStatusBarTexture()
         HP_TEX[7] = fw and fw:GetStatusBarTexture()
@@ -1249,7 +1249,7 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
         local same = cornersOnly
             and last
             and last.radius == radius
-            and last.style == look
+            and last.style == style
             and last.shape == shape
         if same then
             local lt, lr = last.tex, last.roots
@@ -1274,7 +1274,7 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
                 last = { tex = {}, roots = {} }
                 backing._npHpRound = last
             end
-            last.radius, last.style, last.shape = radius, look, shape
+            last.radius, last.style, last.shape = radius, style, shape
             local lt, lr = last.tex, last.roots
             for idx = 1, 9 do
                 lt[idx] = HP_TEX[idx]
@@ -1406,48 +1406,48 @@ do
 end
 
 function mod.ApplyAbsorbStyle(backing)
-    local look = (p and p.absorbStyle) or defaultSet.absorbStyle
+    local style = (p and p.absorbStyle) or defaultSet.absorbStyle
     -- blizzard/striped/clean live in NP_ABSORB_STYLE_TEX; the stripe keys
     -- (shared with the Focus Texture dropdown) resolve via ResolveOverlayTexPath.
-    local texture = mod.NP_ABSORB_STYLE_TEX[look]
-        or mod.ResolveOverlayTexPath(look)
+    local texture = mod.NP_ABSORB_STYLE_TEX[style]
+        or mod.ResolveOverlayTexPath(style)
         or mod.NP_ABSORB_STYLE_TEX.blizzard
     -- Opacity applies to every style. absorbAlpha (0-100) is the single source of truth
     -- once set (slider touched or style picked); until then, per-style defaults.
     local alpha = p and p.absorbAlpha
     if alpha then
         alpha = alpha / 100
-    elseif look == "clean" then
+    elseif style == "clean" then
         alpha = ((p and p.absorbCleanAlpha) or defaultSet.absorbCleanAlpha or 30) / 100
     else
-        alpha = mod.NP_ABSORB_STYLE_ALPHA[look] or 0.8
+        alpha = mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8
     end
     -- Tint applies to every style EXCEPT Blizzard, which keeps its own coloring.
     local r, g, b = 1, 1, 1
-    if look ~= "blizzard" then
+    if style ~= "blizzard" then
         local c = (p and p.absorbColor) or defaultSet.absorbColor
         -- Per-component default: a partial colour table would throw downstream.
         if c then
             r, g, b = c.r or 1, c.g or 1, c.b or 1
         end
     end
-    local maskTex = backing._absorbMask
-    for _, barFrame in ipairs({ backing.absorb, backing.absorbForward }) do
-        if barFrame then
-            barFrame:SetStatusBarTexture(texture)
-            barFrame:SetStatusBarColor(r, g, b, alpha)
-            local fill = barFrame:GetStatusBarTexture()
+    local mask = backing._absorbMask
+    for _, bar in ipairs({ backing.absorb, backing.absorbForward }) do
+        if bar then
+            bar:SetStatusBarTexture(texture)
+            bar:SetStatusBarColor(r, g, b, alpha)
+            local fill = bar:GetStatusBarTexture()
             if fill then
                 fill:SetDrawLayer("ARTWORK", 1)
-                if maskTex then
-                    fill:AddMaskTexture(maskTex)
+                if mask then
+                    fill:AddMaskTexture(mask)
                 end
             end
         end
     end
-    local modeName = (p and p.absorbEdgeMode) or defaultSet.absorbEdgeMode
-    if backing._absEdge ~= modeName or backing._absFill ~= backing.health:GetStatusBarTexture() then
-        mod.NP_LayoutAbsorbBars(backing, backing.health, modeName)
+    local mode = (p and p.absorbEdgeMode) or defaultSet.absorbEdgeMode
+    if backing._absEdge ~= mode or backing._absFill ~= backing.health:GetStatusBarTexture() then
+        mod.NP_LayoutAbsorbBars(backing, backing.health, mode)
         -- A shield already up repaints in its new placement (the forward
         -- bar's visibility is decided by the paint).
         if backing.unit and backing.MarkHealthDirty and not backing._absorbHidden then
@@ -1482,26 +1482,26 @@ end
 -- larger than current health spans from the bar's left end instead of
 -- losing its excess.
 -- Shared with the options preview (owner is any table holding the bars).
-function mod.NP_BuildAbsorbBars(ownerFrame, healthBar, maskTex)
-    local lvl = healthBar:GetFrameLevel() + 1
-    local curClip = Pool.CreateFrame("Frame", nil, healthBar)
+function mod.NP_BuildAbsorbBars(ownerFrame, health, mask)
+    local lvl = health:GetFrameLevel() + 1
+    local curClip = Pool.CreateFrame("Frame", nil, health)
     curClip:SetClipsChildren(true)
     curClip:SetFrameLevel(lvl)
-    local missClip = Pool.CreateFrame("Frame", nil, healthBar)
+    local missClip = Pool.CreateFrame("Frame", nil, health)
     missClip:SetClipsChildren(true)
     missClip:SetFrameLevel(lvl)
     local fw = Pool.CreateFrame("StatusBar", nil, missClip)
     fw:SetReverseFill(false)
     local ab = Pool.CreateFrame("StatusBar", nil, curClip)
-    for _, barFrame in ipairs({ ab, fw }) do
-        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        local fill = barFrame:GetStatusBarTexture()
-        if fill and maskTex then
-            fill:AddMaskTexture(maskTex)
+    for _, bar in ipairs({ ab, fw }) do
+        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        local fill = bar:GetStatusBarTexture()
+        if fill and mask then
+            fill:AddMaskTexture(mask)
         end
-        barFrame:SetFrameLevel(lvl)
-        barFrame:SetMinMaxValues(0, 1)
-        barFrame:SetValue(0)
+        bar:SetFrameLevel(lvl)
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
     end
     -- The clips carry the visibility (the bars inside stay shown): hidden,
     -- their fill-edge anchors cost nothing on a plate with no shield.
@@ -1514,51 +1514,51 @@ end
 -- Seats every anchor for a placement. Anchors ride the health fill object,
 -- and a health texture path swap mints a new one, so this also re-runs
 -- whenever the fill changes (stamped _absFill). Never per paint.
-function mod.NP_LayoutAbsorbBars(ownerFrame, healthBar, modeName)
-    local fillTex = healthBar:GetStatusBarTexture()
+function mod.NP_LayoutAbsorbBars(ownerFrame, health, mode)
+    local fillTex = health:GetStatusBarTexture()
     local curClip, missClip = ownerFrame._absCurClip, ownerFrame._absMissClip
     local ab, fw = ownerFrame.absorb, ownerFrame.absorbForward
-    local fromLeft = modeName == "overlayReverse"
+    local fromLeft = mode == "overlayReverse"
     missClip:ClearAllPoints()
     -- 1px into the fill seals the seam behind a forward bar that starts at
     -- the health edge; one from the bar's left end would double that pixel
     -- over the main bar.
     missClip:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", fromLeft and 0 or -1, 0)
-    missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+    missClip:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     fw:ClearAllPoints()
     if fromLeft then
-        fw:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-        fw:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+        fw:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        fw:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
     else
         fw:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
         fw:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMRIGHT", 0, 0)
     end
     curClip:ClearAllPoints()
     ab:ClearAllPoints()
-    if modeName == "right" or modeName == "left" then
-        curClip:SetAllPoints(healthBar)
+    if mode == "right" or mode == "left" then
+        curClip:SetAllPoints(health)
     else
-        curClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        curClip:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
         curClip:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
     end
-    if modeName == "left" then
+    if mode == "left" then
         ab:SetReverseFill(false)
-        ab:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-        ab:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
-    elseif modeName == "overlayReverse" then
+        ab:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        ab:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+    elseif mode == "overlayReverse" then
         ab:SetReverseFill(true)
         ab:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
         ab:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
     else
         ab:SetReverseFill(true)
-        ab:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
-        ab:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        ab:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
+        ab:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     end
-    ownerFrame._absFwOn = modeName == "overlay" or fromLeft
+    ownerFrame._absFwOn = mode == "overlay" or fromLeft
     if not ownerFrame._absFwOn then
         missClip:Hide()
     end
-    ownerFrame._absEdge, ownerFrame._absFill = modeName, fillTex
+    ownerFrame._absEdge, ownerFrame._absFill = mode, fillTex
 end
 
 -- Both bars span the health bar so their textures render at bar scale.

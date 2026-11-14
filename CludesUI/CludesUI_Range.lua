@@ -95,7 +95,7 @@ local EnsureLadder -- defined below; the WoW Forever caster cutoff reads the lad
 -- input; everything here only moves on spec/talent changes and is cached by
 -- Range_GetAttackCutoff below).
 local function SpecAttackCutoff(holyPaladinMelee)
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local specIndex = C_SpecializationInfo.GetSpecialization()
     local specID = specIndex and C_SpecializationInfo.GetSpecializationInfo(specIndex)
     -- WoW Forever reports one class spec (1482-1491) whatever the player
@@ -109,11 +109,11 @@ local function SpecAttackCutoff(holyPaladinMelee)
     -- and Rogue stay at 5.
     if CludesUI.IS_FOREVER == true then
         if
-            classFile == "DRUID"
-            or classFile == "PRIEST"
-            or classFile == "MAGE"
-            or classFile == "WARLOCK"
-            or classFile == "SHAMAN"
+            class == "DRUID"
+            or class == "PRIEST"
+            or class == "MAGE"
+            or class == "WARLOCK"
+            or class == "SHAMAN"
         then
             EnsureLadder()
             local best
@@ -133,24 +133,24 @@ local function SpecAttackCutoff(holyPaladinMelee)
         return 5
     end
 
-    if classFile == "DRUID" then
+    if class == "DRUID" then
         if specID == 102 or specID == 105 then
             return C_SpellBook.IsSpellKnown(197488) and 45 or 40 -- Astral Influence
         end
         return 5
-    elseif classFile == "DEMONHUNTER" then
+    elseif class == "DEMONHUNTER" then
         return (specID == 577 or specID == 581) and 5 or 25
-    elseif classFile == "EVOKER" then
+    elseif class == "EVOKER" then
         return specID == 1468 and 30 or 25
-    elseif classFile == "HUNTER" then
+    elseif class == "HUNTER" then
         return (specID == 253 or specID == 254) and 40 or 5
-    elseif classFile == "PALADIN" then
+    elseif class == "PALADIN" then
         return specID == 65 and not holyPaladinMelee and 40 or 5
-    elseif classFile == "SHAMAN" then
+    elseif class == "SHAMAN" then
         return specID == 263 and 5 or 40
-    elseif classFile == "MONK" then
+    elseif class == "MONK" then
         return specID == 270 and 40 or 5
-    elseif classFile == "PRIEST" or classFile == "MAGE" or classFile == "WARLOCK" then
+    elseif class == "PRIEST" or class == "MAGE" or class == "WARLOCK" then
         return 40
     end
     return 5
@@ -168,8 +168,8 @@ function CludesUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
         return math.max(5, math.min(50, customCutoff))
     end
 
-    local _, classFile = UnitClass("player")
-    if classFile == "DRUID" then
+    local _, class = UnitClass("player")
+    if class == "DRUID" then
         -- WoW Forever orders the stance bar the vanilla way (Aquatic Form can sit
         -- between Bear and Cat), so it checks the form ID: Cat 1, Bear 5, Dire Bear 8.
         if CludesUI.IS_FOREVER == true then
@@ -218,16 +218,16 @@ local function BuildLadder()
     local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
     local byRange = {}
     for li = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-        local lineTex = C_SpellBook.GetSpellBookSkillLineInfo(li)
+        local line = C_SpellBook.GetSpellBookSkillLineInfo(li)
         -- offSpecID is 0 (not nil) on active-spec lines.
         if
-            lineTex
-            and not (lineTex.offSpecID and lineTex.offSpecID ~= 0)
-            and not lineTex.shouldHide
-            and lineTex.itemIndexOffset
-            and lineTex.numSpellBookItems
+            line
+            and not (line.offSpecID and line.offSpecID ~= 0)
+            and not line.shouldHide
+            and line.itemIndexOffset
+            and line.numSpellBookItems
         then
-            for si = lineTex.itemIndexOffset + 1, lineTex.itemIndexOffset + lineTex.numSpellBookItems do
+            for si = line.itemIndexOffset + 1, line.itemIndexOffset + line.numSpellBookItems do
                 local itemType, actionID, spellId = C_SpellBook.GetSpellBookItemType(si, bank)
                 local spellRef = spellId or actionID
                 if

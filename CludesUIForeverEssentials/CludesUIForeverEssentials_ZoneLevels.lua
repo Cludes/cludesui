@@ -152,8 +152,8 @@ end
 -- "Fishing 330": the skill the zone needs, colored by the player's skill
 -- (lures and gear included): red below it, yellow while fish still get away,
 -- green once none do; white without Fishing.
-local function FishingText(baseValue)
-    local low, high = math.max(baseValue, 1), baseValue + NO_GETAWAY
+local function FishingText(base)
+    local low, high = math.max(base, 1), base + NO_GETAWAY
     local r, g, b = 1, 1, 1
     local _, _, _, fishing = GetProfessions()
     if fishing then
@@ -189,8 +189,8 @@ local function OnLabelName(_, name)
         end
     end
     local lv = levels and onContinent and zone and LEVELS[zone]
-    local baseValue = fishing and zone and FISHING[zone]
-    if not (lv or baseValue) then
+    local base = fishing and zone and FISHING[zone]
+    if not (lv or base) then
         textValue:Hide()
         fishText:Hide()
         return
@@ -199,9 +199,9 @@ local function OnLabelName(_, name)
     if lv then
         textValue:SetText(LevelsText(lv))
     end
-    fishText:SetShown(baseValue and true or false)
-    if baseValue then
-        fishText:SetText(FishingText(baseValue))
+    fishText:SetShown(base and true or false)
+    if base then
+        fishText:SetText(FishingText(base))
         fishText:ClearAllPoints()
         if lv then
             fishText:SetPoint("TOP", textValue, "BOTTOM", 0, -2)
@@ -243,10 +243,10 @@ local function Build()
     textValue = holderFrame:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
     fishText = holderFrame:CreateFontString(nil, "OVERLAY", "SubZoneTextFont")
     -- Smaller than the zone name they sit under, the fishing skill much smaller.
-    local font, dim, flags = areaName:GetFont()
-    if font and dim then
-        textValue:SetFont(font, math.floor(dim * 0.7 + 0.5), flags)
-        fishText:SetFont(font, math.max(9, math.floor(dim * 0.4 + 0.5)), flags)
+    local font, size, flags = areaName:GetFont()
+    if font and size then
+        textValue:SetFont(font, math.floor(size * 0.7 + 0.5), flags)
+        fishText:SetFont(font, math.max(9, math.floor(size * 0.4 + 0.5)), flags)
     end
     textValue:SetPoint("TOP", areaName, "BOTTOM", 0, -6)
     textValue:Hide()

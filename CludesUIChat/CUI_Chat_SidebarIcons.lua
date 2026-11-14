@@ -79,7 +79,7 @@ function CHAT.ApplySidebarIcons()
         or (sbMode == "mouseover" and _sidebarFadeTarget == 0 and _sidebarFadeAlpha == 0)
         or mod._chatPassthrough == true
 
-    local anchorFrame, prevPadB = nil, 0
+    local anchor, prevPadB = nil, 0
     for _, key in ipairs(chainOrder) do
         local refs = CHAIN_REFS[key]
         local btn = refs and sbd[refs.btn]
@@ -95,17 +95,17 @@ function CHAT.ApplySidebarIcons()
                 -- unchanged); the stock column starts at the sidebar's top.
                 local padT = btn._sbPadT or 0
                 btn:ClearAllPoints()
-                if anchorFrame then
-                    btn:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
+                if anchor then
+                    btn:SetPoint("TOP", anchor, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
                 elseif kit then
                     btn:SetPoint("TOP", scrollBar, "TOP", 0, 0)
                 else
                     btn:SetPoint("TOP", scrollBar, "TOP", 0, -ICON_GAP + iconTopShift)
                 end
                 if tail and not btn._sbTailInside then
-                    anchorFrame, prevPadB = tail, 0
+                    anchor, prevPadB = tail, 0
                 else
-                    anchorFrame, prevPadB = btn, (btn._sbPadB or 0)
+                    anchor, prevPadB = btn, (btn._sbPadB or 0)
                 end
             end
         end
@@ -270,39 +270,39 @@ end
 -------------------------------------------------------------------------------
 CHAT.CHAT_MENU_GLYPH = "Interface\\AddOns\\CludesUI\\media\\micromenu\\menu-options.png"
 do
-    local hostRegion -- our sidebar icon, once attached
+    local host -- our sidebar icon, once attached
 
     local function Fwd(evt, ...)
-        if hostRegion:GetScript(evt) then
-            ExecuteFrameScript(hostRegion, evt, ...)
+        if host:GetScript(evt) then
+            ExecuteFrameScript(host, evt, ...)
         end
     end
     local function OnEnter(_, motion)
-        hostRegion:LockHighlight()
+        host:LockHighlight()
         Fwd("OnEnter", motion)
     end
     local function OnLeave(_, motion)
-        hostRegion:UnlockHighlight()
+        host:UnlockHighlight()
         Fwd("OnLeave", motion)
     end
     local function OnMouseDown(_, btnFrame)
         if btnFrame == "LeftButton" then
-            hostRegion:SetButtonState("PUSHED")
+            host:SetButtonState("PUSHED")
         end
         Fwd("OnMouseDown", btnFrame)
     end
     local function OnMouseUp(_, btnFrame)
-        hostRegion:SetButtonState("NORMAL")
+        host:SetButtonState("NORMAL")
         Fwd("OnMouseUp", btnFrame)
     end
 
     -- Called once, as the icon is built (only with Chat Menu on at login).
     function CHAT.AttachChatMenu(btn)
         local mb = _G.ChatFrameMenuButton
-        if hostRegion or not mb then
+        if host or not mb then
             return
         end
-        hostRegion = btn
+        host = btn
         mb:HookScript("OnEnter", OnEnter)
         mb:HookScript("OnLeave", OnLeave)
         mb:HookScript("OnMouseDown", OnMouseDown)
@@ -324,16 +324,16 @@ do
     -- Re-run after the login pass that hides Blizzard's chat buttons.
     function CHAT.SeatChatMenu()
         local mb = _G.ChatFrameMenuButton
-        if not (hostRegion and mb) then
+        if not (host and mb) then
             return
         end
         mb:ClearAllPoints()
-        mb:SetAllPoints(hostRegion)
-        mb:SetFrameStrata(hostRegion:GetFrameStrata())
+        mb:SetAllPoints(host)
+        mb:SetFrameStrata(host:GetFrameStrata())
         mb:SetFixedFrameStrata(true)
-        mb:SetFrameLevel(hostRegion:GetFrameLevel() + 2)
+        mb:SetFrameLevel(host:GetFrameLevel() + 2)
         mb:SetFixedFrameLevel(true)
-        mb:EnableMouse(hostRegion:IsVisible())
+        mb:EnableMouse(host:IsVisible())
     end
 end
 

@@ -18,8 +18,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- Shared, context-aware POWER section builder; mirrors the health one. ctx.cfg() -> power table (DB().primary Simple, per-spec override Advanced).
 function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix, Refresh, SmoothRefresh =
-        environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshPower, RebuildPower, AddFormBarBtn, AddFormTextBtn =
         environ.RefreshPower, environ.RebuildPower, environ.AddFormBarBtn, environ.AddFormTextBtn
     local BuildHashCog, BuildThresholdSettingsButton =
@@ -76,7 +75,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
             local c = conf()
-            local p = SavedDB()
+            local p = DB()
             return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
         setValue = function(val)
@@ -99,7 +98,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     if not powerOff() then
         -- Row 2: Height | Width (MatchGuard in both modes, sync icons Simple-only). Orientation-aware, as on the health bar above.
         local function powerOri()
-            local c, p = conf(), SavedDB()
+            local c, p = conf(), DB()
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
@@ -163,7 +162,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -174,7 +173,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -196,7 +195,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -207,7 +206,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -578,7 +577,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             label = "Draw Above GCD Bar",
                             tooltip = "Draws the power bar's border above the GCD bar where the two overlap.",
                             disabled = function()
-                                local p, c = SavedDB(), conf()
+                                local p, c = DB(), conf()
                                 return (powerOff() or not (p and p.gcdBar.enabled) or (c and c.borderBehind))
                                         and true
                                     or false
@@ -587,14 +586,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                                 if powerOff() then
                                     return powerDisTip
                                 end
-                                local p = SavedDB()
+                                local p = DB()
                                 if not (p and p.gcdBar.enabled) then
                                     return "GCD Bar"
                                 end
                                 return "This option can't be used while Show Behind is enabled."
                             end,
                             rawTooltip = function()
-                                local p = SavedDB()
+                                local p = DB()
                                 return not powerOff() and (p and p.gcdBar.enabled) and true or false
                             end,
                             get = function()
@@ -785,7 +784,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 and mod.ERB_ClassicBorderRow()
             then
                 context.syncRows.powerBorder = pwrBsRow._rightRegion
-                mod.ERB_ClassicBorderSync(pwrBsRow._rightRegion, SavedDB, "primary", SmoothRefresh, function()
+                mod.ERB_ClassicBorderSync(pwrBsRow._rightRegion, DB, "primary", SmoothRefresh, function()
                     return {
                         context.syncRows.powerBorder,
                         context.syncRows.classBorder,
@@ -798,7 +797,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     region = pwrBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -824,7 +823,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -843,7 +842,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     region = pwrBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -870,7 +869,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1156,7 +1155,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 region = rgn,
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -1167,7 +1166,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return false
                     end
@@ -1614,7 +1613,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 parentRgn = powerColorRow._rightRegion,
                 anchorTo = powerSettingsBtn,
                 getBarData = function()
-                    return SavedDB().primary
+                    return DB().primary
                 end,
                 refreshFn = function()
                     RebuildPower()

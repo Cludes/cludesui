@@ -65,8 +65,8 @@ local DC = {
 }
 mod.DebuffColorKit = DC
 
-function DC.Key(classFile)
-    return "debuffColors" .. classFile
+function DC.Key(class)
+    return "debuffColors" .. class
 end
 
 function DC.SpellID(val)
@@ -144,8 +144,8 @@ function DC.Encode(singles, combos)
 end
 
 -- A class's lists; get reads the caller's profile (the plates' by default).
-function DC.Read(classFile, get)
-    return DC.Parse((get or Value)(DC.Key(classFile)))
+function DC.Read(class, get)
+    return DC.Parse((get or Value)(DC.Key(class)))
 end
 
 -- What the color goes on: "nameplate" (the health fill, in the bar's texture),
@@ -191,11 +191,11 @@ local function BorderSpec()
     local s
     if mod.IsCustomBorderEnabled() then
         local tex = Value("customBorderTexture")
-        local dim = Value("customBorderSize") or 0
-        if dim <= 0 then
+        local size = Value("customBorderSize") or 0
+        if size <= 0 then
             return nil
         end
-        local px = CludesUI.BorderPx(Value("customBorderSizePx"), dim, tex)
+        local px = CludesUI.BorderPx(Value("customBorderSizePx"), size, tex)
         -- On MEDIUM strata. The border frame sits one level above the bar (one
         -- below it when drawn behind); a textured border draws on that frame,
         -- a Solid one on the pixel border's container one level higher. The
@@ -205,7 +205,7 @@ local function BorderSpec()
         if not tex or tex == "" or tex == "solid" then
             s = {
                 kind = "strips",
-                px = (px or dim) + ExtraBorderPx(),
+                px = (px or size) + ExtraBorderPx(),
                 strata = "MEDIUM",
                 behind = behind,
                 up = 2,
@@ -219,7 +219,7 @@ local function BorderSpec()
                 kind = "slices",
                 path = filePath,
                 tex = tex,
-                size = dim,
+                size = size,
                 px = px,
                 strata = "MEDIUM",
                 behind = behind,
@@ -259,8 +259,8 @@ local function BorderSpec()
 end
 
 local function ReadConfig()
-    local _, classFile = UnitClass("player")
-    local singles, combos = DC.Read(classFile or "")
+    local _, class = UnitClass("player")
+    local singles, combos = DC.Read(class or "")
     local playerOnly = Value("debuffColorsPlayerOnly") ~= false
     local c = {
         enabled = Value("debuffColorsEnabled") == true,
@@ -268,21 +268,21 @@ local function ReadConfig()
         singles = {},
         combos = {},
     }
-    local modeName = DC.Mode()
-    local parts = { tostring(c.enabled), tostring(playerOnly), modeName }
+    local mode = DC.Mode()
+    local parts = { tostring(c.enabled), tostring(playerOnly), mode }
     -- Color Border draws over the plate's border; Color Nameplate tints the
     -- health fill with the bar's own texture, Texture Nameplate with the one
     -- picked for it (the bar's until then); Color Name draws the name again.
     -- channel: the threat color each one gives way to (see Threat).
-    if modeName == "border" then
+    if mode == "border" then
         c.border = BorderSpec()
         c.channel = "border"
         parts[#parts + 1] = c.border and c.border.key or "noborder"
-    elseif modeName == "name" then
+    elseif mode == "name" then
         c.name, c.channel = true, "name"
     else
         local key = Value("healthBarTexture")
-        if modeName == "texture" then
+        if mode == "texture" then
             key = Value("debuffColorsTexture") or key
         end
         c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, key, WHITE)
@@ -329,7 +329,7 @@ local function ReadConfig()
         end
     end
     -- Color Border on a plate with no border has nothing to show.
-    c.any = (#c.singles > 0 or #c.combos > 0) and (c.border ~= nil or modeName ~= "border")
+    c.any = (#c.singles > 0 or #c.combos > 0) and (c.border ~= nil or mode ~= "border")
     c.fingerprint = table.concat(parts, "|")
     return c
 end
@@ -506,9 +506,9 @@ local function Kit(backing)
     hider:SetAllPoints(backing.health)
     hider:SetAlpha(0)
     hider:Hide()
-    local hostRegion = CreateFrame("Frame", nil, gate)
-    hostRegion:SetAllPoints(gate)
-    kit = { gate = gate, hider = hider, host = hostRegion, sensors = {}, looks = {}, used = 0 }
+    local host = CreateFrame("Frame", nil, gate)
+    host:SetAllPoints(gate)
+    kit = { gate = gate, hider = hider, host = host, sensors = {}, looks = {}, used = 0 }
     gate:SetScript("OnEvent", function()
         SyncGate(kit)
     end)
@@ -538,12 +538,12 @@ local function PointSensor(kit, num, spell)
                 btnFrame:EnableMouse(false)
             end,
         })
-        local maskTex = kit.gate:CreateMaskTexture()
-        maskTex:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        maskTex:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, 0)
-        maskTex:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, 1 - SPAN)
-        maskTex:SetWidth(SPAN)
-        s = { container = c, mask = maskTex, n = num }
+        local mask = kit.gate:CreateMaskTexture()
+        mask:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, 0)
+        mask:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, 1 - SPAN)
+        mask:SetWidth(SPAN)
+        s = { container = c, mask = mask, n = num }
         kit.sensors[num] = s
     elseif s.spell ~= spell or s.filter ~= filter then
         s.container:SetAuraGroupFilterString(SENSOR_KEY, filter)
@@ -679,11 +679,11 @@ end
 -- border's frame level as ns.ApplyCustomBorderStyle sets it; Basic counts from
 -- the bar).
 local function CopyLevel(b, specInfo, rank)
-    local baseValue = b.level
+    local base = b.level
     if specInfo.behind ~= nil then
-        baseValue = specInfo.behind and math.max(1, b.level - 1) or (b.level + 1)
+        base = specInfo.behind and math.max(1, b.level - 1) or (b.level + 1)
     end
-    return baseValue + specInfo.up + rank
+    return base + specInfo.up + rank
 end
 
 -- A copy's frame and pieces, not yet colored or placed: four strips, or one
@@ -696,11 +696,11 @@ local function NewBorderCopy(hostFrame, specInfo, sensorMask)
     if specInfo.strata then
         f:SetFrameStrata(specInfo.strata)
     end
-    local maskTex
+    local mask
     if sensorMask then
-        maskTex = f:CreateMaskTexture()
-        maskTex:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        maskTex:SetAllPoints(sensorMask)
+        mask = f:CreateMaskTexture()
+        mask:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetAllPoints(sensorMask)
     end
     local pieces = {}
     if specInfo.kind == "strips" then
@@ -721,9 +721,9 @@ local function NewBorderCopy(hostFrame, specInfo, sensorMask)
             pieces[key] = tx
         end
     end
-    if maskTex then
+    if mask then
         for _, tx in pairs(pieces) do
-            tx:AddMaskTexture(maskTex)
+            tx:AddMaskTexture(mask)
         end
     end
     return f, pieces
@@ -1021,15 +1021,15 @@ end
 -- frame that only inherits it renders in the plate's own batch, under the name,
 -- and a parent's strata change resets its children's strata and levels.
 local function LevelChains(nk)
-    local strata, baseValue = nk.root:GetFrameStrata(), nk.root:GetFrameLevel()
+    local strata, base = nk.root:GetFrameStrata(), nk.root:GetFrameLevel()
     nk.gated:SetFrameStrata(strata)
-    nk.gated:SetFrameLevel(baseValue)
+    nk.gated:SetFrameLevel(base)
     for idx = 1, nk.used do
         local ch = nk.chains[idx]
         for d = 1, ch.depth do
             local clip = ch.clips[d]
             clip:SetFrameStrata(strata)
-            clip:SetFrameLevel(baseValue + (idx - 1) * CHAIN_STEP + d)
+            clip:SetFrameLevel(base + (idx - 1) * CHAIN_STEP + d)
         end
     end
 end
@@ -1057,20 +1057,20 @@ local function MirrorName(backing, shownOnly)
     end
     -- The host's own strata change (SlotTextHost) reaches its children, so the
     -- strata and levels are set again on every pass.
-    local hostRegion = name:GetParent()
-    if root:GetParent() ~= hostRegion then
-        root:SetParent(hostRegion)
+    local host = name:GetParent()
+    if root:GetParent() ~= host then
+        root:SetParent(host)
     end
-    root:SetFrameStrata(hostRegion:GetFrameStrata())
-    root:SetFrameLevel(hostRegion:GetFrameLevel() + 1)
+    root:SetFrameStrata(host:GetFrameStrata())
+    root:SetFrameLevel(host:GetFrameLevel() + 1)
     LevelChains(nk)
     local fam = name:GetFontObject()
     if not (fam and CludesUI._fontFamilySet[fam]) then
         fam = nil
     end
-    local font, dim, flags
+    local font, size, flags
     if not fam then
-        font, dim, flags = name:GetFont()
+        font, size, flags = name:GetFont()
     end
     local sr, sg, scrollBar, sa = name:GetShadowColor()
     local sx, sy = name:GetShadowOffset()
@@ -1084,7 +1084,7 @@ local function MirrorName(backing, shownOnly)
                 fontStr:SetFontObject(fam)
             end
         elseif font then
-            fontStr:SetFont(font, dim, flags or "")
+            fontStr:SetFont(font, size, flags or "")
         end
         fontStr:SetShadowColor(sr, sg, scrollBar, sa)
         fontStr:SetShadowOffset(sx, sy)

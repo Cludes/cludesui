@@ -959,13 +959,10 @@ do
                     procs = { [SWIFTNESS] = SWIFTNESS, [69369] = 16974 },
                 } -- Entangling Roots; 202226 Entangling Claws
                 -- Lunar Inspiration (Feral) in Cat; Celestial Guardian (Balance PvP talent) in Bear
-                Add(
-                    {
-                        forms = beasts,
-                        formTalents = { [CAT] = { 155580 }, [BEAR] = { URSINE_ADEPT, 233754 } },
-                    },
-                    { 8921, 155625 }
-                ) -- Moonfire
+                Add({
+                    forms = beasts,
+                    formTalents = { [CAT] = { 155580 }, [BEAR] = { URSINE_ADEPT, 233754 } },
+                }, { 8921, 155625 }) -- Moonfire
                 casterRules[20484] = {
                     forms = beasts,
                     formTalents = { [BEAR] = { URSINE_ADEPT } },
@@ -1212,10 +1209,10 @@ do
     -- The player's forms changed: a line that named none of the old ones may
     -- name a new one
     local function DropNoLine()
-        for _, rowFrame in pairs(outside) do
-            for form, val in pairs(rowFrame) do
+        for _, row in pairs(outside) do
+            for form, val in pairs(row) do
                 if val == NO_LINE then
-                    rowFrame[form] = nil
+                    row[form] = nil
                 end
             end
         end
@@ -1288,17 +1285,17 @@ do
         end
         local unread = false
         for idx = 1, #lines do
-            local lineTex = lines[idx]
-            local success, t, req = Readable(lineTex)
+            local line = lines[idx]
+            local success, t, req = Readable(line)
             if success then
-                t, req = lineTex.type, lineTex.requirementType
+                t, req = line.type, line.requirementType
             end
             if not success or issecretvalue(t) or issecretvalue(req) then
                 unread = true
             else
                 local isForm = req ~= nil and req == REQ_FORM
                 if not isForm and (t == LINE_REQ or t == LINE_NONE or t == nil) then
-                    local textValue = lineTex.leftText
+                    local textValue = line.leftText
                     if issecretvalue(textValue) then
                         unread = true
                     elseif type(textValue) == "string" then
@@ -1309,7 +1306,7 @@ do
                     end
                 end
                 if isForm then
-                    local c = lineTex.leftColor
+                    local c = line.leftColor
                     if not Readable(c) then
                         return nil
                     end
@@ -1347,28 +1344,28 @@ do
         if rule and rule.procs and rule.forms[form] and procSeen[spellRef] ~= casterOutside then
             -- An exception aura coming or going can recolor the form line
             procSeen[spellRef] = casterOutside
-            local rowFrame = outside[spellRef]
-            if rowFrame then
-                for key, val in pairs(rowFrame) do
+            local row = outside[spellRef]
+            if row then
+                for key, val in pairs(row) do
                     if val == true or val == false then
-                        rowFrame[key] = nil
+                        row[key] = nil
                     end
                 end
             end
         end
-        local rowFrame = outside[spellRef]
-        local val = rowFrame and rowFrame[form]
+        local row = outside[spellRef]
+        local val = row and row[form]
         if val == nil then
-            if not rowFrame then
-                rowFrame = {}
-                outside[spellRef] = rowFrame
+            if not row then
+                row = {}
+                outside[spellRef] = row
             end
             val = Read(spellRef)
             if val == nil then
                 val = UNREAD
                 unreadN = unreadN + 1
             end
-            rowFrame[form] = val
+            row[form] = val
         end
         if val ~= NO_LINE and val ~= UNREAD then
             return val == true
@@ -1408,10 +1405,10 @@ do
             return
         end
         unreadN = 0
-        for _, rowFrame in pairs(outside) do
-            for form, val in pairs(rowFrame) do
+        for _, row in pairs(outside) do
+            for form, val in pairs(row) do
                 if val == UNREAD then
-                    rowFrame[form] = nil
+                    row[form] = nil
                 end
             end
         end
@@ -1724,16 +1721,16 @@ do
                     if stance then
                         -- The icon's whole hide: its own mode beside the stance bar
                         -- (Hidden (On CD) with the cooldown never read when alone).
-                        local baseValue, shift, us, fo, only = "hiddenOnCD", nil, nil, nil, true
+                        local base, shift, us, fo, only = "hiddenOnCD", nil, nil, nil, true
                         if m then
-                            baseValue, shift, us, fo, only = m.base, m.shift, m.usable, m.form, false
+                            base, shift, us, fo, only = m.base, m.shift, m.usable, m.form, false
                         elseif cse == "lowerAlphaOnCD" then
-                            baseValue, only = cse, false
+                            base, only = cse, false
                         end
                         ArmCdStateEval(
                             widget,
                             fd,
-                            baseValue,
+                            base,
                             shift,
                             (ss and ss.cdStateLowerAlpha) or 0.5,
                             ss and ss.chargeHideUntilSpent,
@@ -1904,14 +1901,14 @@ local function ResColors()
 end
 
 -- Paints `base`, or Blizzard's red while its out-of-range flag is set.
-local function PaintIconTint(widget, fd, texture, baseValue)
+local function PaintIconTint(widget, fd, texture, base)
     local red = ResColors()
     local oor = widget.spellOutOfRange
     fd._resTintBusy = true
     if type(oor) == "boolean" and texture.SetVertexColorFromBoolean then
-        texture:SetVertexColorFromBoolean(oor, red, baseValue)
+        texture:SetVertexColorFromBoolean(oor, red, base)
     else
-        texture:SetVertexColor(baseValue:GetRGBA())
+        texture:SetVertexColor(base:GetRGBA())
     end
     fd._resTintBusy = false
 end

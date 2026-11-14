@@ -44,7 +44,7 @@ initFrame:SetScript("OnEvent", function(self)
         saved = _G._CUMT_AceDB
     end)
 
-    local function SavedDB()
+    local function DB()
         if not saved then
             saved = _G._CUMT_AceDB
         end
@@ -52,12 +52,12 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function Cfg(key)
-        local p = SavedDB()
+        local p = DB()
         return p and p[key]
     end
 
     local function Set(key, val)
-        local p = SavedDB()
+        local p = DB()
         if p then
             p[key] = val
         end
@@ -123,28 +123,28 @@ initFrame:SetScript("OnEvent", function(self)
         local isShown, maxH = 0, 0
         for idx = 1, num do
             local c = cols[idx]
-            local hostRegion = c.host
-            if hostRegion:GetParent() ~= heading then
-                hostRegion:SetParent(heading)
+            local host = c.host
+            if host:GetParent() ~= heading then
+                host:SetParent(heading)
             end
             -- Painted at the last pass's scale, so the sample's pixel snaps
             -- read the scale it shows at; a changed fit paints it again.
             local fit = c.fit or 1
-            hostRegion:SetScale(st.scale * fit)
-            local wid, hgt = c.def.paint(hostRegion)
+            host:SetScale(st.scale * fit)
+            local wid, hgt = c.def.paint(host)
             if not wid then
                 c.w = nil
-                hostRegion:Hide()
+                host:Hide()
                 c.fs:Hide()
             else
                 local wanted = c.def.noFit and 1 or math.min(1, colW / (wid * st.scale))
                 if math.abs(wanted - fit) > 0.001 then
                     fit = wanted
-                    hostRegion:SetScale(st.scale * fit)
-                    wid, hgt = c.def.paint(hostRegion)
+                    host:SetScale(st.scale * fit)
+                    wid, hgt = c.def.paint(host)
                 end
                 c.w, c.h, c.fit = wid, hgt, fit
-                hostRegion:SetSize(wid, hgt)
+                host:SetSize(wid, hgt)
                 isShown = isShown + 1
                 maxH = math.max(maxH, hgt * fit * st.scale)
             end
@@ -157,23 +157,17 @@ initFrame:SetScript("OnEvent", function(self)
         for idx = 1, num do
             local c = cols[idx]
             if c.w then
-                local hostRegion = c.host
+                local host = c.host
                 local hs = st.scale * c.fit
-                local onePx = CludesUI.PP.perfect / hostRegion:GetEffectiveScale()
+                local onePx = CludesUI.PP.perfect / host:GetEffectiveScale()
                 local cx = (-(num - 1) / 2 + (idx - 1)) * colW
                 local topY = blockH / 2 - PV_TITLE_H
-                hostRegion:ClearAllPoints()
-                hostRegion:SetPoint(
-                    "TOP",
-                    heading,
-                    "CENTER",
-                    PvSnap(cx / hs, onePx),
-                    PvSnap(topY / hs, onePx)
-                )
-                hostRegion:SetAlpha(c.def.on() and 1 or 0.3)
-                hostRegion:Show()
+                host:ClearAllPoints()
+                host:SetPoint("TOP", heading, "CENTER", PvSnap(cx / hs, onePx), PvSnap(topY / hs, onePx))
+                host:SetAlpha(c.def.on() and 1 or 0.3)
+                host:Show()
                 c.fs:ClearAllPoints()
-                c.fs:SetPoint("BOTTOMLEFT", hostRegion, "TOPLEFT", 0, 3)
+                c.fs:SetPoint("BOTTOMLEFT", host, "TOPLEFT", 0, 3)
                 c.fs:Show()
             end
         end
@@ -783,21 +777,21 @@ initFrame:SetScript("OnEvent", function(self)
                 )
                 Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 -- Disabled block: swallows clicks and shows the requirement tooltip.
-                local blockData = CreateFrame("Frame", nil, colorSwatch)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, colorSwatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(_borderReq()))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateSwatch()
                     updateSwatch()
-                    local offset = _borderOff()
-                    colorSwatch:SetAlpha(offset and 0.3 or 1)
-                    blockData:SetShown(offset)
+                    local off = _borderOff()
+                    colorSwatch:SetAlpha(off and 0.3 or 1)
+                    block:SetShown(off)
                 end
                 CludesUI.RegisterWidgetRefresh(UpdateSwatch)
                 UpdateSwatch()
@@ -840,14 +834,14 @@ initFrame:SetScript("OnEvent", function(self)
             )
             Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control or region, "LEFT", -8, 0)
             region._lastInline = colorSwatch
-            local blockData = CreateFrame("Frame", nil, colorSwatch)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, colorSwatch)
+            block:SetAllPoints()
+            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(disabledTip or "the module"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateState()
@@ -856,10 +850,10 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 if isDisabled and isDisabled() then
                     colorSwatch:SetAlpha(0.3)
-                    blockData:Show()
+                    block:Show()
                 else
                     colorSwatch:SetAlpha(1)
-                    blockData:Hide()
+                    block:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(UpdateState)
@@ -957,11 +951,11 @@ initFrame:SetScript("OnEvent", function(self)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                local blockData = CreateFrame("Frame", nil, sw)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(sw:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, sw)
+                block:SetAllPoints()
+                block:SetFrameLevel(sw:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     -- disabledTip may be a function, like a DualRow cfg.disabledTooltip.
                     local tipText = disabledTip
                     if type(tipText) == "function" then
@@ -969,10 +963,10 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(tipText or "the module"))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                sw._block = blockData
+                sw._block = block
             end
             AddBlock(accentSwatch, followTip or "Accent Color")
             AddBlock(customSwatch, "Custom Color")
@@ -2211,8 +2205,8 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Strict Comparison Mode",
                         tooltip = "Compare only against splits from the same key level (off: new key levels compare against your dungeon best).",
                         disabled = function()
-                            local modeName = Cfg("objectiveCompareMode") or "NONE"
-                            return modeName ~= "LEVEL" and modeName ~= "LEVEL_AFFIX"
+                            local mode = Cfg("objectiveCompareMode") or "NONE"
+                            return mode ~= "LEVEL" and mode ~= "LEVEL_AFFIX"
                         end,
                         disabledTooltip = "This option requires Split Compare to include a key level",
                         get = function()
@@ -2258,11 +2252,11 @@ initFrame:SetScript("OnEvent", function(self)
     --  Shared helpers for the Mythic+ Tools cast-bar tabs
     ---------------------------------------------------------------------------
     local function TSB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.tsb
     end
     local function TFB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.tfb
     end
     local function TFBBar(which)
@@ -2363,9 +2357,9 @@ initFrame:SetScript("OnEvent", function(self)
                 local c = TSB()
                 return c and c.enabled == true
             end,
-            paint = function(hostRegion)
+            paint = function(host)
                 if mod.TSB_PaintSample then
-                    return mod.TSB_PaintSample(hostRegion)
+                    return mod.TSB_PaintSample(host)
                 end
             end,
         },
@@ -2377,9 +2371,9 @@ initFrame:SetScript("OnEvent", function(self)
                 local c = TFBBar("target")
                 return c and c.enabled == true
             end,
-            paint = function(hostRegion)
+            paint = function(host)
                 if mod.TFB_PaintSample then
-                    return mod.TFB_PaintSample(hostRegion, "target")
+                    return mod.TFB_PaintSample(host, "target")
                 end
             end,
         },
@@ -2389,9 +2383,9 @@ initFrame:SetScript("OnEvent", function(self)
                 local c = TFBBar("focus")
                 return c and c.enabled == true
             end,
-            paint = function(hostRegion)
+            paint = function(host)
                 if mod.TFB_PaintSample then
-                    return mod.TFB_PaintSample(hostRegion, "focus")
+                    return mod.TFB_PaintSample(host, "focus")
                 end
             end,
         },
@@ -2433,10 +2427,8 @@ initFrame:SetScript("OnEvent", function(self)
                 elseif f == "mode" then
                     return c.importantGlowColorMode or "custom"
                 elseif f == "color" then
-                    local column = c.importantGlowColor
-                    return (column and column.r) or 1,
-                        (column and column.g) or 0.2,
-                        (column and column.b) or 0.2
+                    local col = c.importantGlowColor
+                    return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
                 end
                 return CludesUI.GlowOptions.FlatGet(c, "importantGlow", f)
             end,
@@ -2688,11 +2680,11 @@ initFrame:SetScript("OnEvent", function(self)
                     hasAlpha = true,
                     getValue = function()
                         local c = TSB()
-                        local column = c and c.bgColor
-                        return (column and column.r) or 0,
-                            (column and column.g) or 0,
-                            (column and column.b) or 0,
-                            (column and column.a) or 0.45
+                        local col = c and c.bgColor
+                        return (col and col.r) or 0,
+                            (col and col.g) or 0,
+                            (col and col.b) or 0,
+                            (col and col.a) or 0.45
                     end,
                     setValue = function(r, g, b, a)
                         local c = TSB()
@@ -3051,10 +3043,8 @@ initFrame:SetScript("OnEvent", function(self)
                         disabledTooltip = "Class Colored Names to be off",
                         get = function()
                             local c = TSB()
-                            local column = c and c.targetColor
-                            return (column and column.r) or 1,
-                                (column and column.g) or 1,
-                                (column and column.b) or 1
+                            local col = c and c.targetColor
+                            return (col and col.r) or 1, (col and col.g) or 1, (col and col.b) or 1
                         end,
                         set = function(r, g, b)
                             local c = TSB()
@@ -3095,10 +3085,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Interruptible Cast",
                         getValue = function()
                             local c = TSB()
-                            local column = c and c.barColor
-                            return (column and column.r) or 0.70,
-                                (column and column.g) or 0.40,
-                                (column and column.b) or 0.90
+                            local col = c and c.barColor
+                            return (col and col.r) or 0.70, (col and col.g) or 0.40, (col and col.b) or 0.90
                         end,
                         setValue = function(r, g, b)
                             local c = TSB()
@@ -3113,10 +3101,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Interrupt on CD",
                         getValue = function()
                             local c = TSB()
-                            local column = c and c.interruptReady
-                            return (column and column.r) or 0.92,
-                                (column and column.g) or 0.35,
-                                (column and column.b) or 0.20
+                            local col = c and c.interruptReady
+                            return (col and col.r) or 0.92, (col and col.g) or 0.35, (col and col.b) or 0.20
                         end,
                         setValue = function(r, g, b)
                             local c = TSB()
@@ -3131,10 +3117,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Uninterruptible Cast",
                         getValue = function()
                             local c = TSB()
-                            local column = c and c.uninterruptible
-                            return (column and column.r) or 0.45,
-                                (column and column.g) or 0.45,
-                                (column and column.b) or 0.45
+                            local col = c and c.uninterruptible
+                            return (col and col.r) or 0.45, (col and col.g) or 0.45, (col and col.b) or 0.45
                         end,
                         setValue = function(r, g, b)
                             local c = TSB()
@@ -3154,10 +3138,8 @@ initFrame:SetScript("OnEvent", function(self)
                         disabledTooltip = "Important Cast Color",
                         getValue = function()
                             local c = TSB()
-                            local column = c and c.importantColor
-                            return (column and column.r) or 1,
-                                (column and column.g) or 0.2,
-                                (column and column.b) or 0.2
+                            local col = c and c.importantColor
+                            return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
                         end,
                         setValue = function(r, g, b)
                             local c = TSB()
@@ -3324,7 +3306,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- One section per bar; identical rows driven by `which`.
-        local function BuildBarSection(which, headerFrame, enableLabel)
+        local function BuildBarSection(which, header, enableLabel)
             local function C()
                 return TFBBar(which)
             end
@@ -3338,7 +3320,7 @@ initFrame:SetScript("OnEvent", function(self)
             local REQ = enableLabel
 
             local heading
-            heading, hgt = W:SectionHeader(hostFrame, headerFrame, posY)
+            heading, hgt = W:SectionHeader(hostFrame, header, posY)
             posY = posY - hgt
             CludesUI.BuildSectionUnlockJump(heading, {
                 key = (which == "target") and "EMT_TargetCastBar" or "EMT_FocusCastBar",
@@ -3911,7 +3893,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  Run Summary page
     -----------------------------------------------------------------------
     local function RSCfg()
-        local p = SavedDB()
+        local p = DB()
         return p and p.runSummary
     end
 

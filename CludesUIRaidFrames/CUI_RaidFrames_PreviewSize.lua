@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local upper = math.max
+local max = math.max
 local ipairs = ipairs
 local tostring = tostring
 local InCombatLockdown = InCombatLockdown
@@ -200,8 +200,7 @@ mod._ShowSizePreview = function(tier)
     -- origin is what puts slot 0 at the growth corner, so normalizing over a
     -- 2- or 3-group prefix would place the preview on the wrong side of the
     -- box for LEFT/UP growth. The extra slots are simply not drawn.
-    local gSlots, minX, maxY =
-        mod._RFGroupFlow(groupGrowth, groupW, groupH, gs, upper(numGroups, MOVER_GROUPS))
+    local gSlots, minX, maxY = mod._RFGroupFlow(groupGrowth, groupW, groupH, gs, max(numGroups, MOVER_GROUPS))
     -- Center Groups: the tier's full group count centered in the box, as live
     -- (which centers up to the last group holding members, in both modes).
     local shiftX, shiftY = 0, 0
@@ -214,9 +213,9 @@ mod._ShowSizePreview = function(tier)
     if groupOrder then
         sizePreviewSlotByGroup = {}
         local sizePreviewSlot = 0
-        for _, group in ipairs(groupOrder) do
-            if group <= numGroups then
-                sizePreviewSlotByGroup[group] = sizePreviewSlot
+        for _, set in ipairs(groupOrder) do
+            if set <= numGroups then
+                sizePreviewSlotByGroup[set] = sizePreviewSlot
                 sizePreviewSlot = sizePreviewSlot + 1
             end
         end
@@ -226,17 +225,17 @@ mod._ShowSizePreview = function(tier)
         local f = mod._sizePreviewFrames[idx]
         if not f then
             f = CreateFrame("Frame", nil, boxHolder)
-            local healthBar = CreateFrame("StatusBar", nil, f)
-            healthBar:SetPoint("TOPLEFT")
-            healthBar:SetPoint("TOPRIGHT")
-            healthBar:SetMinMaxValues(0, 100)
-            healthBar:SetValue(100)
+            local health = CreateFrame("StatusBar", nil, f)
+            health:SetPoint("TOPLEFT")
+            health:SetPoint("TOPRIGHT")
+            health:SetMinMaxValues(0, 100)
+            health:SetValue(100)
             -- Pre-paint tint (see StyleButton's health bar note).
-            healthBar:SetStatusBarColor(0.12, 0.12, 0.12)
+            health:SetStatusBarColor(0.12, 0.12, 0.12)
             if Pix then
-                Pix.DisablePixelSnap(healthBar)
+                Pix.DisablePixelSnap(health)
             end
-            f._health = healthBar
+            f._health = health
 
             local backdrop = f:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
@@ -264,7 +263,7 @@ mod._ShowSizePreview = function(tier)
             f._border = bdr
 
             -- Name text
-            local nameFS = healthBar:CreateFontString(nil, "OVERLAY")
+            local nameFS = health:CreateFontString(nil, "OVERLAY")
             nameFS:SetJustifyH("CENTER")
             nameFS:SetWordWrap(false)
             f._nameText = nameFS
@@ -287,7 +286,7 @@ mod._ShowSizePreview = function(tier)
             f._topNameBarText = tnbText
 
             -- Role icon
-            local roleIcon = healthBar:CreateTexture(nil, "OVERLAY")
+            local roleIcon = health:CreateTexture(nil, "OVERLAY")
             roleIcon:Hide()
             f._roleIcon = roleIcon
 

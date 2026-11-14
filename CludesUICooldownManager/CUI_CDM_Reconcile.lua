@@ -183,16 +183,16 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                 -- Blizzard's position and the next normalize dedupes in its favor -- permanently snapping the user's saved order back to Blizzard order. A by-value cursor lookup fails the same way and dumps inserts at slot 1.
                 local insertPos = nil
                 for walk = 1, nWalk do
-                    local glyph
+                    local icon
                     if walk <= nLive then
-                        glyph = icons[walk]
+                        icon = icons[walk]
                     else
-                        glyph = tcHidden[walk - nLive]
+                        icon = tcHidden[walk - nLive]
                         -- A hidden frame has no on-screen neighbour, so place it beside its
                         -- live neighbours in Blizzard's layout: after the nearest same-viewer
                         -- icon below its layoutIndex, else before the nearest one above, else
                         -- after the last live slot (the cursor as it stands).
-                        local L, vf = glyph.layoutIndex, glyph.viewerFrame
+                        local L, vf = icon.layoutIndex, icon.viewerFrame
                         if L and vf and FindVar then
                             local predLI, predAt, succLI, succAt
                             for jdx = 1, nLive do
@@ -217,16 +217,16 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                             end
                         end
                     end
-                    local fc = mod._ecmeFC and mod._ecmeFC[glyph]
+                    local fc = mod._ecmeFC and mod._ecmeFC[icon]
                     local spellRef = fc and fc.spellID
                     -- Skip hosted-buff frames and their placeholders: their bar membership is the
                     -- hosted MARKER entry, and their positive spellID would materialize the same
                     -- spell's COOLDOWN form. But DO advance the cursor over their marker: on a mixed
                     -- bar a spell re-inserted after a buff must land after the buff's marker, not squeezed back next to the previous CD spell.
-                    local fdRS = mod._hookFrameData and mod._hookFrameData[glyph]
+                    local fdRS = mod._hookFrameData and mod._hookFrameData[icon]
                     if
                         (fc and fc.isHostedBuff)
-                        or glyph._isPlaceholderFrame
+                        or icon._isPlaceholderFrame
                         or (fdRS and fdRS._isBuffViewerFrame)
                     then
                         local hSid = fc and fc.spellID
@@ -257,7 +257,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                         spellRef = nil
                     end
                     -- Skip cd-claimed collided-buff icons: their membership is the cooldownID claim, never a spellID slot (mirrors the hosted-buff membership rule above).
-                    if spellRef and claimedCd and glyph.cooldownID and claimedCd[glyph.cooldownID] then
+                    if spellRef and claimedCd and icon.cooldownID and claimedCd[icon.cooldownID] then
                         spellRef = nil
                     end
                     if type(spellRef) == "number" and spellRef ~= 0 then
@@ -306,7 +306,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                 insertPos = place
                                 didInsert = true
                             end
-                        elseif mod.IsItemPresetKey(spellRef) and not glyph._isItemPresetFrame then
+                        elseif mod.IsItemPresetKey(spellRef) and not icon._isItemPresetFrame then
                             -- Blizzard's own potion / healthstone row, rendering under
                             -- an item preset key no bar lists (CUI_CDM_HookReanchor.lua,
                             -- Phase 1): list the key where the row renders, so it gets
@@ -567,9 +567,9 @@ function mod.ReconcileAssignedSpellDrops(barId)
             if evc and gci and mod.CDMBuildLiveCategorySetLookup then
                 local cats = { evc.SpecAgnosticEssential or 5, evc.SpecAgnosticTracked or 6 }
                 for ci = 1, #cats do
-                    local group = mod.CDMBuildLiveCategorySetLookup(cats[ci])
-                    if group and next(group) then
-                        for cdID in pairs(group) do
+                    local set = mod.CDMBuildLiveCategorySetLookup(cats[ci])
+                    if set and next(set) then
+                        for cdID in pairs(set) do
                             local details = gci(cdID)
                             local sc = details and details.spellCategoryID
                             if type(sc) == "number" and not (issecretvalue and issecretvalue(sc)) then
@@ -579,7 +579,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
                                     nativeCats = {}
                                 end
                                 local verdict = mod.CDMEntryHiddenOrRemoved
-                                    and mod.CDMEntryHiddenOrRemoved(cdID, nil, details, group)
+                                    and mod.CDMEntryHiddenOrRemoved(cdID, nil, details, set)
                                 if verdict == nil then
                                     nativeCats[sc] = true
                                 end
@@ -644,8 +644,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
             and not (sdurs and sdurs[ident])
             and not (groups and groups[ident])
             and not (hosted and hosted[ident] and not (hostedMarkerFor and hostedMarkerFor[ident]))
-            -- Drawn by an aura icon of ours (the WoW Forever Seals stand-in):
-            -- user-added like a racial, never "owned but not displayed".
+            -- Drawn by an aura icon of ours (the WoW Forever Seals stand-in):
+            -- user-added like a racial, never "owned but not displayed".
             and not (mod.CDM_AuraIconKeeps and mod.CDM_AuraIconKeeps(ident))
         then
             -- Plain Blizzard cooldown. Keep if still displayed OR if the
@@ -1140,12 +1140,12 @@ function mod.CDMForeverListedSet()
         return nil
     end
     local NormalizeToBase, ResolveToLive = mod.NormalizeToBase, mod.ResolveToLive
-    local group = {}
+    local set = {}
     local function Add(val)
         if _IsUsableSID(val) then
-            group[val] = true
-            group[NormalizeToBase(val)] = true
-            group[ResolveToLive(val)] = true
+            set[val] = true
+            set[NormalizeToBase(val)] = true
+            set[ResolveToLive(val)] = true
         end
     end
     for _, cdID in ipairs(ordered) do
@@ -1160,10 +1160,10 @@ function mod.CDMForeverListedSet()
             end
         end
     end
-    if not next(group) then
+    if not next(set) then
         return nil
     end
-    return group
+    return set
 end
 
 -- WoW Forever: which cooldown and utility entries are in Not Displayed only by
@@ -1189,18 +1189,18 @@ function mod.CDMDefaultHiddenSet()
     if not infoByID then
         return nil
     end
-    local group = {}
+    local set = {}
     -- cooldownDefaultsByID is Blizzard's internal table, not an API: without it
     -- no entry reads as default-hidden, and an entry it lacks is left out.
     if type(defaultsByID) ~= "table" then
-        return group
+        return set
     end
     local evc = Enum.CooldownViewerCategory
     local hidden = evc.HiddenActive
     local NormalizeToBase, ResolveToLive, RankName = mod.NormalizeToBase, mod.ResolveToLive, mod.CDMRankName
     local function Mark(k, dh)
-        if k ~= nil and group[k] ~= false then
-            group[k] = dh
+        if k ~= nil and set[k] ~= false then
+            set[k] = dh
         end
     end
     local function Add(val, dh)
@@ -1212,8 +1212,8 @@ function mod.CDMDefaultHiddenSet()
         end
     end
     for cdID, details in pairs(infoByID) do
-        local spec_def = defaultsByID[cdID]
-        local defCat = spec_def and spec_def.category
+        local def = defaultsByID[cdID]
+        local defCat = def and def.category
         if defCat == evc.Essential or defCat == evc.Utility or defCat == hidden then
             local dh = details.category == hidden and defCat == hidden
             Add(details.spellID, dh)
@@ -1225,22 +1225,22 @@ function mod.CDMDefaultHiddenSet()
             end
         end
     end
-    return group
+    return set
 end
 
 --- True when a stored spell id is a default-hidden entry of `set`
 --- (ns.CDMDefaultHiddenSet): by id, base or live form, by rank name only when
 --- no cooldown entry lists the id.
-function mod.CDMIsDefaultHidden(group, ident)
-    local val = group[ident]
+function mod.CDMIsDefaultHidden(set, ident)
+    local val = set[ident]
     if val == nil then
-        val = group[mod.NormalizeToBase(ident)]
+        val = set[mod.NormalizeToBase(ident)]
     end
     if val == nil then
-        val = group[mod.ResolveToLive(ident)]
+        val = set[mod.ResolveToLive(ident)]
     end
     if val == nil and mod.CDMRankName then
-        val = group[mod.CDMRankName(ident) or false]
+        val = set[mod.CDMRankName(ident) or false]
     end
     return val == true
 end
@@ -1609,13 +1609,13 @@ function mod.RepopulateFromBlizzard(fromRequest)
     end
 
     -- Filter a set in place (keys = spell IDs): drop keys that aren't user-added.
-    local function FilterSetPreservingUserAdded(sd, group)
-        if type(group) ~= "table" then
+    local function FilterSetPreservingUserAdded(sd, set)
+        if type(set) ~= "table" then
             return
         end
-        for ident in pairs(group) do
+        for ident in pairs(set) do
             if not IsUserAdded(sd, ident) then
-                group[ident] = nil
+                set[ident] = nil
             end
         end
     end
@@ -1722,11 +1722,11 @@ end
 --  a new request for that spec), or nil when no run finished.
 -------------------------------------------------------------------------------
 local function LiveSpecID()
-    local slotPos = C_SpecializationInfo.GetSpecialization()
-    if not slotPos or slotPos == 0 then
+    local index = C_SpecializationInfo.GetSpecialization()
+    if not index or index == 0 then
         return nil
     end
-    local ident = C_SpecializationInfo.GetSpecializationInfo(slotPos)
+    local ident = C_SpecializationInfo.GetSpecializationInfo(index)
     if not ident or ident == 0 then
         return nil
     end

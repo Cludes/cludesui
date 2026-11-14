@@ -122,11 +122,11 @@ do
 
         if targetKey == "cludesui" then
             for _, key in ipairs(presetKeys) do
-                local spec_def = mod.defaults[key]
-                if type(spec_def) == "table" and spec_def.r then
-                    p[key] = { r = spec_def.r, g = spec_def.g, b = spec_def.b }
+                local def = mod.defaults[key]
+                if type(def) == "table" and def.r then
+                    p[key] = { r = def.r, g = def.g, b = def.b }
                 else
-                    p[key] = spec_def
+                    p[key] = def
                 end
             end
             p[K_SNAP] = nil

@@ -12,7 +12,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 
-local Widgets, H = 260, 22
+local W, H = 260, 22
 local MAX_MINUTES = 60
 
 function mod.BreakSettings()
@@ -32,36 +32,36 @@ local function Say(textValue)
     CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
 end
 
-local barFrame, labelText, ticker
+local bar, labelText, ticker
 local current -- { ends, total, from, warned }
 
 local function Build()
-    if barFrame then
+    if bar then
         return
     end
-    barFrame = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
-    barFrame:SetSize(Widgets, H)
-    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    bar = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
+    bar:SetSize(W, H)
+    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local ar, ag, ab = CludesUI.Kit.Accent()
-    barFrame:GetStatusBarTexture():SetVertexColor(ar, ag, ab, 0.9)
-    CludesUI.Kit.Panel(barFrame, 0.85)
-    labelText = barFrame:CreateFontString(nil, "OVERLAY")
+    bar:GetStatusBarTexture():SetVertexColor(ar, ag, ab, 0.9)
+    CludesUI.Kit.Panel(bar, 0.85)
+    labelText = bar:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(labelText, 13, nil)
     labelText:SetPoint("CENTER")
-    barFrame:Hide()
+    bar:Hide()
     mod.ApplyBreakPosition()
 end
 
 function mod.ApplyBreakPosition()
-    if not barFrame or InCombatLockdown() then
+    if not bar or InCombatLockdown() then
         return
     end
     local p = mod.BreakSettings().pos
-    barFrame:ClearAllPoints()
+    bar:ClearAllPoints()
     if p then
-        barFrame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+        bar:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
     else
-        barFrame:SetPoint("TOP", UIParent, "TOP", 0, -130)
+        bar:SetPoint("TOP", UIParent, "TOP", 0, -130)
     end
 end
 
@@ -71,8 +71,8 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if barFrame then
-        barFrame:Hide()
+    if bar then
+        bar:Hide()
     end
 end
 
@@ -95,7 +95,7 @@ local function Update()
             Say("one minute of break left.")
         end
     end
-    barFrame:SetValue(leftX)
+    bar:SetValue(leftX)
     labelText:SetText(
         ("Break  %s%s"):format(
             mod.FormatDuration(leftX),
@@ -120,8 +120,8 @@ function mod.ReceiveBreak(seconds, from)
     seconds = math.min(seconds, MAX_MINUTES * 60)
     Build()
     current = { ends = GetTime() + seconds, total = seconds, from = from }
-    barFrame:SetMinMaxValues(0, seconds)
-    barFrame:Show()
+    bar:SetMinMaxValues(0, seconds)
+    bar:Show()
     if ticker then
         ticker:Cancel()
     end
@@ -166,10 +166,10 @@ ev:SetScript("OnEvent", function()
                 return not mod.BreakSettings().enabled
             end,
             getFrame = function()
-                return barFrame
+                return bar
             end,
             getSize = function()
-                return Widgets, H
+                return W, H
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 mod.BreakSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }

@@ -35,29 +35,29 @@ end
 local FV_SLOT_FRAME = "Interface\\Buttons\\UI-Quickslot2"
 local FV_QUALITY_FRAME = "Interface\\Common\\WhiteIconFrame"
 
-local function CreateInsetBorder(btn, isSlot, glyph)
+local function CreateInsetBorder(btn, isSlot, icon)
     if isSlot and mod.BagsForever() then
         local widget = btn:CreateTexture(nil, "OVERLAY")
         widget:SetAllPoints(btn)
         widget:SetTexture(FV_SLOT_FRAME)
         -- The visible 37x37 area of the stock 64x64 rim, centered one unit down.
         widget:SetTexCoord(13.5 / 64, 50.5 / 64, 12.5 / 64, 49.5 / 64)
-        local maskTex = btn.Mask
-        if not maskTex then
-            maskTex = btn:CreateMaskTexture()
-            maskTex:SetAllPoints(btn)
-            maskTex:SetTexture(
+        local mask = btn.Mask
+        if not mask then
+            mask = btn:CreateMaskTexture()
+            mask:SetAllPoints(btn)
+            mask:SetTexture(
                 "Interface\\Common\\common-iconmask",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE"
             )
         end
-        widget:AddMaskTexture(maskTex)
-        if glyph then
-            glyph:AddMaskTexture(maskTex)
-            btn._fvIconMask = maskTex
+        widget:AddMaskTexture(mask)
+        if icon then
+            icon:AddMaskTexture(mask)
+            btn._fvIconMask = mask
         elseif btn.icon then
-            btn.icon:AddMaskTexture(maskTex)
+            btn.icon:AddMaskTexture(mask)
         end
         btn._fvSlotBorder = widget
         return
@@ -146,8 +146,8 @@ mod.CreateInsetBorder = CreateInsetBorder
 mod.SetBagFont = SetBagFont
 mod.SetInsetBorderColor = SetInsetBorderColor
 
-function mod.GetSlotQuestFlags(bag, slotIndex)
-    local details = C_Container.GetContainerItemQuestInfo(bag, slotIndex)
+function mod.GetSlotQuestFlags(bag, slot)
+    local details = C_Container.GetContainerItemQuestInfo(bag, slot)
     if details and (details.isQuestItem or details.questID) then
         return true, details.questID and not details.isActive or nil
     end
@@ -483,12 +483,12 @@ end
 -- shrunk). rawWheel: the wheel reads sf's scroll range directly rather than the
 -- thumb metrics, which give up when the track is too short for a thumb.
 local SCROLLBAR_HIT_W = 16 -- invisible hit area width
-function mod.AttachGridScrollbar(hostRegion, scrollFrame, clamp, rawWheel)
+function mod.AttachGridScrollbar(host, scrollFrame, clamp, rawWheel)
     local SCROLLBAR_W = 4 -- thumb width
     local SCROLL_STEP = 40 -- pixels per mouse wheel tick
     local THUMB_MIN_H = 20 -- minimum thumb height
 
-    local track = CreateFrame("Button", nil, hostRegion)
+    local track = CreateFrame("Button", nil, host)
     track:SetWidth(SCROLLBAR_HIT_W)
     track:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
 
@@ -565,8 +565,8 @@ function mod.AttachGridScrollbar(hostRegion, scrollFrame, clamp, rawWheel)
         UpdateThumb()
     end
     scrollFrame:SetScript("OnMouseWheel", OnWheel)
-    hostRegion:EnableMouseWheel(true)
-    hostRegion:SetScript("OnMouseWheel", OnWheel)
+    host:EnableMouseWheel(true)
+    host:SetScript("OnMouseWheel", OnWheel)
 
     -- Thumb dragging (dragUpdate must be declared before OnMouseDown uses it)
     local dragUpdate = CreateFrame("Frame")
@@ -663,7 +663,7 @@ function mod.AttachGridScrollbar(hostRegion, scrollFrame, clamp, rawWheel)
             if not enabled then
                 return
             end
-            padUp, padDown = mod.PadStepButtons(hostRegion, SCROLLBAR_HIT_W, function(delta)
+            padUp, padDown = mod.PadStepButtons(host, SCROLLBAR_HIT_W, function(delta)
                 OnWheel(nil, delta)
             end)
             padUp:SetFrameLevel(track:GetFrameLevel() + 1)
@@ -696,13 +696,13 @@ do
     local ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
     local ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
 
-    local function MakeStep(hostFrame, dim, glyph, onClick)
+    local function MakeStep(hostFrame, size, icon, onClick)
         local b = CreateFrame("Button", nil, hostFrame)
-        b:SetSize(dim, dim)
+        b:SetSize(size, size)
         local t = b:CreateTexture(nil, "OVERLAY")
-        t:SetSize(dim - 4, dim - 4)
+        t:SetSize(size - 4, size - 4)
         t:SetPoint("CENTER", b, "CENTER", 0, 0)
-        t:SetTexture(glyph)
+        t:SetTexture(icon)
         b:SetAlpha(0.5)
         b:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)
@@ -717,11 +717,11 @@ do
 
     -- Up/down step buttons for a wheel-only scroller: step(1) scrolls up one
     -- notch, step(-1) down. Created hidden; the caller anchors them.
-    function mod.PadStepButtons(hostFrame, dim, step)
-        return MakeStep(hostFrame, dim, ARROW_UP, function()
+    function mod.PadStepButtons(hostFrame, size, step)
+        return MakeStep(hostFrame, size, ARROW_UP, function()
             step(1)
         end),
-            MakeStep(hostFrame, dim, ARROW_DOWN, function()
+            MakeStep(hostFrame, size, ARROW_DOWN, function()
                 step(-1)
             end)
     end
@@ -842,15 +842,15 @@ do
             return GetCurrentGuildBankTab()
         end,
         -- A tab that is no longer viewed reads as empty so a running job stops there.
-        info = function(tabButton, slotIndex)
-            if tabButton ~= GetCurrentGuildBankTab() then
+        info = function(tab, slot)
+            if tab ~= GetCurrentGuildBankTab() then
                 return nil
             end
-            local texture, total, locked = GetGuildBankItemInfo(tabButton, slotIndex)
+            local texture, total, locked = GetGuildBankItemInfo(tab, slot)
             if not texture then
                 return nil
             end
-            local itemLink = GetGuildBankItemLink(tabButton, slotIndex)
+            local itemLink = GetGuildBankItemLink(tab, slot)
             return {
                 stackCount = total,
                 isLocked = locked,
@@ -935,12 +935,12 @@ do
 
     -- once = a single split placed into the first empty target slot (the views
     -- that draw no empty slots have nowhere to drop a cursor stack).
-    local function StartJob(bag, slotIndex, itemId, dim, targets, window, ops, once)
+    local function StartJob(bag, slot, itemId, size, targets, window, ops, once)
         job = {
             bag = bag,
-            slot = slotIndex,
+            slot = slot,
             itemID = itemId,
-            size = dim,
+            size = size,
             targets = targets,
             window = window,
             ops = ops,
@@ -1021,9 +1021,9 @@ do
 
     local function DoSplit(auto)
         local d = dialog
-        local bag, slotIndex, num, ops = d._bag, d._slot, d:Current(), d._ops
+        local bag, slot, num, ops = d._bag, d._slot, d:Current(), d._ops
         d:Hide()
-        local details = ops.info(bag, slotIndex)
+        local details = ops.info(bag, slot)
         if
             not details
             or details.isLocked
@@ -1037,21 +1037,21 @@ do
         -- triggers already renders the pieces apart. Same link form the slot
         -- tables key on; bags and reagent window only (bank items never merge here).
         if d._window == CUI_Bags or d._window == CUI_BagsReagent then
-            local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
+            local itemLink = C_Container.GetContainerItemLink(bag, slot)
             if itemLink then
-                local group = CUI_Bags._unmergedLinks
-                if not group then
-                    group = {}
-                    CUI_Bags._unmergedLinks = group
+                local set = CUI_Bags._unmergedLinks
+                if not set then
+                    set = {}
+                    CUI_Bags._unmergedLinks = set
                 end
-                group[itemLink] = true
+                set[itemLink] = true
             end
         end
         if auto or d._placeOnce then
-            StartJob(bag, slotIndex, details.itemID, num, d._targets, d._window, ops, not auto)
+            StartJob(bag, slot, details.itemID, num, d._targets, d._window, ops, not auto)
         else
             ClearCursor()
-            ops.split(bag, slotIndex, num)
+            ops.split(bag, slot, num)
         end
     end
 
@@ -1175,14 +1175,14 @@ do
         -- it, which nothing reads on a click path.
         CUI.TakeStackSplit()
         ops = ops or containerOps
-        local bag, slotIndex = ops.ownerBag(ownerFrame), ownerFrame:GetID()
-        local details = ops.info(bag, slotIndex)
+        local bag, slot = ops.ownerBag(ownerFrame), ownerFrame:GetID()
+        local details = ops.info(bag, slot)
         if not details or not details.itemID then
             return
         end
         dialog = dialog or CreateDialog()
         StopJob()
-        dialog._owner, dialog._bag, dialog._slot, dialog._itemID = ownerFrame, bag, slotIndex, details.itemID
+        dialog._owner, dialog._bag, dialog._slot, dialog._itemID = ownerFrame, bag, slot, details.itemID
         dialog._targets, dialog._window, dialog._ops = targets, window, ops
         dialog._placeOnce = placeOnce
         dialog:SetRange(1, maxStack)
@@ -1198,8 +1198,8 @@ do
         if not gb or not gb.Columns then
             return
         end
-        for _, column in ipairs(gb.Columns) do
-            for _, b in ipairs(column.Buttons) do
+        for _, col in ipairs(gb.Columns) do
+            for _, b in ipairs(col.Buttons) do
                 b:HookScript("PostClick", function(self)
                     CUI_Bags.ShowStackSplitter(self, { GetCurrentGuildBankTab() }, gb, guildOps)
                 end)

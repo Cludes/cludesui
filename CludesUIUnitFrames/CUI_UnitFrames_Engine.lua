@@ -197,8 +197,8 @@ do
         -- Empower stage pips outlive the cast otherwise (the old element
         -- wiring hid them in its reset).
         if element.Pips then
-            for _, pipTex in next, element.Pips do
-                pipTex:Hide()
+            for _, pip in next, element.Pips do
+                pip:Hide()
             end
         end
     end
@@ -1057,8 +1057,8 @@ local ELEMENT_CHANNEL = {
 
 --- True when a painter would render this element right now.
 function Engine.ElementOn(widget, elementName)
-    local offset = widget._cuiElementsOff
-    return not (offset and offset[elementName])
+    local off = widget._cuiElementsOff
+    return not (off and off[elementName])
 end
 
 local function Frame_IsElementEnabled(self, elementName)
@@ -1066,10 +1066,10 @@ local function Frame_IsElementEnabled(self, elementName)
 end
 
 local function Frame_EnableElement(self, elementName)
-    local offset = self._cuiElementsOff
-    local wasOff = offset and offset[elementName]
-    if offset then
-        offset[elementName] = nil
+    local off = self._cuiElementsOff
+    local wasOff = off and off[elementName]
+    if off then
+        off[elementName] = nil
     end
     -- Match the old enable semantics: an immediate refresh of that element.
     local channel = ELEMENT_CHANNEL[elementName]
@@ -1113,12 +1113,12 @@ local function Frame_EnableElement(self, elementName)
 end
 
 local function Frame_DisableElement(self, elementName)
-    local offset = self._cuiElementsOff
-    if not offset then
-        offset = {}
-        self._cuiElementsOff = offset
+    local off = self._cuiElementsOff
+    if not off then
+        off = {}
+        self._cuiElementsOff = off
     end
-    offset[elementName] = true
+    off[elementName] = true
     if elementName == "Power" then
         ns.UF_PowerValSync(self)
     end

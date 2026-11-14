@@ -207,10 +207,10 @@ do
         if saved.profile.previewMode ~= "real" then
             return nil
         end
-        local layer, baseValue
+        local layer, base
         local sfn = CludesUI.SpecOverrides_EditSessionUnlockLayer
         if sfn then
-            layer, baseValue = sfn()
+            layer, base = sfn()
         end
         if not layer then
             -- Default view: mirror the REAL spec's RESOLVED effective fork. Never the
@@ -220,22 +220,22 @@ do
             -- positioning, byte-identical to before the feature.
             local vfn = CludesUI.SpecOverrides_ViewActive
             if vfn and vfn() and CludesUI.SpecOverrides_EffectiveUnlockLayer then
-                layer, baseValue = CludesUI.SpecOverrides_EffectiveUnlockLayer()
+                layer, base = CludesUI.SpecOverrides_EffectiveUnlockLayer()
             end
         end
         if not layer then
             return nil
         end
         local e = layer.elems and layer.elems[key]
-        if not e and baseValue and baseValue ~= layer then
-            e = baseValue.elems and baseValue.elems[key]
+        if not e and base and base ~= layer then
+            e = base.elems and base.elems[key]
         end
         return e
     end
 end
 
-local function PvAuraGetGroup(slotPos)
-    return math.ceil(slotPos / 5)
+local function PvAuraGetGroup(index)
+    return math.ceil(index / 5)
 end
 
 -- Pick a random icon for the given type and frame index
@@ -269,7 +269,7 @@ local function PvAuraPickIcon(auraType, frameIndex)
 end
 
 -- Position a preview aura icon on a frame (reuses anchor logic)
-local function PvAuraAnchor(glyph, f, auraType, slot, totalShown)
+local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
     local s2 = PvSettings()
 
     -- Debuffs use the shared grid layout (same DebuffGridPoint helper as the live
@@ -277,10 +277,10 @@ local function PvAuraAnchor(glyph, f, auraType, slot, totalShown)
     -- per-row centering. `slot` is the 0-based index among visible icons.
     if auraType ~= "def" then
         local sz = mod.RFC_DebuffSize(s2)
-        glyph:SetSize(sz, sz)
-        glyph:ClearAllPoints()
+        icon:SetSize(sz, sz)
+        icon:ClearAllPoints()
         local corner, fx, fy = mod.DebuffGridPoint(s2, slot, totalShown)
-        glyph:SetPoint(corner, mod.RF_AnchorHost(f._health, s2), corner, fx, fy)
+        icon:SetPoint(corner, mod.RF_AnchorHost(f._health, s2), corner, fx, fy)
         return
     end
 
@@ -297,31 +297,31 @@ local function PvAuraAnchor(glyph, f, auraType, slot, totalShown)
     if grow == "CENTER" and totalShown > 0 then
         centerOff = -((totalShown - 1) * spacing) / 2
     end
-    glyph:SetSize(sz, sz)
-    glyph:ClearAllPoints()
+    icon:SetSize(sz, sz)
+    icon:ClearAllPoints()
     if slot == 0 then
         local fx = ox + (grow == "CENTER" and centerOff or 0)
         -- All aura icon previews (debuffs, defensives) anchor flush
         -- to the health bar edge -- no 1px inset -- matching the real frames.
         local pvHost = mod.RF_AnchorHost(f._health, s2)
         if place == "topleft" then
-            glyph:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
+            icon:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
         elseif place == "top" then
-            glyph:SetPoint("TOP", pvHost, "TOP", fx, oy)
+            icon:SetPoint("TOP", pvHost, "TOP", fx, oy)
         elseif place == "topright" then
-            glyph:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
+            icon:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
         elseif place == "left" then
-            glyph:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
+            icon:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
         elseif place == "center" then
-            glyph:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
+            icon:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
         elseif place == "right" then
-            glyph:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
+            icon:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
         elseif place == "bottomright" then
-            glyph:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
+            icon:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
         elseif place == "bottom" then
-            glyph:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
+            icon:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
         else
-            glyph:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
+            icon:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
         end
     else
         -- Chain from previous icon in same pool
@@ -329,13 +329,13 @@ local function PvAuraAnchor(glyph, f, auraType, slot, totalShown)
         local prev = pool[slot] -- slot is 0-based; current is slot+1, prev is pool[slot]
         if prev and prev:IsShown() then
             if grow == "RIGHT" or grow == "CENTER" then
-                glyph:SetPoint("LEFT", prev, "RIGHT", spc, 0)
+                icon:SetPoint("LEFT", prev, "RIGHT", spc, 0)
             elseif grow == "LEFT" then
-                glyph:SetPoint("RIGHT", prev, "LEFT", -spc, 0)
+                icon:SetPoint("RIGHT", prev, "LEFT", -spc, 0)
             elseif grow == "UP" then
-                glyph:SetPoint("BOTTOM", prev, "TOP", 0, spc)
+                icon:SetPoint("BOTTOM", prev, "TOP", 0, spc)
             elseif grow == "DOWN" then
-                glyph:SetPoint("TOP", prev, "BOTTOM", 0, -spc)
+                icon:SetPoint("TOP", prev, "BOTTOM", 0, -spc)
             end
         end
     end
@@ -348,14 +348,14 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
         return
     end
     local pool = auraType == "def" and f._pvDefs or f._pvDebuffs
-    local glyph = pool and pool[slotIndex]
-    if not glyph then
+    local icon = pool and pool[slotIndex]
+    if not icon then
         return
     end
 
     local texture = PvAuraPickIcon(auraType, frameIndex)
     if not texture then
-        glyph:Hide()
+        icon:Hide()
         return
     end
 
@@ -363,15 +363,15 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
     local dur = 8 + math.random() * 4 -- 8-12 seconds
     local startTime = GetTime()
 
-    glyph._tex:SetTexture(texture)
+    icon._tex:SetTexture(texture)
     if auraType == "db" then
         local _z = s2.debuffIconZoom or 0.08
-        glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     elseif auraType == "def" then
         local _z = s2.defIconZoom or 0.08
-        glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     end
-    if glyph._cooldown then
+    if icon._cooldown then
         local showSwipe, showDurText, dtColor, dtSize, dtOX, dtOY
         if auraType == "db" then
             showSwipe = s2.debuffShowSwipe ~= false
@@ -388,37 +388,37 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
             dtOX = s2.defDurTextOffsetX or 0
             dtOY = s2.defDurTextOffsetY or 0
         end
-        glyph._cooldown:SetCooldown(startTime, dur)
-        glyph._cooldown:SetDrawSwipe(showSwipe)
-        glyph._cooldown:SetHideCountdownNumbers(not showDurText)
-        glyph._cooldown:Show()
+        icon._cooldown:SetCooldown(startTime, dur)
+        icon._cooldown:SetDrawSwipe(showSwipe)
+        icon._cooldown:SetHideCountdownNumbers(not showDurText)
+        icon._cooldown:Show()
 
         -- Style the built-in countdown text via GetCountdownFontString
         if showDurText and dtColor then
-            local cdText = glyph._cooldown.GetCountdownFontString and glyph._cooldown:GetCountdownFontString()
+            local cdText = icon._cooldown.GetCountdownFontString and icon._cooldown:GetCountdownFontString()
             if cdText then
                 local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
                 CludesUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
                 cdText:SetTextColor(dtColor.r, dtColor.g, dtColor.b)
                 cdText:ClearAllPoints()
-                cdText:SetPoint("CENTER", glyph, "CENTER", dtOX, dtOY)
+                cdText:SetPoint("CENTER", icon, "CENTER", dtOX, dtOY)
             end
         end
     end
 
     -- Border
     if auraType == "def" then
-        mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "defBorder")
+        mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "defBorder")
     else
-        mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "debuffBorder")
+        mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
     end
 
     -- Stacks text (debuffs only: show "2" on exactly one random debuff)
-    if glyph._count then
-        glyph._count:SetText("")
+    if icon._count then
+        icon._count:SetText("")
     end
 
-    glyph:Show()
+    icon:Show()
 
     -- Track expiration
     local key = frameIndex .. ":" .. auraType .. ":" .. slotIndex
@@ -427,14 +427,14 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
 end
 
 -- Count active auras of a type in a group (optionally skip slots below minSlot)
-local function PvAuraCountInGroup(group, auraType, minSlot)
+local function PvAuraCountInGroup(set, auraType, minSlot)
     minSlot = minSlot or 1
     local total = 0
     for _, details in pairs(mod._pvActiveAuras) do
         if
             details.auraType == auraType
             and details.slot >= minSlot
-            and PvAuraGetGroup(details.frameIndex) == group
+            and PvAuraGetGroup(details.frameIndex) == set
             and details.expTime > GetTime()
         then
             total = total + 1
@@ -445,12 +445,12 @@ end
 
 -- Pick a random frame in a group that doesn't have a random aura of this type
 -- (ignores permanent slot 1 debuffs so random debuffs can still be assigned)
-local function PvAuraPickFrame(group, auraType, minSlot)
+local function PvAuraPickFrame(set, auraType, minSlot)
     minSlot = minSlot or 1
     local candidates = {}
     local popFrame = PvFrames()
-    local startIdx = (group - 1) * 5 + 1
-    local endIdx = group * 5
+    local startIdx = (set - 1) * 5 + 1
+    local endIdx = set * 5
     for idx = startIdx, endIdx do
         if idx <= #popFrame and popFrame[idx] then
             local hasType = false
@@ -593,19 +593,19 @@ local function PvAuraTick()
                 local key = fi .. ":db:1"
                 local f = popFrame[fi]
                 if f and f._pvDebuffs and f._pvDebuffs[1] and f._health then
-                    local glyph = f._pvDebuffs[1]
-                    glyph._tex:SetTexture(5927657)
+                    local icon = f._pvDebuffs[1]
+                    icon._tex:SetTexture(5927657)
                     local _z = s2.debuffIconZoom or 0.08
-                    glyph._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
-                    glyph:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
-                    if glyph._cooldown then
-                        glyph._cooldown:SetCooldown(nowTime, dur)
-                        glyph._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
-                        glyph._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
-                        glyph._cooldown:Show()
+                    icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+                    icon:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
+                    if icon._cooldown then
+                        icon._cooldown:SetCooldown(nowTime, dur)
+                        icon._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
+                        icon._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
+                        icon._cooldown:Show()
                         if s2.debuffShowDurText then
-                            local cdText = glyph._cooldown.GetCountdownFontString
-                                and glyph._cooldown:GetCountdownFontString()
+                            local cdText = icon._cooldown.GetCountdownFontString
+                                and icon._cooldown:GetCountdownFontString()
                             if cdText then
                                 local dtc = s2.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                                 local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -619,7 +619,7 @@ local function PvAuraTick()
                                 cdText:ClearAllPoints()
                                 cdText:SetPoint(
                                     "CENTER",
-                                    glyph,
+                                    icon,
                                     "CENTER",
                                     s2.debuffDurTextOffsetX or 0,
                                     s2.debuffDurTextOffsetY or 0
@@ -627,8 +627,8 @@ local function PvAuraTick()
                             end
                         end
                     end
-                    mod.RFC_PreviewAuraBorder(glyph, glyph._borderFrame, s2, "debuffBorder")
-                    glyph:Show()
+                    mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
+                    icon:Show()
                     -- Re-pack all shown debuffs so slot 1 takes the first position
                     -- and any random slot-2+ debuff shifts right, rather than the
                     -- two overlapping when the pulse returns.
@@ -676,9 +676,9 @@ local function PvAuraTick()
     -- Party is a single group of 5, so it gets a higher per-group defensive
     -- count (3) to read as a populated showcase; raid keeps 1 per group.
     local defTarget = mod._partyPvActive and 3 or 1
-    for group = 1, 4 do
-        while wantDef and PvAuraCountInGroup(group, "def") < defTarget do
-            local fi = PvAuraPickFrame(group, "def")
+    for set = 1, 4 do
+        while wantDef and PvAuraCountInGroup(set, "def") < defTarget do
+            local fi = PvAuraPickFrame(set, "def")
             if not fi then
                 break
             end
@@ -686,8 +686,8 @@ local function PvAuraTick()
             PvAuraReanchorFrame(fi, "def")
         end
         -- Random debuffs use slot 2+
-        if wantDb and PvAuraCountInGroup(group, "db", 2) < 1 then
-            local fi = PvAuraPickFrame(group, "db", 2)
+        if wantDb and PvAuraCountInGroup(set, "db", 2) < 1 then
+            local fi = PvAuraPickFrame(set, "db", 2)
             if fi then
                 PvAuraApply(fi, "db", 2)
                 PvAuraReanchorFrame(fi, "db")

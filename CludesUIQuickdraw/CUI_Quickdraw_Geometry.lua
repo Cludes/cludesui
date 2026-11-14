@@ -16,7 +16,7 @@ if not Inner or Inner.broken then
 end
 Inner.broken = true
 
-local floor, min, upper, abs = math.floor, math.min, math.max, math.abs
+local floor, min, max, abs = math.floor, math.min, math.max, math.abs
 local sin, cos, tan, pi = math.sin, math.cos, math.tan, math.pi
 local log = math.log
 
@@ -47,8 +47,8 @@ local function NestBBox(cells)
     local y0, y1 = first.y - first.hh, first.y + first.hh
     for jdx = 2, #cells do
         local b = cells[jdx]
-        x0, x1 = min(x0, b.x - b.hw), upper(x1, b.x + b.hw)
-        y0, y1 = min(y0, b.y - b.hh), upper(y1, b.y + b.hh)
+        x0, x1 = min(x0, b.x - b.hw), max(x1, b.x + b.hw)
+        y0, y1 = min(y0, b.y - b.hh), max(y1, b.y + b.hh)
     end
     return {
         x = (x0 + x1) * 0.5,
@@ -82,13 +82,13 @@ local function CorridorBox(parentBox, nest, axis, sign, minWidth)
 
     local pEdge = parentBox[away] + sign * parentBox[hAway]
     local nEdge = nest[away] - sign * nest[hAway]
-    local lo, hi = min(pEdge, nEdge), upper(pEdge, nEdge)
+    local lo, hi = min(pEdge, nEdge), max(pEdge, nEdge)
 
-    local boxFrame = {}
-    boxFrame[along] = parentBox[along]
-    boxFrame[hAlong] = upper(minWidth * 0.5, parentBox[hAlong], nest[hAlong])
-    boxFrame[away], boxFrame[hAway] = (lo + hi) * 0.5, upper(0, (hi - lo) * 0.5)
-    return boxFrame
+    local box = {}
+    box[along] = parentBox[along]
+    box[hAlong] = max(minWidth * 0.5, parentBox[hAlong], nest[hAlong])
+    box[away], box[hAway] = (lo + hi) * 0.5, max(0, (hi - lo) * 0.5)
+    return box
 end
 
 -- One rect covering a nest run AND the ground between it and the parent's own
@@ -140,15 +140,15 @@ end
 -- own centre less than half an icon away, which a region reaching over would
 -- leave unselectable while the nest was up. A nest set a whole band out has the
 -- room to spare either way, and nothing wants the inward half of it.
-local function GraceBox(boxFrame, grace, axis, sign)
+local function GraceBox(box, grace, axis, sign)
     local away, hAway, hAlong = "y", "hh", "hw"
     if axis ~= "X" then
         away, hAway, hAlong = "x", "hw", "hh"
     end
-    boxFrame[hAlong] = boxFrame[hAlong] + grace
-    boxFrame[away] = boxFrame[away] + sign * grace * 0.5
-    boxFrame[hAway] = boxFrame[hAway] + grace * 0.5
-    return boxFrame
+    box[hAlong] = box[hAlong] + grace
+    box[away] = box[away] + sign * grace * 0.5
+    box[hAway] = box[hAway] + grace * 0.5
+    return box
 end
 
 -- The carve below works in edges; everything else here works in centre and
@@ -207,8 +207,8 @@ local function CarveBox(result, b, hole, splitY)
         result[#result + 1] = b
         return
     end
-    hx0, hx1 = upper(hx0, bx0), min(hx1, bx1)
-    hy0, hy1 = upper(hy0, by0), min(hy1, by1)
+    hx0, hx1 = max(hx0, bx0), min(hx1, bx1)
+    hy0, hy1 = max(hy0, by0), min(hy1, by1)
     if splitY then
         if hy0 - by0 >= CARVE_MIN then
             result[#result + 1] = EdgeBox(bx0, bx1, by0, hy0)
@@ -309,8 +309,8 @@ end
 -- is for; what must not happen is a nest with no way in.
 local function BlocksReach(c, hole)
     local pb = c.parentBox
-    local sideName = (c.groups and c.groups[1]) or c
-    local axis, sign = sideName.axis, sideName.sign
+    local side = (c.groups and c.groups[1]) or c
+    local axis, sign = side.axis, side.sign
     if not axis then
         return false
     end
@@ -397,12 +397,12 @@ do
         return (dx < sx and dy <= sy + 1e-4) or (dy < sy and dx <= sx + 1e-4)
     end
 
-    function AddRegion(c, boxFrame, axis, holes)
+    function AddRegion(c, box, axis, holes)
         if not holes then
-            c.regions[#c.regions + 1] = boxFrame
+            c.regions[#c.regions + 1] = box
             return
         end
-        local pieces = { boxFrame }
+        local pieces = { box }
         for hi = 1, #holes do
             local kept = {}
             for pi = 1, #pieces do
@@ -545,17 +545,17 @@ function PaletteView:ChildGeom(isShown, slots)
     -- radius already carries that factor; a band read at its literal profile
     -- size would not, and the options preview would then draw its nests at
     -- full distance around a palette fitted to two-thirds.
-    local baseValue = p.iconSize or 40
-    local key = (baseValue > 0) and (iconSize / baseValue) or 1
-    local band = upper(0, p.nestBand or NEST_BAND_DEFAULT) * key
+    local base = p.iconSize or 40
+    local key = (base > 0) and (iconSize / base) or 1
+    local band = max(0, p.nestBand or NEST_BAND_DEFAULT) * key
     local gap = ((p and p.fanGap) or 10) * key
     -- Nested entries are drawn smaller than the palette's own, so a nest reads
     -- as subordinate to the entry it hangs off rather than as a second ring of
     -- equals. It costs nothing in the hit test: the sectors are angular, and an
     -- icon's size has no part in deciding which one the cursor is in.
-    local childIcon = iconSize * min(1, upper(0.4, p.nestScale or 0.8))
+    local childIcon = iconSize * min(1, max(0.4, p.nestScale or 0.8))
     local childPitch = childIcon + gap
-    local capHalf = min(180, upper(10, p.arcChildMaxSpan or 90)) * pi / 180 * 0.5
+    local capHalf = min(180, max(10, p.arcChildMaxSpan or 90)) * pi / 180 * 0.5
     -- Anything that is not the one opt-in value keeps clear of other claims,
     -- so a saved profile that never set this reads as the cautious side.
     local keepClear = p.arcChildOverflow ~= "MIDPOINT"
@@ -593,7 +593,7 @@ function PaletteView:ChildGeom(isShown, slots)
         end
         -- Never NARROWER than the parent's own sector: a claim always has at
         -- least the room the entry it hangs off already owns.
-        half = upper(half, step * 0.5)
+        half = max(half, step * 0.5)
 
         c.icon = childIcon
         c.half = half
@@ -621,7 +621,7 @@ function PaletteView:ChildGeom(isShown, slots)
             -- fewer degrees are needed to keep neighbours a pitch apart.
             local angStep = childPitch / rr
             local capacity = (ri == MAX_CHILD_ROWS - 1) and (c.n - placed)
-                or upper(1, floor((half * 2) / angStep + 1e-6) + 1)
+                or max(1, floor((half * 2) / angStep + 1e-6) + 1)
             local m = min(c.n - placed, capacity)
             rowList[#rowList + 1] = {
                 radius = rr,
@@ -685,8 +685,8 @@ function PaletteView:ChildGeom(isShown, slots)
         -- ground, which disarms, which puts its parent gate back up.
         local wide, coarsest = 0, 0
         for r = 1, #rowList do
-            wide = upper(wide, rowList[r].n * rowList[r].step * 0.5)
-            coarsest = upper(coarsest, rowList[r].step)
+            wide = max(wide, rowList[r].n * rowList[r].step * 0.5)
+            coarsest = max(coarsest, rowList[r].step)
         end
         c.ground = {
             -- Radial projection onto the parent's own axis, not plain
@@ -714,7 +714,7 @@ function PaletteView:ChildGeom(isShown, slots)
             -- exactly that. Past 60 degrees the wedge covers those angles
             -- anyway everywhere it applies.
             slope = tan(min(step * 0.5, pi / 3)),
-            half = upper(wide + coarsest * 0.5, step * 0.5, (iconSize * 0.5) / upper(1, radius)),
+            half = max(wide + coarsest * 0.5, step * 0.5, (iconSize * 0.5) / max(1, radius)),
         }
 
         -- The parent's own icon box, for the arming gate (see EnsureGates)
@@ -764,11 +764,11 @@ end
 function PaletteView:ChildRingPos(c, jdx)
     local rowList = c.rows
     for r = 1, #rowList do
-        local rowFrame = rowList[r]
-        if jdx <= rowFrame.n then
-            return rowFrame.radius, rowFrame.start + (jdx - 1) * rowFrame.step
+        local row = rowList[r]
+        if jdx <= row.n then
+            return row.radius, row.start + (jdx - 1) * row.step
         end
-        jdx = jdx - rowFrame.n
+        jdx = jdx - row.n
     end
 end
 
@@ -782,7 +782,7 @@ end
 -- than leaving a step-wide gap at the seam that belongs to no entry at all.
 function PaletteView:ArcGeom(isShown)
     local p = self:P()
-    local deg = min(360, upper(30, (p and p.arcSpan) or 360))
+    local deg = min(360, max(30, (p and p.arcSpan) or 360))
     local rot = ((p and p.arcRotation) or 0) * pi / 180
 
     if deg >= 359.5 then
@@ -879,25 +879,25 @@ local function FalloffK(key)
     return (key - 0.5) * 2
 end
 
-local function FanOffset(key, dim, gap, decay, minScale)
+local function FanOffset(key, size, gap, decay, minScale)
     -- decay ~= 1 makes the integral degenerate (and 1 means "no falloff", so
     -- even spacing is the right answer anyway).
     if decay >= 0.999 then
-        return (dim + gap) * key
+        return (size + gap) * key
     end
     local lnd = -log(decay)
 
     minScale = minScale or 0
     if minScale <= 0 then
-        return dim * (1 - decay ^ key) / lnd + gap * key
+        return size * (1 - decay ^ key) / lnd + gap * key
     end
 
     -- decay ^ knee == minScale, which is what makes the two branches meet.
     local knee = log(minScale) / log(decay)
     if key <= knee then
-        return dim * (1 - decay ^ key) / lnd + gap * key
+        return size * (1 - decay ^ key) / lnd + gap * key
     end
-    return dim * (1 - minScale) / lnd + gap * knee + (dim * minScale + gap) * (key - knee)
+    return size * (1 - minScale) / lnd + gap * knee + (size * minScale + gap) * (key - knee)
 end
 
 -- Half-length of the editor's strip: centre to the outer edge of the last
@@ -936,8 +936,8 @@ function PaletteView:ApplyFanGeometry()
     local minS = p.fanMinScale or 0.30
     local minA = p.fanMinAlpha or 0.12
     if self.opts.interactive then
-        minS = upper(minS, FAN_EDIT_MIN_SCALE)
-        minA = upper(minA, FAN_EDIT_MIN_ALPHA)
+        minS = max(minS, FAN_EDIT_MIN_SCALE)
+        minA = max(minA, FAN_EDIT_MIN_ALPHA)
     end
     local horiz = self:FanHoriz()
     -- The editor windows exactly like play now: it draws the centre plus
@@ -991,14 +991,14 @@ function PaletteView:ApplyFanGeometry()
         if edge <= 0 then
             wid:Hide()
         else
-            local s = upper(minS, decay ^ key)
-            local offset = FanOffset(key, iconSize, gap, decay, minS)
-            offset = offset + extra * min(1, key)
+            local s = max(minS, decay ^ key)
+            local off = FanOffset(key, iconSize, gap, decay, minS)
+            off = off + extra * min(1, key)
             if d < 0 then
-                offset = -offset
+                off = -off
             end
 
-            wid:SetAlpha(min(1, edge) * upper(minA, aDecay ^ key))
+            wid:SetAlpha(min(1, edge) * max(minA, aDecay ^ key))
             -- Depth is size, not scale: SetPoint offsets are read in the
             -- widget's own scaled space, so scaling here would silently
             -- multiply the spacing computed above. The selected entry is
@@ -1009,9 +1009,9 @@ function PaletteView:ApplyFanGeometry()
             wid:SetSize(iconSize * s * z, iconSize * s * z)
             wid:ClearAllPoints()
             if horiz then
-                wid:SetPoint("CENTER", widget, "CENTER", offset, crossOff)
+                wid:SetPoint("CENTER", widget, "CENTER", off, crossOff)
             else
-                wid:SetPoint("CENTER", widget, "CENTER", crossOff, -offset)
+                wid:SetPoint("CENTER", widget, "CENTER", crossOff, -off)
             end
             wid:Show()
         end

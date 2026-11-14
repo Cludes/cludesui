@@ -147,22 +147,22 @@ local talentIconAnchor
 local talentIconPool = {}
 local talentActiveIcons = {}
 
-local function GetOrCreateIcon(slotPos)
-    if talentIconPool[slotPos] then
-        return talentIconPool[slotPos]
+local function GetOrCreateIcon(index)
+    if talentIconPool[index] then
+        return talentIconPool[index]
     end
     local button =
-        CreateFrame("Button", "EABR_TalentIcon" .. slotPos, talentIconAnchor, "SecureActionButtonTemplate")
+        CreateFrame("Button", "EABR_TalentIcon" .. index, talentIconAnchor, "SecureActionButtonTemplate")
     button:SetSize(ICON_SIZE, ICON_SIZE)
     button:RegisterForClicks("LeftButtonDown", "LeftButtonUp")
     securecallfunction(button.SetPassThroughButtons, button, "RightButton", "MiddleButton")
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(100)
     button:Hide()
-    local glyph = button:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints()
-    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    button._icon = glyph
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    button._icon = icon
     local Pix = CludesUI and CludesUI.PP
     if Pix then
         Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7)
@@ -172,7 +172,7 @@ local function GetOrCreateIcon(slotPos)
     CludesUI.ApplyModuleFont(textValue, nil, 11, "auraBuff")
     textValue:SetTextColor(1, 1, 1, 1)
     button._text = textValue
-    talentIconPool[slotPos] = button
+    talentIconPool[index] = button
     return button
 end
 
@@ -350,8 +350,8 @@ local function Collect()
                     label = reminder.spellName or "Unknown",
                 }
             elseif not zoneMatch and hasTalent then
-                local modeName = NotNeededMode(reminder)
-                if modeName == "all" or (modeName == "season" and inSeasonZone) then
+                local mode = NotNeededMode(reminder)
+                if mode == "all" or (mode == "season" and inSeasonZone) then
                     _missing[#_missing + 1] = {
                         texture = Tex(reminder.spellID) or 134400,
                         spellID = reminder.spellID,

@@ -307,9 +307,9 @@ local function SkinButton(button, keepKeys)
         end
     end
 
-    local fillTex = SolidTex(button, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fillTex:SetAllPoints(button)
-    d.bg = fillTex
+    local fill = SolidTex(button, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fill:SetAllPoints(button)
+    d.bg = fill
     AddBorder(button)
 
     local hover = SolidTex(button, "HIGHLIGHT", 1, 1, 1, 0.1)
@@ -367,9 +367,9 @@ local function SkinEditBox(eb)
             r:SetAlpha(0)
         end
     end
-    local fillTex = SolidTex(eb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fillTex:SetAllPoints(eb)
-    d.bg = fillTex
+    local fill = SolidTex(eb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fill:SetAllPoints(eb)
+    d.bg = fill
     AddBorder(eb, 0.25, 0.25, 0.25, 1)
 end
 
@@ -409,9 +409,9 @@ local function SkinCheckbox(cb)
     local boxF = CreateFrame("Frame", nil, cb)
     boxF:SetSize(14, 14)
     boxF:SetPoint("LEFT", cb, "LEFT", 4, 0)
-    local fillTex = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fillTex:SetAllPoints(boxF)
-    d.bg = fillTex
+    local fill = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fill:SetAllPoints(boxF)
+    d.bg = fill
     AddBorder(boxF, 0.25, 0.25, 0.25, 1)
     local tick = boxF:CreateTexture(nil, "OVERLAY")
     tick:SetPoint("TOPLEFT", 3, -3)
@@ -481,9 +481,9 @@ local function SkinDropdown(dropdown)
     if dropdown.Texture then
         dropdown.Texture:SetAlpha(0)
     end
-    local fillTex = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fillTex:SetAllPoints(dropdown)
-    d.bg = fillTex
+    local fill = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fill:SetAllPoints(dropdown)
+    d.bg = fill
     AddBorder(dropdown, 0.25, 0.25, 0.25, 1)
     -- Slight lighten on hover.
     local hover = SolidTex(dropdown, "HIGHLIGHT", 1, 1, 1, 0.05)
@@ -538,15 +538,15 @@ local SkinCloseButton = Skin.CloseButton
 
 -- PVEFrame bottom tab -> CharacterSheet tab pattern (bg + accent underline when
 -- active). Visuals driven by UpdateTabVisuals (reads PVEFrame.selectedTab).
-local function SkinTab(tabButton)
-    if not tabButton or tabButton:IsForbidden() then
+local function SkinTab(tab)
+    if not tab or tab:IsForbidden() then
         return
     end
-    local d = GetFFD(tabButton)
+    local d = GetFFD(tab)
     if d.bg then
         return
     end
-    local regions = { tabButton:GetRegions() }
+    local regions = { tab:GetRegions() }
     for jdx = 1, #regions do
         local r = regions[jdx]
         if r and r:IsObjectType("Texture") then
@@ -557,54 +557,54 @@ local function SkinTab(tabButton)
         end
     end
     for _, k in ipairs({ "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }) do
-        if tabButton[k] then
-            tabButton[k]:SetTexture("")
+        if tab[k] then
+            tab[k]:SetTexture("")
         end
     end
-    local highlight = tabButton.GetHighlightTexture and tabButton:GetHighlightTexture()
+    local highlight = tab.GetHighlightTexture and tab:GetHighlightTexture()
     if highlight then
         highlight:SetTexture("")
     end
 
-    d.bg = SolidTex(tabButton, "BACKGROUND", 0.068, 0.056, 0.052, 1)
+    d.bg = SolidTex(tab, "BACKGROUND", 0.068, 0.056, 0.052, 1)
     d.bg:SetAllPoints()
 
-    local activeHL = tabButton:CreateTexture(nil, "ARTWORK", nil, -6)
+    local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
     activeHL:SetAllPoints()
     activeHL:SetColorTexture(1, 1, 1, 0.02)
     activeHL:SetBlendMode("ADD")
     activeHL:Hide()
     d.activeHL = activeHL
 
-    local blizLabel = tabButton.GetFontString and tabButton:GetFontString()
+    local blizLabel = tab.GetFontString and tab:GetFontString()
     local labelText = (blizLabel and blizLabel:GetText()) or ""
     if blizLabel then
         blizLabel:SetTextColor(0, 0, 0, 0)
     end
-    if tabButton.SetPushedTextOffset then
-        tabButton:SetPushedTextOffset(0, 0)
+    if tab.SetPushedTextOffset then
+        tab:SetPushedTextOffset(0, 0)
     end
 
-    local label = tabButton:CreateFontString(nil, "OVERLAY")
+    local label = tab:CreateFontString(nil, "OVERLAY")
     label:SetFont(Theme.fontPath, 11, "")
-    label:SetPoint("CENTER", tabButton, "CENTER", 0, 0)
+    label:SetPoint("CENTER", tab, "CENTER", 0, 0)
     label:SetText(labelText)
     d.label = label
-    hooksecurefunc(tabButton, "SetText", function(_, newText)
+    hooksecurefunc(tab, "SetText", function(_, newText)
         if newText and d.label then
             d.label:SetText(newText)
         end
     end)
 
-    local underline = tabButton:CreateTexture(nil, "OVERLAY", nil, 6)
+    local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
     if CUI and CUI.PanelPP and CUI.PanelPP.DisablePixelSnap then
         CUI.PanelPP.DisablePixelSnap(underline)
         underline:SetHeight(CUI.PanelPP.mult or 1)
     else
         underline:SetHeight(1)
     end
-    underline:SetPoint("BOTTOMLEFT", tabButton, "BOTTOMLEFT", 0, 0)
-    underline:SetPoint("BOTTOMRIGHT", tabButton, "BOTTOMRIGHT", 0, 0)
+    underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
+    underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
     -- Color + visibility follow the Blizzard Window Skins "Global Options"
     -- accent-bar setting; the window-skin engine recolors registered
     -- underlines on option edits and accent changes.
@@ -652,8 +652,8 @@ local function UpdateTabVisuals()
     local sel = PVEFrame.selectedTab or 1
     local barsOn = not (mod.WSkin and mod.WSkin.AccentBarShown) or mod.WSkin.AccentBarShown()
     for idx = 1, 4 do
-        local tabButton = _G["PVEFrameTab" .. idx]
-        local d = tabButton and FFD[tabButton]
+        local tab = _G["PVEFrameTab" .. idx]
+        local d = tab and FFD[tab]
         if d then
             local isActive = (sel == idx)
             if d.label then
@@ -782,9 +782,9 @@ local function SkinCategoryButton(button, options)
     local keep = {}
     -- D&R buttons use lowercase keys (icon/ring); the PvP queue buttons use
     -- capitalized ones (Icon/Ring). Same template family otherwise.
-    local glyph = button.icon or button.Icon
-    if glyph then
-        keep[glyph] = true
+    local icon = button.icon or button.Icon
+    if icon then
+        keep[icon] = true
     end
     if button.bgGlow then
         button.bgGlow:SetAlpha(0)
@@ -966,10 +966,10 @@ local function Skin_PVEFrame()
 
     local pveTabs = {}
     for idx = 1, 4 do
-        local tabButton = _G["PVEFrameTab" .. idx]
-        if tabButton then
-            SkinTab(tabButton)
-            pveTabs[#pveTabs + 1] = tabButton
+        local tab = _G["PVEFrameTab" .. idx]
+        if tab then
+            SkinTab(tab)
+            pveTabs[#pveTabs + 1] = tab
         end
     end
     if mod.WSkin and mod.WSkin.NormalizeTabRow then
@@ -1380,19 +1380,19 @@ local function RewardQualityColor(button)
     if quality == nil or issecretvalue(quality) or type(quality) ~= "number" then
         return
     end
-    local column = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
-    if not (column and column.r) then
+    local col = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
+    if not (col and col.r) then
         return
     end
     -- Achromatic qualities (poor grey, common white) are not a cue -- they read
     -- as a colored border that happens to be grey. Same chroma test the engine
     -- applies when it reads a ring, so the two surfaces agree on what counts.
-    local hi = math.max(column.r, column.g, column.b)
-    local lo = math.min(column.r, column.g, column.b)
+    local hi = math.max(col.r, col.g, col.b)
+    local lo = math.min(col.r, col.g, col.b)
     if (hi - lo) <= 0.1 then
         return
     end
-    return column.r, column.g, column.b
+    return col.r, col.g, col.b
 end
 
 -- One reward tile, treated exactly like a quest reward: strip the rings and the
@@ -1719,9 +1719,9 @@ local function InstallHooks()
         end)
     end
     if GroupFinderFrame_SelectGroupButton then
-        hooksecurefunc("GroupFinderFrame_SelectGroupButton", function(slotPos)
-            if type(slotPos) == "number" then
-                _gfSelIndex = slotPos
+        hooksecurefunc("GroupFinderFrame_SelectGroupButton", function(index)
+            if type(index) == "number" then
+                _gfSelIndex = index
             end
             Restrip()
             UpdateCategorySelection()
@@ -1893,10 +1893,10 @@ end
 -- Add another name here if a different addon is reported doing the same thing.
 local KNOWN_PVE_COMPANIONS = { "RaiderIO_ProfileTooltip" }
 
-local function FindOutermostFrame(pve, sideName)
+local function FindOutermostFrame(pve, side)
     local outFrame = pve
     local pveScale = pve:GetEffectiveScale() or 1
-    local outEdgeAbs = ((sideName == "right" and pve:GetRight() or pve:GetLeft()) or 0) * pveScale
+    local outEdgeAbs = ((side == "right" and pve:GetRight() or pve:GetLeft()) or 0) * pveScale
     local pveTop, pveBottom = pve:GetTop(), pve:GetBottom()
     if not pveTop or not pveBottom then
         return outFrame, outEdgeAbs
@@ -1913,9 +1913,9 @@ local function FindOutermostFrame(pve, sideName)
                 local fLeftAbs, fRightAbs = fLeft * fScale, fRight * fScale
                 local fTopAbs, fBottomAbs = fTop * fScale, fBottom * fScale
                 if fTopAbs > bottomAbs and fBottomAbs < topAbs then
-                    if sideName == "right" and fRightAbs > outEdgeAbs then
+                    if side == "right" and fRightAbs > outEdgeAbs then
                         outFrame, outEdgeAbs = checkFrame, fRightAbs
-                    elseif sideName == "left" and fLeftAbs < outEdgeAbs then
+                    elseif side == "left" and fLeftAbs < outEdgeAbs then
                         outFrame, outEdgeAbs = checkFrame, fLeftAbs
                     end
                 end

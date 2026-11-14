@@ -10,29 +10,29 @@ if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
 end
 
 function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
-    local Prm = CludesUI._PvP
-    if not Prm then
+    local P = CludesUI._PvP
+    if not P then
         return 0
     end
     local W = CludesUI.Widgets
     local posY = yOffset
     local _, hgt
-    local conf = Prm.Cfg()
+    local conf = P.Cfg()
     local function Off()
-        return not Prm.Get("enabled")
+        return not P.Get("enabled")
     end
-    local function Tog(key, textValue, tipText, offset)
+    local function Tog(key, textValue, tipText, off)
         return {
             type = "toggle",
             text = textValue,
             tooltip = tipText,
-            disabled = offset,
+            disabled = off,
             getValue = function()
-                return Prm.Get(key)
+                return P.Get(key)
             end,
             setValue = function(val)
                 conf[key] = val and true or false
-                Prm.Apply()
+                P.Apply()
             end,
         }
     end
@@ -64,7 +64,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         width = 90,
         tooltip = "Nearby, Last Hour, Kill on Sight and Ignore lists. Click a name to target it. /cpvp opens it too.",
         onClick = function()
-            Prm.Show()
+            P.Show()
         end,
     }, {
         type = "labeledButton",
@@ -73,7 +73,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         width = 90,
         tooltip = "Every enemy you have met, searchable, with your wins and losses. /cpvp stats.",
         onClick = function()
-            Prm.Stats()
+            P.Stats()
         end,
     })
     posY = posY - hgt
@@ -87,7 +87,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         disabled = Off,
         tooltip = "Seconds before an enemy who has not been seen leaves the Nearby list.",
         getValue = function()
-            return Prm.Get("removeAfter")
+            return P.Get("removeAfter")
         end,
         setValue = function(val)
             conf.removeAfter = math.floor(val + 0.5)
@@ -101,7 +101,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         isPercent = false,
         disabled = Off,
         getValue = function()
-            return Prm.Get("rows")
+            return P.Get("rows")
         end,
         setValue = function(val)
             conf.rows = math.floor(val + 0.5)
@@ -229,7 +229,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             tooltip = "Zones or subzones, separated by commas, where enemy detection stays off.",
             disabled = Off,
             getValue = function()
-                return Prm.Get("offZones")
+                return P.Get("offZones")
             end,
             setValue = function(textValue)
                 conf.offZones = textValue or ""

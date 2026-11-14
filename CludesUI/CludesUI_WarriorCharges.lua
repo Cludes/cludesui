@@ -44,8 +44,8 @@ local CludesUI = _G.CludesUI
 --   syncFrame/syncOpts, lastR/G/B/A, pendR/G/B/A, dirty,
 --   ph[powerKey] = { container, btn, bar, bft, tc, fs, built, queued, err,
 --                    textErr, regMax } }
-local Stl = { hosts = {} }
-Stl.class = select(2, UnitClass("player"))
+local S = { hosts = {} }
+S.class = select(2, UnitClass("player"))
 
 local PHASES = {
     WHIRLWIND_STACKS = {
@@ -61,10 +61,10 @@ local PHASES = {
 }
 
 local function Host(key)
-    local H = Stl.hosts[key]
+    local H = S.hosts[key]
     if not H then
         H = { key = key, ph = {}, seps = {} }
-        Stl.hosts[key] = H
+        S.hosts[key] = H
     end
     return H
 end
@@ -101,16 +101,16 @@ local HostRecolor -- forward (lift re-applies through it)
 local HostSyncByKey -- forward
 
 local function EnsureLift()
-    if Stl.liftHooked then
+    if S.liftHooked then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.OnRestrictionLift) then
         return
     end
-    Stl.liftHooked = true
+    S.liftHooked = true
     AK.OnRestrictionLift(function()
-        for _, H in pairs(Stl.hosts) do
+        for _, H in pairs(S.hosts) do
             if H.dirty then
                 H.dirty = nil
                 if H.armed and H.pendR then
@@ -206,17 +206,17 @@ local function BuildHostPhase(H, powerKey, options)
             end
             st.btn = btnFrame
 
-            local barFrame = CreateFrame("StatusBar", nil, btnFrame)
-            barFrame:SetAllPoints(btnFrame)
+            local bar = CreateFrame("StatusBar", nil, btnFrame)
+            bar:SetAllPoints(btnFrame)
             if ori == "HORIZONTAL" then
-                barFrame:SetOrientation("HORIZONTAL")
+                bar:SetOrientation("HORIZONTAL")
             else
                 -- Legacy pip rows fill top-down unless VERTICAL_UP reverses.
-                barFrame:SetOrientation("VERTICAL")
-                barFrame:SetReverseFill(ori ~= "VERTICAL_UP")
+                bar:SetOrientation("VERTICAL")
+                bar:SetReverseFill(ori ~= "VERTICAL_UP")
             end
-            barFrame:SetStatusBarTexture(texPath)
-            local bft = barFrame:GetStatusBarTexture()
+            bar:SetStatusBarTexture(texPath)
+            local bft = bar:GetStatusBarTexture()
             if bft then
                 bft:SetVertexColor(r, g, b, a)
                 if fillAlpha < 1 then
@@ -231,13 +231,13 @@ local function BuildHostPhase(H, powerKey, options)
                 if Enum.StatusBarInterpolation then
                     barOpts.interpolation = Enum.StatusBarInterpolation.Immediate
                 end
-                btnFrame:SetApplicationBar(barFrame, barOpts)
+                btnFrame:SetApplicationBar(bar, barOpts)
             end)
             if not success then
                 st.err = err
                 return
             end
-            st.bar = barFrame
+            st.bar = bar
             st.bft = bft
             st.regMax = maxApps
 
@@ -251,7 +251,7 @@ local function BuildHostPhase(H, powerKey, options)
             -- unrestricted, pcall'd with a lift re-apply under restriction.
             -- ARTWORK on the bar draws above the fill; the separator ticks
             -- live at +4 above all of it.
-            st.thMask = barFrame:CreateMaskTexture()
+            st.thMask = bar:CreateMaskTexture()
             st.thMask:SetTexture(
                 "Interface\\Buttons\\WHITE8x8",
                 "CLAMPTOBLACKADDITIVE",
@@ -264,7 +264,7 @@ local function BuildHostPhase(H, powerKey, options)
                 -- Sublevels +1..+5: the StatusBar fill texture draws at
                 -- ARTWORK sublevel 0, and strips below it never render
                 -- (field-proven). Ticks stay above on the +4 sepHost frame.
-                local strip = barFrame:CreateTexture(nil, "ARTWORK", nil, idx)
+                local strip = bar:CreateTexture(nil, "ARTWORK", nil, idx)
                 strip:AddMaskTexture(st.thMask)
                 strip:Hide()
                 st.thStrips[idx] = strip
@@ -296,14 +296,8 @@ local function BuildHostPhase(H, powerKey, options)
                         )
                     end
                     fontStr:SetTextColor(options.text.r or 1, options.text.g or 1, options.text.b or 1, 0.9)
-                    local anchorFrame = options.text.anchor or "CENTER"
-                    fontStr:SetPoint(
-                        anchorFrame,
-                        btnFrame,
-                        anchorFrame,
-                        options.text.x or 0,
-                        options.text.y or 0
-                    )
+                    local anchor = options.text.anchor or "CENTER"
+                    fontStr:SetPoint(anchor, btnFrame, anchor, options.text.x or 0, options.text.y or 0)
                     local fmt
                     if
                         C_StringUtil
@@ -459,9 +453,9 @@ local function StyleSeparators(H, widget, sp, num)
         t:ClearAllPoints()
         -- Snap the tick's EDGE offset, not just the boundary center: a
         -- half-pixel-offset 1px line can disappear into the pixel grid.
-        local offset = BoundaryPos(idx) - sepW / 2
+        local off = BoundaryPos(idx) - sepW / 2
         if Pix and Pix.SnapForES then
-            offset = Pix.SnapForES(offset, es)
+            off = Pix.SnapForES(off, es)
         end
         if vertical then
             -- Fill runs top-down (or bottom-up for VERTICAL_UP); either way
@@ -469,15 +463,15 @@ local function StyleSeparators(H, widget, sp, num)
             t:SetPoint("LEFT", H.sepHost, "LEFT", 0, 0)
             t:SetPoint("RIGHT", H.sepHost, "RIGHT", 0, 0)
             if ori == "VERTICAL_UP" then
-                t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, offset)
+                t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, off)
             else
-                t:SetPoint("TOP", H.sepHost, "TOP", 0, -offset)
+                t:SetPoint("TOP", H.sepHost, "TOP", 0, -off)
             end
             t:SetHeight(sepW)
         else
             t:SetPoint("TOP", H.sepHost, "TOP", 0, 0)
             t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, 0)
-            t:SetPoint("LEFT", H.sepHost, "LEFT", offset, 0)
+            t:SetPoint("LEFT", H.sepHost, "LEFT", off, 0)
             t:SetWidth(sepW)
         end
         t:Show()
@@ -534,22 +528,22 @@ local function StyleThresholds(H, widget, sp, num)
                 -- Strip origin measured from the FILL ORIGIN (left; top for
                 -- reversed vertical; bottom for VERTICAL_UP), the separator
                 -- ticks' fractions.
-                local offset = len * (band.start - 1) / num
+                local off = len * (band.start - 1) / num
                 t:ClearAllPoints()
                 if vertical then
                     t:SetPoint("LEFT", st.bar, "LEFT", 0, 0)
                     t:SetPoint("RIGHT", st.bar, "RIGHT", 0, 0)
                     if ori == "VERTICAL_UP" then
-                        t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, offset)
+                        t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, off)
                         t:SetPoint("TOP", st.bar, "TOP", 0, 0)
                     else
-                        t:SetPoint("TOP", st.bar, "TOP", 0, -offset)
+                        t:SetPoint("TOP", st.bar, "TOP", 0, -off)
                         t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, 0)
                     end
                 else
                     t:SetPoint("TOP", st.bar, "TOP", 0, 0)
                     t:SetPoint("BOTTOM", st.bar, "BOTTOM", 0, 0)
-                    t:SetPoint("LEFT", st.bar, "LEFT", offset, 0)
+                    t:SetPoint("LEFT", st.bar, "LEFT", off, 0)
                     t:SetPoint("RIGHT", st.bar, "RIGHT", 0, 0)
                 end
                 t:Show()
@@ -568,7 +562,7 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+local function HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     if H.armed ~= powerKey then
         return
     end
@@ -587,7 +581,7 @@ local function HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, 
         H.thIn = inp
     end
     local bn = (bandOn and bands and #bands) or 0
-    local changed = inp.mode ~= modeName
+    local changed = inp.mode ~= mode
         or inp.count ~= total
         or inp.n ~= num
         or inp.r ~= r
@@ -614,7 +608,7 @@ local function HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, 
     if not changed then
         return
     end
-    inp.mode, inp.count, inp.n = modeName, total, num
+    inp.mode, inp.count, inp.n = mode, total, num
     inp.r, inp.g, inp.b, inp.a, inp.bn = r, g, b, a, bn
     local specInfo = H.thSpecStore
     if not specInfo then
@@ -678,7 +672,7 @@ local function HostGate(H)
 end
 
 HostSyncByKey = function(H, widget, powerKey, options)
-    if Stl.class ~= "WARRIOR" then
+    if S.class ~= "WARRIOR" then
         return
     end
     local conf = powerKey and PHASES[powerKey]
@@ -790,36 +784,23 @@ _G._EWC = {
     Sync = function(hostKey, widget, powerKey, options)
         HostSyncByKey(Host(hostKey), widget, powerKey, options)
     end,
-    Thresholds = function(
-        hostKey,
-        powerKey,
-        modeName,
-        total,
-        r,
-        g,
-        b,
-        a,
-        bandOn,
-        bands,
-        bandReverse,
-        reverse
-    )
-        local H = Stl.hosts[hostKey]
+    Thresholds = function(hostKey, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+        local H = S.hosts[hostKey]
         if H then
-            HostThresholds(H, powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+            HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
         end
     end,
     Gate = function(hostKey)
-        local H = Stl.hosts[hostKey]
+        local H = S.hosts[hostKey]
         if H then
             HostGate(H)
         end
     end,
     EngineOn = function(hostKey, powerKey)
-        return HostEngineOn(Stl.hosts[hostKey], powerKey)
+        return HostEngineOn(S.hosts[hostKey], powerKey)
     end,
     Recolor = function(hostKey, powerKey, r, g, b, a)
-        local H = Stl.hosts[hostKey]
+        local H = S.hosts[hostKey]
         if H then
             HostRecolor(H, powerKey, r, g, b, a)
         end

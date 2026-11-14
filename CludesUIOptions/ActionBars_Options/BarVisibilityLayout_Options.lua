@@ -32,14 +32,14 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
     local SUpdatePreview, SUpdatePreviewAndResize, SVal =
         context.SUpdatePreview, context.SUpdatePreviewAndResize, context.SVal
     local visOnly = context.visOnly
-    local Widgets = context.W
+    local W = context.W
     -- Visibility updates do not run ApplyAll. Recompile page-cycle macros when
     -- the set of reserved action pages changes (never/always etc.).
     local function RefreshPageCycle()
         mod.RefreshPagingCycleMacros()
     end
     local _, hgt, heading
-    local rowFrame
+    local row
 
     -- Global search sees row labels and tooltips only. A checkbox dropdown
     -- row's entry, registered right before its row (the index keeps the first
@@ -104,7 +104,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
     -----------------------------------------------------------------------
     --  VISIBILITY & FADING
     -----------------------------------------------------------------------
-    heading, hgt = Widgets:SectionHeader(hostFrame, SECTION_VISIBILITY, posY)
+    heading, hgt = W:SectionHeader(hostFrame, SECTION_VISIBILITY, posY)
     posY = posY - hgt
     -- The Move in Unlock Mode button on the selected bar's first section: the
     -- key is read at the click, so it highlights the bar the selector shows.
@@ -149,7 +149,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
 
         local visRow1
         visRow1, hgt = CludesUI.BuildVisibilityRow(
-            Widgets,
+            W,
             hostFrame,
             posY,
             {
@@ -160,8 +160,8 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
                 end,
                 legacyKey = "barVisibility",
                 caps = visCaps,
-                applyScalarFn = function(s, modeName)
-                    ApplyVisibilityKey(s, modeName)
+                applyScalarFn = function(s, mode)
+                    ApplyVisibilityKey(s, mode)
                 end,
                 disabledFn = _visBlizzDis,
                 disabledTooltip = _visBlizzDis and _VIS_BLIZZ_TIP or nil,
@@ -487,7 +487,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
             words
         )
     end
-    rowFrame, hgt = Widgets:DualRow(
+    row, hgt = W:DualRow(
         hostFrame,
         posY,
         {
@@ -535,9 +535,9 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
         }
     )
     posY = posY - hgt
-    local fadeRow = rowFrame
+    local fadeRow = row
     do
-        local rgn = rowFrame._leftRegion
+        local rgn = row._leftRegion
         CludesUI.BuildSyncIcon({
             region = rgn,
             tooltip = "Apply Bar Opacity to all Bars",
@@ -723,12 +723,12 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
         tooltip = "Show button backgrounds even if a spell is not assigned to that slot.",
     }
     if visOnly then
-        _, hgt = Widgets:DualRow(hostFrame, posY, alwaysShowCfg, CludesUI.BlankRowCfg())
+        _, hgt = W:DualRow(hostFrame, posY, alwaysShowCfg, CludesUI.BlankRowCfg())
         posY = posY - hgt
     else
         local toggleRow
         toggleRow, hgt =
-            Widgets:DualRow(hostFrame, posY, { type = "label", text = "Toggle Action Bar" }, alwaysShowCfg)
+            W:DualRow(hostFrame, posY, { type = "label", text = "Toggle Action Bar" }, alwaysShowCfg)
         posY = posY - hgt
         -- "Toggle Action Bar" keybind: bound key flips the bar shown/hidden at runtime
         -- without writing saved visibility. Enabled only for Always/Never; out of combat
@@ -780,13 +780,13 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
     --  LAYOUT  (hidden when visibility-only)
     -----------------------------------------------------------------------
     if not visOnly then
-        _, hgt = Widgets:SectionHeader(hostFrame, SECTION_LAYOUT, posY)
+        _, hgt = W:SectionHeader(hostFrame, SECTION_LAYOUT, posY)
         posY = posY - hgt
 
         -- Icon Spacing's search entry also answers to "Button Spacing".
         IndexChecklistRow("Icon Spacing", "Button Spacing", {})
         local iconSizeRow
-        iconSizeRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        iconSizeRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -808,9 +808,9 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
                 local k = SelectedKey()
                 local wt = CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget(k)
                 local ht = CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget(k)
-                local targetUnit = wt or ht
-                if targetUnit then
-                    local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(targetUnit)) or targetUnit
+                local target = wt or ht
+                if target then
+                    local name = (CludesUI.GetBarLabel and CludesUI.GetBarLabel(target)) or target
                     return CludesUI.Lf("Size matched to %1$s. Unmatch in Layout Mode to edit.", name)
                 end
                 return nil
@@ -956,7 +956,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
             })
         end
 
-        rowFrame, hgt = Widgets:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Number of Icons",
             min = 1,
@@ -1009,7 +1009,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
         })
         posY = posY - hgt
         do
-            local rgn = rowFrame._leftRegion
+            local rgn = row._leftRegion
             CludesUI.BuildSyncIcon({
                 region = rgn,
                 tooltip = "Apply Number of Icons to all Bars",
@@ -1051,7 +1051,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
             })
         end
         do
-            local rgn = rowFrame._rightRegion
+            local rgn = row._rightRegion
             CludesUI.BuildSyncIcon({
                 region = rgn,
                 tooltip = "Apply Number of Rows to all Bars",
@@ -1093,7 +1093,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
             })
         end
         do
-            local rightRgn = rowFrame._rightRegion
+            local rightRgn = row._rightRegion
             local isVert = SVal("orientation", "horizontal") == "vertical"
             local growDirValues, growDirOrder
             if isVert then
@@ -1134,7 +1134,7 @@ local function BuildBarVisibilityLayout(hostFrame, posY, context)
         -- sync for older readers); corner values place button 1 in that corner of the grid.
         do
             local orientRow
-            orientRow, hgt = Widgets:DualRow(hostFrame, posY, {
+            orientRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Vertical Orientation",
                 disabled = function()

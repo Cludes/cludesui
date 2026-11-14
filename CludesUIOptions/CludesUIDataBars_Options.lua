@@ -293,12 +293,12 @@ initFrame:SetScript("OnEvent", function(self)
     }
     local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
-    local function MakeTemplateCard(hostRegion, posX, posY, wid, cardH, spec_def)
+    local function MakeTemplateCard(host, posX, posY, wid, cardH, def)
         local EGc = CludesUI.CLUDES_GREEN
-        local cardFrame = CreateFrame("Button", nil, hostRegion)
+        local cardFrame = CreateFrame("Button", nil, host)
         Pix.Size(cardFrame, wid, cardH)
-        Pix.Point(cardFrame, "TOPLEFT", hostRegion, "TOPLEFT", posX, posY)
-        cardFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 2)
+        Pix.Point(cardFrame, "TOPLEFT", host, "TOPLEFT", posX, posY)
+        cardFrame:SetFrameLevel(host:GetFrameLevel() + 2)
 
         local cbrd = CludesUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
         local cbg, accentLine = cbrd.bg, cbrd.accent
@@ -308,7 +308,7 @@ initFrame:SetScript("OnEvent", function(self)
         local cIcon = cardFrame:CreateTexture(nil, "ARTWORK")
         cIcon:SetSize(24, 24)
         Pix.Point(cIcon, "LEFT", cardFrame, "LEFT", 14, 0)
-        cIcon:SetTexture(MEDIA_ICONS .. spec_def.icon)
+        cIcon:SetTexture(MEDIA_ICONS .. def.icon)
         cIcon:SetVertexColor(EGc.r, EGc.g, EGc.b)
         cIcon:SetAlpha(0.6)
         if cIcon.SetSnapToPixelGrid then
@@ -321,14 +321,14 @@ initFrame:SetScript("OnEvent", function(self)
         Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        titleFs:SetText(L(spec_def.title))
+        titleFs:SetText(L(def.title))
 
         local descFs = CludesUI.MakeFont(cardFrame, 10, nil, 1, 1, 1, 0.35)
         Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
         Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -8, 0)
         descFs:SetJustifyH("LEFT")
         descFs:SetWordWrap(false)
-        descFs:SetText(L(spec_def.desc))
+        descFs:SetText(L(def.desc))
 
         cardFrame:SetScript("OnEnter", function()
             cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
@@ -343,7 +343,7 @@ initFrame:SetScript("OnEvent", function(self)
             cIcon:SetAlpha(0.6)
         end)
         cardFrame:SetScript("OnClick", function()
-            CreateBarFromTemplate(spec_def.key)
+            CreateBarFromTemplate(def.key)
         end)
         return cardFrame
     end
@@ -390,10 +390,10 @@ initFrame:SetScript("OnEvent", function(self)
         local backdrop = oc:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
-        local titleText = CludesUI.MakeFont(oc, 13, nil, 1, 1, 1, 0.9)
-        titleText:SetPoint("TOP", oc, "TOP", 0, -7)
-        titleText:SetText(L("Preview"))
-        oc._title = titleText
+        local title = CludesUI.MakeFont(oc, 13, nil, 1, 1, 1, 0.9)
+        title:SetPoint("TOP", oc, "TOP", 0, -7)
+        title:SetText(L("Preview"))
+        oc._title = title
         local hint = CludesUI.MakeFont(oc, 10, nil, 1, 1, 1, 0.4)
         -- Edge-anchored so the text wraps inside the narrow popout instead
         -- of spilling past its sides (height grows upward from the bottom).
@@ -526,25 +526,25 @@ initFrame:SetScript("OnEvent", function(self)
                 -- (item._bar, item._isSel), and item._rest puts it in its
                 -- resting look.
                 dropMenu._makeRow = function()
-                    local itemInfo = CreateFrame("Button", nil, dropMenu)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local item = CreateFrame("Button", nil, dropMenu)
+                    item:SetHeight(ITEM_H)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-                    local iLbl = CludesUI.MakeFont(itemInfo, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    local iLbl = CludesUI.MakeFont(item, 11, nil, tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetWordWrap(false)
                     iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
+                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
 
-                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local iHl = item:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
 
                     -- Inline delete + rename (every DataBar is user-created)
-                    local delBtn = CreateFrame("Button", nil, itemInfo)
+                    local delBtn = CreateFrame("Button", nil, item)
                     delBtn:SetSize(ICON_SZ, ICON_SZ)
-                    delBtn:SetPoint("RIGHT", itemInfo, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                    delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+                    delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                     local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
                     delIcon:SetSize(ICON_SZ, ICON_SZ)
                     delIcon:SetPoint("CENTER", delBtn, "CENTER", 0, 0)
@@ -554,10 +554,10 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     delIcon:SetTexture(MEDIA_ICONS .. "cui-close.png")
 
-                    local editBtn = CreateFrame("Button", nil, itemInfo)
+                    local editBtn = CreateFrame("Button", nil, item)
                     editBtn:SetSize(ICON_SZ, ICON_SZ)
                     editBtn:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
-                    editBtn:SetFrameLevel(itemInfo:GetFrameLevel() + 2)
+                    editBtn:SetFrameLevel(item:GetFrameLevel() + 2)
                     local edIcon = editBtn:CreateTexture(nil, "OVERLAY")
                     edIcon:SetSize(ICON_SZ, ICON_SZ)
                     edIcon:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
@@ -573,14 +573,14 @@ initFrame:SetScript("OnEvent", function(self)
                         delBtn:SetAlpha(0.75)
                         editBtn:SetAlpha(0.75)
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        if itemInfo._isSel then
+                        if item._isSel then
                             iHl:SetAlpha(selA)
                         else
                             iHl:SetAlpha(0)
                         end
                     end
-                    itemInfo._rest = Rest
-                    itemInfo._lbl = iLbl
+                    item._rest = Rest
+                    item._lbl = iLbl
 
                     local function InlineBtnEnter(btnSelf)
                         btnSelf:SetAlpha(1)
@@ -590,7 +590,7 @@ initFrame:SetScript("OnEvent", function(self)
                         editBtn:SetAlpha(0.85)
                     end
                     local function InlineBtnLeave(btnSelf)
-                        if itemInfo:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
+                        if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
                             btnSelf:SetAlpha(0.85)
                             return
                         end
@@ -615,20 +615,20 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                     delBtn:SetScript("OnClick", function()
                         dropMenu:Hide()
-                        PromptDeleteBar(itemInfo._bar)
+                        PromptDeleteBar(item._bar)
                     end)
                     editBtn:SetScript("OnClick", function()
                         dropMenu:Hide()
-                        PromptRenameBar(itemInfo._bar)
+                        PromptRenameBar(item._bar)
                     end)
 
-                    itemInfo:SetScript("OnEnter", function()
+                    item:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                         delBtn:SetAlpha(1)
                         editBtn:SetAlpha(1)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
+                    item:SetScript("OnLeave", function()
                         if delBtn:IsMouseOver() then
                             return
                         end
@@ -637,15 +637,15 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                         Rest()
                     end)
-                    itemInfo:SetScript("OnClick", function()
+                    item:SetScript("OnClick", function()
                         dropMenu:Hide()
                         local p = Profile()
                         if p then
-                            p.selectedBarId = itemInfo._bar.id
+                            p.selectedBarId = item._bar.id
                         end
                         HardRefresh()
                     end)
-                    return itemInfo
+                    return item
                 end
 
                 local div = dropMenu:CreateTexture(nil, "ARTWORK")
@@ -706,23 +706,23 @@ initFrame:SetScript("OnEvent", function(self)
             local rowList = dropMenu._rows
             for position = 1, #barList do
                 local b = barList[position]
-                local itemInfo = rowList[position]
-                if not itemInfo then
-                    itemInfo = dropMenu._makeRow()
-                    rowList[position] = itemInfo
+                local item = rowList[position]
+                if not item then
+                    item = dropMenu._makeRow()
+                    rowList[position] = item
                 end
-                itemInfo._bar = b
-                itemInfo._isSel = conf ~= nil and b.id == conf.id
-                itemInfo:ClearAllPoints()
-                itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
-                itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
+                item._bar = b
+                item._isSel = conf ~= nil and b.id == conf.id
+                item:ClearAllPoints()
+                item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
                 local nm = b.name
                 if nm == nil then
                     nm = ""
                 end
-                itemInfo._lbl:SetText(nm)
-                itemInfo._rest()
-                itemInfo:Show()
+                item._lbl:SetText(nm)
+                item._rest()
+                item:Show()
                 mH = mH + ITEM_H
             end
             for position = #barList + 1, #rowList do
@@ -809,11 +809,11 @@ initFrame:SetScript("OnEvent", function(self)
             local gap = 10
             local cw = floor((stripW - gap * 3) / 4)
             local ch = 64
-            local hostRegion = CreateFrame("Frame", nil, heading)
-            Pix.Size(hostRegion, stripW, ch)
-            Pix.Point(hostRegion, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
+            local host = CreateFrame("Frame", nil, heading)
+            Pix.Size(host, stripW, ch)
+            Pix.Point(host, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
             for i = 1, 4 do
-                MakeTemplateCard(hostRegion, (i - 1) * (cw + gap), 0, cw, ch, TEMPLATE_CARDS[i])
+                MakeTemplateCard(host, (i - 1) * (cw + gap), 0, cw, ch, TEMPLATE_CARDS[i])
             end
             fy = fy - ch - 12
         end
@@ -1575,17 +1575,17 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
                 local rowY = -3
                 local function AddRow(textValue, onClick)
-                    local rowFrame = CreateFrame("Button", nil, dropMenu)
-                    rowFrame:SetHeight(ROW_H2)
-                    rowFrame:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, rowY)
-                    rowFrame:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, rowY)
-                    local highlight = rowFrame:CreateTexture(nil, "HIGHLIGHT")
+                    local row = CreateFrame("Button", nil, dropMenu)
+                    row:SetHeight(ROW_H2)
+                    row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, rowY)
+                    row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, rowY)
+                    local highlight = row:CreateTexture(nil, "HIGHLIGHT")
                     highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 0.08)
-                    local labelFS = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.9)
-                    labelFS:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
+                    local labelFS = CludesUI.MakeFont(row, 11, nil, 1, 1, 1, 0.9)
+                    labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
                     labelFS:SetText(textValue)
-                    rowFrame:SetScript("OnClick", function()
+                    row:SetScript("OnClick", function()
                         dropMenu:Hide()
                         onClick()
                     end)
@@ -1742,29 +1742,29 @@ initFrame:SetScript("OnEvent", function(self)
                 dropMenu._rows = {}
                 local mH = 4
                 for _, t in ipairs(mod.OfferedBlockTypes()) do
-                    local itemInfo = CreateFrame("Button", nil, dropMenu)
-                    itemInfo:SetHeight(ITEM_H)
-                    itemInfo:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
-                    itemInfo:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
-                    itemInfo:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local iLbl = CludesUI.MakeFont(itemInfo, 11, nil, tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetPoint("LEFT", itemInfo, "LEFT", 10, 0)
+                    local item = CreateFrame("Button", nil, dropMenu)
+                    item:SetHeight(ITEM_H)
+                    item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local iLbl = CludesUI.MakeFont(item, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetText(L(t.label))
-                    local iHl = itemInfo:CreateTexture(nil, "ARTWORK")
+                    local iHl = item:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     -- item._baseA / item._hoverA: this open's label alphas.
-                    itemInfo:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, itemInfo._hoverA)
+                    item:SetScript("OnEnter", function()
+                        iLbl:SetTextColor(1, 1, 1, item._hoverA)
                         iHl:SetAlpha(hlA)
                     end)
-                    itemInfo:SetScript("OnLeave", function()
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, itemInfo._baseA)
+                    item:SetScript("OnLeave", function()
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, item._baseA)
                         iHl:SetAlpha(0)
                     end)
                     local typeKey = t.key
-                    itemInfo:SetScript("OnClick", function()
+                    item:SetScript("OnClick", function()
                         dropMenu:Hide()
                         local nb = mod.AddBlock(dropMenu._barId, typeKey)
                         HardRefresh()
@@ -1787,8 +1787,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end)
                         end
                     end)
-                    itemInfo._typeKey, itemInfo._lbl, itemInfo._hl = typeKey, iLbl, iHl
-                    dropMenu._rows[#dropMenu._rows + 1] = itemInfo
+                    item._typeKey, item._lbl, item._hl = typeKey, iLbl, iHl
+                    dropMenu._rows[#dropMenu._rows + 1] = item
                     mH = mH + ITEM_H
                 end
                 dropMenu:SetHeight(mH + 4)
@@ -1808,8 +1808,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
             local rowList = dropMenu._rows
             for i = 1, #rowList do
-                local itemInfo = rowList[i]
-                local typeKey = itemInfo._typeKey
+                local item = rowList[i]
+                local typeKey = item._typeKey
                 -- Types already on this bar render dimmed -- still fully clickable
                 -- (duplicates are legal), just an at-a-glance cue for what the bar is
                 -- missing. Re-applied on every open, so this never goes stale.
@@ -1833,9 +1833,9 @@ initFrame:SetScript("OnEvent", function(self)
                     baseA = 0.28
                     hoverA = 0.55
                 end
-                itemInfo._baseA, itemInfo._hoverA = baseA, hoverA
-                itemInfo._lbl:SetTextColor(tDimR, tDimG, tDimB, baseA)
-                itemInfo._hl:SetAlpha(0)
+                item._baseA, item._hoverA = baseA, hoverA
+                item._lbl:SetTextColor(tDimR, tDimG, tDimB, baseA)
+                item._hl:SetAlpha(0)
             end
             dropMenu._barId = conf.id
             dropMenu._anchor = addBtn
@@ -1891,7 +1891,7 @@ initFrame:SetScript("OnEvent", function(self)
         local W = CludesUI.Widgets
         local posY = yOffset
         local _, hgt, heading
-        local rowFrame
+        local row
 
         hostFrame._showRowDivider = true
         hostFrame._edbClickTargets = {}
@@ -2023,25 +2023,18 @@ initFrame:SetScript("OnEvent", function(self)
             local hostH = 40 + ch * 2 + gap + 10
             -- Explicit size + single TOPLEFT anchor (search contract); the
             -- host doubles as a search pseudo-section.
-            local hostRegion = CreateFrame("Frame", nil, hostFrame)
-            Pix.Size(hostRegion, hostW, hostH)
-            Pix.Point(hostRegion, "TOPLEFT", hostFrame, "TOPLEFT", PADC, posY)
-            hostRegion._isSectionHeader = true
-            hostRegion._sectionName = "Create New DataBar"
-            local hint = CludesUI.MakeFont(hostRegion, 13, nil, 1, 1, 1, 0.55)
-            hint:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 4, -8)
+            local host = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(host, hostW, hostH)
+            Pix.Point(host, "TOPLEFT", hostFrame, "TOPLEFT", PADC, posY)
+            host._isSectionHeader = true
+            host._sectionName = "Create New DataBar"
+            local hint = CludesUI.MakeFont(host, 13, nil, 1, 1, 1, 0.55)
+            hint:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
             hint:SetText(L("Create your first DataBar from a starter template, or start empty."))
             for i = 1, 4 do
-                local column = (i - 1) % 2
+                local col = (i - 1) % 2
                 local rowI = floor((i - 1) / 2)
-                MakeTemplateCard(
-                    hostRegion,
-                    column * (cw + gap),
-                    -40 - rowI * (ch + gap),
-                    cw,
-                    ch,
-                    TEMPLATE_CARDS[i]
-                )
+                MakeTemplateCard(host, col * (cw + gap), -40 - rowI * (ch + gap), cw, ch, TEMPLATE_CARDS[i])
             end
             posY = posY - hostH - 10
             return math.abs(posY)
@@ -2918,8 +2911,8 @@ initFrame:SetScript("OnEvent", function(self)
                         tooltip = "Class Colored",
                         hasAlpha = false,
                         getValue = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                            local _, class = UnitClass("player")
+                            local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                             if cc then
                                 return cc.r, cc.g, cc.b
                             end
@@ -3183,26 +3176,26 @@ initFrame:SetScript("OnEvent", function(self)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                local blockData = CreateFrame("Frame", nil, colorSwatch)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, colorSwatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
                         colorSwatch,
                         CludesUI.DisabledTooltip("Enable Block Background")
                     )
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateState()
                     if b.bg then
                         colorSwatch:SetAlpha(1)
-                        blockData:Hide()
+                        block:Hide()
                     else
                         colorSwatch:SetAlpha(0.3)
-                        blockData:Show()
+                        block:Show()
                     end
                 end
                 CludesUI.RegisterWidgetRefresh(function()
@@ -3310,8 +3303,8 @@ initFrame:SetScript("OnEvent", function(self)
                             tooltip = "Class Colored",
                             hasAlpha = false,
                             getValue = function()
-                                local _, classFile = UnitClass("player")
-                                local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                                local _, class = UnitClass("player")
+                                local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                                 if cc then
                                     return cc.r, cc.g, cc.b
                                 end
@@ -4501,14 +4494,14 @@ initFrame:SetScript("OnEvent", function(self)
                 if not rightCfg then
                     rightCfg = { type = "label", text = "" }
                 end
-                rowFrame, hgt = W:DualRow(hostFrame, posY, typeRows[k], rightCfg)
+                row, hgt = W:DualRow(hostFrame, posY, typeRows[k], rightCfg)
                 posY = posY - hgt
                 -- Travel: the first three rows hold the click dropdowns on their left.
                 if travelClickDD and k <= 5 then
-                    travelClickDD[(k + 1) / 2] = rowFrame._leftRegion._control
+                    travelClickDD[(k + 1) / 2] = row._leftRegion._control
                 end
                 if b.type == "supplies" and k == 1 and not CludesUI._prebuilding then
-                    local regionFrame = rowFrame._leftRegion
+                    local regionFrame = row._leftRegion
                     if regionFrame._control then
                         regionFrame._control:Hide()
                     end
@@ -4536,25 +4529,25 @@ initFrame:SetScript("OnEvent", function(self)
                         CludesUI.RegisterWidgetRefresh(refresh)
                     end
                     hostFrame._edbClickTargets["block:" .. blockId .. ":resources"] =
-                        { section = secHdr, target = rowFrame, slotSide = "left" }
+                        { section = secHdr, target = row, slotSide = "left" }
                 end
                 -- Latency: the Show Icon toggle rides this row's right slot and
                 -- carries the inline icon-color swatches built after the loop.
                 if b.type == "ms" and k == 1 then
-                    msIconRow = rowFrame
+                    msIconRow = row
                 end
                 -- Gold: Show Tooltip Data rides the Coin Icons row's right slot.
                 if b.type == "gold" and k == 3 then
-                    goldTipRow = rowFrame
+                    goldTipRow = row
                 end
                 -- Crests: the Crests Shown checklist heads the type rows, so
                 -- its placeholder is this row's LEFT slot.
                 if b.type == "crests" and k == 1 then
-                    crestListRow = rowFrame
+                    crestListRow = row
                 end
                 -- Bags: Low Space Warning heads the second row (left slot).
                 if b.type == "bags" and k == 3 then
-                    bagsLowRow = rowFrame
+                    bagsLowRow = row
                 end
                 -- Deep-link target for an unconfigured currency block: clicking
                 -- its "Select a currency" placeholder on the live bar lands on
@@ -4564,7 +4557,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if b.type == "currency" and k == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":currency"] = {
                         section = secHdr,
-                        target = rowFrame,
+                        target = row,
                         slotSide = "left",
                         -- Pulse until the player actually picks one.
                         holdWhile = function()
@@ -4583,7 +4576,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if b.type == "ldb" and k == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":ldb"] = {
                         section = secHdr,
-                        target = rowFrame,
+                        target = row,
                         slotSide = "left",
                         holdWhile = function()
                             return s.source == nil
@@ -4593,7 +4586,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if b.type == "location" and k == 1 then
                     hostFrame._edbClickTargets["block:" .. blockId .. ":maxwidth"] = {
                         section = secHdr,
-                        target = rowFrame,
+                        target = row,
                         slotSide = "right",
                         holdWhile = function()
                             return _edbWidthPulse[b] == true
@@ -4610,7 +4603,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- untinted default -- no migration and no new default key.
             if msIconRow and not CludesUI._prebuilding then
                 local rgn = msIconRow._rightRegion
-                local anchorFrame = rgn._control
+                local anchor = rgn._control
                 local function IconOn()
                     return s.showIcon == true
                 end
@@ -4644,8 +4637,8 @@ initFrame:SetScript("OnEvent", function(self)
                     {
                         tip = "Class Colored",
                         get = function()
-                            local _, classFile = UnitClass("player")
-                            local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                            local _, class = UnitClass("player")
+                            local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                             if cc then
                                 return cc.r, cc.g, cc.b
                             end
@@ -4715,29 +4708,29 @@ initFrame:SetScript("OnEvent", function(self)
                     colorSwatch:HookScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
-                    Pix.Point(colorSwatch, "RIGHT", anchorFrame, "LEFT", -8, 0)
-                    anchorFrame = colorSwatch
+                    Pix.Point(colorSwatch, "RIGHT", anchor, "LEFT", -8, 0)
+                    anchor = colorSwatch
 
                     -- Blocking overlay while Show Icon is off: the icons are
                     -- not drawn, so their color is not editable.
-                    local blockData = CreateFrame("Frame", nil, colorSwatch)
-                    blockData:SetAllPoints()
-                    blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                    blockData:EnableMouse(true)
-                    blockData:SetScript("OnEnter", function()
+                    local block = CreateFrame("Frame", nil, colorSwatch)
+                    block:SetAllPoints()
+                    block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                    block:EnableMouse(true)
+                    block:SetScript("OnEnter", function()
                         CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Icon"))
                     end)
-                    blockData:SetScript("OnLeave", function()
+                    block:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
 
                     local function UpdateState()
                         if not IconOn() then
                             colorSwatch:SetAlpha(0.3)
-                            blockData:Show()
+                            block:Show()
                         else
                             colorSwatch:SetAlpha(sp.on() and 1 or 0.3)
-                            blockData:Hide()
+                            block:Hide()
                         end
                     end
                     CludesUI.RegisterWidgetRefresh(function()
@@ -4746,7 +4739,7 @@ initFrame:SetScript("OnEvent", function(self)
                     end)
                     UpdateState()
                 end
-                rgn._lastInline = anchorFrame
+                rgn._lastInline = anchor
             end
 
             -- Bags low space color: inline on the threshold slider, disabled
@@ -5022,23 +5015,23 @@ initFrame:SetScript("OnEvent", function(self)
                     )
                     Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
                     rgn._lastInline = colorSwatch
-                    local blockData = CreateFrame("Frame", nil, colorSwatch)
-                    blockData:SetAllPoints()
-                    blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                    blockData:EnableMouse(true)
-                    blockData:SetScript("OnEnter", function()
+                    local block = CreateFrame("Frame", nil, colorSwatch)
+                    block:SetAllPoints()
+                    block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                    block:EnableMouse(true)
+                    block:SetScript("OnEnter", function()
                         CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Guild Notes"))
                     end)
-                    blockData:SetScript("OnLeave", function()
+                    block:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
                     local function UpdateState()
                         if s.showGuildNotes == true then
                             colorSwatch:SetAlpha(1)
-                            blockData:Hide()
+                            block:Hide()
                         else
                             colorSwatch:SetAlpha(0.3)
-                            blockData:Show()
+                            block:Show()
                         end
                     end
                     CludesUI.RegisterWidgetRefresh(function()
@@ -5173,13 +5166,13 @@ initFrame:SetScript("OnEvent", function(self)
     --  finished pass here, and the strip re-solves while it shows that bar.
     ---------------------------------------------------------------------------
     function mod.OnBarLaidOut(barId)
-        local hostRegion = _edbPreviewHost
-        if barId ~= _edbStripBarId or not (_edbStripRelayout and hostRegion and hostRegion:IsVisible()) then
+        local host = _edbPreviewHost
+        if barId ~= _edbStripBarId or not (_edbStripRelayout and host and host:IsVisible()) then
             return
         end
         -- A reorder drag (the strip's only OnUpdate) owns the segment
         -- positions until it ends.
-        if hostRegion:GetScript("OnUpdate") then
+        if host:GetScript("OnUpdate") then
             return
         end
         _edbStripRelayout()

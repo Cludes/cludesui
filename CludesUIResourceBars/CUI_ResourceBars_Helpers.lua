@@ -12,7 +12,7 @@ local ADDON_NAME, mod = ...
 -- the public slot.
 local POOL = CludesUI._Pool
 
-local function SavedDB()
+local function DB()
     local saved = _G._CURB_AceDB
     return saved and saved.profile
 end
@@ -149,7 +149,7 @@ mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
         olbl:SetTextColor(1, 1, 1, 0.7)
     end)
     shade:SetScript("OnClick", function()
-        local p = SavedDB()
+        local p = DB()
         if not p then
             return
         end

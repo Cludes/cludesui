@@ -70,7 +70,7 @@ local liveFrame = CreateFrame("Frame", "CUIQuickdrawFrame", UIParent)
 liveFrame:Hide()
 
 -- Upvalues
-local min, upper = math.min, math.max
+local min, max = math.min, math.max
 local pi = math.pi
 local tonumber, type, select = tonumber, type, select
 local tinsert, tremove = table.insert, table.remove
@@ -391,8 +391,8 @@ mod.DB_DEFAULTS = DB_DEFAULTS
 -- The name a palette carries until the user types one of their own. It is also
 -- what an emptied name box reverts to, and the only name the legacy rename
 -- below may replace, so all three read it from here.
-local function AutoPaletteName(slotPos)
-    return "Action Menu " .. slotPos
+local function AutoPaletteName(index)
+    return "Action Menu " .. index
 end
 mod.AutoPaletteName = AutoPaletteName
 
@@ -436,17 +436,17 @@ local function MigrateNames(p)
         -- was created, which then went stale the moment that palette was
         -- renamed. SlotDisplay reads the palette's own name whenever the entry
         -- carries none, so the copy is simply dropped.
-        for _, slotIndex in pairs(palette.slots or {}) do
-            if slotIndex.kind == "palette" then
-                slotIndex.name = nil
+        for _, slot in pairs(palette.slots or {}) do
+            if slot.kind == "palette" then
+                slot.name = nil
             end
             -- Toys dragged in from the Collections/Toy Box frame before
             -- SlotFromCursor reclassified them landed here as kind="item",
             -- which runs SlotUsability through C_Item.IsUsableItem -- always
             -- "unusable" for a toy -- instead of the toy path, which leaves
             -- them untinted. Same fix, applied to what was already saved.
-            if slotIndex.kind == "item" and type(slotIndex.id) == "number" and PlayerHasToy(slotIndex.id) then
-                slotIndex.kind = "toy"
+            if slot.kind == "item" and type(slot.id) == "number" and PlayerHasToy(slot.id) then
+                slot.kind = "toy"
             end
         end
     end
@@ -465,7 +465,7 @@ local saved
 -- Weak keys: the memo must not keep a profile table alive after the profile
 -- itself is deleted.
 local migrated = setmetatable({}, { __mode = "k" })
-local function Prm()
+local function P()
     local p = saved and saved.profile
     if p and not migrated[p] then
         migrated[p] = true
@@ -476,7 +476,7 @@ end
 -- Exported so the options page reads the profile through the same accessor
 -- rather than reaching into db.profile itself, which would skip the migration
 -- above on whichever side happened to touch a switched-in profile first.
-mod.Profile = Prm
+mod.Profile = P
 
 -- Does a blob hold anything a user actually arranged? Only the profile that is
 -- ALREADY LIVE needs asking: the login pass runs before the defaults are merged
@@ -552,23 +552,23 @@ end
 
 -- Palettes past the first are created on demand: the defaults table only seeds
 -- palette 1, so DeepMergeDefaults never has to know how many the user wants.
-local function EnsurePalette(slotPos)
-    local p = Prm()
+local function EnsurePalette(index)
+    local p = P()
     -- nil is an answer, not an error: ChildIndex hands one back for a
     -- nested-palette slot whose palette number is missing or out of range, and
     -- its callers pass it straight through on their way to the question-mark
     -- fallback. Comparing it would take the paint of the whole containing
     -- palette down with it.
-    if not p or not slotPos or slotPos < 1 or slotPos > MAX_PALETTES then
+    if not p or not index or index < 1 or index > MAX_PALETTES then
         return nil
     end
     if not p.palettes then
         p.palettes = {}
     end
-    local palette = p.palettes[slotPos]
+    local palette = p.palettes[index]
     if not palette then
-        palette = { name = AutoPaletteName(slotPos), slots = {} }
-        p.palettes[slotPos] = palette
+        palette = { name = AutoPaletteName(index), slots = {} }
+        p.palettes[index] = palette
     end
     if type(palette.slots) ~= "table" then
         palette.slots = {}
@@ -583,10 +583,10 @@ local function EnsurePalette(slotPos)
     -- (which combat defers).
     local dense, num = {}, 0
     for i = 1, MAX_SLOTS do
-        local slotIndex = palette.slots[i]
-        if slotIndex and slotIndex.kind then
+        local slot = palette.slots[i]
+        if slot and slot.kind then
             num = num + 1
-            dense[num] = slotIndex
+            dense[num] = slot
         end
     end
     palette.slots = dense
@@ -601,12 +601,12 @@ mod.EnsurePalette = EnsurePalette
 -- once per cursor movement. A palette that has never been ensured has no
 -- entries to hand back anyway, and every write site still goes through
 -- EnsurePalette, so what this reads is always compact by the time it exists.
-local function ReadPalette(slotPos)
-    local p = Prm()
-    if not p or not slotPos or slotPos < 1 or slotPos > MAX_PALETTES then
+local function ReadPalette(index)
+    local p = P()
+    if not p or not index or index < 1 or index > MAX_PALETTES then
         return nil
     end
-    local palette = p.palettes and p.palettes[slotPos]
+    local palette = p.palettes and p.palettes[index]
     if type(palette) ~= "table" then
         return nil
     end
@@ -695,7 +695,7 @@ mod.APPEARANCE_KEYS = APPEARANCE_KEYS
 local appearanceViews = {}
 
 local function PA(paletteIndex)
-    local p = Prm()
+    local p = P()
     if not p then
         return nil
     end
@@ -721,7 +721,7 @@ local function PA(paletteIndex)
                 -- P() rather than a captured profile: a palette table outlives
                 -- nothing, but reading through the accessor keeps the migration
                 -- on first touch running for whichever profile is current.
-                local prof = Prm()
+                local prof = P()
                 return prof and prof[key]
             end,
             -- Nothing writes through this, and a write that slipped in would
@@ -738,22 +738,22 @@ mod.PaletteProfile = PA
 
 -- Ordered mutations. All three keep the array dense so #slots stays the
 -- authoritative entry count.
-function mod.AddSlot(palette, slotIndex)
-    if not palette or not slotIndex then
+function mod.AddSlot(palette, slot)
+    if not palette or not slot then
         return nil
     end
     if #palette.slots >= MAX_SLOTS then
         return nil
     end
-    palette.slots[#palette.slots + 1] = slotIndex
+    palette.slots[#palette.slots + 1] = slot
     return #palette.slots
 end
 
-function mod.RemoveSlot(palette, slotPos)
-    if not palette or not palette.slots[slotPos] then
+function mod.RemoveSlot(palette, index)
+    if not palette or not palette.slots[index] then
         return false
     end
-    tremove(palette.slots, slotPos)
+    tremove(palette.slots, index)
     return true
 end
 
@@ -776,8 +776,8 @@ end
 -- over -- a palette can be opened by a key, nested inside another palette, or
 -- both.
 local function PaletteCount()
-    local p = Prm()
-    return min(MAX_PALETTES, upper(1, (p and p.paletteCount) or 1))
+    local p = P()
+    return min(MAX_PALETTES, max(1, (p and p.paletteCount) or 1))
 end
 mod.PaletteCount = PaletteCount
 
@@ -803,11 +803,11 @@ mod.PaletteCount = PaletteCount
 -------------------------------------------------------------------------------
 
 -- The palette a slot opens, or nil for a slot that fires an action.
-local function ChildIndex(slotIndex)
-    if not slotIndex or slotIndex.kind ~= "palette" then
+local function ChildIndex(slot)
+    if not slot or slot.kind ~= "palette" then
         return nil
     end
-    local position = tonumber(slotIndex.palette)
+    local position = tonumber(slot.palette)
     if not position or position < 1 or position > MAX_PALETTES then
         return nil
     end
@@ -908,9 +908,9 @@ end
 --  page makes a share only between palettes that can never load together.
 -------------------------------------------------------------------------------
 -- A palette's spec set, or nil for every spec.
-function mod.PaletteSpecs(slotPos)
-    local p = Prm()
-    local palette = p and slotPos and p.palettes and p.palettes[slotPos]
+function mod.PaletteSpecs(index)
+    local p = P()
+    local palette = p and index and p.palettes and p.palettes[index]
     local specs = type(palette) == "table" and palette.specs
     if type(specs) ~= "table" or next(specs) == nil then
         return nil
@@ -918,8 +918,8 @@ function mod.PaletteSpecs(slotPos)
     return specs
 end
 
-function mod.PaletteActive(slotPos)
-    local specs = mod.PaletteSpecs(slotPos)
+function mod.PaletteActive(index)
+    local specs = mod.PaletteSpecs(index)
     if not specs then
         return true
     end
@@ -962,12 +962,12 @@ end
 
 -- The palette whose key palette `index` shares, or nil for its own. A share
 -- always names the key's holder, never another palette sharing it.
-function mod.ShareOwner(slotPos)
-    local p = Prm()
+function mod.ShareOwner(index)
+    local p = P()
     local palettes = p and p.palettes
-    local palette = palettes and palettes[slotPos]
+    local palette = palettes and palettes[index]
     local ownerFrame = type(palette) == "table" and tonumber(palette.keyShare)
-    if not ownerFrame or ownerFrame == slotPos or ownerFrame < 1 or ownerFrame > PaletteCount() then
+    if not ownerFrame or ownerFrame == index or ownerFrame < 1 or ownerFrame > PaletteCount() then
         return nil
     end
     local held = palettes[ownerFrame]
@@ -980,7 +980,7 @@ end
 -- p is the palette view the caller draws from (self:P()) -- the color keys
 -- are per-menu appearance. Falls back to the profile for a caller with none.
 local function SelectColor(p)
-    p = p or Prm()
+    p = p or P()
     if p and p.useClassColor then
         local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
         if c then
@@ -1030,7 +1030,7 @@ CludesUI.NewInternals(mod, "_qdInternals", {
     MigrateActiveProfile = MigrateActiveProfile,
     MigrateLegacyProfile = MigrateLegacyProfile,
     NEST_BAND_DEFAULT = NEST_BAND_DEFAULT,
-    P = Prm,
+    P = P,
     PA = PA,
     PaletteCount = PaletteCount,
     QUESTION_MARK = QUESTION_MARK,

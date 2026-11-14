@@ -236,7 +236,7 @@ local function TileNameplates(hostFrame, posY, W, tile)
     local DEF = mod.defaults or {}
     -- applyFn: named ns refresher when the module publishes one, otherwise the
     -- module-wide reapply (same repaint the module's own castbar size rows use).
-    local function dim(labelText, key, minV, maxV, spec_def, applyName, legacyKey)
+    local function size(labelText, key, minV, maxV, def, applyName, legacyKey)
         return {
             type = "slider",
             text = labelText,
@@ -249,7 +249,7 @@ local function TileNameplates(hostFrame, posY, W, tile)
                 if val == nil and legacyKey and p then
                     val = p[legacyKey]
                 end
-                return val or DEF[key] or spec_def
+                return val or DEF[key] or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -268,52 +268,59 @@ local function TileNameplates(hostFrame, posY, W, tile)
         hostFrame,
         posY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        dim("Friendly Name Size (Bar Mode)", "friendlyNameTextSize", 6, 30, 12, "RefreshFriendlyNameTextSize")
+        size(
+            "Friendly Name Size (Bar Mode)",
+            "friendlyNameTextSize",
+            6,
+            30,
+            12,
+            "RefreshFriendlyNameTextSize"
+        )
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
-        dim("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
+        size("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
+        size("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Top Text Size", "textSlotTopSize", 6, 30, 10),
-        dim("Center Text Size", "textSlotCenterSize", 6, 30, 10)
+        size("Top Text Size", "textSlotTopSize", 6, 30, 10),
+        size("Center Text Size", "textSlotCenterSize", 6, 30, 10)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Left Text Size", "textSlotLeftSize", 6, 30, 10),
-        dim("Right Text Size", "textSlotRightSize", 6, 30, 10)
+        size("Left Text Size", "textSlotLeftSize", 6, 30, 10),
+        size("Right Text Size", "textSlotRightSize", 6, 30, 10)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
-        dim("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
+        size("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
+        size("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
-        dim("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
+        size("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
+        size("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Cast Name Size", "castNameSize", 6, 20, 10),
-        dim("Cast Timer Size", "castTimerSize", 6, 20, 10)
+        size("Cast Name Size", "castNameSize", 6, 20, 10),
+        size("Cast Timer Size", "castTimerSize", 6, 20, 10)
     )
     posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, dim("Cast Target Size", "castTargetSize", 6, 20, 10), {
+    _, hgt = W:DualRow(hostFrame, posY, size("Cast Target Size", "castTargetSize", 6, 20, 10), {
         type = "slider",
         text = "Aura Stacks Size",
         min = 6,
@@ -341,22 +348,22 @@ local function TileNameplates(hostFrame, posY, W, tile)
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        dim("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
+        size("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
+        size("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        dim("Focus Letter Size", "focusLetterSize", 6, 40, 18)
+        size("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
+        size("Focus Letter Size", "focusLetterSize", 6, 40, 18)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
-        dim("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
+        size("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
+        size("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
     )
     posY = posY - hgt
     return posY
@@ -419,7 +426,7 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             mod.ReloadPartyFrames()
         end
     end
-    local function dim(labelText, key, minV, maxV, spec_def)
+    local function size(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -428,7 +435,7 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local p = saved()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -444,28 +451,28 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
         hostFrame,
         posY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        dim("Name Size", "nameSize", 6, 26, 10)
+        size("Name Size", "nameSize", 6, 26, 10)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Health Text Size", "healthTextSize", 6, 26, 9),
-        dim("Power Text Size", "powerTextSize", 6, 26, 8)
+        size("Health Text Size", "healthTextSize", 6, 26, 9),
+        size("Power Text Size", "powerTextSize", 6, 26, 8)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
-        dim("Status Text Size", "statusTextSize", 6, 30, 14)
+        size("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
+        size("Status Text Size", "statusTextSize", 6, 30, 14)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Group Number Size", "groupNumberSize", 6, 30, 10),
-        dim("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
+        size("Group Number Size", "groupNumberSize", 6, 30, 10),
+        size("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(hostFrame, posY, {
@@ -494,7 +501,7 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
                 RFApply()
             end
         end,
-    }, dim("Level Size", "levelTextSize", 6, 26, 10))
+    }, size("Level Size", "levelTextSize", 6, 26, 10))
     posY = posY - hgt
     posY = LinkRow(hostFrame, posY, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
     posY = LinkRow(hostFrame, posY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
@@ -554,7 +561,7 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             _G._CURB_Apply()
         end
     end
-    local function dim(labelText, tableKey, key, minV, maxV, spec_def)
+    local function size(labelText, tableKey, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -564,7 +571,7 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             getValue = function()
                 local p = saved()
                 local t = p and p[tableKey]
-                return (t and t[key]) or spec_def
+                return (t and t[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -581,24 +588,24 @@ local function TileResourceBars(hostFrame, posY, W, tile)
         hostFrame,
         posY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        dim("Health Text Size", "health", "textSize", 8, 24, 11)
+        size("Health Text Size", "health", "textSize", 8, 24, 11)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Power Text Size", "primary", "textSize", 8, 24, 11),
-        dim("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
+        size("Power Text Size", "primary", "textSize", 8, 24, 11),
+        size("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
-        dim("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
+        size("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
+        size("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
     )
     posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, dim("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
+    _, hgt = W:DualRow(hostFrame, posY, size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
     posY = posY - hgt
     return posY
 end
@@ -760,7 +767,7 @@ local function TileQoL(hostFrame, posY, W, tile)
         )
     end
     -- Flat CludesUIDB keys with a parent-published apply fn.
-    local function gsize(labelText, key, minV, maxV, spec_def, applyName)
+    local function gsize(labelText, key, minV, maxV, def, applyName)
         return {
             type = "slider",
             text = labelText,
@@ -768,7 +775,7 @@ local function TileQoL(hostFrame, posY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                return (CludesUIDB and CludesUIDB[key]) or spec_def
+                return (CludesUIDB and CludesUIDB[key]) or def
             end,
             setValue = function(val)
                 if not CludesUIDB then
@@ -786,7 +793,7 @@ local function TileQoL(hostFrame, posY, W, tile)
         local d = _G._CUI_BattleRes_DB and _G._CUI_BattleRes_DB()
         return d and d.profile and d.profile.battleRes
     end
-    local function brSize(labelText, key, minV, maxV, spec_def)
+    local function brSize(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -795,7 +802,7 @@ local function TileQoL(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local p = brDB()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = brDB()
@@ -815,7 +822,7 @@ local function TileQoL(hostFrame, posY, W, tile)
     end
     -- Bloodlust writes its own key but reads through the Battle Res value,
     -- exactly like the module's own sliders.
-    local function blSize(labelText, key, minV, maxV, spec_def)
+    local function blSize(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -824,7 +831,7 @@ local function TileQoL(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local bl, br = blDB(), brDB()
-                return (bl and bl[key]) or (br and br[key]) or spec_def
+                return (bl and bl[key]) or (br and br[key]) or def
             end,
             setValue = function(val)
                 local bl = blDB()
@@ -1227,7 +1234,7 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
             _G._CUMT_ApplyTimer()
         end
     end
-    local function dim(labelText, key, minV, maxV, spec_def, fallbackKey)
+    local function size(labelText, key, minV, maxV, def, fallbackKey)
         return {
             type = "slider",
             text = labelText,
@@ -1237,9 +1244,9 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
             getValue = function()
                 local p = saved()
                 if not p then
-                    return spec_def
+                    return def
                 end
-                return p[key] or (fallbackKey and p[fallbackKey]) or spec_def
+                return p[key] or (fallbackKey and p[fallbackKey]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -1251,7 +1258,7 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
             end,
         }
     end
-    local function subSize(labelText, getT, minV, maxV, spec_def, key, applyName)
+    local function subSize(labelText, getT, minV, maxV, def, key, applyName)
         return {
             type = "slider",
             text = labelText,
@@ -1260,7 +1267,7 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local t = getT()
-                return (t and t[key]) or spec_def
+                return (t and t[key]) or def
             end,
             setValue = function(val)
                 local t = getT()
@@ -1317,29 +1324,29 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Title Size", "titleSize", 8, 24, 16),
-        dim("Affix Size", "affixSize", 6, 20, 12)
+        size("Title Size", "titleSize", 8, 24, 16),
+        size("Affix Size", "affixSize", 6, 20, 12)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Timer Size", "timerTextSize", 10, 32, 20),
-        dim("Objectives Size", "objectivesSize", 8, 20, 12)
+        size("Timer Size", "timerTextSize", 10, 32, 20),
+        size("Objectives Size", "objectivesSize", 8, 20, 12)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
-        dim("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
+        size("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
+        size("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
-        dim("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
+        size("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
+        size("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
@@ -1523,7 +1530,7 @@ local function TileBags(hostFrame, posY, W, tile)
             _G.CUI_BankFrame:RefreshTextSizes()
         end
     end
-    local function dim(labelText, key, minV, maxV, spec_def, applyFn)
+    local function size(labelText, key, minV, maxV, def, applyFn)
         return {
             type = "slider",
             text = labelText,
@@ -1532,7 +1539,7 @@ local function TileBags(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local p = saved()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -1548,7 +1555,7 @@ local function TileBags(hostFrame, posY, W, tile)
         hostFrame,
         posY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        dim("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
+        size("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                 _G.CUI_Bags:RefreshInventory()
             end
@@ -1558,21 +1565,21 @@ local function TileBags(hostFrame, posY, W, tile)
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
-        dim("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
+        size("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
+        size("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
-        dim("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
+        size("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
+        size("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("List Text Size", "bagListFontSize", 8, 16, 11, function()
+        size("List Text Size", "bagListFontSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                 _G.CUI_Bags:RefreshInventory()
             end
@@ -1601,7 +1608,7 @@ local function TileMinimap(hostFrame, posY, W, tile)
     local function saved()
         return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap
     end
-    local function dim(labelText, key, minV, maxV, spec_def)
+    local function size(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -1610,7 +1617,7 @@ local function TileMinimap(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local p = saved()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -1626,7 +1633,7 @@ local function TileMinimap(hostFrame, posY, W, tile)
     end
     -- Scale rows apply exactly like the module's own cogs: SetScale on the
     -- text block's host frame, no full minimap reapply.
-    local function scale(labelText, key, spec_def, frameName)
+    local function scale(labelText, key, def, frameName)
         return {
             type = "slider",
             text = labelText,
@@ -1635,7 +1642,7 @@ local function TileMinimap(hostFrame, posY, W, tile)
             step = 0.01,
             getValue = function()
                 local p = saved()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -1654,13 +1661,13 @@ local function TileMinimap(hostFrame, posY, W, tile)
         hostFrame,
         posY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        dim("FPS Text Size", "fpsTextSize", 8, 30, 12)
+        size("FPS Text Size", "fpsTextSize", 8, 30, 12)
     )
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Difficulty Text Size", "diffTextSize", 8, 24, 12),
+        size("Difficulty Text Size", "diffTextSize", 8, 24, 12),
         scale("Clock Scale", "clockScale", 1.15, "_CUBS_ClockBg")
     )
     posY = posY - hgt
@@ -1722,7 +1729,7 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
             EQT.RefreshStateDriver()
         end
     end
-    local function dim(labelText, key, spec_def)
+    local function size(labelText, key, def)
         return {
             type = "slider",
             text = labelText,
@@ -1731,7 +1738,7 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
             step = 1,
             getValue = function()
                 local p = saved()
-                return (p and p[key]) or spec_def
+                return (p and p[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
@@ -1773,20 +1780,20 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
     _, hgt = W:DualRow(
         hostFrame,
         posY,
-        dim("Header Font Size", "headerFontSize", 13),
-        dim("Title Font Size", "titleFontSize", 12)
+        size("Header Font Size", "headerFontSize", 13),
+        size("Title Font Size", "titleFontSize", 12)
     )
     posY = posY - hgt
     if mod.UseCustomTracker and mod.UseCustomTracker() then
         _, hgt = W:DualRow(
             hostFrame,
             posY,
-            dim("Objective Font Size", "objectiveFontSize", 10),
-            dim("Zone Header Font Size", "customZoneFontSize", 13)
+            size("Objective Font Size", "objectiveFontSize", 10),
+            size("Zone Header Font Size", "customZoneFontSize", 13)
         )
         posY = posY - hgt
     else
-        _, hgt = W:DualRow(hostFrame, posY, dim("Objective Font Size", "objectiveFontSize", 10), BLANK())
+        _, hgt = W:DualRow(hostFrame, posY, size("Objective Font Size", "objectiveFontSize", 10), BLANK())
         posY = posY - hgt
     end
     return posY
@@ -1984,14 +1991,14 @@ local function BuildTileList()
     local tiles = {}
     local roster = CludesUI.ADDON_ROSTER or {}
     for _, record in ipairs(roster) do
-        local spec_def = not record.comingSoon and TILE_BUILDERS[record.folder]
-        if spec_def then
+        local def = not record.comingSoon and TILE_BUILDERS[record.folder]
+        if def then
             tiles[#tiles + 1] = {
                 key = record.folder,
                 folder = record.folder,
                 display = record.display,
-                desc = spec_def[2],
-                buildContent = spec_def[1],
+                desc = def[2],
+                buildContent = def[1],
                 hasFontDD = true,
             }
         end
@@ -2019,10 +2026,10 @@ local function BuildFontCard(hostFrame, posY, W, tile)
         -- card shows the active font at a glance.
         glyph = function(heading, enabled)
             local Pix = CludesUI.PanelPP
-            local glyph = CreateFrame("Frame", nil, heading)
-            Pix.Size(glyph, 26, 20)
-            Pix.Point(glyph, "LEFT", heading, "LEFT", 14, 0)
-            local glyphText = glyph:CreateFontString(nil, "OVERLAY")
+            local icon = CreateFrame("Frame", nil, heading)
+            Pix.Size(icon, 26, 20)
+            Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
+            local glyphText = icon:CreateFontString(nil, "OVERLAY")
             glyphText:SetPoint("CENTER")
             local addonKey = tile.folder
                 and CludesUI._folderToAddonKey

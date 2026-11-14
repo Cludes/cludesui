@@ -6,8 +6,8 @@ if not CludesUI.IS_FOREVER then
 end
 -- Carried class resources on WoW Forever. Banks and crafting materials are excluded.
 local ADDON_NAME, mod = ...
-local Keys = mod.BlockKit
-local upper, floor = math.max, math.floor
+local K = mod.BlockKit
+local max, floor = math.max, math.floor
 local QUESTION_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
 -- Spell reagents span several item classes; projectile/thrown IDs are discovered.
@@ -66,14 +66,14 @@ local RANGED_CLASS = { HUNTER = true, ROGUE = true, WARRIOR = true }
 
 -- Ammo and thrown come first for ranged classes. Spell requirements are
 -- normalised to the ranks' {itemID, spellID} shape.
-local function BuildResources(classFile)
+local function BuildResources(class)
     local resources, byID = {}, {}
-    if RANGED_CLASS[classFile] then
+    if RANGED_CLASS[class] then
         resources[1] = { key = "ammo", label = "Ammo", fallback = "Interface\\Icons\\INV_Ammo_Arrow_02" }
         resources[2] =
             { key = "thrown", label = "Thrown", fallback = "Interface\\Icons\\INV_ThrowingKnife_02" }
     end
-    for _, specInfo in ipairs(CLASS_ITEMS[classFile] or {}) do
+    for _, specInfo in ipairs(CLASS_ITEMS[class] or {}) do
         local ident = specInfo[1]
         local resource = {
             key = ident,
@@ -104,35 +104,35 @@ function mod.ClassResourceShown(prefs, key)
 end
 
 function mod.ClassResourceChoices()
-    local _, classFile = UnitClass("player")
-    local choices = BuildResources(classFile)
+    local _, class = UnitClass("player")
+    local choices = BuildResources(class)
     for _, choice in ipairs(choices) do
         choice.label = choice.id and C_Item.GetItemNameByID(choice.id) or choice.label
     end
     return choices
 end
 
-mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
-    instance.key = Keys.InstKey(barCtx, blockCfg)
+mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    instance.key = K.InstKey(barCtx, blockCfg)
     instance.events = { "PLAYER_ENTERING_WORLD", "BAG_UPDATE_DELAYED", "GET_ITEM_INFO_RECEIVED" }
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     -- Equipped ammo and thrown weapons change outside the bags. Ammo itself
     -- lives in the bags (BAG_UPDATE_DELAYED); UNIT_INVENTORY_CHANGED only
     -- matters for a stacked thrown weapon (see the handler).
-    if RANGED_CLASS[classFile] then
+    if RANGED_CLASS[class] then
         instance.events[#instance.events + 1] = "UNIT_INVENTORY_CHANGED"
         instance.events[#instance.events + 1] = "PLAYER_EQUIPMENT_CHANGED"
         instance.events[#instance.events + 1] = "UPDATE_INVENTORY_DURABILITY"
     end
-    if classFile == "ROGUE" then
+    if class == "ROGUE" then
         instance.events[#instance.events + 1] = "SPELLS_CHANGED"
         instance.events[#instance.events + 1] = "PLAYER_LEVEL_UP"
         instance.events[#instance.events + 1] = "SKILL_LINES_CHANGED"
     end
-    local resources, byID = BuildResources(classFile)
+    local resources, byID = BuildResources(class)
     local itemCounts, itemOrder, pending, itemUses = {}, {}, {}, {}
-    local rangedClass = RANGED_CLASS[classFile]
+    local rangedClass = RANGED_CLASS[class]
     local ammoSlot = rangedClass and GetInventorySlotInfo("AmmoSlot")
     local rangedSlot = rangedClass and GetInventorySlotInfo("RangedSlot")
     local ammo, thrown, rangedCount
@@ -351,14 +351,14 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
 
     local function Draw(resource)
         used = used + 1
-        local rowFrame = rowList[used]
-        if not rowFrame then
-            rowFrame = {
+        local row = rowList[used]
+        if not row then
+            row = {
                 icon = btnFrame:CreateTexture(nil, "OVERLAY"),
                 text = btnFrame:CreateFontString(nil, "OVERLAY"),
             }
-            rowList[used] = rowFrame
-            Keys.AttachTextOffset(instance, rowFrame.text)
+            rowList[used] = row
+            K.AttachTextOffset(instance, row.text)
         end
         local isEmpty = resource == empty
         local value
@@ -372,45 +372,45 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
                 value = Name(resource) .. ": " .. value
             end
         end
-        mod.SetFont(rowFrame.text, fontSize, barCtx.cfg)
-        rowFrame.text:SetText(value)
-        rowFrame.alpha = isEmpty and 0.5 or 1
-        rowFrame.text:SetTextColor(tr, tg, tb, rowFrame.alpha)
-        rowFrame.text:ClearAllPoints()
-        rowFrame.text:Show()
+        mod.SetFont(row.text, fontSize, barCtx.cfg)
+        row.text:SetText(value)
+        row.alpha = isEmpty and 0.5 or 1
+        row.text:SetTextColor(tr, tg, tb, row.alpha)
+        row.text:ClearAllPoints()
+        row.text:Show()
         local ident = resource.id or resource.firstID
-        rowFrame.icon:SetTexture(
+        row.icon:SetTexture(
             resource.icon or (ident and C_Item.GetItemIconByID(ident)) or resource.fallback or QUESTION_ICON
         )
-        Keys.CropStockIcon(rowFrame.icon)
-        rowFrame.icon:SetVertexColor(ir, ig, ib, 1)
-        rowFrame.icon:ClearAllPoints()
+        K.CropStockIcon(row.icon)
+        row.icon:SetVertexColor(ir, ig, ib, 1)
+        row.icon:ClearAllPoints()
         local iconShown = iconSize > 0 and not isEmpty
         if iconShown then
-            rowFrame.icon:SetSize(iconSize, iconSize)
-            rowFrame.icon:Show()
+            row.icon:SetSize(iconSize, iconSize)
+            row.icon:Show()
         else
-            rowFrame.icon:Hide()
+            row.icon:Hide()
         end
         if vertical then
-            mod.SetWrappedText(rowFrame.text, upper(24, width - 8), "CENTER")
+            mod.SetWrappedText(row.text, max(24, width - 8), "CENTER")
             if iconShown then
-                rowFrame.icon:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
+                row.icon:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
                 posY = posY + iconSize + 2
             end
-            rowFrame.text:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
-            posY = posY + mod.SnapToPixelGrid(rowFrame.text:GetStringHeight()) + 4
+            row.text:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
+            posY = posY + mod.SnapToPixelGrid(row.text:GetStringHeight()) + 4
         else
-            mod.ResetInlineText(rowFrame.text, "LEFT")
+            mod.ResetInlineText(row.text, "LEFT")
             if used > 1 then
                 posX = posX + 12
             end
             if iconShown then
-                rowFrame.icon:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-                posX = posX + iconSize + Keys.ICON_GAP
+                row.icon:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
+                posX = posX + iconSize + K.ICON_GAP
             end
-            rowFrame.text:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-            posX = posX + mod.SnapToPixelGrid(rowFrame.text:GetStringWidth())
+            row.text:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
+            posX = posX + mod.SnapToPixelGrid(row.text:GetStringWidth())
         end
     end
 
@@ -419,17 +419,17 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
             Sample()
         end
         s = blockCfg.settings or {}
-        fontSize = upper(9, floor(Keys.CONTENT_BASE * 0.4333 + 0.5))
+        fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         iconSize = s.showIcon ~= false and fontSize + 2 or 0
         vertical = barCtx.IsVertical()
         local barH = barCtx.GetThickness()
-        width = vertical and Keys.VSlotW(instance) or 0
+        width = vertical and K.VSlotW(instance) or 0
         posX, posY, used = 0, 4, 0
-        tr, tg, tb = Keys.BlockColorOf(blockCfg)
+        tr, tg, tb = K.BlockColorOf(blockCfg)
         if hovered then
             tr, tg, tb = mod.GetAccent()
         end
-        ir, ig, ib = Keys.IconColorOf(blockCfg)
+        ir, ig, ib = K.IconColorOf(blockCfg)
         for _, resource in ipairs(resources) do
             if
                 not resource.tooltipOnly
@@ -449,11 +449,11 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
             rowList[idx].text:Hide()
         end
         if vertical then
-            contentFrame:SetSize(width, upper(barH, posY))
+            contentFrame:SetSize(width, max(barH, posY))
         else
-            contentFrame:SetSize(upper(10, posX + 4), barH)
+            contentFrame:SetSize(max(10, posX + 4), barH)
         end
-        Keys.MaybeRelayout(instance)
+        K.MaybeRelayout(instance)
         if hovered then
             ShowTooltip()
         end
@@ -465,7 +465,7 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
         if hovered then
             r, g, b = mod.GetAccent()
         else
-            r, g, b = Keys.BlockColorOf(blockCfg)
+            r, g, b = K.BlockColorOf(blockCfg)
         end
         for idx = 1, used or 0 do
             rowList[idx].text:SetTextColor(r, g, b, rowList[idx].alpha)
@@ -501,7 +501,7 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
             mod.OpenBlockSettings(barCtx.id, blockCfg.id, "resources")
         end
     end)
-    instance.eventFrame = Keys.MakeEventFrame(instance, function(self, evt, arg, success)
+    instance.eventFrame = K.MakeEventFrame(instance, function(self, evt, arg, success)
         -- Every shot fires this; rescan only when the equipped ranged stack changed.
         if
             evt == "UNIT_INVENTORY_CHANGED"
@@ -528,19 +528,19 @@ mod.BlockFactories.supplies = function(blockCfg, slotIndex, contentFrame, barCtx
     function instance:Enable()
         dirty = true
         contentFrame:Show()
-        Keys.RegisterInstEvents(self)
+        K.RegisterInstEvents(self)
     end
     function instance:Disable()
-        Keys.UnregisterInstEvents(self)
+        K.UnregisterInstEvents(self)
         hovered = false
         mod.Tip_Hide(btnFrame)
         contentFrame:Hide()
     end
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight(), 30)
+            return max(contentFrame:GetHeight(), 30)
         end
-        return upper(contentFrame:GetWidth(), 24)
+        return max(contentFrame:GetWidth(), 24)
     end
     function instance:Destroy()
         self._dead = true

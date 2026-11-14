@@ -97,18 +97,18 @@ local function AlertCogRows(prefixText, applyFrame, preview)
     }
 end
 
-_G._CUI_BuildAlertsSection = function(hostFrame, yOffset, Widgets, Pix)
+_G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
     local posY = yOffset
     local _, hgt, heading
 
-    heading, hgt = Widgets:SectionHeader(hostFrame, "ALERTS", posY)
+    heading, hgt = W:SectionHeader(hostFrame, "ALERTS", posY)
     posY = posY - hgt
     -- One anchor carries the Combat, Potion Ready and Unspent Talents alerts,
     -- each with its own enable, so the button has no single requirement.
     CludesUI.BuildSectionUnlockJump(heading, { key = "CUI_CombatAlert" })
 
     local row1
-    row1, hgt = Widgets:DualRow(hostFrame, posY, {
+    row1, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Combat Alert",
         tooltip = 'Shows a large on-screen text when you enter and/or leave combat (e.g. "+Combat" / "-Combat"). Use the cog to set the display text, size, colors and which transitions are shown; use Layout Mode to reposition the alert.',
@@ -146,7 +146,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, Widgets, Pix)
     posY = posY - hgt
 
     local row2
-    row2, hgt = Widgets:DualRow(hostFrame, posY, {
+    row2, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Unspent Talents Alert",
         tooltip = "Shows on-screen text while you have unspent talent points. It stays up until you spend them or open your talents, and returns after a level-up. Use the cog to set the text, size and color; use Layout Mode to reposition the alerts.",
@@ -443,7 +443,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, Widgets, Pix)
         })
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return math.abs(posY - yOffset)

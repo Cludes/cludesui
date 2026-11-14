@@ -24,8 +24,8 @@ local function Near(a, b, by)
     return math.abs(a - b) <= by
 end
 
-local Prm = {}
-mod.BossPhases = Prm
+local P = {}
+mod.BossPhases = P
 
 local function NextPhase(num)
     return num + 1
@@ -40,7 +40,7 @@ do
         [15] = { { time = 6, phase = NextPhase } },
         [16] = { { time = 6, phase = NextPhase } },
     }
-    Prm[3182] = {
+    P[3182] = {
         detect = function(self, e, details)
             local nowTime = GetTime()
             if
@@ -60,9 +60,9 @@ do
             table.insert(self.Timelines, nowTime)
             if self.Phase >= 2 and Near(details.duration, 40, 0.2) then
                 local diff = nowTime - self.PhaseSwapTime
-                local offset = diff - 7.1
-                if diff <= 20 and offset > 0.3 then -- the bird landed late: every timer moves with it
-                    self:DelayAllReminders(offset)
+                local off = diff - 7.1
+                if diff <= 20 and off > 0.3 then -- the bird landed late: every timer moves with it
+                    self:DelayAllReminders(off)
                 end
             end
             for _, phaseinfo in ipairs(detectedDurations[difficultyID]) do
@@ -95,7 +95,7 @@ do
         [15] = { { time = 151.36, phase = NextPhase } },
         [16] = { { time = 120, phase = NextPhase } },
     }
-    Prm[3306] = {
+    P[3306] = {
         detect = function(self, e, details)
             local nowTime = GetTime()
             if
@@ -230,7 +230,7 @@ do
         end
     end
 
-    Prm[3181] = {
+    P[3181] = {
         detect = function(self, e, details)
             local nowTime = GetTime()
             local difficultyID = self:DifficultyCheck({ 14, 15, 16 })
@@ -311,7 +311,7 @@ do
             },
         },
     }
-    Prm[3183] = {
+    P[3183] = {
         engage = true,
         detect = function(self, e, details)
             local nowTime = GetTime()
@@ -375,7 +375,7 @@ do
             },
         },
     }
-    Prm[3178] = {
+    P[3178] = {
         detect = function(self, e, details)
             local nowTime = GetTime()
             if
@@ -415,7 +415,7 @@ end
 -------------------------------------------------------------------------------
 --  Entombed Sentinels (3445): eight timers at once start the next phase.
 -------------------------------------------------------------------------------
-Prm[3445] = {
+P[3445] = {
     detect = function(self, e, details)
         local nowTime = GetTime()
         if
@@ -475,7 +475,7 @@ do
             },
         },
     }
-    Prm[3429] = {
+    P[3429] = {
         start = function(self)
             self:EncounterRegister("CoiledAltarPhaseDetect", "UNIT_SPELLCAST_CHANNEL_START", true, "boss2")
             self:EncounterFunction("CoiledAltarPhaseDetect", function(_, e)
@@ -541,7 +541,7 @@ end
 --  The Lost Explorers (3497): four timers at once, one of them 11, 13 or 16
 --  seconds, at least 40 (then 100) seconds after the last change.
 -------------------------------------------------------------------------------
-Prm[3497] = {
+P[3497] = {
     detect = function(self, e, details)
         local nowTime = GetTime()
         local requiredDiff = self.Phase == 1 and 40 or 100
@@ -582,7 +582,7 @@ Prm[3497] = {
 -------------------------------------------------------------------------------
 --  Nek'zali the Soulcoiler (3470): read from the bosses' casts.
 -------------------------------------------------------------------------------
-Prm[3470] = {
+P[3470] = {
     start = function(self)
         self.NekzaliBoss1SpellcastStartTimes = {}
         self.NekzaliBoss1ValidCastSequence = false

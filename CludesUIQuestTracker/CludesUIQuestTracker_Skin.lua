@@ -203,18 +203,18 @@ local _eqtFontRegistry = setmetatable({}, { __mode = "k" })
 
 -- Reapplies CUI font path with explicit size + outline + shadow.
 -- If `size` is nil, preserves Blizzard's current size.
-local function StyleFontStringSized(fontStr, dim)
+local function StyleFontStringSized(fontStr, size)
     if STOCK or not fontStr or not fontStr.GetFont then
         return
     end
-    if not dim then
+    if not size then
         local _, current = fontStr:GetFont()
-        dim = current or 12
+        size = current or 12
     end
     local success =
-        pcall(fontStr.SetFont, fontStr, GetFont(), dim, CludesUI.GetFontOutlineFlag("questTracker"))
+        pcall(fontStr.SetFont, fontStr, GetFont(), size, CludesUI.GetFontOutlineFlag("questTracker"))
     if not success then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", dim, CludesUI.GetFontOutlineFlag("questTracker"))
+        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, CludesUI.GetFontOutlineFlag("questTracker"))
     end
     ApplyShadow(fontStr)
     _eqtFontRegistry[fontStr] = true
@@ -252,8 +252,14 @@ end
 function EQT.RefreshFonts()
     for fontStr in pairs(_eqtFontRegistry) do
         if fontStr and fontStr.GetFont then
-            local _, dim = fontStr:GetFont()
-            pcall(fontStr.SetFont, fontStr, GetFont(), dim or 12, CludesUI.GetFontOutlineFlag("questTracker"))
+            local _, size = fontStr:GetFont()
+            pcall(
+                fontStr.SetFont,
+                fontStr,
+                GetFont(),
+                size or 12,
+                CludesUI.GetFontOutlineFlag("questTracker")
+            )
             ApplyShadow(fontStr)
         end
     end
@@ -282,8 +288,8 @@ end
 -- (Quests, Professions, etc). Follows the canonical border pattern: DisablePixelSnap +
 -- SetHeight via PP.perfect / effectiveScale.
 local _headerDividers = setmetatable({}, { __mode = "k" })
-local function EnsureAccentDivider(headerFrame)
-    if STOCK or not headerFrame or not headerFrame.CreateTexture then
+local function EnsureAccentDivider(header)
+    if STOCK or not header or not header.CreateTexture then
         return nil
     end
     local otf = _G.ObjectiveTrackerFrame
@@ -291,15 +297,13 @@ local function EnsureAccentDivider(headerFrame)
         return nil
     end
 
-    local isMasterHeader = (headerFrame == otf.HeaderMenu or headerFrame == otf.Header)
+    local isMasterHeader = (header == otf.HeaderMenu or header == otf.Header)
 
     -- Divider is visible only when the tracker itself is currently being
     -- rendered (Blizzard hides the tracker frame when it has no content). The
     -- master header is suppressed with alpha rather than Hide(), so an alpha-0
     -- header counts as not rendered too -- see ApplyMasterHeaderVisibility.
-    local headerShown = headerFrame.IsShown
-        and headerFrame:IsShown()
-        and (not headerFrame.GetAlpha or headerFrame:GetAlpha() > 0)
+    local headerShown = header.IsShown and header:IsShown() and (not header.GetAlpha or header:GetAlpha() > 0)
     local isActive
 
     if isMasterHeader then
@@ -316,7 +320,7 @@ local function EnsureAccentDivider(headerFrame)
         -- Any of those == the section is still active. All false == fully hidden.
         -- Collapse keeps hasContents/wasDisplayedLastLayout true, so collapsed
         -- trackers still show their divider.
-        local ownerFrame = headerFrame:GetParent()
+        local ownerFrame = header:GetParent()
         local hasAnyBlock = false
         if ownerFrame and ownerFrame.usedBlocks then
             for _, byTemplate in pairs(ownerFrame.usedBlocks) do
@@ -341,27 +345,27 @@ local function EnsureAccentDivider(headerFrame)
     end
 
     if not isActive then
-        local texture = _headerDividers[headerFrame]
+        local texture = _headerDividers[header]
         if texture then
             texture:Hide()
         end
         return nil
     end
-    local texture = _headerDividers[headerFrame]
+    local texture = _headerDividers[header]
     if not texture then
         texture = otf:CreateTexture(nil, "OVERLAY")
-        _headerDividers[headerFrame] = texture
+        _headerDividers[header] = texture
     end
     texture:ClearAllPoints()
-    texture:SetPoint("TOPLEFT", headerFrame, "BOTTOMLEFT", 7, 0)
-    texture:SetPoint("TOPRIGHT", headerFrame, "BOTTOMRIGHT", -1, 0)
+    texture:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 7, 0)
+    texture:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", -1, 0)
     local PP_CORE = CludesUI and CludesUI.PP
     local PP_SEC = CludesUI and CludesUI.PanelPP
     if PP_SEC and PP_SEC.DisablePixelSnap then
         PP_SEC.DisablePixelSnap(texture)
     end
     local perfect = (PP_CORE and PP_CORE.perfect) or (PP_SEC and PP_SEC.mult) or 1
-    local es = headerFrame.GetEffectiveScale and headerFrame:GetEffectiveScale() or 1
+    local es = header.GetEffectiveScale and header:GetEffectiveScale() or 1
     local onePixel = (es and es > 0) and (perfect / es) or (PP_SEC and PP_SEC.mult) or 1
     texture:SetHeight(onePixel)
     local r, g, b = GetLineRGB()
@@ -428,17 +432,17 @@ local function SyncMasterMinimizeButtonLook(masterBtn, collapsed)
         -- by default on login, so assume expanded rather than guess wrong.
         collapsed = false
     end
-    local look = MASTER_MINBTN_ATLAS[collapsed]
-    if not look then
+    local style = MASTER_MINBTN_ATLAS[collapsed]
+    if not style then
         return
     end
     local num = masterBtn.GetNormalTexture and masterBtn:GetNormalTexture()
     local p = masterBtn.GetPushedTexture and masterBtn:GetPushedTexture()
     if num then
-        num:SetAtlas(look.normal)
+        num:SetAtlas(style.normal)
     end
     if p then
-        p:SetAtlas(look.pushed)
+        p:SetAtlas(style.pushed)
     end
 end
 
@@ -446,15 +450,15 @@ end
 -- Header skin: accent color + CUI font. Strips every decorative texture
 -- region from the header; keeps the minimize button (+/-) and Text intact.
 -------------------------------------------------------------------------------
-local function SkinHeader(headerFrame, knownCollapsed)
-    if not headerFrame then
+local function SkinHeader(header, knownCollapsed)
+    if not header then
         return
     end
     if not EQT.Cfg("skinHeaders") then
         return
     end
 
-    local minBtn = headerFrame.MinimizeButton
+    local minBtn = header.MinimizeButton
     -- The stock styles (Blizzard Style and Classic WoW UI alike) keep the
     -- header exactly as Blizzard draws it (its header bar art, +/- buttons and
     -- text); only the click-anywhere hit rect below applies.
@@ -471,7 +475,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
             "Glow",
             "Stripe",
         }) do
-            local r = headerFrame[k]
+            local r = header[k]
             if r and r.SetTexture then
                 r:SetTexture("")
             end
@@ -480,7 +484,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
         -- Sweep anonymous Texture regions too. Preserve the minimize button's
         -- textures by skipping anything owned by header.MinimizeButton.
         local otf = _G.ObjectiveTrackerFrame
-        if minBtn and otf and (headerFrame == otf.HeaderMenu or headerFrame == otf.Header) then
+        if minBtn and otf and (header == otf.HeaderMenu or header == otf.Header) then
             SyncMasterMinimizeButtonLook(minBtn, knownCollapsed)
         end
         local keep = {}
@@ -498,7 +502,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
                 keep[minBtn:GetHighlightTexture()] = true
             end
         end
-        StripTextures(headerFrame, keep)
+        StripTextures(header, keep)
 
         -- Tint the +/- minimize button with the header color. Desaturate
         -- first so the base atlas's built-in tint doesn't multiply with ours.
@@ -528,7 +532,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
             end
             -- WoW Forever's filter toggle beside it (nil on retail).
             local toggle = EQT.FilterToggle
-            if toggle and toggle:GetParent() == headerFrame then
+            if toggle and toggle:GetParent() == header then
                 tint(toggle:GetNormalTexture())
                 tint(toggle:GetPushedTexture())
                 tint(toggle:GetHighlightTexture())
@@ -536,7 +540,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
         end
 
         if not STOCK then
-            local textValue = headerFrame.Text
+            local textValue = header.Text
             if textValue then
                 local r, g, b = GetHeaderRGB()
                 textValue:SetTextColor(r, g, b)
@@ -544,10 +548,10 @@ local function SkinHeader(headerFrame, knownCollapsed)
             end
 
             -- Catch any other FontString regions on the header (subtitle, count text).
-            StyleAllFontStrings(headerFrame)
+            StyleAllFontStrings(header)
 
             -- 1px divider beneath the header (Line Color: Class / Custom / Accent).
-            EnsureAccentDivider(headerFrame)
+            EnsureAccentDivider(header)
         end -- not STOCK
     end -- not STOCK (outer)
 
@@ -564,8 +568,8 @@ local function SkinHeader(headerFrame, knownCollapsed)
     -- these buttons (source-verified), and the header frame is not
     -- mouse-enabled, so nothing fights or swallows this.
     if minBtn and minBtn.SetHitRectInsets then
-        local headerW = headerFrame.GetWidth and headerFrame:GetWidth() or 0
-        local headerH = headerFrame.GetHeight and headerFrame:GetHeight() or 0
+        local headerW = header.GetWidth and header:GetWidth() or 0
+        local headerH = header.GetHeight and header:GetHeight() or 0
         local btnW = minBtn.GetWidth and minBtn:GetWidth() or 0
         local btnH = minBtn.GetHeight and minBtn:GetHeight() or 0
         if headerW > 0 and btnW > 0 then
@@ -577,7 +581,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
             -- shortens the extension (accepted: the leftmost ~20px of the
             -- header don't toggle while the filter is shown).
             local reserved = btnW
-            local filter = headerFrame.FilterButton
+            local filter = header.FilterButton
             if filter and filter.IsShown and filter:IsShown() then
                 reserved = reserved + ((filter.GetWidth and filter:GetWidth()) or 0) + 2
             end
@@ -609,16 +613,16 @@ EQT.SkinHeader = SkinHeader
 -- FontString according to its completion state each refresh via a hook on
 -- the block's GetLine / AddObjective path where available.
 -------------------------------------------------------------------------------
-local function StyleObjectiveLine(lineTex)
-    if not lineTex or not lineTex.Text then
+local function StyleObjectiveLine(line)
+    if not line or not line.Text then
         return
     end
-    StyleObjectiveFS(lineTex.Text)
-    if lineTex.Dash then
-        StyleObjectiveFS(lineTex.Dash)
+    StyleObjectiveFS(line.Text)
+    if line.Dash then
+        StyleObjectiveFS(line.Dash)
     end
-    if lineTex.GetRegions then
-        StyleAllFontStrings(lineTex)
+    if line.GetRegions then
+        StyleAllFontStrings(line)
     end
 end
 
@@ -775,24 +779,24 @@ end
 -- Hides Blizzard's built-in quest type icon(s) on a block (without
 -- recursing into the block's children) and stamps ours on top.
 
-local function ApplyQuestTypeIcon(blockData)
-    if not blockData then
+local function ApplyQuestTypeIcon(block)
+    if not block then
         return
     end
 
     -- "Show Quest Icons" on: Blizzard's native icons are shown instead, so
     -- never stamp our own custom icon (hide any we already created).
     if NativeIcons() then
-        if _blockIcons[blockData] then
-            _blockIcons[blockData]:Hide()
+        if _blockIcons[block] then
+            _blockIcons[block]:Hide()
         end
         return
     end
 
-    local qID = blockData.id
+    local qID = block.id
     if type(qID) ~= "number" then
-        if _blockIcons[blockData] then
-            _blockIcons[blockData]:Hide()
+        if _blockIcons[block] then
+            _blockIcons[block]:Hide()
         end
         return
     end
@@ -801,8 +805,8 @@ local function ApplyQuestTypeIcon(blockData)
     -- groupFinderButton is already visible on this block. Probe the block
     -- fields directly (the icon you SEE is Blizzard's, and our overlay
     -- texture is mouse-pass-through, so it eats the visual click target).
-    local hasItem = (blockData.ItemButton and blockData.ItemButton.IsShown and blockData.ItemButton:IsShown())
-        or (blockData.itemButton and blockData.itemButton.IsShown and blockData.itemButton:IsShown())
+    local hasItem = (block.ItemButton and block.ItemButton.IsShown and block.ItemButton:IsShown())
+        or (block.itemButton and block.itemButton.IsShown and block.itemButton:IsShown())
     -- block.GroupFinderButton was probed here too until the /fstack evidence in the
     -- group-finder click fix proved it never exists (that same nil field left the
     -- button unraised and unclickable). rightEdgeFrame is what actually covers the
@@ -810,41 +814,37 @@ local function ApplyQuestTypeIcon(blockData)
     -- finder on a quest that has only that, and a quest with both is already caught
     -- by ItemButton above.
     local hasLFG = (
-        blockData.groupFinderButton
-        and blockData.groupFinderButton.IsShown
-        and blockData.groupFinderButton:IsShown()
+        block.groupFinderButton
+        and block.groupFinderButton.IsShown
+        and block.groupFinderButton:IsShown()
     )
-        or (
-            blockData.rightEdgeFrame
-            and blockData.rightEdgeFrame.IsShown
-            and blockData.rightEdgeFrame:IsShown()
-        )
+        or (block.rightEdgeFrame and block.rightEdgeFrame.IsShown and block.rightEdgeFrame:IsShown())
     if hasItem or hasLFG then
-        if _blockIcons[blockData] then
-            _blockIcons[blockData]:Hide()
+        if _blockIcons[block] then
+            _blockIcons[block]:Hide()
         end
         return
     end
 
     local atlas, key = ClassifyQuest(qID)
     if not atlas then
-        if _blockIcons[blockData] then
-            _blockIcons[blockData]:Hide()
+        if _blockIcons[block] then
+            _blockIcons[block]:Hide()
         end
         return
     end
 
-    local ico = _blockIcons[blockData]
+    local ico = _blockIcons[block]
     if not ico then
-        ico = blockData:CreateTexture(nil, "OVERLAY")
-        ico:SetPoint("TOPRIGHT", blockData, "TOPRIGHT", -2, 3)
-        _blockIcons[blockData] = ico
+        ico = block:CreateTexture(nil, "OVERLAY")
+        ico:SetPoint("TOPRIGHT", block, "TOPRIGHT", -2, 3)
+        _blockIcons[block] = ico
     end
     -- Skip redundant SetAtlas/SetSize when the icon already matches.
     if ico._lastAtlas ~= atlas then
         ico._lastAtlas = atlas
-        local dim = QUEST_ICON_SIZE_OVERRIDE[key] or QUEST_ICON_SIZE
-        ico:SetSize(dim, dim)
+        local size = QUEST_ICON_SIZE_OVERRIDE[key] or QUEST_ICON_SIZE
+        ico:SetSize(size, size)
         ico:SetAtlas(atlas)
     end
     ico:SetAlpha(1)
@@ -859,20 +859,20 @@ end
 -- region in Blizzard's layout (confirmed via dump). Cached per-block so
 -- hot paths (hover reassert) don't re-walk regions on every mouse event.
 local _blockTitleFSCache = setmetatable({}, { __mode = "k" })
-local function GetBlockTitleFS(blockData)
-    if not blockData then
+local function GetBlockTitleFS(block)
+    if not block then
         return nil
     end
-    local cached = _blockTitleFSCache[blockData]
+    local cached = _blockTitleFSCache[block]
     if cached then
         return cached
     end
-    if not blockData.GetRegions then
+    if not block.GetRegions then
         return nil
     end
-    for _, rg in ipairs({ blockData:GetRegions() }) do
+    for _, rg in ipairs({ block:GetRegions() }) do
         if rg.GetObjectType and rg:GetObjectType() == "FontString" then
-            _blockTitleFSCache[blockData] = rg
+            _blockTitleFSCache[block] = rg
             return rg
         end
     end
@@ -923,11 +923,11 @@ end
 
 -- One-time layout setup for the title fontstring: font, anchors, width.
 -- Called once per block from SkinBlock's full pass.
-local function SetupTitleLayout(blockData)
-    if not blockData then
+local function SetupTitleLayout(block)
+    if not block then
         return
     end
-    local fontStr = GetBlockTitleFS(blockData)
+    local fontStr = GetBlockTitleFS(block)
     if not fontStr then
         return
     end
@@ -987,15 +987,15 @@ end
 
 -- Lightweight color-only refresh. Called on hover (OnEnter/OnLeave) and
 -- from the stamped fast-path in SkinBlock.
-local function ApplyFocusHighlight(blockData)
-    if not blockData then
+local function ApplyFocusHighlight(block)
+    if not block then
         return
     end
-    local fontStr = GetBlockTitleFS(blockData)
+    local fontStr = GetBlockTitleFS(block)
     if not fontStr then
         return
     end
-    local qID = (type(blockData.id) == "number") and blockData.id or nil
+    local qID = (type(block.id) == "number") and block.id or nil
     local isFocus = qID and (qID == GetSuperTrackedIDCached())
     local isDone = qID and C_QuestLog and C_QuestLog.IsComplete and C_QuestLog.IsComplete(qID)
     -- With Title Difficulty Colors off, a code Blizzard wrote while it was on
@@ -1037,32 +1037,32 @@ end
 
 -- Hook block line-add APIs once per block instance. Catches every line
 -- Blizzard creates or recycles without walking children.
-local function HookBlockLineMethods(blockData)
-    if _hookedBlocks[blockData] then
+local function HookBlockLineMethods(block)
+    if _hookedBlocks[block] then
         return
     end
-    _hookedBlocks[blockData] = true
+    _hookedBlocks[block] = true
 
     -- Blizzard changes the title text color on mouse enter (darkens it
     -- as hover feedback). Reassert our color from a post-hook so whatever
     -- gold/focus color we chose is what the player sees.
     local function reassertTitle()
-        ApplyFocusHighlight(blockData)
+        ApplyFocusHighlight(block)
         -- Hover highlight swaps line colors too (WoW Forever's objective
         -- colors; nil on retail).
         local paint = EQT.ColorObjectiveLines
         if paint then
-            paint(blockData)
+            paint(block)
         end
     end
-    if blockData.HookScript then
-        blockData:HookScript("OnEnter", reassertTitle)
-        blockData:HookScript("OnLeave", reassertTitle)
+    if block.HookScript then
+        block:HookScript("OnEnter", reassertTitle)
+        block:HookScript("OnLeave", reassertTitle)
     end
     -- The HeaderButton (if present) often owns the hover script directly.
-    if blockData.HeaderButton and blockData.HeaderButton.HookScript then
-        blockData.HeaderButton:HookScript("OnEnter", reassertTitle)
-        blockData.HeaderButton:HookScript("OnLeave", reassertTitle)
+    if block.HeaderButton and block.HeaderButton.HookScript then
+        block.HeaderButton:HookScript("OnEnter", reassertTitle)
+        block.HeaderButton:HookScript("OnLeave", reassertTitle)
     end
 
     -- REMOVED: an OnClick post-hook here used to call
@@ -1222,15 +1222,15 @@ end
 local _poiBlockHooked = setmetatable({}, { __mode = "k" })
 local OnBlockGetPOIButton
 
-local function SuppressPOI(blockData)
-    if not blockData then
+local function SuppressPOI(block)
+    if not block then
         return
     end
 
     if NativeIcons() then
         -- Restore buttons we suppressed earlier in this session so flipping the
         -- setting on takes effect without waiting for the reload prompt.
-        local pb = blockData.poiButton
+        local pb = block.poiButton
         if pb and _suppressedPOIs[pb] then
             _suppressedPOIs[pb] = nil
             pb:SetAlpha(1)
@@ -1244,11 +1244,11 @@ local function SuppressPOI(blockData)
         return
     end
 
-    if not _poiBlockHooked[blockData] and blockData.GetPOIButton then
-        _poiBlockHooked[blockData] = true
-        hooksecurefunc(blockData, "GetPOIButton", OnBlockGetPOIButton)
+    if not _poiBlockHooked[block] and block.GetPOIButton then
+        _poiBlockHooked[block] = true
+        hooksecurefunc(block, "GetPOIButton", OnBlockGetPOIButton)
     end
-    local pb = blockData.poiButton
+    local pb = block.poiButton
     if not pb then
         return
     end
@@ -1263,11 +1263,11 @@ local function SuppressPOI(blockData)
     QueuePOIRepair(pb)
 end
 
-OnBlockGetPOIButton = function(blockData)
+OnBlockGetPOIButton = function(block)
     if STOCK or ShouldSkipSkin() then
         return
     end
-    SuppressPOI(blockData)
+    SuppressPOI(block)
 end
 
 -------------------------------------------------------------------------------
@@ -1293,16 +1293,16 @@ local function MouseOff(f)
     if not (f and f.IsMouseEnabled) or _mouseOffSet[f] then
         return
     end
-    local modeName
+    local mode
     if f.IsMouseClickEnabled and f.IsMouseMotionEnabled then
-        modeName = (f:IsMouseClickEnabled() and 1 or 0) + (f:IsMouseMotionEnabled() and 2 or 0)
+        mode = (f:IsMouseClickEnabled() and 1 or 0) + (f:IsMouseMotionEnabled() and 2 or 0)
     else
-        modeName = f:IsMouseEnabled() and 3 or 0
+        mode = f:IsMouseEnabled() and 3 or 0
     end
-    if modeName == 0 then
+    if mode == 0 then
         return
     end
-    _mouseOffSet[f] = modeName
+    _mouseOffSet[f] = mode
     f:EnableMouse(false)
 end
 -- For frames built while the tracker is hidden (the Forever filter toggle).
@@ -1311,20 +1311,20 @@ EQT.MouseOff = MouseOff
 -- One block's click sinks: the block frame itself (bonus blocks), the header
 -- button (the quest log click), the item, group-finder and POI buttons, the
 -- objective lines (hyperlinks) and every right-edge region with its bar.
-local function ApplyBlockMouse(blockData)
-    MouseOff(blockData)
-    MouseOff(blockData.HeaderButton)
-    MouseOff(blockData.ItemButton)
-    MouseOff(blockData.poiButton)
-    local lines = blockData.usedLines
+local function ApplyBlockMouse(block)
+    MouseOff(block)
+    MouseOff(block.HeaderButton)
+    MouseOff(block.ItemButton)
+    MouseOff(block.poiButton)
+    local lines = block.usedLines
     if type(lines) == "table" then
-        for _, lineTex in pairs(lines) do
-            if type(lineTex) == "table" then
-                MouseOff(lineTex)
+        for _, line in pairs(lines) do
+            if type(line) == "table" then
+                MouseOff(line)
             end
         end
     end
-    local regions = blockData.addedRegions
+    local regions = block.addedRegions
     if type(regions) == "table" then
         for regionFrame in pairs(regions) do
             if type(regionFrame) == "table" then
@@ -1394,12 +1394,12 @@ end
 -- set is block.addedRegions (ObjectiveTrackerBlockMixin:OnAddedRegion), so walk
 -- that and raise every Button in it. Objective lines, timer bars and progress
 -- bars are Frames and stay untouched.
-local function RaiseRightEdgeButtons(blockData)
-    local bl = blockData.GetFrameLevel and blockData:GetFrameLevel() or 0
-    if blockData.ItemButton and blockData.ItemButton.SetFrameLevel then
-        blockData.ItemButton:SetFrameLevel(bl + 5)
+local function RaiseRightEdgeButtons(block)
+    local bl = block.GetFrameLevel and block:GetFrameLevel() or 0
+    if block.ItemButton and block.ItemButton.SetFrameLevel then
+        block.ItemButton:SetFrameLevel(bl + 5)
     end
-    local regions = blockData.addedRegions
+    local regions = block.addedRegions
     if type(regions) ~= "table" then
         return
     end
@@ -1415,8 +1415,8 @@ local function RaiseRightEdgeButtons(blockData)
     end
 end
 
-local function SkinBlock(blockData)
-    if not blockData then
+local function SkinBlock(block)
+    if not block then
         return
     end
     -- Stock styles: Blizzard's block art, fonts and POI icons stay untouched
@@ -1428,23 +1428,23 @@ local function SkinBlock(blockData)
 
     -- Suppress POI on every entry -- Blizzard may assign a new pooled
     -- poiButton to the block between skin passes.
-    SuppressPOI(blockData)
+    SuppressPOI(block)
 
     -- Also on every entry: a block can gain a right-edge button after it was
     -- first skinned (a quest becomes groupable, an item is granted), and the
     -- pooled Init/Reset paths reset the level back to the block's.
-    RaiseRightEdgeButtons(blockData)
+    RaiseRightEdgeButtons(block)
 
     -- Skip blocks already fully skinned. The heavy work (strip textures,
     -- style fontstrings, walk children) only needs to happen once per block.
     -- Quest type icons and focus highlight are cheap and re-applied below.
-    if _skinned[blockData] then
-        ApplyQuestTypeIcon(blockData)
-        ApplyFocusHighlight(blockData)
+    if _skinned[block] then
+        ApplyQuestTypeIcon(block)
+        ApplyFocusHighlight(block)
         return
     end
 
-    HookBlockLineMethods(blockData)
+    HookBlockLineMethods(block)
 
     -- Strip named decorative textures by key.
     for _, k in ipairs({
@@ -1457,7 +1457,7 @@ local function SkinBlock(blockData)
         "ShineTop",
         "ShineBottom",
     }) do
-        local r = blockData[k]
+        local r = block[k]
         if r and r.SetTexture then
             r:SetTexture("")
         end
@@ -1465,9 +1465,9 @@ local function SkinBlock(blockData)
 
     -- Single GetRegions() walk: strip remaining textures AND style fontstrings
     -- in one pass instead of two separate walks.
-    local myIcon = _blockIcons[blockData]
-    if blockData.GetRegions then
-        for _, rg in ipairs({ blockData:GetRegions() }) do
+    local myIcon = _blockIcons[block]
+    if block.GetRegions then
+        for _, rg in ipairs({ block:GetRegions() }) do
             local ot = rg.GetObjectType and rg:GetObjectType()
             if ot == "Texture" then
                 if rg ~= myIcon and rg.SetTexture then
@@ -1480,24 +1480,24 @@ local function SkinBlock(blockData)
     end
 
     -- Item button (quest item) count FontString if present.
-    if blockData.itemButton and blockData.itemButton.Count then
-        StyleFontString(blockData.itemButton.Count)
+    if block.itemButton and block.itemButton.Count then
+        StyleFontString(block.itemButton.Count)
     end
 
     -- Replace Blizzard's quest-type icon with ours, based on the quest's
     -- classification / frequency / turn-in state.
-    ApplyQuestTypeIcon(blockData)
+    ApplyQuestTypeIcon(block)
 
     -- One-time title layout (font, anchor strip, width constraint).
-    SetupTitleLayout(blockData)
+    SetupTitleLayout(block)
 
     -- Focus color for super-tracked / completed / normal quest.
-    ApplyFocusHighlight(blockData)
+    ApplyFocusHighlight(block)
 
     -- Strip ornamental textures + style objective fontstrings on child frames.
-    ProcessBlockChildren(blockData, 0)
+    ProcessBlockChildren(block, 0)
 
-    _skinned[blockData] = true
+    _skinned[block] = true
 end
 
 -------------------------------------------------------------------------------
@@ -1529,28 +1529,28 @@ local function SkinExistingBlocks(tracker)
     if tracker.usedBlocks then
         for _, byTemplate in pairs(tracker.usedBlocks) do
             if type(byTemplate) == "table" then
-                for _, blockData in pairs(byTemplate) do
-                    if type(blockData) == "table" and blockData.GetTop then
-                        ordered[#ordered + 1] = blockData
+                for _, block in pairs(byTemplate) do
+                    if type(block) == "table" and block.GetTop then
+                        ordered[#ordered + 1] = block
                     end
                 end
             end
         end
 
-        for _, blockData in ipairs(ordered) do
-            SkinBlock(blockData)
+        for _, block in ipairs(ordered) do
+            SkinBlock(block)
         end
 
         -- Style objective lines (and WoW Forever's objective colors).
         local paint = EQT.ColorObjectiveLines
-        for _, blockData in ipairs(ordered) do
-            if blockData.lines then
-                for _, lineTex in pairs(blockData.lines) do
-                    StyleObjectiveLine(lineTex)
+        for _, block in ipairs(ordered) do
+            if block.lines then
+                for _, line in pairs(block.lines) do
+                    StyleObjectiveLine(line)
                 end
             end
             if paint then
-                paint(blockData)
+                paint(block)
             end
         end
     end
@@ -1599,23 +1599,23 @@ local function ApplyMasterHeaderVisibility()
     if not otf then
         return
     end
-    local headerFrame = otf.HeaderMenu or otf.Header
-    if not headerFrame then
+    local header = otf.HeaderMenu or otf.Header
+    if not header then
         return
     end
 
     local hide = ShouldHideMasterHeader()
-    headerFrame:SetAlpha(hide and 0 or 1)
+    header:SetAlpha(hide and 0 or 1)
     -- The header frame takes no mouse input of its own, but the collapse-all
     -- button would still be clickable while invisible.
-    local minBtn = headerFrame.MinimizeButton
+    local minBtn = header.MinimizeButton
     -- Never back on while the tracker is alpha-hidden (EQT.ApplyTrackerMouse
     -- brings it back with the tracker).
     if minBtn and minBtn.EnableMouse then
         minBtn:EnableMouse(not hide and not EQT._trackerMouseOff)
     end
 
-    EnsureAccentDivider(headerFrame)
+    EnsureAccentDivider(header)
 end
 EQT.ApplyMasterHeaderVisibility = ApplyMasterHeaderVisibility
 
@@ -1708,19 +1708,19 @@ local function HookTracker(tracker)
     end
 
     if tracker.AddBlock then
-        hooksecurefunc(tracker, "AddBlock", function(_, blockData)
+        hooksecurefunc(tracker, "AddBlock", function(_, block)
             -- A block handed out while the tracker is alpha-hidden must not
             -- come out clickable; independent of the skin (runs suppressed too).
-            if blockData and EQT._trackerMouseOff then
-                ApplyBlockMouse(blockData)
+            if block and EQT._trackerMouseOff then
+                ApplyBlockMouse(block)
             end
             if ShouldSkipSkin() then
                 return
             end
-            if blockData then
-                _skinned[blockData] = nil
+            if block then
+                _skinned[block] = nil
             end
-            SkinBlock(blockData)
+            SkinBlock(block)
         end)
     end
 
@@ -1761,18 +1761,18 @@ local function HookTracker(tracker)
                 if tracker.usedBlocks then
                     for _, byTemplate in pairs(tracker.usedBlocks) do
                         if type(byTemplate) == "table" then
-                            for _, blockData in pairs(byTemplate) do
-                                if type(blockData) == "table" then
+                            for _, block in pairs(byTemplate) do
+                                if type(block) == "table" then
                                     if not skip then
-                                        SuppressPOI(blockData)
+                                        SuppressPOI(block)
                                         if colorLines then
-                                            paint(blockData)
+                                            paint(block)
                                         end
                                     end
                                     -- Blizzard's own Update re-enables bonus
                                     -- blocks; this lands after it.
                                     if mouseOff then
-                                        ApplyBlockMouse(blockData)
+                                        ApplyBlockMouse(block)
                                     end
                                 end
                             end
@@ -1845,12 +1845,12 @@ EQT._SuppressAllPOIs = function()
         end
         for _, byTemplate in pairs(tracker.usedBlocks) do
             if type(byTemplate) == "table" then
-                for _, blockData in pairs(byTemplate) do
-                    if type(blockData) == "table" then
-                        SuppressPOI(blockData)
+                for _, block in pairs(byTemplate) do
+                    if type(block) == "table" then
+                        SuppressPOI(block)
                         -- A POI freshly assigned to a hidden tracker.
                         if mouseOff then
-                            ApplyBlockMouse(blockData)
+                            ApplyBlockMouse(block)
                         end
                     end
                 end
@@ -1863,18 +1863,18 @@ end
 -- the blocks now in use (shared-widget-pool trackers: headers only, see
 -- SharesWidgetPool).
 local function TrackerMouseOff(tracker)
-    local headerFrame = tracker.Header
-    if headerFrame then
-        MouseOff(headerFrame.MinimizeButton)
+    local header = tracker.Header
+    if header then
+        MouseOff(header.MinimizeButton)
     end
     if SharesWidgetPool(tracker) or not tracker.usedBlocks then
         return
     end
     for _, byTemplate in pairs(tracker.usedBlocks) do
         if type(byTemplate) == "table" then
-            for _, blockData in pairs(byTemplate) do
-                if type(blockData) == "table" then
-                    ApplyBlockMouse(blockData)
+            for _, block in pairs(byTemplate) do
+                if type(block) == "table" then
+                    ApplyBlockMouse(block)
                 end
             end
         end
@@ -1896,11 +1896,11 @@ EQT.ApplyTrackerMouse = function(enabled)
             return
         end
         EQT._trackerMouseOff = nil
-        for f, modeName in pairs(_mouseOffSet) do
+        for f, mode in pairs(_mouseOffSet) do
             _mouseOffSet[f] = nil
-            if modeName == 3 or not f.SetMouseClickEnabled then
+            if mode == 3 or not f.SetMouseClickEnabled then
                 f:EnableMouse(true)
-            elseif modeName == 1 then
+            elseif mode == 1 then
                 pcall(f.SetMouseClickEnabled, f, true)
             else
                 pcall(f.SetMouseMotionEnabled, f, true)
@@ -1954,9 +1954,9 @@ function EQT.MuteBlizzardTracker()
             return
         end
         _hookedTrackers[tracker] = true
-        hooksecurefunc(tracker, "AddBlock", function(_, blockData)
-            if blockData then
-                ApplyBlockMouse(blockData)
+        hooksecurefunc(tracker, "AddBlock", function(_, block)
+            if block then
+                ApplyBlockMouse(block)
             end
         end)
     end
@@ -2132,9 +2132,9 @@ function EQT.InitSkin()
             if t.usedBlocks then
                 for _, byTemplate in pairs(t.usedBlocks) do
                     if type(byTemplate) == "table" then
-                        for _, blockData in pairs(byTemplate) do
-                            if type(blockData) == "table" then
-                                _skinned[blockData] = nil
+                        for _, block in pairs(byTemplate) do
+                            if type(block) == "table" then
+                                _skinned[block] = nil
                             end
                         end
                     end

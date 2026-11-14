@@ -46,12 +46,12 @@ local queue, sending, sentInBurst = {}, false, 0
 local failedWarned = false
 
 local function Pump()
-    local itemInfo = table.remove(queue, 1)
-    if not itemInfo then
+    local item = table.remove(queue, 1)
+    if not item then
         sending, sentInBurst = false, 0
         return
     end
-    local msg, channel = itemInfo[1], itemInfo[2] or Channel()
+    local msg, channel = item[1], item[2] or Channel()
     if channel then
         local success, result = pcall(C_ChatInfo.SendAddonMessage, PREFIX, msg, channel)
         local code = success and (type(result) == "number" and result or 0) or 9
@@ -204,8 +204,8 @@ function mod.SendBreak(seconds)
     return Send("B|" .. seconds)
 end
 
-function mod.SendDrop(kindOf)
-    return Send("D|" .. kindOf)
+function mod.SendDrop(kind)
+    return Send("D|" .. kind)
 end
 
 -------------------------------------------------------------------------------

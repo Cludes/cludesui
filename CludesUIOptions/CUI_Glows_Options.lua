@@ -120,14 +120,14 @@ local function CollectSites()
     local result = {}
     for _, record in ipairs(GO.sites) do
         if record.list then
-            for _, itemInfo in ipairs(record.list() or {}) do
+            for _, item in ipairs(record.list() or {}) do
                 result[#result + 1] = {
                     module = record.module,
-                    label = itemInfo.label,
-                    sub = itemInfo.sub or record.sub,
-                    desc = itemInfo.desc,
+                    label = item.label,
+                    sub = item.sub or record.sub,
+                    desc = item.desc,
                     entry = record,
-                    nav = itemInfo.nav or record,
+                    nav = item.nav or record,
                 }
             end
         elseif record.desc then
@@ -430,12 +430,12 @@ end
 local function UnindexedDualRow(W, hostFrame, posY, leftX, right)
     local prev = CludesUI._searchIndexSuppress
     CludesUI._searchIndexSuppress = true
-    local success, rowFrame, hgt = pcall(W.DualRow, W, hostFrame, posY, leftX, right)
+    local success, row, hgt = pcall(W.DualRow, W, hostFrame, posY, leftX, right)
     CludesUI._searchIndexSuppress = prev
     if not success then
-        error(rowFrame, 0)
+        error(row, 0)
     end
-    return rowFrame, hgt
+    return row, hgt
 end
 
 -- Round status dot left of a label half's text (the core's circle-mask dot).
@@ -453,10 +453,10 @@ local function StatusDot(region, color)
     local texture = dot:CreateTexture(nil, "OVERLAY")
     texture:SetAllPoints()
     texture:SetColorTexture(color[1], color[2], color[3], 1)
-    local maskTex = dot:CreateMaskTexture()
-    maskTex:SetTexture(DOT_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    maskTex:SetAllPoints(texture)
-    texture:AddMaskTexture(maskTex)
+    local mask = dot:CreateMaskTexture()
+    mask:SetTexture(DOT_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(texture)
+    texture:AddMaskTexture(mask)
     labelFS:ClearAllPoints()
     Pix.Point(labelFS, "LEFT", dot, "RIGHT", 8, 0)
     labelFS:SetTextColor(color[1], color[2], color[3], 1)
@@ -504,11 +504,11 @@ local function SubHeader(hostFrame, posY, textValue)
     local fontStr = CludesUI.MakeFont(f, 11, nil, 1, 1, 1, 0.55)
     Pix.Point(fontStr, "BOTTOMLEFT", f, "BOTTOMLEFT", 20, 7)
     fontStr:SetText(textValue)
-    local lineTex = f:CreateTexture(nil, "ARTWORK")
-    lineTex:SetColorTexture(1, 1, 1, 0.06)
-    lineTex:SetHeight(1)
-    Pix.Point(lineTex, "LEFT", fontStr, "RIGHT", 10, 0)
-    Pix.Point(lineTex, "RIGHT", f, "RIGHT", -20, 0)
+    local line = f:CreateTexture(nil, "ARTWORK")
+    line:SetColorTexture(1, 1, 1, 0.06)
+    line:SetHeight(1)
+    Pix.Point(line, "LEFT", fontStr, "RIGHT", 10, 0)
+    Pix.Point(line, "RIGHT", f, "RIGHT", -20, 0)
     f._labelText = textValue
     CludesUI._rowCounters[hostFrame] = 0
     return posY - SUB_H
@@ -521,11 +521,11 @@ local function CardDivider(hostFrame, posY)
     local f = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(f, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, DIV_H)
     Pix.Point(f, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
-    local lineTex = f:CreateTexture(nil, "ARTWORK")
-    lineTex:SetColorTexture(1, 1, 1, 0.1)
-    lineTex:SetHeight(1)
-    Pix.Point(lineTex, "LEFT", f, "LEFT", 20, 0)
-    Pix.Point(lineTex, "RIGHT", f, "RIGHT", -20, 0)
+    local line = f:CreateTexture(nil, "ARTWORK")
+    line:SetColorTexture(1, 1, 1, 0.1)
+    line:SetHeight(1)
+    Pix.Point(line, "LEFT", f, "LEFT", 20, 0)
+    Pix.Point(line, "RIGHT", f, "RIGHT", -20, 0)
     CludesUI._rowCounters[hostFrame] = 0
     return posY - DIV_H
 end
@@ -533,9 +533,9 @@ end
 -- Small drawn symbol left of an info row's label, styled like the card
 -- glyphs (dark fill, accent edge): "icon" = one glowing button, "bar" =
 -- three buttons with the middle one glowing.
-local function InfoGlyph(region, kindOf)
+local function InfoGlyph(region, kind)
     local labelFS = region._label
-    if not (labelFS and kindOf) then
+    if not (labelFS and kind) then
         return
     end
     local Pix = CludesUI.PanelPP
@@ -543,9 +543,9 @@ local function InfoGlyph(region, kindOf)
     local p, rel, rp, posX, posY = labelFS:GetPoint(1)
     local holderFrame = CreateFrame("Frame", nil, region)
     holderFrame:SetPoint(p, rel, rp, posX, posY)
-    local function Button(dim, glow)
+    local function Button(size, glow)
         local b = CreateFrame("Frame", nil, holderFrame)
-        Pix.Size(b, dim, dim)
+        Pix.Size(b, size, size)
         local texture = b:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         texture:SetColorTexture(0.1, 0.1, 0.1, 1)
@@ -556,7 +556,7 @@ local function InfoGlyph(region, kindOf)
         end
         return b
     end
-    if kindOf == "bar" then
+    if kind == "bar" then
         Pix.Size(holderFrame, 32, 10)
         local prev
         for i = 1, 3 do
@@ -578,21 +578,21 @@ end
 
 -- One info entry: label (hint as tooltip), its count, Go to Settings. The
 -- count is written after the build: a count is no search result.
-local function InfoRow(hostFrame, posY, W, itemInfo)
-    local details = itemInfo.info
-    local rowFrame, hgt = W:DualRow(
+local function InfoRow(hostFrame, posY, W, item)
+    local details = item.info
+    local row, hgt = W:DualRow(
         hostFrame,
         posY,
-        { type = "label", text = itemInfo.label, tooltip = details.tooltip },
+        { type = "label", text = item.label, tooltip = details.tooltip },
         CludesUI.BlankRowCfg()
     )
     if not CludesUI._prebuilding then
-        local rrgn = rowFrame._rightRegion
+        local rrgn = row._rightRegion
         if details.text and rrgn._label then
             rrgn._label:SetText(details.text())
         end
-        InfoGlyph(rowFrame._leftRegion, details.glyph)
-        local nav, module = itemInfo.nav, itemInfo.module
+        InfoGlyph(row._leftRegion, details.glyph)
+        local nav, module = item.nav, item.module
         if nav and nav.page then
             CludesUI.BuildInlineButton(rrgn, CludesUI.L("Go to Settings"), function()
                 CludesUI:NavigateToElementSettings(
@@ -622,21 +622,21 @@ local function SiteRow(hostFrame, posY, W, site)
     local color, short, long = SiteStatus(site, Template())
     local statusCfg = CludesUI.BlankRowCfg()
     statusCfg.tooltip = long
-    local rowFrame, hgt = W:DualRow(hostFrame, posY, leftX, statusCfg)
+    local row, hgt = W:DualRow(hostFrame, posY, leftX, statusCfg)
     if not CludesUI._prebuilding then
-        local rrgn = rowFrame._rightRegion
+        local rrgn = row._rightRegion
         if rrgn._label then
             rrgn._label:SetText(short)
         end
         local dotTex = StatusDot(rrgn, color)
-        local lrgn = rowFrame._leftRegion
+        local lrgn = row._leftRegion
         if desc.paramsOnly then
             -- A label half has no control to chain from: anchor the cog at the right edge.
             local Pix = CludesUI.PanelPP
-            local anchorFrame = CreateFrame("Frame", nil, lrgn)
-            Pix.Size(anchorFrame, 1, 1)
-            Pix.Point(anchorFrame, "RIGHT", lrgn, "RIGHT", -20, 0)
-            lrgn._lastInline = anchorFrame
+            local anchor = CreateFrame("Frame", nil, lrgn)
+            Pix.Size(anchor, 1, 1)
+            Pix.Point(anchor, "RIGHT", lrgn, "RIGHT", -20, 0)
+            lrgn._lastInline = anchor
             CludesUI.BuildInlineCog(
                 lrgn,
                 { title = "Pixel Glow Settings", rows = GO.CogRows(desc), captureRegion = lrgn }
@@ -733,7 +733,7 @@ local function BuildCardContent(hostFrame, posY, W, tile)
     local key = tile.key
     local showAll = _glHideInactive[key] ~= true
     local hasSites = #tile.sites > 0
-    local rowFrame, hgt
+    local row, hgt
     if hasSites then
         local inactive = #tile.sites - tile.active
         local leftX = {
@@ -752,11 +752,11 @@ local function BuildCardContent(hostFrame, posY, W, tile)
             disabledTooltip = CludesUI.L("Every glow in this module is active."),
             rawTooltip = true,
         }
-        rowFrame, hgt = UnindexedDualRow(W, hostFrame, posY, leftX, CludesUI.BlankRowCfg())
+        row, hgt = UnindexedDualRow(W, hostFrame, posY, leftX, CludesUI.BlankRowCfg())
         posY = posY - hgt
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineButton(
-                rowFrame._rightRegion,
+                row._rightRegion,
                 CludesUI.L("Apply Template to This Module"),
                 function()
                     ConfirmApply(tile.sites, true)
@@ -777,12 +777,12 @@ local function BuildCardContent(hostFrame, posY, W, tile)
     end
     local lastSub
     -- Info entries lead the card (above any group) and never hide.
-    for _, itemInfo in ipairs(tile.infos) do
-        if itemInfo.sub and itemInfo.sub ~= lastSub then
-            posY = SubHeader(hostFrame, posY, itemInfo.sub)
+    for _, item in ipairs(tile.infos) do
+        if item.sub and item.sub ~= lastSub then
+            posY = SubHeader(hostFrame, posY, item.sub)
         end
-        lastSub = itemInfo.sub
-        posY = InfoRow(hostFrame, posY, W, itemInfo)
+        lastSub = item.sub
+        posY = InfoRow(hostFrame, posY, W, item)
     end
     local isShown = 0
     for _, site in ipairs(tile.sites) do
@@ -796,7 +796,7 @@ local function BuildCardContent(hostFrame, posY, W, tile)
         end
     end
     if hasSites and isShown == 0 then
-        rowFrame, hgt = UnindexedDualRow(W, hostFrame, posY, {
+        row, hgt = UnindexedDualRow(W, hostFrame, posY, {
             type = "label",
             text = CludesUI.L("No active glows. Turn off Hide Inactive Glows to edit the others."),
         }, CludesUI.BlankRowCfg())
@@ -816,13 +816,13 @@ local function BuildTileList(sites, infos)
         end
         entries[#entries + 1] = site
     end
-    for _, itemInfo in ipairs(infos) do
-        local entries = infosByModule[itemInfo.module]
+    for _, item in ipairs(infos) do
+        local entries = infosByModule[item.module]
         if not entries then
             entries = {}
-            infosByModule[itemInfo.module] = entries
+            infosByModule[item.module] = entries
         end
-        entries[#entries + 1] = itemInfo
+        entries[#entries + 1] = item
     end
     for _, record in ipairs(CludesUI.ADDON_ROSTER) do
         local entries = byModule[record.folder]
@@ -861,13 +861,13 @@ local function BuildGlowCard(hostFrame, posY, W, tile)
         glyph = function(heading, enabled)
             local Pix = CludesUI.PanelPP
             local ACC = CludesUI.CLUDES_GREEN
-            local glyph = CreateFrame("Frame", nil, heading)
-            Pix.Size(glyph, 18, 18)
-            Pix.Point(glyph, "LEFT", heading, "LEFT", 18, 0)
-            CludesUI.MakeBorder(glyph, ACC.r, ACC.g, ACC.b, enabled and 0.8 or 0.15, Pix)
-            local texture = glyph:CreateTexture(nil, "ARTWORK")
-            Pix.Point(texture, "TOPLEFT", glyph, "TOPLEFT", 3, -3)
-            Pix.Point(texture, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", -3, 3)
+            local icon = CreateFrame("Frame", nil, heading)
+            Pix.Size(icon, 18, 18)
+            Pix.Point(icon, "LEFT", heading, "LEFT", 18, 0)
+            CludesUI.MakeBorder(icon, ACC.r, ACC.g, ACC.b, enabled and 0.8 or 0.15, Pix)
+            local texture = icon:CreateTexture(nil, "ARTWORK")
+            Pix.Point(texture, "TOPLEFT", icon, "TOPLEFT", 3, -3)
+            Pix.Point(texture, "BOTTOMRIGHT", icon, "BOTTOMRIGHT", -3, 3)
             texture:SetTexture(GL_GLYPH)
             texture:SetVertexColor(1, 1, 1, enabled and 0.35 or 0.1)
         end,

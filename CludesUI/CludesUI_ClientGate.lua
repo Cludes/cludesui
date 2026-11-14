@@ -73,13 +73,13 @@ ev:SetScript("OnEvent", function(self)
     Edge("TOPLEFT", "BOTTOMLEFT", 1, nil)
     Edge("TOPRIGHT", "BOTTOMRIGHT", 1, nil)
 
-    local titleText = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    titleText:SetPoint("TOP", 0, -16)
-    titleText:SetText("CludesUI")
-    titleText:SetTextColor(0.30, 0.79, 0.94)
+    local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOP", 0, -16)
+    title:SetText("CludesUI")
+    title:SetTextColor(0.30, 0.79, 0.94)
 
     local body = p:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    body:SetPoint("TOP", titleText, "BOTTOM", 0, -12)
+    body:SetPoint("TOP", title, "BOTTOM", 0, -12)
     body:SetWidth(430)
     body:SetJustifyH("CENTER")
     body:SetText(

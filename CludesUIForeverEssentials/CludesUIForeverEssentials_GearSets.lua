@@ -41,9 +41,9 @@ end
 function module.GearSetList()
     local result = {}
     for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs() or {}) do
-        local name, glyph, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(ident)
+        local name, icon, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
-            result[#result + 1] = { id = ident, name = name, icon = glyph, equipped = equipped }
+            result[#result + 1] = { id = ident, name = name, icon = icon, equipped = equipped }
         end
     end
     table.sort(result, function(a, b)
@@ -137,23 +137,23 @@ local function Layout()
     if not holderFrame then
         return
     end
-    local dim = Get("iconSize")
+    local size = Get("iconSize")
     local entries = Enabled() and module.GearSetList() or {}
     for idx, s in ipairs(entries) do
         local b = Button(idx)
         b.setID, b.setName = s.id, s.name
         b.icon:SetTexture(s.icon)
         b.name:SetText(s.name)
-        b:SetSize(dim, dim)
+        b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
         b:Show()
     end
     for idx = #entries + 1, #buttons do
         buttons[idx]:Hide()
         buttons[idx].setID = nil
     end
-    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
+    holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
     holderFrame:SetShown(Enabled() and (#entries > 0 or CludesUI._unlockActive) and true or false)
     Paint()
 end
@@ -279,8 +279,8 @@ F.Start(Apply, {
         return holderFrame
     end,
     size = function()
-        local dim = Get("iconSize")
-        return dim * 4 + GAP * 3, dim
+        local size = Get("iconSize")
+        return size * 4 + GAP * 3, size
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

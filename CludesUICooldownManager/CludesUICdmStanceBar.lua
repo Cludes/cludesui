@@ -41,8 +41,8 @@ local function Parse(value)
         return p
     end
     p = false
-    local modeName, ident = value:match("^(%a+):([%w_]+)$")
-    local m = modeName and MODES[modeName]
+    local mode, ident = value:match("^(%a+):([%w_]+)$")
+    local m = mode and MODES[mode]
     local states = m and CludesUI.CLASS_PAGING_STATES[select(2, UnitClass("player"))]
     if states then
         for _, st in ipairs(states) do

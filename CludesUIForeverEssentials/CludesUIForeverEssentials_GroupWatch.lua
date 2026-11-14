@@ -66,11 +66,11 @@ local function HMHere()
     if HM.Get("where") == "group" then
         return true
     end
-    local _, kindOf = IsInInstance()
-    return kindOf == "party" or kindOf == "raid"
+    local _, kind = IsInInstance()
+    return kind == "party" or kind == "raid"
 end
 
-local function IsHealer(unitToken, classFile)
+local function IsHealer(unitToken, class)
     local role = UnitGroupRolesAssigned(unitToken)
     if Secret(role) then
         role = nil
@@ -81,7 +81,7 @@ local function IsHealer(unitToken, classFile)
     if role == "TANK" or role == "DAMAGER" then
         return false
     end
-    return HEALER_CLASSES[classFile] == true
+    return HEALER_CLASSES[class] == true
 end
 
 local function Units()
@@ -109,12 +109,12 @@ local function Roster()
     wipe(tracked)
     for _, unitToken in ipairs(Units()) do
         local name, unitGuid = UnitName(unitToken), UnitGUID(unitToken)
-        local _, classFile = UnitClass(unitToken)
+        local _, class = UnitClass(unitToken)
         if
             name
             and unitGuid
-            and not (Secret(name) or Secret(unitGuid) or Secret(classFile))
-            and IsHealer(unitToken, classFile)
+            and not (Secret(name) or Secret(unitGuid) or Secret(class))
+            and IsHealer(unitToken, class)
         then
             local num = #list + 1
             local m = members[num] or {}
@@ -122,7 +122,7 @@ local function Roster()
             if m.guid ~= unitGuid then
                 m.pct, m.drinking = nil, false
             end
-            m.unit, m.name, m.class, m.guid = unitToken, name, classFile, unitGuid
+            m.unit, m.name, m.class, m.guid = unitToken, name, class, unitGuid
             list[num], tracked[unitToken] = m, m
         end
     end
@@ -180,10 +180,10 @@ local function Read(m)
         dead = false
     end
     m.state = (not online and OFFLINE) or (dead and DEAD) or nil
-    local current, upper = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
-    m.secret = (Secret(current) or Secret(upper)) == true
-    if not m.secret and upper > 0 then
-        m.pct = current / upper
+    local current, max = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
+    m.secret = (Secret(current) or Secret(max)) == true
+    if not m.secret and max > 0 then
+        m.pct = current / max
     end
 end
 
@@ -266,8 +266,8 @@ local function Row(idx)
 end
 
 local function PaintRows(entries)
-    local dim, drinks = HM.Get("size"), HM.Get("drinking")
-    local step = dim + ROW_PAD
+    local size, drinks = HM.Get("size"), HM.Get("drinking")
+    local step = size + ROW_PAD
     hmFrame:SetSize(HM.Get("width"), #entries * step + 2 * PAD)
     for idx, m in ipairs(entries) do
         local r = Row(idx)
@@ -275,11 +275,11 @@ local function PaintRows(entries)
         r:SetPoint("TOPLEFT", PAD, -PAD - (idx - 1) * step)
         r:SetPoint("TOPRIGHT", -PAD, -PAD - (idx - 1) * step)
         r:SetHeight(step)
-        CludesUI.Kit.Font(r.name, dim, "essentials")
-        CludesUI.Kit.Font(r.pct, dim, "essentials")
-        r.icon:SetSize(dim, dim)
+        CludesUI.Kit.Font(r.name, size, "essentials")
+        CludesUI.Kit.Font(r.pct, size, "essentials")
+        r.icon:SetSize(size, size)
         r.name:ClearAllPoints()
-        r.name:SetPoint("LEFT", drinks and (dim + ICON_GAP) or 0, 0)
+        r.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
         r.name:SetPoint("RIGHT", r.pct, "LEFT", -8, 0)
         r.name:SetText(m.name)
         local c = RAID_CLASS_COLORS[m.class]
@@ -519,11 +519,11 @@ local function PTBuild()
 end
 
 local function Restyle()
-    local dim = PT.Get("size")
-    CludesUI.Kit.Font(ptFrame.text, dim, "essentials")
+    local size = PT.Get("size")
+    CludesUI.Kit.Font(ptFrame.text, size, "essentials")
     ptFrame.text:ClearAllPoints()
     if PT.Get("showIcon") then
-        ptFrame.icon:SetSize(dim + 12, dim + 12)
+        ptFrame.icon:SetSize(size + 12, size + 12)
         ptFrame.icon:SetPoint("LEFT")
         ptFrame.icon:Show()
         ptFrame.text:SetPoint("LEFT", ptFrame.icon, "RIGHT", 8, 0)
@@ -531,7 +531,7 @@ local function Restyle()
         ptFrame.icon:Hide()
         ptFrame.text:SetPoint("CENTER")
     end
-    ptFrame:SetSize(220, dim + 16)
+    ptFrame:SetSize(220, size + 16)
 end
 
 -- The warning fades out above the low-health line: 1 below it, 0 above.

@@ -762,12 +762,12 @@ local BAR_POOL_SIZE = 4
 -- Size + anchor a bar indicator to its unit's health bar; shared by live and
 -- preview so they stay 1:1. Full Width/Height off = slider size at the anchor;
 -- on = edge-pinned to the health bar (pixel-for-pixel), anchor still drives the free axis.
-local function BM_PlaceBar(barFrame, healthBar, ind, iscale)
+local function BM_PlaceBar(bar, health, ind, iscale)
     local wid = ind.barWidth or 30
     local hgt = ind.barHeight or 4
     local isVert = (ind.orientation or "HORIZONTAL") == "VERTICAL"
-    barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-    barFrame:ClearAllPoints()
+    bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+    bar:ClearAllPoints()
     -- Full Width/Height follow the fill axis like barWidth/barHeight: vertical
     -- bars swap the spanned screen edge, so "Full Width" always spans horizontal.
     -- Explicit if/else, not `a and b or c` -- the values are booleans.
@@ -778,10 +778,10 @@ local function BM_PlaceBar(barFrame, healthBar, ind, iscale)
         fullW, fullH = ind.barFullWidth, ind.barFullHeight
     end
     -- Full pins span the health bar itself, keeping the real bar even when Uniform Icon Anchoring passes the full-height reference (it back-points).
-    local hugBar = healthBar._cuiHealth or healthBar
+    local hugBar = health._cuiHealth or health
     if fullW and fullH then
         -- Exact overlay of the health bar.
-        barFrame:SetAllPoints(hugBar)
+        bar:SetAllPoints(hugBar)
     elseif fullW then
         -- Full width; cross-axis slider sets thickness, vertical edge places it.
         local place = ind.position or "TOPLEFT"
@@ -789,9 +789,9 @@ local function BM_PlaceBar(barFrame, healthBar, ind, iscale)
             or (place:find("TOP", 1, true) and "TOP")
             or ""
         local oy = (ind.offsetY or 0) * iscale
-        barFrame:SetPoint(vEdge .. "LEFT", healthBar, vEdge .. "LEFT", 0, oy)
-        barFrame:SetPoint(vEdge .. "RIGHT", healthBar, vEdge .. "RIGHT", 0, oy)
-        barFrame:SetHeight(isVert and wid or hgt)
+        bar:SetPoint(vEdge .. "LEFT", health, vEdge .. "LEFT", 0, oy)
+        bar:SetPoint(vEdge .. "RIGHT", health, vEdge .. "RIGHT", 0, oy)
+        bar:SetHeight(isVert and wid or hgt)
     elseif fullH then
         -- Full height; cross-axis slider sets thickness, horizontal edge places it.
         local place = ind.position or "TOPLEFT"
@@ -799,18 +799,18 @@ local function BM_PlaceBar(barFrame, healthBar, ind, iscale)
             or (place:find("LEFT", 1, true) and "LEFT")
             or ""
         local ox = (ind.offsetX or 0) * iscale
-        barFrame:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
-        barFrame:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
-        barFrame:SetWidth(isVert and hgt or wid)
+        bar:SetPoint("TOP" .. hEdge, hugBar, "TOP" .. hEdge, ox, 0)
+        bar:SetPoint("BOTTOM" .. hEdge, hugBar, "BOTTOM" .. hEdge, ox, 0)
+        bar:SetWidth(isVert and hgt or wid)
     else
         if isVert then
-            barFrame:SetSize(hgt, wid)
+            bar:SetSize(hgt, wid)
         else
-            barFrame:SetSize(wid, hgt)
+            bar:SetSize(wid, hgt)
         end
-        barFrame:SetPoint(
+        bar:SetPoint(
             ind.position or "TOPLEFT",
-            healthBar,
+            health,
             ind.position or "TOPLEFT",
             (ind.offsetX or 0) * iscale,
             (ind.offsetY or 0) * iscale
@@ -822,14 +822,14 @@ end
 -- unit button's level; own border at base+1, count/duration text carrier pinned
 -- at +18 regardless of mode. Runs per assignment: pool frames are reused across indicators with different modes.
 local function BM_ApplyIconLevel(fr, ind, baseLvl)
-    local offset = FRAMELVL_BASE[ind.frameLevel or "medium"] or FRAMELVL_BASE.medium
-    fr:SetFrameLevel(baseLvl + offset)
+    local off = FRAMELVL_BASE[ind.frameLevel or "medium"] or FRAMELVL_BASE.medium
+    fr:SetFrameLevel(baseLvl + off)
     -- Swipe + border one above the icon, text carrier on top; set each explicitly, not by child-level propagation.
     if fr._cooldown then
-        fr._cooldown:SetFrameLevel(baseLvl + offset + 1)
+        fr._cooldown:SetFrameLevel(baseLvl + off + 1)
     end
     if fr._bdr then
-        fr._bdr:SetFrameLevel(baseLvl + offset + 1)
+        fr._bdr:SetFrameLevel(baseLvl + off + 1)
     end
     if fr._textCarrier then
         fr._textCarrier:SetFrameLevel(baseLvl + FRAMELVL_TEXT)
@@ -837,8 +837,8 @@ local function BM_ApplyIconLevel(fr, ind, baseLvl)
 end
 
 -- Bars have no border/text sub-frames: base only, defaulting to Behind Borders.
-local function BM_ApplyBarLevel(barFrame, ind, baseLvl)
-    barFrame:SetFrameLevel(
+local function BM_ApplyBarLevel(bar, ind, baseLvl)
+    bar:SetFrameLevel(
         baseLvl + (FRAMELVL_BASE[ind.frameLevel or "behindBorders"] or FRAMELVL_BASE.behindBorders)
     )
 end
@@ -848,10 +848,10 @@ end
 -- LibSharedMedia) goes through CludesUI.ApplyBorderStyle (PP-vs-
 -- BackdropTemplate swap; one renderer active, style stamped on frame). r,g,b,a are non-secret configured values; callers Show().
 local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
-    local look = ind.borderStyle or "solid"
+    local style = ind.borderStyle or "solid"
     -- Sweep is not offered: no secret-safe way to drive the perimeter reveal on containers, and a full ring duplicates Solid. Stale picks render Solid.
-    if look == "sweepcw" or look == "sweepccw" then
-        look = "solid"
+    if style == "sweepcw" or style == "sweepccw" then
+        style = "solid"
     end
     local bw = ind.borderWidth or 2
     local Glows = CludesUI.Glows
@@ -860,7 +860,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
     -- One under the raise (+9: solid strips +10, textured +9): over the base border,
     -- under the hover/target/aggro raise and the text band. Matches creation.
     borderFrame:SetFrameLevel(baseLvl + mod.LVL_RAISE - 1)
-    if look == "dashed" then
+    if style == "dashed" then
         CludesUI.HideBorderStyle(borderFrame)
         Glows.StartProceduralAnts(
             borderFrame,
@@ -884,7 +884,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
         Glows.StopProceduralAnts(borderFrame)
         if CludesUI.ApplyBorderStyle then
             -- Solid takes width as literal pixels; textured styles index the edge-size map (steps 1-4 only), so cap to dodge the >4 fallback.
-            local sz = (look == "solid") and bw or math.min(bw, 4)
+            local sz = (style == "solid") and bw or math.min(bw, 4)
             -- Exact size (borderWidthPx, against the step and style drawn): 15th argument.
             CludesUI.ApplyBorderStyle(
                 borderFrame,
@@ -893,7 +893,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
                 g,
                 b,
                 a,
-                look,
+                style,
                 nil,
                 nil,
                 nil,
@@ -901,7 +901,7 @@ local function ApplyEffectBorder(borderFrame, ind, r, g, b, a, wid, hgt)
                 nil,
                 nil,
                 nil,
-                CludesUI.BorderPx(ind.borderWidthPx, sz, look)
+                CludesUI.BorderPx(ind.borderWidthPx, sz, style)
             )
         end
     end
@@ -992,8 +992,8 @@ local function BM_FindIndicatorById(indId)
     if groups then
         for gi = 1, #groups do
             local gkey = groups[gi]
-            local offset = mod.BM_INH_OFFSETS[gkey] or 0
-            local rawId = indId - offset
+            local off = mod.BM_INH_OFFSETS[gkey] or 0
+            local rawId = indId - off
             if rawId >= 1000000 and rawId ~= indId then
                 local ginds = mod.BM2_SpecInds(gkey)
                 if ginds then
@@ -1053,8 +1053,8 @@ local function AttachPvIndHover(fr, Pix)
     fr:SetScript("OnMouseUp", PvInd_OnClick)
 end
 
-function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
-    if not healthBar then
+function mod.BM_CreatePreviewIndicators(f, health, Pix)
+    if not health then
         return
     end
     -- Options page pool (CludesUI_FramePool.lua): on the Buff Manager's kept
@@ -1068,7 +1068,7 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     -- preview inherited group buckets on top of their own list, and overflow
     -- is a silent vanish.
     for idx = 1, ICON_POOL_SIZE + 24 do
-        local fr = CreateFrame("Frame", nil, healthBar)
+        local fr = CreateFrame("Frame", nil, health)
         fr:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
         fr:SetSize(12, 12)
         fr:Hide()
@@ -1128,36 +1128,36 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     -- +4: bar indicators inherited from group buckets preview alongside the
     -- edited bucket's own (same union-headroom reasoning as the icon pool).
     for idx = 1, BAR_POOL_SIZE + 4 do
-        local barFrame = CreateFrame("StatusBar", nil, healthBar)
-        barFrame:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
-        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        barFrame:SetMinMaxValues(0, 1)
-        barFrame:SetValue(0.6)
-        barFrame:Hide()
+        local bar = CreateFrame("StatusBar", nil, health)
+        bar:SetFrameLevel(f:GetFrameLevel() + mod.LVL_AURA)
+        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0.6)
+        bar:Hide()
 
-        local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+        local backdrop = bar:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.5)
-        barFrame._bg = backdrop
+        bar._bg = backdrop
 
-        AttachPvIndHover(barFrame, Pix)
-        barPool[idx] = barFrame
+        AttachPvIndHover(bar, Pix)
+        barPool[idx] = bar
     end
 
     -- Frame effect overlays for preview: ARTWORK sublevel 2 sits below the dispel overlay (sublevel 3), matching the real frames.
-    local hcOverlay = healthBar:CreateTexture(nil, "ARTWORK", nil, 2)
-    local pvFillTex = healthBar:GetStatusBarTexture()
+    local hcOverlay = health:CreateTexture(nil, "ARTWORK", nil, 2)
+    local pvFillTex = health:GetStatusBarTexture()
     if pvFillTex then
         hcOverlay:SetAllPoints(pvFillTex)
     else
-        hcOverlay:SetAllPoints(healthBar)
+        hcOverlay:SetAllPoints(health)
     end
     hcOverlay:SetTexture("Interface\\Buttons\\WHITE8X8")
     hcOverlay:Hide()
 
     -- Background Color: whole health area, BELOW the fill (ARTWORK -2) so the tint reads as the bar's background, matching the real frames.
-    local bgOverlay = healthBar:CreateTexture(nil, "ARTWORK", nil, -2)
-    bgOverlay:SetAllPoints(healthBar)
+    local bgOverlay = health:CreateTexture(nil, "ARTWORK", nil, -2)
+    bgOverlay:SetAllPoints(health)
     bgOverlay:SetTexture("Interface\\Buttons\\WHITE8X8")
     bgOverlay:Hide()
 
@@ -1172,7 +1172,7 @@ function mod.BM_CreatePreviewIndicators(f, healthBar, Pix)
     f._bmIconPool = iconPool
     f._bmBarPool = barPool
     f._bmHCOverlay = hcOverlay
-    f._bmHCBar = healthBar
+    f._bmHCBar = health
     f._bmBGOverlay = bgOverlay
     f._bmEffectBorder = effectBorder
 end
@@ -1187,12 +1187,12 @@ local function GetSpellIcon(spellId)
         return previewSpellIcons[spellId]
     end
     local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
-    local glyph = (details and details.iconID) or 136243
-    previewSpellIcons[spellId] = glyph
-    return glyph
+    local icon = (details and details.iconID) or 136243
+    previewSpellIcons[spellId] = icon
+    return icon
 end
 
-function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
+function mod.BM_ApplyPreviewIndicators(f, index, s)
     local iconPool = f._bmIconPool
     local barPool = f._bmBarPool
     if not iconPool then
@@ -1244,7 +1244,7 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
     f:SetAlpha(1)
 
     -- Only show on slot 1 (player) for the preview
-    if slotPos ~= 1 then
+    if index ~= 1 then
         return
     end
 
@@ -1252,8 +1252,8 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
     if not saved or not saved.profile then
         return
     end
-    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, s) or f._health
-    if not healthBar then
+    local health = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, s) or f._health
+    if not health then
         return
     end
     local Pix = CludesUI.PanelPP or CludesUI.PP
@@ -1380,13 +1380,13 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
                 local gkey = inhGroups[gi]
                 local ginds = mod.BM2_SpecInds(gkey)
                 if ginds then
-                    local offset = mod.BM_INH_OFFSETS[gkey] or 0
+                    local off = mod.BM_INH_OFFSETS[gkey] or 0
                     for idx = 1, #ginds do
                         local gind = ginds[idx]
                         if
                             not (mod.BM2_InhDisabled and mod.BM2_InhDisabled(activeSpecKey, gkey, gind.id))
                         then
-                            AppendPv(gind, offset, ginds)
+                            AppendPv(gind, off, ginds)
                         end
                     end
                 end
@@ -1493,15 +1493,15 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
                     if typeInfo and typeInfo.placed then
                         if indType == "bar" then
                             bPoolIdx = bPoolIdx + 1
-                            local barFrame = barPool and barPool[bPoolIdx]
-                            if barFrame then
-                                BM_ApplyBarLevel(barFrame, ind, pvBaseLvl)
-                                barFrame:SetReverseFill(ind.reverseFill or false)
+                            local bar = barPool and barPool[bPoolIdx]
+                            if bar then
+                                BM_ApplyBarLevel(bar, ind, pvBaseLvl)
+                                bar:SetReverseFill(ind.reverseFill or false)
                                 local c = ind.color or { r = 0, g = 1, b = 0 }
-                                barFrame:SetStatusBarColor(c.r, c.g, c.b, (ind.barColorOpacity or 100) / 100)
-                                if barFrame._bg then
+                                bar:SetStatusBarColor(c.r, c.g, c.b, (ind.barColorOpacity or 100) / 100)
+                                if bar._bg then
                                     local bgc = ind.barBgColor or { r = 0, g = 0, b = 0 }
-                                    barFrame._bg:SetColorTexture(
+                                    bar._bg:SetColorTexture(
                                         bgc.r,
                                         bgc.g,
                                         bgc.b,
@@ -1510,16 +1510,16 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
                                 end
                                 local barSid = ind.spells and ind.spells[1]
                                 if barSid and not PREVIEW_NO_DURATION[barSid] then
-                                    barFrame:SetValue(GetPvCDSeed(slotPos, barSid))
+                                    bar:SetValue(GetPvCDSeed(index, barSid))
                                 else
-                                    barFrame:SetValue(1)
+                                    bar:SetValue(1)
                                 end
-                                BM_PlaceBar(barFrame, healthBar, ind, iscale)
+                                BM_PlaceBar(bar, health, ind, iscale)
                                 -- v2 only: non-selected groups dim like icons (legacy preview never dimmed bars).
                                 local barSel = mod._bmSelectedIndId and ind.id == mod._bmSelectedIndId
-                                barFrame:SetAlpha((barSel or mod._bmAllIndicatorsVisible) and 1 or 0.5)
-                                barFrame._bmIndId = ind.id
-                                barFrame:Show()
+                                bar:SetAlpha((barSel or mod._bmAllIndicatorsVisible) and 1 or 0.5)
+                                bar._bmIndId = ind.id
+                                bar:Show()
                             end
                         else
                             local growDir = ind.growDirection or "RIGHT"
@@ -1649,13 +1649,7 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
                                         cursor = cursor + iconSz + gap
                                         gx = wrapLeft and -lineOff or lineOff
                                     end
-                                    fr:SetPoint(
-                                        pvSelfPoint,
-                                        healthBar,
-                                        anchorPos,
-                                        anchorOX + gx,
-                                        anchorOY + gy
-                                    )
+                                    fr:SetPoint(pvSelfPoint, health, anchorPos, anchorOX + gx, anchorOY + gy)
                                     -- "Hide Icons" (icon only): keep frame alpha so stacks preview; zero texture, swipe, border.
                                     local pvHideIcon = (indType == "icon") and ind.hideIcon == true
                                     local pvAlpha = pvHideIcon and 1 or (ind.iconOpacity or 100) / 100
@@ -1711,7 +1705,7 @@ function mod.BM_ApplyPreviewIndicators(f, slotPos, s)
                                     -- Preview cooldown swipe (frame must be visible first)
                                     if fr._cooldown then
                                         if not PREVIEW_NO_DURATION[spellRef] then
-                                            local seed = GetPvCDSeed(slotPos, spellRef)
+                                            local seed = GetPvCDSeed(index, spellRef)
                                             local fakeDisplay = math.floor(3 + seed * 17)
                                             -- Use a long future expiry so swipe barely moves
                                             local nowTime = GetTime()
@@ -1920,16 +1914,16 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         and mod.RF_KitBuffMode(mod.db and mod.db.profile)
     local rowH = 0
     if options.styleToggle then
-        local rowFrame = CreateFrame("Frame", nil, hostFrame)
-        local cap = rowFrame:CreateFontString(nil, "OVERLAY")
+        local row = CreateFrame("Frame", nil, hostFrame)
+        local cap = row:CreateFontString(nil, "OVERLAY")
         cap:SetFont(fontFile, 12, "")
         cap:SetTextColor(1, 1, 1, 0.75)
         cap:SetText(CludesUI.L("Preview"))
-        local seg, segBtn = mod.BM_BuildPreviewStyleToggle(rowFrame)
-        rowFrame:SetSize(math.ceil(cap:GetStringWidth()) + 10 + seg:GetWidth(), 22)
-        rowFrame:SetPoint("TOP", hostFrame, "TOPLEFT", floor(centerX), topY)
-        cap:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
-        seg:SetPoint("RIGHT", rowFrame, "RIGHT", 0, 0)
+        local seg, segBtn = mod.BM_BuildPreviewStyleToggle(row)
+        row:SetSize(math.ceil(cap:GetStringWidth()) + 10 + seg:GetWidth(), 22)
+        row:SetPoint("TOP", hostFrame, "TOPLEFT", floor(centerX), topY)
+        cap:SetPoint("LEFT", row, "LEFT", 0, 0)
+        seg:SetPoint("RIGHT", row, "RIGHT", 0, 0)
         -- Overrides that apply on that side: a gold "i" (the overrides UI's
         -- badge) in the segment's free right padding, carrying the tip.
         -- Motion only: the segment keeps its clicks.
@@ -1959,14 +1953,14 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
                 end
             end
         end
-        rowFrame:EnableMouse(true)
-        rowFrame:SetScript("OnEnter", function(self)
+        row:EnableMouse(true)
+        row:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(
                 self,
                 CludesUI.L("Only changes the preview. Raid and party frames share these settings.")
             )
         end)
-        rowFrame:SetScript("OnLeave", function()
+        row:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         rowH = 22 + 24
@@ -1981,7 +1975,7 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
             hint:SetWidth(centerX * 2 - previewPad * 2)
             hint:SetWordWrap(true)
             hint:SetJustifyH("CENTER")
-            hint:SetPoint("TOP", rowFrame, "BOTTOM", 0, -8)
+            hint:SetPoint("TOP", row, "BOTTOM", 0, -8)
             if options.kitAuras == "buffs" then
                 hint:SetText(
                     CludesUI.Lf(
@@ -2046,24 +2040,24 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         texKey,
         "Interface\\Buttons\\WHITE8X8"
     ) or "Interface\\Buttons\\WHITE8X8"
-    local healthBar = CreateFrame("StatusBar", nil, pvFrame)
-    healthBar:SetFrameLevel(pvFrame:GetFrameLevel() + 2)
-    healthBar:SetPoint("TOPLEFT", pvFrame, "TOPLEFT", 0, healthTopY)
-    healthBar:SetPoint("TOPRIGHT", pvFrame, "TOPRIGHT", 0, healthTopY)
-    healthBar:SetHeight(healthH)
-    healthBar:SetStatusBarTexture(texPath)
-    healthBar:GetStatusBarTexture():SetHorizTile(false)
-    healthBar:SetMinMaxValues(0, 100)
-    healthBar:SetValue(85)
+    local health = CreateFrame("StatusBar", nil, pvFrame)
+    health:SetFrameLevel(pvFrame:GetFrameLevel() + 2)
+    health:SetPoint("TOPLEFT", pvFrame, "TOPLEFT", 0, healthTopY)
+    health:SetPoint("TOPRIGHT", pvFrame, "TOPRIGHT", 0, healthTopY)
+    health:SetHeight(healthH)
+    health:SetStatusBarTexture(texPath)
+    health:GetStatusBarTexture():SetHorizTile(false)
+    health:SetMinMaxValues(0, 100)
+    health:SetValue(85)
 
     -- Full-height anchor reference (mirrors the live buttons' d.uniformRef so Uniform Icon Anchoring previews identically; see ns.RF_AnchorHost).
     do
         local pvUniformRef = CreateFrame("Frame", nil, pvFrame)
-        pvUniformRef:SetFrameLevel(healthBar:GetFrameLevel())
-        pvUniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        pvUniformRef:SetFrameLevel(health:GetFrameLevel())
+        pvUniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
         pvUniformRef:SetPoint("BOTTOMRIGHT", pvFrame, "BOTTOMRIGHT", 0, rawBottomY)
-        healthBar._cuiUniformRef = pvUniformRef
-        pvUniformRef._cuiHealth = healthBar
+        health._cuiUniformRef = pvUniformRef
+        pvUniformRef._cuiHealth = health
     end
 
     -- Preview class color from the player's active spec (falls back to class)
@@ -2076,48 +2070,44 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         previewClass = pc
     end
     local cc = CludesUI.GetClassColor(previewClass)
-    local modeName = s.healthColorMode or "class"
-    local fillTex = healthBar:GetStatusBarTexture()
+    local mode = s.healthColorMode or "class"
+    local fill = health:GetStatusBarTexture()
     -- Textured Background, as on the live frames.
-    mod.RF_TexBgLayer(
-        healthBar,
-        backdrop,
-        mod.RF_TexBgOpaque(s, modeName == "dark") and mod.RF_TexBgPath(s) or nil
-    )
-    if modeName == "dark" then
+    mod.RF_TexBgLayer(health, backdrop, mod.RF_TexBgOpaque(s, mode == "dark") and mod.RF_TexBgPath(s) or nil)
+    if mode == "dark" then
         local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
-        healthBar:SetStatusBarColor(dfr, dfg, dfb, 1)
-        if fillTex then
-            fillTex:SetAlpha(dfa)
+        health:SetStatusBarColor(dfr, dfg, dfb, 1)
+        if fill then
+            fill:SetAlpha(dfa)
         end
         backdrop:ClearAllPoints()
-        backdrop:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
-        backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        backdrop:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+        backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
         backdrop:SetColorTexture(CludesUI.GetDarkModeBg())
-    elseif modeName == "classic" then
+    elseif mode == "classic" then
         local pct = 0.85
         local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
         local g = pct > 0.5 and 1 or (pct * 2)
-        healthBar:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
-        if fillTex then
-            fillTex:SetAlpha(1)
+        health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
+        if fill then
+            fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
-    elseif modeName == "custom" then
+    elseif mode == "custom" then
         local cfc = s.customFillColor or { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
-        healthBar:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (s.healthBarOpacity or 100) / 100)
-        if fillTex then
-            fillTex:SetAlpha(1)
+        health:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (s.healthBarOpacity or 100) / 100)
+        if fill then
+            fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
     else
         if cc then
-            healthBar:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
+            health:SetStatusBarColor(cc.r, cc.g, cc.b, (s.healthBarOpacity or 100) / 100)
         end
-        if fillTex then
-            fillTex:SetAlpha(1)
+        if fill then
+            fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
@@ -2272,7 +2262,7 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
     -- The texts as live, from this replica's sample values (85% health, 72% mana,
     -- shown with the power sample only). A fresh state per build: the carrier's pooled
     -- FontStrings come back through the pool.
-    mod.RF_TextPreview({ textCarrier = textCarrier, _health = healthBar, _txW = rawW }, s, {
+    mod.RF_TextPreview({ textCarrier = textCarrier, _health = health, _txW = rawW }, s, {
         hpPct = 85,
         hpPer = 12000,
         ppPct = 72,
@@ -2284,7 +2274,7 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         pToken = "MANA",
     })
 
-    pvFrame._health = healthBar
+    pvFrame._health = health
     -- Settings source for every later indicator pass on this replica (nil = the caller's).
     pvFrame._bmPvS = options.party and s or nil
 
@@ -2307,8 +2297,8 @@ end
 -- The preview side an override editing session pins ("raid" | "party"): a
 -- condition group that applies on only one kind of frames. nil = free.
 function mod.BM_PreviewPinnedSide()
-    local kindOf, groupId = CludesUI.SpecOverrides_EditSessionInfo()
-    if kindOf ~= "cond" then
+    local kind, groupId = CludesUI.SpecOverrides_EditSessionInfo()
+    if kind ~= "cond" then
         return nil
     end
     local toRaid, toParty = mod.BM_CondSides(CludesUI.Conditions_GroupById(groupId))
@@ -2367,7 +2357,7 @@ local DM_BASE_KEYS = {
 -- system). "bm": groups with their own Buff Manager; "dm": groups with their
 -- own Debuff Manager and overrides holding base debuff settings. A condition
 -- group lands on the side whose frames it applies on; spec groups land on both.
-function mod.BM_PreviewOverrideTips(kindOf)
+function mod.BM_PreviewOverrideTips(kind)
     local raid, party, seenR, seenP = nil, nil, {}, {}
     local function Add(name, toRaid, toParty)
         name = name or "?"
@@ -2394,7 +2384,7 @@ function mod.BM_PreviewOverrideTips(kindOf)
         Add(g.name, toRaid, toParty)
     end
     -- Groups with their own Buff or Debuff Manager.
-    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kindOf)
+    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kind)
     for idx = 1, #specGids do
         local g = CludesUI.SpecOverrides_GroupById(specGids[idx])
         if g then
@@ -2404,7 +2394,7 @@ function mod.BM_PreviewOverrideTips(kindOf)
     for idx = 1, #condGids do
         AddCond(condGids[idx])
     end
-    if kindOf == "dm" then
+    if kind == "dm" then
         local holders = CludesUI.SpecOverrides_CapturedBy("CludesUIRaidFrames", DM_BASE_KEYS)
         for jdx = 1, #holders do
             local hgt = holders[jdx]
@@ -2422,7 +2412,7 @@ function mod.BM_PreviewOverrideTips(kindOf)
             end
         end
     end
-    local subFrame = (kindOf == "bm") and CludesUI.L("These overrides use their own Buff Manager.")
+    local sub = (kind == "bm") and CludesUI.L("These overrides use their own Buff Manager.")
         or CludesUI.L("These overrides hold their own debuff settings.")
     local rgb = CludesUI._SPECOV_GOLD
     local gold = CludesUI.HexColor(rgb[1], rgb[2], rgb[3])
@@ -2436,7 +2426,7 @@ function mod.BM_PreviewOverrideTips(kindOf)
             .. table.concat(nameList, ", ")
             .. "\n"
             .. CludesUI.COLOR_CODES.DIM
-            .. subFrame
+            .. sub
             .. "|r"
     end
     return Tip(raid), Tip(party)
@@ -2500,13 +2490,13 @@ do
     reg.CludesUIRaidFrames = pages
 end
 
-function mod.BM_BuildOverrideList(hostFrame, posY, width, fontFile, kindOf)
-    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kindOf)
+function mod.BM_BuildOverrideList(hostFrame, posY, width, fontFile, kind)
+    local specGids, condGids = CludesUI.SpecOverrides_ManagerForkOwners(kind)
     if #specGids + #condGids == 0 then
         return posY
     end
     -- The fork live on this page (session-applied conditional first).
-    local lockInfo = (kindOf == "dm") and CludesUI.SpecOverrides_DmPageLockInfo
+    local lockInfo = (kind == "dm") and CludesUI.SpecOverrides_DmPageLockInfo
         or CludesUI.SpecOverrides_BmPageLockInfo
     local liveKind, liveGid = lockInfo()
     local ovList = {}
@@ -3738,7 +3728,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 kitAuras = "buffs",
                 overrideTips = { raid = ovRaid, party = ovParty },
             })
-        local healthBar = pvFrame._health
+        local health = pvFrame._health
 
         -- Vertical divider between preview and editing spec
         local splitDiv = leftFixed:CreateTexture(nil, "ARTWORK")
@@ -3833,7 +3823,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
         -- Buff manager indicators on the preview
         if mod.BM_CreatePreviewIndicators then
-            mod.BM_CreatePreviewIndicators(pvFrame, healthBar, Pix)
+            mod.BM_CreatePreviewIndicators(pvFrame, health, Pix)
         end
         if mod.BM_ApplyPreviewIndicators then
             mod.BM_ApplyPreviewIndicators(pvFrame, 1, s)
@@ -4097,10 +4087,10 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
         -- Helper: build a DualRow inside leftFrame
         local function SettingsRow(leftCfg, rightCfg)
-            local rowFrame
-            rowFrame, hgt = W:DualRow(leftFrame, sy, leftCfg, rightCfg)
+            local row
+            row, hgt = W:DualRow(leftFrame, sy, leftCfg, rightCfg)
             sy = sy - hgt
-            return rowFrame
+            return row
         end
 
         -- Own Only is per-INDICATOR (no per-source dropdown).
@@ -4266,8 +4256,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end
             end
             -- Following the candidate's own anchor links must never reach back to this indicator (no cycles).
-            local function WouldCycle(targetUnit)
-                local seen, current = {}, targetUnit
+            local function WouldCycle(target)
+                local seen, current = {}, target
                 while current do
                     if current == ind or seen[current] then
                         return true

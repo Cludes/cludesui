@@ -42,9 +42,9 @@ local SetupReadyCheckManaWarning = function()
     function REMIND.RCWColor()
         local p = saved and saved.profile
         local c = p and p.consumables
-        local column = c and c.rcManaWarnColor
-        if column and column.r then
-            return column.r, column.g, column.b
+        local col = c and c.rcManaWarnColor
+        if col and col.r then
+            return col.r, col.g, col.b
         end
         local mc = CludesUI.GetPowerColor("MANA")
         if mc then

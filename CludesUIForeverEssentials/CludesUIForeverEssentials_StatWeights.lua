@@ -293,25 +293,25 @@ forget:SetScript("OnEvent", function()
     lastMain, lastOff = nil, nil
 end)
 
-local function Stats(itemInfo)
-    local s = statsOf[itemInfo]
+local function Stats(item)
+    local s = statsOf[item]
     if s then
         return s
     end
-    if type(itemInfo) == "number" and not C_Item.IsItemDataCachedByID(itemInfo) then
+    if type(item) == "number" and not C_Item.IsItemDataCachedByID(item) then
         return nil
     end
-    s = C_Item.GetItemStats(type(itemInfo) == "number" and ("item:" .. itemInfo) or itemInfo) or {}
+    s = C_Item.GetItemStats(type(item) == "number" and ("item:" .. item) or item) or {}
     if cached >= CACHE_MAX then
         wipe(statsOf)
         cached = 0
     end
-    statsOf[itemInfo], cached = s, cached + 1
+    statsOf[item], cached = s, cached + 1
     return s
 end
 
-local function DpsShare(slotIndex)
-    return ((CLASS == "HUNTER") and HUNTER_DPS_SHARE or DPS_SHARE)[slotIndex] or 0
+local function DpsShare(slot)
+    return ((CLASS == "HUNTER") and HUNTER_DPS_SHARE or DPS_SHARE)[slot] or 0
 end
 
 local function Worth(stats, weights, dpsShare, skipPrimary)
@@ -335,13 +335,13 @@ local function Worth(stats, weights, dpsShare, skipPrimary)
     return worth
 end
 
-local function WornWorth(slotIndex, weights)
-    local itemLink = GetInventoryItemLink("player", slotIndex)
+local function WornWorth(slot, weights)
+    local itemLink = GetInventoryItemLink("player", slot)
     if not itemLink then
         return 0
     end
     local worn = Stats(itemLink)
-    return worn and Worth(worn, weights, DpsShare(slotIndex))
+    return worn and Worth(worn, weights, DpsShare(slot))
 end
 
 --- What your stats are worth now: the five stats as the game sums them, the
@@ -357,33 +357,33 @@ local function Power(weights)
             power = power + (weights[key] or 0) * effective
         end
     end
-    for _, slotIndex in ipairs(GEAR_SLOTS) do
-        local itemLink = GetInventoryItemLink("player", slotIndex)
+    for _, slot in ipairs(GEAR_SLOTS) do
+        local itemLink = GetInventoryItemLink("player", slot)
         local s = itemLink and Stats(itemLink)
         if s then
-            power = power + Worth(s, weights, DpsShare(slotIndex), true)
+            power = power + Worth(s, weights, DpsShare(slot), true)
         end
     end
     lastPower[weights] = power
     return power
 end
 
-local function Gain(itemInfo, slotIndex, weights, power, also)
+local function Gain(item, slot, weights, power, also)
     if not (weights and power and power > 0) then
         return nil
     end
-    local s = Stats(itemInfo)
-    local worn = WornWorth(slotIndex, weights)
+    local s = Stats(item)
+    local worn = WornWorth(slot, weights)
     local other = also and WornWorth(also, weights) or 0
     if not (s and worn and other) then
         return nil
     end
-    return 100 * (Worth(s, weights, DpsShare(slotIndex)) - worn - other) / power
+    return 100 * (Worth(s, weights, DpsShare(slot)) - worn - other) / power
 end
 
 local function Wearing(ident, slots)
-    for _, slotIndex in ipairs(slots) do
-        if GetInventoryItemID("player", slotIndex) == ident then
+    for _, slot in ipairs(slots) do
+        if GetInventoryItemID("player", slot) == ident then
             return true
         end
     end
@@ -403,14 +403,9 @@ function module.BestGain(ident, itemLink, weights, power)
     end
     local twoHand = equipLoc == "INVTYPE_2HWEAPON"
     local best
-    for _, slotIndex in ipairs(slots) do
-        local g = Gain(
-            itemLink or ident,
-            slotIndex,
-            weights,
-            power,
-            twoHand and slotIndex == MAIN_HAND and OFF_HAND or nil
-        )
+    for _, slot in ipairs(slots) do
+        local g =
+            Gain(itemLink or ident, slot, weights, power, twoHand and slot == MAIN_HAND and OFF_HAND or nil)
         if g and (not best or g > best) then
             best = g
         end

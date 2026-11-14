@@ -51,12 +51,12 @@ local function EnsureChrome(button)
     if d.box then
         return d
     end
-    local boxFrame = CreateFrame("Frame", nil, button)
-    boxFrame:SetAllPoints(button)
-    boxFrame:EnableMouse(false)
-    Skin.AddBorder(boxFrame)
-    OURS[boxFrame] = true
-    d.box = boxFrame
+    local box = CreateFrame("Frame", nil, button)
+    box:SetAllPoints(button)
+    box:EnableMouse(false)
+    Skin.AddBorder(box)
+    OURS[box] = true
+    d.box = box
     local backdrop = button:CreateTexture(nil, "BACKGROUND", nil, -8)
     backdrop:SetColorTexture(Theme.bgR, Theme.bgG, Theme.bgB, CELL_BG_A)
     backdrop:SetAllPoints(button)
@@ -100,7 +100,7 @@ local function PaintBag(button)
         return
     end
     local isKeyRing = (button == _G.KeyRingButton)
-    local glyph = button.icon or (button.GetName and _G[button:GetName() .. "IconTexture"])
+    local icon = button.icon or (button.GetName and _G[button:GetName() .. "IconTexture"])
     local nt = (button.GetNormalTexture and button:GetNormalTexture()) or button.NormalTexture
     if isKeyRing then
         -- Its glyph can live on the NormalTexture, under its own SquareMask.
@@ -113,15 +113,15 @@ local function PaintBag(button)
             end
         end
         FadeKeyRingArt(button, 1)
-        if not (glyph and glyph.GetTexture and glyph:GetTexture()) then
-            glyph = nt
+        if not (icon and icon.GetTexture and icon:GetTexture()) then
+            icon = nt
         end
     end
-    if glyph and glyph.SetTexCoord then
-        glyph:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
+    if icon and icon.SetTexCoord then
+        icon:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
     end
     -- The bevel NormalTexture fades, except while it is the keyring glyph.
-    if nt and nt ~= glyph then
+    if nt and nt ~= icon then
         nt:SetAlpha(0)
     end
     if button.IconBorder then
@@ -130,16 +130,16 @@ local function PaintBag(button)
     local regions = { button:GetRegions() }
     for idx = 1, #regions do
         local r = regions[idx]
-        local kindOf = r and r.GetObjectType and r:GetObjectType()
-        if kindOf == "MaskTexture" then
+        local kind = r and r.GetObjectType and r:GetObjectType()
+        if kind == "MaskTexture" then
             -- pcall: a texture the mask is not on may reject the removal.
-            if glyph and glyph.RemoveMaskTexture then
-                pcall(glyph.RemoveMaskTexture, glyph, r)
+            if icon and icon.RemoveMaskTexture then
+                pcall(icon.RemoveMaskTexture, icon, r)
             end
-            if nt and nt ~= glyph and nt.RemoveMaskTexture then
+            if nt and nt ~= icon and nt.RemoveMaskTexture then
                 pcall(nt.RemoveMaskTexture, nt, r)
             end
-        elseif kindOf == "Texture" then
+        elseif kind == "Texture" then
             local atlas = r.GetAtlas and r:GetAtlas()
             if atlas and atlas:lower():find("iconframe", 1, true) then
                 r:SetAlpha(0)

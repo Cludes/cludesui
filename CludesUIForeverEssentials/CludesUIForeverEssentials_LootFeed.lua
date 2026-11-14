@@ -76,7 +76,7 @@ local F = module.Feature(
 )
 local Get, Cfg, Enabled = F.Get, F.Cfg, F.Enabled
 
-local anchorFrame, events
+local anchor, events
 local isActive = {} -- shown rows, newest first
 local pool = {}
 -- A row set: the frame its rows are laid out in, its rows (newest first) and
@@ -84,8 +84,8 @@ local pool = {}
 local feed = { rows = isActive }
 
 -- v when it is a readable value of type kind (never a secret one).
-local function Plain(val, kindOf)
-    if not issecretvalue(val) and type(val) == kindOf then
+local function Plain(val, kind)
+    if not issecretvalue(val) and type(val) == kind then
         return val
     end
 end
@@ -99,13 +99,13 @@ end
 local function Compile(fmt, anchored)
     local parts, idx, first = {}, 1, nil
     while true do
-        local s, e, place, kindOf = fmt:find("%%(%d?)%$?([sd])", idx)
+        local s, e, place, kind = fmt:find("%%(%d?)%$?([sd])", idx)
         parts[#parts + 1] = (fmt:sub(idx, s and s - 1):gsub("[%^%$%(%)%.%[%]%*%+%-%?%%]", "%%%0"))
         if not s then
             break
         end
         first = first or tonumber(place)
-        parts[#parts + 1] = kindOf == "d" and "(%d+)" or "(.-)"
+        parts[#parts + 1] = kind == "d" and "(%d+)" or "(.-)"
         idx = e + 1
     end
     local p = table.concat(parts)
@@ -136,8 +136,8 @@ end
 -------------------------------------------------------------------------------
 --  Rows
 -------------------------------------------------------------------------------
-local function StyleFont(fontStr, dim)
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, "essentials")
+local function StyleFont(fontStr, size)
+    CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials")
 end
 
 -- Toast plates draw a frame 1 px outside the row, so they need more space.
@@ -236,12 +236,12 @@ local function ToastChrome(r)
     o:SetPoint("TOPLEFT", -1, 1)
     o:SetPoint("BOTTOMRIGHT", 1, -1)
     CludesUI.PP.CreateBorder(o, 0, 0, 0, 1, 1, "OVERLAY", 1)
-    for _, sideName in ipairs({ "LEFT", "RIGHT" }) do
+    for _, side in ipairs({ "LEFT", "RIGHT" }) do
         local edge = o:CreateTexture(nil, "OVERLAY", nil, 3)
         edge:SetColorTexture(0, 0, 0, 1)
         edge:SetSize(8, 8)
         edge:SetRotation(math.rad(45))
-        edge:SetPoint("CENTER", o, sideName)
+        edge:SetPoint("CENTER", o, side)
         local stud = o:CreateTexture(nil, "OVERLAY", nil, 4)
         stud:SetColorTexture(0.85, 0.70, 0.34, 1)
         stud:SetSize(6, 6)
@@ -254,8 +254,8 @@ end
 
 -- The tracker row is never a tile: the Icon Tray draws it as an accent bar.
 local function RowStyle(r)
-    local look = Get("style")
-    return r.pinned and look == "TRAY" and "BAR" or look
+    local style = Get("style")
+    return r.pinned and style == "TRAY" and "BAR" or style
 end
 
 local function LayoutSeparator(sep)
@@ -271,13 +271,13 @@ local function LayoutSeparator(sep)
     )
 end
 
-local function StyleSeparator(r, look, dim, texture, px)
+local function StyleSeparator(r, style, size, texture, px)
     local sep = r.separator
-    local callout = look == "CALLOUT"
+    local callout = style == "CALLOUT"
     if
-        (look ~= "BOX" and not callout)
+        (style ~= "BOX" and not callout)
         or not Get("separator")
-        or dim <= 0
+        or size <= 0
         or (callout and Get("barWidth") <= 0)
         or not CludesUI.GetBorderCompanion(texture, "sepV")
     then
@@ -295,60 +295,58 @@ local function StyleSeparator(r, look, dim, texture, px)
     sep:ClearAllPoints()
     sep:SetAllPoints(callout and r.bar or r.icon)
     sep:SetFrameLevel(r:GetFrameLevel() + 3)
-    sep.key, sep.size, sep.px, sep.right = texture, dim, px, callout
+    sep.key, sep.size, sep.px, sep.right = texture, size, px, callout
     sep.tex:SetVertexColor(RowColor(r.data, false))
     LayoutSeparator(sep)
     sep:Show()
     CludesUI.RegisterPxReapply(sep, px and LayoutSeparator or nil)
 end
 
-local function StyleBorder(r, look)
+local function StyleBorder(r, style)
     local Pix = CludesUI.PP
-    local dim, texture, hostRegion = Get("borderSize"), Get("borderTexture"), r.lootBorder
-    local px = texture and CludesUI.BorderPx(Get("borderSizePx"), dim, texture)
+    local size, texture, host = Get("borderSize"), Get("borderTexture"), r.lootBorder
+    local px = texture and CludesUI.BorderPx(Get("borderSizePx"), size, texture)
     -- The white Pixels artwork takes the item's quality colour without a baked-in tint.
     if texture == "pixels-textured" and r.data.border and Get("qualityBorder") then
         texture = "pixels"
     end
     if Get("separator") or r.separator then
-        StyleSeparator(r, look, dim, texture, px)
+        StyleSeparator(r, style, size, texture, px)
     end
-    if dim <= 0 or ((look == "BAR" or look == "CALLOUT") and not texture) then
+    if size <= 0 or ((style == "BAR" or style == "CALLOUT") and not texture) then
         Pix.HideBorder(r)
-        if hostRegion then
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
         end
         return
     end
     local br, backdrop, bb
-    if look == "TOAST" then
+    if style == "TOAST" then
         br, backdrop, bb = TOAST_GOLD[1], TOAST_GOLD[2], TOAST_GOLD[3]
     else
         br, backdrop, bb = RowColor(r.data, false)
     end
-    if not texture or look == "TOAST" then
-        if hostRegion then
-            CludesUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
+    if not texture or style == "TOAST" then
+        if host then
+            CludesUI.HideBorderStyle(host)
+            host:Hide()
         end
-        Pix.UpdateBorder(r, dim, br, backdrop, bb, 1)
+        Pix.UpdateBorder(r, size, br, backdrop, bb, 1)
         Pix.ShowBorder(r)
         return
     end
     Pix.HideBorder(r)
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, r)
-        r.lootBorder = hostRegion
+    if not host then
+        host = CreateFrame("Frame", nil, r)
+        r.lootBorder = host
     end
-    hostRegion:ClearAllPoints()
-    hostRegion:SetAllPoints(look == "BAR" and r.icon or r)
-    hostRegion:SetFrameLevel(
-        Get("borderBehind") and math.max(0, r:GetFrameLevel() - 1) or r:GetFrameLevel() + 1
-    )
+    host:ClearAllPoints()
+    host:SetAllPoints(style == "BAR" and r.icon or r)
+    host:SetFrameLevel(Get("borderBehind") and math.max(0, r:GetFrameLevel() - 1) or r:GetFrameLevel() + 1)
     CludesUI.ApplyBorderStyle(
-        hostRegion,
-        dim,
+        host,
+        size,
         br,
         backdrop,
         bb,
@@ -366,11 +364,11 @@ local function StyleBorder(r, look)
 end
 
 local function StyleRow(r)
-    local hgt, dim, look = Get("rowHeight"), Get("textSize"), RowStyle(r)
-    local tray, barFrame, toast = look == "TRAY", look == "BAR", look == "TOAST"
+    local hgt, size, style = Get("rowHeight"), Get("textSize"), RowStyle(r)
+    local tray, bar, toast = style == "TRAY", style == "BAR", style == "TOAST"
     r:SetSize(tray and hgt or Get("width"), hgt)
     r.icon:ClearAllPoints()
-    if barFrame then
+    if bar then
         local bw = Get("barWidth")
         r.bar:SetWidth(math.max(bw, 1))
         r.bar:SetShown(bw > 0)
@@ -390,10 +388,10 @@ local function StyleRow(r)
     r.iconBg:ClearAllPoints()
     r.iconBg:SetPoint("TOPLEFT", r.icon, "TOPLEFT", -edge, edge)
     r.iconBg:SetPoint("BOTTOMRIGHT", r.icon, "BOTTOMRIGHT", edge, -edge)
-    if barFrame then
+    if bar then
         r.iconBg:SetColorTexture(0, 0, 0, 1)
     end
-    r.iconBg:SetShown((barFrame and not Get("borderTexture")) or toast)
+    r.iconBg:SetShown((bar and not Get("borderTexture")) or toast)
     if toast then
         ToastChrome(r):SetShown(Get("borderSize") > 0)
         local a = Get("bgA")
@@ -406,7 +404,7 @@ local function StyleRow(r)
             r.outer:Hide()
         end
         if not tray then
-            PaintBackground(r.bg, barFrame)
+            PaintBackground(r.bg, bar)
         end
     end
     r.bg:SetShown(not tray)
@@ -416,15 +414,15 @@ local function StyleRow(r)
     -- Second line: game gold on toasts, a quiet grey on bars.
     if toast then
         r.sub:SetTextColor(1, 0.82, 0)
-    elseif barFrame then
+    elseif bar then
         r.sub:SetTextColor(0.7, 0.7, 0.7)
     else
         r.sub:SetTextColor(1, 1, 1)
     end
-    StyleFont(r.name, dim)
-    StyleFont(r.value, dim)
-    StyleFont(r.sub, dim - 2)
-    StyleFont(r.badge, dim - 1)
+    StyleFont(r.name, size)
+    StyleFont(r.value, size)
+    StyleFont(r.sub, size - 2)
+    StyleFont(r.badge, size - 1)
     r.fade.alpha:SetStartDelay(Get("duration"))
 end
 
@@ -437,10 +435,10 @@ end
 
 -- Icon Tray: the newest gain's name row above the tiles (on top with grow
 -- Down). It is a child of that gain's tile, so it fades with it.
-local function ShowCallout(group)
-    local c = group.callout
+local function ShowCallout(set)
+    local c = set.callout
     if not c then
-        c = CreateFrame("Frame", nil, group.frame)
+        c = CreateFrame("Frame", nil, set.frame)
         c.bg = c:CreateTexture(nil, "BACKGROUND")
         c.bg:SetAllPoints()
         c.bar = c:CreateTexture(nil, "ARTWORK")
@@ -448,27 +446,21 @@ local function ShowCallout(group)
         c.bar:SetPoint("BOTTOMRIGHT")
         c.name, c.sub, c.value = Text(c), Text(c), Text(c)
         c.value:SetJustifyH("RIGHT")
-        group.callout = c
+        set.callout = c
     end
-    local r = group.rows[1]
+    local r = set.rows[1]
     local d = r.data
-    local hgt, bw, dim = Get("rowHeight"), Get("barWidth"), Get("textSize")
+    local hgt, bw, size = Get("rowHeight"), Get("barWidth"), Get("textSize")
     local pin = Pin()
     c:SetParent(r)
     c:SetSize(Get("width"), hgt)
     c:ClearAllPoints()
     if Get("grow") == "UP" then
-        local _, lines = TrayGrid(#group.rows)
+        local _, lines = TrayGrid(#set.rows)
         local gap = Get("spacing")
-        c:SetPoint(
-            "BOTTOMRIGHT",
-            group.frame,
-            "BOTTOMRIGHT",
-            0,
-            pin + lines * (hgt + gap) - gap + CALLOUT_GAP
-        )
+        c:SetPoint("BOTTOMRIGHT", set.frame, "BOTTOMRIGHT", 0, pin + lines * (hgt + gap) - gap + CALLOUT_GAP)
     else
-        c:SetPoint("TOPRIGHT", group.frame, "TOPRIGHT", 0, -pin)
+        c:SetPoint("TOPRIGHT", set.frame, "TOPRIGHT", 0, -pin)
     end
     PaintBackground(c.bg, false)
     c.bar:SetWidth(math.max(bw, 1))
@@ -478,9 +470,9 @@ local function ShowCallout(group)
         c.data = d
         StyleBorder(c, "CALLOUT")
     end
-    StyleFont(c.name, dim)
-    StyleFont(c.value, dim)
-    StyleFont(c.sub, dim - 2)
+    StyleFont(c.name, size)
+    StyleFont(c.value, size)
+    StyleFont(c.sub, size - 2)
     c.name:SetText(d.text)
     c.value:SetText(d.value or "")
     c.sub:SetText(d.sub or "")
@@ -504,23 +496,23 @@ local function ShowCallout(group)
     c:Show()
 end
 
-local function Layout(group)
-    group = group or feed
-    local widget = group.frame
+local function Layout(set)
+    set = set or feed
+    local widget = set.frame
     local up = Get("grow") == "UP"
     local tray = Get("style") == "TRAY"
     local step = Get("rowHeight") + (tray and Get("spacing") or Gap())
     local cols = TrayGrid(1)
     local below = Get("rowHeight") + CALLOUT_GAP -- grow Down: tiles start under the name row
     local pin = Pin() -- the rows start past the tracker row
-    for idx, r in ipairs(group.rows) do
+    for idx, r in ipairs(set.rows) do
         r:ClearAllPoints()
         if tray then
-            local column, lineTex = (idx - 1) % cols, math.floor((idx - 1) / cols)
+            local col, line = (idx - 1) % cols, math.floor((idx - 1) / cols)
             if up then
-                r:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -column * step, pin + lineTex * step)
+                r:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -col * step, pin + line * step)
             else
-                r:SetPoint("TOPRIGHT", widget, "TOPRIGHT", -column * step, -(pin + below + lineTex * step))
+                r:SetPoint("TOPRIGHT", widget, "TOPRIGHT", -col * step, -(pin + below + line * step))
             end
         elseif up then
             r:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", 0, pin + (idx - 1) * step)
@@ -528,10 +520,10 @@ local function Layout(group)
             r:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, -(pin + (idx - 1) * step))
         end
     end
-    if tray and group.rows[1] then
-        ShowCallout(group)
-    elseif group.callout then
-        group.callout:Hide()
+    if tray and set.rows[1] then
+        ShowCallout(set)
+    elseif set.callout then
+        set.callout:Hide()
     end
 end
 
@@ -614,8 +606,8 @@ local function FadeDone(g)
 end
 
 -- One animation of group g: step order, seconds, easing.
-local function Anim(g, kindOf, sequence, secs, smoothing)
-    local a = g:CreateAnimation(kindOf)
+local function Anim(g, kind, sequence, secs, smoothing)
+    local a = g:CreateAnimation(kind)
     a:SetOrder(sequence)
     a:SetDuration(secs)
     if smoothing then
@@ -625,7 +617,7 @@ local function Anim(g, kindOf, sequence, secs, smoothing)
 end
 
 local function NewRow(hostFrame)
-    local r = CreateFrame("Frame", nil, hostFrame or anchorFrame)
+    local r = CreateFrame("Frame", nil, hostFrame or anchor)
     r.bg = r:CreateTexture(nil, "BACKGROUND")
     r.bg:SetAllPoints()
     r.bar = r:CreateTexture(nil, "ARTWORK")
@@ -668,40 +660,40 @@ end
 -- border (quality colour, optional). Box rows keep their one-line form
 -- (flat) and show no quest line.
 local function Fill(r)
-    local d, look = r.data, RowStyle(r)
-    local textValue, subFrame, value = d.text, d.sub or d.questSub, d.value
-    if look == "BOX" then
-        subFrame = not d.flat and d.sub or nil
+    local d, style = r.data, RowStyle(r)
+    local textValue, sub, value = d.text, d.sub or d.questSub, d.value
+    if style == "BOX" then
+        sub = not d.flat and d.sub or nil
         if d.flat then
             textValue, value = d.flat, nil
         end
-    elseif look == "TRAY" then
-        subFrame = nil
+    elseif style == "TRAY" then
+        sub = nil
     end
     r.icon:SetTexture(d.icon)
     r.name:SetText(textValue)
-    r.sub:SetText(subFrame or "")
-    r.sub:SetShown(subFrame ~= nil)
+    r.sub:SetText(sub or "")
+    r.sub:SetShown(sub ~= nil)
     r.value:SetText(value or "")
     r.badge:SetText(d.badge or "")
     r.name:ClearAllPoints()
     r.name:SetPoint("RIGHT", r.value, "LEFT", -8, 0)
-    if subFrame then
+    if sub then
         r.name:SetPoint("BOTTOMLEFT", r.icon, "RIGHT", 6, 1)
     else
         r.name:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
     end
-    if look == "BAR" then
+    if style == "BAR" then
         r.bar:SetColorTexture(RowColor(d, true))
     end
-    if look == "TOAST" then
+    if style == "TOAST" then
         if d.border and Get("qualityBorder") then
             r.iconBg:SetColorTexture(d.border.r, d.border.g, d.border.b, 1)
         else
             r.iconBg:SetColorTexture(TOAST_EDGE[1], TOAST_EDGE[2], TOAST_EDGE[3], 1)
         end
     end
-    StyleBorder(r, look)
+    StyleBorder(r, style)
 end
 
 local function FindRow(key)
@@ -818,9 +810,9 @@ local function SyncClock()
     end
 end
 
-local function Earn(kindOf, copper)
+local function Earn(kind, copper)
     session.start = session.start or GetTime()
-    session[kindOf] = session[kindOf] + copper
+    session[kind] = session[kind] + copper
     if summary then
         FillSummary()
     end
@@ -935,10 +927,10 @@ end
 local function PlaceSummary(r)
     StyleRow(r)
     -- One text size: the second line is set apart by its tone alone.
-    local reset, dim = r.reset, Get("textSize")
-    StyleFont(r.sub, dim)
+    local reset, size = r.reset, Get("textSize")
+    StyleFont(r.sub, size)
     r.sub:SetTextColor(RESET_DIM, RESET_DIM, RESET_DIM)
-    StyleFont(reset.text, dim)
+    StyleFont(reset.text, size)
     reset.text:SetText(CludesUI.L("Reset Session"))
     reset:SetSize(reset.text:GetStringWidth(), reset.text:GetStringHeight())
     r:ClearAllPoints()
@@ -968,7 +960,7 @@ local rollLinks, wins = {}, {}
 -- counts (looted or won, not bought or a quest reward), even when item rows
 -- are off or the item is below Minimum Quality.
 local function ShowItem(itemLink, count, retried, looted, earned)
-    local name, _, quality, itemLevel, _, _, _, _, _, glyph, sellPrice, classID, _, bindType =
+    local name, _, quality, itemLevel, _, _, _, _, _, icon, sellPrice, classID, _, bindType =
         C_Item.GetItemInfo(itemLink)
     if not name then
         -- Not cached yet: try again once the client has it. Only once: the
@@ -1004,18 +996,18 @@ local function ShowItem(itemLink, count, retried, looted, earned)
     if count > 1 then
         textValue = count .. "x " .. textValue
     end
-    local subFrame, questSub
+    local sub, questSub
     if Get("showIlvl") and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor) then
         local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink) or itemLevel
         if ilvl and ilvl > 0 then
-            subFrame = CludesUI.Lf("ilvl: %d", ilvl)
+            sub = CludesUI.Lf("ilvl: %d", ilvl)
         end
     elseif classID == Enum.ItemClass.Questitem and ITEM_BIND_QUEST then
         questSub = "|cffffd100" .. ITEM_BIND_QUEST .. "|r"
     end
     if won then
         won = CludesUI.Lf("Won: %s", won)
-        subFrame = subFrame and (won .. "  " .. subFrame) or won
+        sub = sub and (won .. "  " .. sub) or won
     end
     -- The row shows the tracker's price; the plain vendor one with Use Auctionator Prices off.
     local value
@@ -1028,9 +1020,9 @@ local function ShowItem(itemLink, count, retried, looted, earned)
         end
     end
     Emit(key, {
-        icon = glyph,
+        icon = icon,
         text = textValue,
-        sub = subFrame,
+        sub = sub,
         questSub = questSub,
         value = value,
         border = color,
@@ -1137,13 +1129,13 @@ local function ShowSkill(skill, rank)
         C_SkillInfo.GetSkillLineInfo,
         "skillID"
     )
-    local upper = d and d.maxRank > 0 and (" / " .. d.maxRank) or ""
+    local max = d and d.maxRank > 0 and (" / " .. d.maxRank) or ""
     Emit("skill:" .. skill, {
         icon = SKILL_ICON,
         text = skill,
-        value = rank .. upper,
+        value = rank .. max,
         badge = rank,
-        flat = skill .. " " .. CludesUI.COLOR_CODES.WHITE .. rank .. upper .. "|r",
+        flat = skill .. " " .. CludesUI.COLOR_CODES.WHITE .. rank .. max .. "|r",
     })
 end
 
@@ -1180,9 +1172,9 @@ end
 
 local function OnLoot(textValue)
     for _, k in ipairs(ITEM_KEYS) do
-        local itemInfo, count = Match(k[1], textValue)
-        if itemInfo then
-            local itemLink = ItemString(itemInfo)
+        local item, count = Match(k[1], textValue)
+        if item then
+            local itemLink = ItemString(item)
             if itemLink then
                 ShowItem(itemLink, tonumber(count) or 1, nil, true, k[2])
             end
@@ -1215,32 +1207,32 @@ local function RollText(details)
 end
 
 -- A nil winner means everyone passed.
-local function ShowRoll(key, itemLink, itemName, winner, classFile, roll, retried)
-    local name, quality, glyph, _
+local function ShowRoll(key, itemLink, itemName, winner, class, roll, retried)
+    local name, quality, icon, _
     if itemLink then
-        name, _, quality, _, _, _, _, _, _, glyph = C_Item.GetItemInfo(itemLink)
+        name, _, quality, _, _, _, _, _, _, icon = C_Item.GetItemInfo(itemLink)
         if not name and not retried then
             Item:CreateFromItemLink(itemLink):ContinueOnItemLoad(function()
-                ShowRoll(key, itemLink, itemName, winner, classFile, roll, true)
+                ShowRoll(key, itemLink, itemName, winner, class, roll, true)
             end)
             return
         end
     end
     local color = ITEM_QUALITY_COLORS[quality or 1] or ITEM_QUALITY_COLORS[1]
-    local itemInfo = color.hex .. (name or itemName or "?") .. "|r"
+    local item = color.hex .. (name or itemName or "?") .. "|r"
     local textValue
     if winner then
         -- The suite's class colour (custom class colours included); an unknown class stays uncoloured.
-        local cc = classFile and RAID_CLASS_COLORS[classFile] and CludesUI.GetClassColor(classFile)
+        local cc = class and RAID_CLASS_COLORS[class] and CludesUI.GetClassColor(class)
         if cc then
             winner = CludesUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r"
         end
-        textValue = CludesUI.Lf("%s won %s", winner, itemInfo)
+        textValue = CludesUI.Lf("%s won %s", winner, item)
     else
-        textValue = CludesUI.Lf("Everyone passed on %s", itemInfo)
+        textValue = CludesUI.Lf("Everyone passed on %s", item)
     end
     Emit(key, {
-        icon = glyph or UNKNOWN_ICON,
+        icon = icon or UNKNOWN_ICON,
         text = textValue,
         sub = roll,
         border = color,
@@ -1362,10 +1354,10 @@ local RefreshPreview
 
 local function ApplyStyle()
     RefreshPreview()
-    if not anchorFrame then
+    if not anchor then
         return
     end
-    anchorFrame:SetSize(Get("width"), AnchorHeight())
+    anchor:SetSize(Get("width"), AnchorHeight())
     -- Pooled rows are styled when Push takes them.
     for _, r in ipairs(isActive) do
         StyleRow(r)
@@ -1379,14 +1371,14 @@ local function ApplyStyle()
 end
 
 local function CreateAnchor()
-    if anchorFrame then
+    if anchor then
         return
     end
-    anchorFrame = CreateFrame("Frame", nil, UIParent)
-    anchorFrame:SetFrameStrata("MEDIUM")
-    feed.frame = anchorFrame
+    anchor = CreateFrame("Frame", nil, UIParent)
+    anchor:SetFrameStrata("MEDIUM")
+    feed.frame = anchor
     ApplyStyle()
-    F.Place(anchorFrame)
+    F.Place(anchor)
 end
 
 local function ClearRows()
@@ -1618,7 +1610,7 @@ CludesUI._LootFeed = {
     Apply = Apply,
     ApplyStyle = ApplyStyle,
     ApplyPosition = function()
-        F.Place(anchorFrame)
+        F.Place(anchor)
     end,
     Preview = Preview,
     CreateSettingsPreview = CreateSettingsPreview,
@@ -1636,7 +1628,7 @@ F.Start(Apply, {
         if build then
             CreateAnchor()
         end
-        return anchorFrame
+        return anchor
     end,
     -- Follows Max Rows and Row Height.
     height = AnchorHeight,

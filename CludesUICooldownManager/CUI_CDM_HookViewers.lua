@@ -45,8 +45,8 @@ local function ReapplyPositions()
                 local widget = icons[idx]
                 if widget then
                     local fd = hookFrameData[widget]
-                    local anchorFrame = fd and fd._cdmAnchor
-                    if anchorFrame then
+                    local anchor = fd and fd._cdmAnchor
+                    if anchor then
                         QueueViewerAnchor(widget)
                     end
                 end
@@ -830,8 +830,8 @@ function mod.SetupViewerHooks()
                                         elseif edge.pandemicGlowMode == "custom" then
                                             c = edge.pandemicGlowColor
                                         end
-                                        local look = edge.pandemicGlowStyle or 1
-                                        local glowOpts = (look == 1)
+                                        local style = edge.pandemicGlowStyle or 1
+                                        local glowOpts = (style == 1)
                                                 and {
                                                     N = edge.pandemicGlowLines or 8,
                                                     th = edge.pandemicGlowThickness or 2,
@@ -860,7 +860,7 @@ function mod.SetupViewerHooks()
                                         fd.pandemicOverlay:SetAlpha(1)
                                         mod.StartNativeGlow(
                                             fd.pandemicOverlay,
-                                            look,
+                                            style,
                                             c and c.r,
                                             c and c.g,
                                             c and c.b,

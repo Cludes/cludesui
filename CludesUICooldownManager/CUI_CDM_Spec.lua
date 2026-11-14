@@ -304,8 +304,8 @@ function mod.SaveCachedBarSizes()
         local icons = iconsByKey[key]
         if icons then
             local vis = 0
-            for _, glyph in ipairs(icons) do
-                if glyph:IsShown() then
+            for _, icon in ipairs(icons) do
+                if icon:IsShown() then
                     vis = vis + 1
                 end
             end

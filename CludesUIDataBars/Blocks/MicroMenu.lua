@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local _G = _G
@@ -23,17 +23,17 @@ local tinsert = table.insert
 local tremove = table.remove
 local tconcat = table.concat
 local floor = math.floor
-local upper = math.max
+local max = math.max
 
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local ParkSecureFrame = Keys.ParkSecureFrame
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local ParkSecureFrame = K.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  MICROMENU (SECURE; three verbatim mechanisms)
@@ -97,9 +97,9 @@ local mmButtonDefs = {
 }
 local mmButtonOrder = {}
 local mmButtonDefsByKey = {}
-for _, spec_def in ipairs(mmButtonDefs) do
-    mmButtonOrder[#mmButtonOrder + 1] = spec_def.key
-    mmButtonDefsByKey[spec_def.key] = spec_def
+for _, def in ipairs(mmButtonDefs) do
+    mmButtonOrder[#mmButtonOrder + 1] = def.key
+    mmButtonDefsByKey[def.key] = def
 end
 
 -- String names for Blizzard MicroButtons, resolved via _G at creation (first existing
@@ -142,21 +142,21 @@ local MM_BLIZZARD_ATLAS = {
 -- instead of the shared trim, so it fills the slot's full height.
 local MM_SQUARE_CROP = CludesUI.IS_FOREVER and { lfg = 0.66 } or {}
 
-local function FitBlizzardMicroIcon(glyph, key)
+local function FitBlizzardMicroIcon(icon, key)
     -- Native micro art has padding around its emblem. Trim that padding to
     -- match the portrait's visual weight without enlarging the slot or counters.
     -- Work inside the current sheet UV rectangle so packed sheets stay intact.
-    local ulx, uly, llx, lly, urx, ury, lrx, lry = glyph:GetTexCoord()
+    local ulx, uly, llx, lly, urx, ury, lrx, lry = icon:GetTexCoord()
     local cx = (ulx + llx + urx + lrx) / 4
     local cy = (uly + lly + ury + lry) / 4
     local sx, sy = 2 / 3, 2 / 3
-    local square, aspect = MM_SQUARE_CROP[key], glyph._edbAspect
+    local square, aspect = MM_SQUARE_CROP[key], icon._edbAspect
     if square and aspect then
         -- Equal pixels both ways: the height share shrinks by the art's aspect.
         sx, sy = square, square * aspect
-        glyph._edbAspect = nil
+        icon._edbAspect = nil
     end
-    glyph:SetTexCoord(
+    icon:SetTexCoord(
         cx + (ulx - cx) * sx,
         cy + (uly - cy) * sy,
         cx + (llx - cx) * sx,
@@ -185,22 +185,17 @@ end
 -- Draws an atlas from its sheet file with the sheet coords. An atlas-mode
 -- texture does not take sheet coords in SetTexCoord, so the trim above only
 -- works on art painted this way.
-local function SetAtlasArt(glyph, atlas)
+local function SetAtlasArt(icon, atlas)
     local details = C_Texture.GetAtlasInfo(atlas)
     local file = details and (details.file or details.filename)
     if not file then
         return false
     end
-    glyph:SetTexture(file)
-    glyph:SetTexCoord(
-        details.leftTexCoord,
-        details.rightTexCoord,
-        details.topTexCoord,
-        details.bottomTexCoord
-    )
+    icon:SetTexture(file)
+    icon:SetTexCoord(details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord)
     -- Native shape (retail micro art is 32x40); PaintIcon fits it in the slot.
     if details.width > 0 and details.height > 0 then
-        glyph._edbAspect = details.width / details.height
+        icon._edbAspect = details.width / details.height
     end
     return true
 end
@@ -208,67 +203,67 @@ end
 -- Blizzard's guild button: in a guild with a tabard, the banner tinted with the
 -- tabard's background colour (the block draws the emblem over it); otherwise
 -- the plain guild icon. The tint rides icon._edbTint for IconColor.
-local function SetGuildArt(glyph)
+local function SetGuildArt(icon)
     local tabard = select(10, GetGuildLogoInfo()) and C_GuildInfo.GetGuildTabardInfo("player")
     if
         tabard
         and tabard.backgroundColor
-        and SetAtlasArt(glyph, "UI-HUD-MicroMenu-GuildCommunities-GuildColor-Up")
+        and SetAtlasArt(icon, "UI-HUD-MicroMenu-GuildCommunities-GuildColor-Up")
     then
-        glyph._edbTint = tabard.backgroundColor
+        icon._edbTint = tabard.backgroundColor
         return "micro"
     end
-    return SetAtlasArt(glyph, "UI-HUD-MicroMenu-GuildCommunities-Up") and "micro" or false
+    return SetAtlasArt(icon, "UI-HUD-MicroMenu-GuildCommunities-Up") and "micro" or false
 end
 
 -- Copies Blizzard's art for key onto icon: "micro" for padded art (micro
 -- buttons) that gets trimmed, "plain" for art that fills its texture (the PvP
 -- faction crest, the Battle.net portrait), false when none exists.
-local function SetBlizzardArt(glyph, key)
+local function SetBlizzardArt(icon, key)
     if key == "guild" then
-        return SetGuildArt(glyph)
+        return SetGuildArt(icon)
     end
     local source = FindMicroButton(MM_ART_BUTTON[key] or MM_MICRO_BUTTON_NAMES[key])
     local normal = source and source.GetNormalTexture and source:GetNormalTexture()
     local atlas = normal and normal:GetAtlas()
     if atlas then
-        if SetAtlasArt(glyph, atlas) then
+        if SetAtlasArt(icon, atlas) then
             return "micro"
         end
     else
         local texture = normal and normal:GetTexture()
         if texture then
-            glyph:SetTexture(texture)
-            glyph:SetTexCoord(normal:GetTexCoord())
+            icon:SetTexture(texture)
+            icon:SetTexCoord(normal:GetTexCoord())
             -- The shape Blizzard draws it at; an unresolved size stays square.
             local wid, hgt = normal:GetSize()
             if not (issecretvalue(wid) or issecretvalue(hgt)) and wid > 0 and hgt > 0 then
-                glyph._edbAspect = wid / hgt
+                icon._edbAspect = wid / hgt
             end
             return "micro"
         end
     end
     local stem = MM_BLIZZARD_ATLAS[key]
-    if stem and SetAtlasArt(glyph, "UI-HUD-MicroMenu-" .. stem .. "-Up") then
+    if stem and SetAtlasArt(icon, "UI-HUD-MicroMenu-" .. stem .. "-Up") then
         return "micro"
     end
     if key == "social" then
         -- No friends micro button exists: the Friends window's own portrait.
-        glyph:SetTexture("Interface\\FriendsFrame\\Battlenet-Portrait")
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexture("Interface\\FriendsFrame\\Battlenet-Portrait")
+        icon:SetTexCoord(0, 1, 0, 1)
         return "plain"
     elseif key == "pvp" then
         -- No PvP micro button exists: the faction crest the player frame shows
         -- while flagged (the UI-PVP file keeps its emblem in one corner).
         local faction = UnitFactionGroup("player") == "Horde" and "Horde" or "Alliance"
         if
-            SetAtlasArt(glyph, "UI-HUD-UnitFrame-Player-PVP-" .. faction .. "Icon")
-            or SetAtlasArt(glyph, "UI-HUD-UnitFrame-SmallCircle-" .. faction)
+            SetAtlasArt(icon, "UI-HUD-UnitFrame-Player-PVP-" .. faction .. "Icon")
+            or SetAtlasArt(icon, "UI-HUD-UnitFrame-SmallCircle-" .. faction)
         then
             return "plain"
         end
-        glyph:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. faction)
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. faction)
+        icon:SetTexCoord(0, 1, 0, 1)
         return "plain"
     end
     return false
@@ -277,41 +272,41 @@ end
 -- Skips the repaint while the icon already shows this style; force repaints
 -- (portrait and guild changes, and PLAYER_ENTERING_WORLD for Blizzard art that
 -- was missing). Returns true when it painted.
-local function ApplyMicroIcon(glyph, key, blizzard, force)
-    if not force and glyph._edbWow == blizzard then
+local function ApplyMicroIcon(icon, key, blizzard, force)
+    if not force and icon._edbWow == blizzard then
         return
     end
-    glyph._edbWow = blizzard
-    glyph._edbAspect = nil -- square unless the Blizzard art below sets its own
-    glyph._edbTint = nil
+    icon._edbWow = blizzard
+    icon._edbAspect = nil -- square unless the Blizzard art below sets its own
+    icon._edbTint = nil
     if blizzard and key == "char" then
-        glyph:SetTexCoord(0, 1, 0, 1)
-        SetPortraitTexture(glyph, "player")
+        icon:SetTexCoord(0, 1, 0, 1)
+        SetPortraitTexture(icon, "player")
         return true
     end
-    local art = blizzard and SetBlizzardArt(glyph, key)
+    local art = blizzard and SetBlizzardArt(icon, key)
     if art == "micro" then
-        FitBlizzardMicroIcon(glyph, key)
+        FitBlizzardMicroIcon(icon, key)
     elseif not art then
-        local spec_def = mmButtonDefsByKey[key]
-        glyph:SetTexture(spec_def.icon or (MM_MEDIA .. (MM_ICON_FILE[key] or key) .. ".png"))
-        glyph:SetTexCoord(0, 1, 0, 1)
+        local def = mmButtonDefsByKey[key]
+        icon:SetTexture(def.icon or (MM_MEDIA .. (MM_ICON_FILE[key] or key) .. ".png"))
+        icon:SetTexCoord(0, 1, 0, 1)
     end
     return true
 end
 
 -- Blizzard art keeps its own colors (the guild banner its tabard tint); custom
 -- art takes the block color.
-local function IconColor(blockData, glyph)
-    local s = blockData.settings
+local function IconColor(block, icon)
+    local s = block.settings
     if s and s.iconStyle == "wow" then
-        local tint = glyph and glyph._edbTint
+        local tint = icon and icon._edbTint
         if tint then
             return tint.r, tint.g, tint.b
         end
         return 1, 1, 1
     end
-    return BlockColorOf(blockData)
+    return BlockColorOf(block)
 end
 
 local function OnlineCount(key)
@@ -335,9 +330,9 @@ if CludesUI.IS_FOREVER then
     MM_MICRO_BUTTON_NAMES.talent = { "CUI_TalentsRoute", "TalentMicroButton" }
     MM_ART_BUTTON.spell = "SpellbookMicroButton"
     MM_ART_BUTTON.talent = "TalentMicroButton"
-    for idx, spec_def in ipairs(mmButtonDefs) do
-        if spec_def.key == "spell" then
-            spec_def.label = SPELLBOOK or "Spellbook"
+    for idx, def in ipairs(mmButtonDefs) do
+        if def.key == "spell" then
+            def.label = SPELLBOOK or "Spellbook"
             -- Full icon path: the shared micromenu art holds glyphs this strip's own set lacks,
             -- so Talents does not repeat the Achievements glyph right beside it.
             local talent = {
@@ -369,8 +364,8 @@ if CludesUI.IS_FOREVER then
         },
         { key = "legacy", binding = "TOGGLELEGACYSYSTEM", label = LEGACY_BUTTON or "Legacy" },
     }
-    for idx, spec_def in ipairs(mmButtonDefs) do
-        if spec_def.key == "talent" then
+    for idx, def in ipairs(mmButtonDefs) do
+        if def.key == "talent" then
             for jdx, extra in ipairs(extras) do
                 tinsert(mmButtonDefs, idx + jdx, extra)
                 tinsert(mmButtonOrder, idx + jdx, extra.key)
@@ -397,8 +392,8 @@ end
 local function MMButtonOn(mm, key)
     local val = mm[key]
     if val == nil then
-        local spec_def = mmButtonDefsByKey[key]
-        return spec_def and spec_def.onWhenUnset or false
+        local def = mmButtonDefsByKey[key]
+        return def and def.onWhenUnset or false
     end
     return val
 end
@@ -560,10 +555,10 @@ function mod.RefreshMicroMenuHider(force)
     if profile then
         local barList = profile.bars
         for idx = 1, #barList do
-            local barFrame = barList[idx]
-            if not mod.VisIsNever(barFrame) then
-                for jdx = 1, #barFrame.blocks do
-                    local b = barFrame.blocks[jdx]
+            local bar = barList[idx]
+            if not mod.VisIsNever(bar) then
+                for jdx = 1, #bar.blocks do
+                    local b = bar.blocks[jdx]
                     if b.type == "micromenu" and b.settings and b.settings.disableBlizzardMicroMenu then
                         hide = true
                     end
@@ -740,9 +735,9 @@ local function MMOpenWhisper(charName, bnetName)
     if charName and charName ~= "" then
         local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
         -- Fix "Name-Realm-Realm" to "Name-Realm"
-        local targetUnit = CludesUI.BuildFullName(charName) or charName
+        local target = CludesUI.BuildFullName(charName) or charName
         if sendTell then
-            sendTell(targetUnit, DEFAULT_CHAT_FRAME)
+            sendTell(target, DEFAULT_CHAT_FRAME)
         end
     end
 end
@@ -775,15 +770,15 @@ local function MMBuildSocialTip()
         elseif inWoW then
             local charName, realmName = ga.characterName, ga.realmName
             local faction = ga.factionName
-            local glyph = FRIENDS_TEXTURE_ONLINE
+            local icon = FRIENDS_TEXTURE_ONLINE
             if acc.isAFK or ga.isGameAFK then
-                glyph = FRIENDS_TEXTURE_AFK
+                icon = FRIENDS_TEXTURE_AFK
             end
             if acc.isDND or ga.isGameBusy then
-                glyph = FRIENDS_TEXTURE_DND
+                icon = FRIENDS_TEXTURE_DND
             end
             -- Left text carries NO |c codes so hover recolor (Tip_Show) shows; its blue rides the left-color args. Right column keeps its codes.
-            local leftX = format("|T%s:16|t %s", glyph, acc.accountName or "?")
+            local leftX = format("|T%s:16|t %s", icon, acc.accountName or "?")
             -- A cross-faction BNet friend's characterName can be secret; format("%s", ...)
             -- rejects it outright, so display text uses a nil'd-out copy. The real
             -- charName below is kept whole for BuildFullName (invite/whisper). The
@@ -839,16 +834,16 @@ local function MMBuildSocialTip()
             if online and isShown >= MM_TIP_MAX_ROWS then
                 hidden = hidden + 1
             elseif online then
-                local glyph = FRIENDS_TEXTURE_ONLINE
+                local icon = FRIENDS_TEXTURE_ONLINE
                 if fi.afk then
-                    glyph = FRIENDS_TEXTURE_AFK
+                    icon = FRIENDS_TEXTURE_AFK
                 end
                 if fi.dnd then
-                    glyph = FRIENDS_TEXTURE_DND
+                    icon = FRIENDS_TEXTURE_DND
                 end
                 -- No |c codes on the left (hover recolor needs a plain string); the class
                 -- colour rides the left-color args (white when the class is unknown).
-                local leftX = format("|T%s:16|t %s  %s", glyph, fi.name or "?", fi.level or "")
+                local leftX = format("|T%s:16|t %s  %s", icon, fi.name or "?", fi.level or "")
                 local cr, cg, cb = 1, 1, 1
                 local token = CludesUI.ClassTokenFromLocalized(fi.className)
                 if token then
@@ -968,8 +963,8 @@ local function MMBuildGuildTip(s)
     mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["INVITE"], 1, 1, 1, ar, ag, ab)
 end
 
-mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = {
         "GUILD_ROSTER_UPDATE",
@@ -1005,19 +1000,19 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
 
     local function GetIconSize()
         -- Fixed content size: bar Height never scales icons (Content Scale does).
-        return upper(16, floor(CONTENT_BASE * 0.82 + 0.5))
+        return max(16, floor(CONTENT_BASE * 0.82 + 0.5))
     end
 
     local function SocialFontSize()
         -- 0.3667 ratio = 11px at the 30px base.
-        return upper(7, floor(CONTENT_BASE * 0.3667 + 0.5))
+        return max(7, floor(CONTENT_BASE * 0.3667 + 0.5))
     end
 
     -- The guild emblem over the tinted tabard banner (Blizzard style in a guild),
     -- placed as Blizzard's guild button places it: 12x14, 2px up, on 32x40 art,
     -- here trimmed to its middle 2/3. Re-textured only when the banner repainted.
-    local function PaintGuildEmblem(glyph, widget, painted, wid, hgt)
-        if not glyph._edbTint then
+    local function PaintGuildEmblem(icon, widget, painted, wid, hgt)
+        if not icon._edbTint then
             if guildEmblem then
                 guildEmblem:Hide()
             end
@@ -1032,7 +1027,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
         end
         guildEmblem:SetSize(wid * 0.5625, hgt * 0.525)
         guildEmblem:ClearAllPoints()
-        guildEmblem:SetPoint("CENTER", glyph, "CENTER", 0, hgt * 0.075)
+        guildEmblem:SetPoint("CENTER", icon, "CENTER", 0, hgt * 0.075)
         guildEmblem:Show()
     end
 
@@ -1040,40 +1035,40 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
     -- Text Position 8px up), so the guild banner and the friends emblem drop
     -- to clear it.
     local function PlaceIcon(key)
-        local glyph, fontStr = icons[key], textFS[key]
+        local icon, fontStr = icons[key], textFS[key]
         local drop = 0
         if fontStr and fontStr:IsShown() and D().iconStyle == "wow" then
             drop = floor(SocialFontSize() * 0.45 + 0.5)
         end
-        glyph:ClearAllPoints()
-        glyph:SetPoint("CENTER", 0, -drop)
+        icon:ClearAllPoints()
+        icon:SetPoint("CENTER", 0, -drop)
     end
 
     local function PaintIcon(key, force)
-        local glyph, widget = icons[key], frameList[key]
-        if not glyph or not widget then
+        local icon, widget = icons[key], frameList[key]
+        if not icon or not widget then
             return
         end
-        local painted = ApplyMicroIcon(glyph, key, D().iconStyle == "wow", force)
+        local painted = ApplyMicroIcon(icon, key, D().iconStyle == "wow", force)
         -- SetPortraitTexture can reset anchors; restore our slot after each paint.
         PlaceIcon(key)
-        local dim = upper(8, GetIconSize() - 6)
+        local size = max(8, GetIconSize() - 6)
         -- Non-square Blizzard art keeps its shape, fitted inside the square.
-        local wid, hgt = dim, dim
-        local aspect = glyph._edbAspect
+        local wid, hgt = size, size
+        local aspect = icon._edbAspect
         if aspect and aspect < 1 then
-            wid = floor(dim * aspect + 0.5)
+            wid = floor(size * aspect + 0.5)
         elseif aspect and aspect > 1 then
-            hgt = floor(dim / aspect + 0.5)
+            hgt = floor(size / aspect + 0.5)
         end
-        glyph:SetSize(wid, hgt)
+        icon:SetSize(wid, hgt)
         if widget:IsMouseOver() then
-            glyph:SetVertexColor(mod.GetAccent())
+            icon:SetVertexColor(mod.GetAccent())
         else
-            glyph:SetVertexColor(IconColor(blockCfg, glyph))
+            icon:SetVertexColor(IconColor(blockCfg, icon))
         end
         if key == "guild" then
-            PaintGuildEmblem(glyph, widget, painted, wid, hgt)
+            PaintGuildEmblem(icon, widget, painted, wid, hgt)
         end
     end
 
@@ -1128,15 +1123,15 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
         if not widget then
             return
         end
-        local spec_def = mmButtonDefsByKey[name]
-        if not spec_def then
+        local def = mmButtonDefsByKey[name]
+        if not def then
             return
         end
         local r, g, b = 1, 1, 1
         mod.Tip_Begin(widget)
-        local titleText = "|cFFFFFFFF" .. (spec_def.label or name) .. "|r"
-        if spec_def.binding then
-            local k1, k2 = GetBindingKey(spec_def.binding)
+        local title = "|cFFFFFFFF" .. (def.label or name) .. "|r"
+        if def.binding then
+            local k1, k2 = GetBindingKey(def.binding)
             local keyList = {}
             if k1 and k1 ~= "" then
                 keyList[#keyList + 1] = GetBindingText(k1)
@@ -1145,10 +1140,10 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
                 keyList[#keyList + 1] = GetBindingText(k2)
             end
             if #keyList > 0 then
-                titleText = titleText .. " |cFFFFD200(" .. tconcat(keyList, " / ") .. ")|r"
+                title = title .. " |cFFFFD200(" .. tconcat(keyList, " / ") .. ")|r"
             end
         end
-        mod.Tip_AddLine(titleText, r, g, b)
+        mod.Tip_AddLine(title, r, g, b)
 
         if name == "ach" then
             local pts = 0
@@ -1278,9 +1273,9 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
             if InCombatLockdown() then
                 -- The FULL tooltip reads combat-restricted surfaces (char stat
                 -- secrets, guild/social rosters); in lockdown show a notice.
-                local spec_def = mmButtonDefsByKey[name]
+                local def = mmButtonDefsByKey[name]
                 mod.Tip_Begin(widget)
-                mod.Tip_AddLine("|cFFFFFFFF" .. ((spec_def and spec_def.label) or name) .. "|r", 1, 1, 1)
+                mod.Tip_AddLine("|cFFFFFFFF" .. ((def and def.label) or name) .. "|r", 1, 1, 1)
                 mod.Tip_AddLine(L["CANNOT_USE_COMBAT"], 0.65, 0.65, 0.65)
                 mod.Tip_Show()
                 return
@@ -1299,8 +1294,8 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
     end
 
     -- Create one button frame (idempotent). Returns nil in combat: secure frame creation/attribute setup must wait for PLAYER_REGEN_ENABLED.
-    local function EnsureButtonFrame(spec_def)
-        local key = spec_def.key
+    local function EnsureButtonFrame(def)
+        local key = def.key
         if frameList[key] then
             return frameList[key]
         end
@@ -1362,7 +1357,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
             widget:EnableMouse(true)
         end
         frameList[key] = widget
-        if spec_def.info then
+        if def.info then
             textFS[key] = widget:CreateFontString(nil, "OVERLAY")
             AttachTextOffset(instance, textFS[key])
         end
@@ -1375,9 +1370,9 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
     -- Materialise buttons for every enabled key. Tolerates a nil/partial set in combat; the REGEN_ENABLED event retries.
     local function CreateFramesInner()
         local mm = D()
-        for _, spec_def in ipairs(mmButtonDefs) do
-            if MMButtonOn(mm, spec_def.key) then
-                EnsureButtonFrame(spec_def)
+        for _, def in ipairs(mmButtonDefs) do
+            if MMButtonOn(mm, def.key) then
+                EnsureButtonFrame(def)
             end
         end
         -- A full out-of-combat pass clears the deferred marker (buttons that cannot exist, e.g. housing without its micro button, do not count).
@@ -1495,16 +1490,16 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
                 end
                 if isVertical then
                     totalHeight = totalHeight + ICON_SIZE + prevSpacing
-                    totalWidth = upper(totalWidth, ICON_SIZE)
+                    totalWidth = max(totalWidth, ICON_SIZE)
                 else
                     totalWidth = totalWidth + ICON_SIZE + prevSpacing
-                    totalHeight = upper(totalHeight, ICON_SIZE)
+                    totalHeight = max(totalHeight, ICON_SIZE)
                 end
                 prev = widget
             end
         end
 
-        contentFrame:SetSize(upper(totalWidth, 1), upper(totalHeight, 1))
+        contentFrame:SetSize(max(totalWidth, 1), max(totalHeight, 1))
 
         MaybeRelayout(instance)
     end
@@ -1544,8 +1539,8 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
         else
             -- REGEN x2 / PLAYER_ENTERING_WORLD: retry deferred button creation and re-apply the combat state.
             if evt == "PLAYER_ENTERING_WORLD" then
-                for _, glyph in pairs(icons) do
-                    glyph._edbWow = nil
+                for _, icon in pairs(icons) do
+                    icon._edbWow = nil
                 end
             end
             ApplyCombatState()
@@ -1572,7 +1567,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slotIndex, contentFrame, barCt
 
     -- Refresh sizes content to the laid-out strip.
     function instance:GetAutoLength()
-        return upper(barCtx.IsVertical() and contentFrame:GetHeight() or contentFrame:GetWidth(), 50)
+        return max(barCtx.IsVertical() and contentFrame:GetHeight() or contentFrame:GetWidth(), 50)
     end
 
     function instance:Destroy()

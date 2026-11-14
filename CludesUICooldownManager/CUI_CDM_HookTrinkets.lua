@@ -166,9 +166,9 @@ local function UpdateTrinketFrame(slotID)
         return
     end
     f._slotScanPending = nil
-    local glyph = C_Item.GetItemIconByID(itemId)
-    if glyph and f._tex then
-        f._tex:SetTexture(glyph)
+    local icon = C_Item.GetItemIconByID(itemId)
+    if icon and f._tex then
+        f._tex:SetTexture(icon)
     end
     local _, spellId = C_Item.GetItemSpell(itemId)
     f._trinketSpellID = spellId
@@ -400,17 +400,17 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
             success = true
         end
         local pending = false
-        for slotIndex, f in pairs(_trinketFrames) do
+        for slot, f in pairs(_trinketFrames) do
             if f._slotScanPending then
                 local key
                 if byItem then
-                    key = _trinketItemCache[slotIndex]
+                    key = _trinketItemCache[slot]
                 else
                     key = f._trinketSpellID
                 end
                 if key == arg1 then
                     if success then
-                        UpdateTrinketFrame(slotIndex)
+                        UpdateTrinketFrame(slot)
                     else
                         f._slotScanPending = nil
                     end
@@ -436,9 +436,9 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
             end
             local f = _trinketFrames[arg1]
             if f and SlotScanIncomplete(f) then
-                local slotIndex = arg1
+                local slot = arg1
                 C_Timer.After(1, function()
-                    UpdateTrinketFrame(slotIndex)
+                    UpdateTrinketFrame(slot)
                     if mod.QueueReanchor then
                         mod.QueueReanchor()
                     end
@@ -448,9 +448,9 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
     elseif evt == "PLAYER_ENTERING_WORLD" then
         UpdateTrinketFrame(13)
         UpdateTrinketFrame(14)
-        for slotIndex in pairs(_trinketFrames) do
-            if slotIndex ~= 13 and slotIndex ~= 14 then
-                UpdateTrinketFrame(slotIndex)
+        for slot in pairs(_trinketFrames) do
+            if slot ~= 13 and slot ~= 14 then
+                UpdateTrinketFrame(slot)
             end
         end
         -- Tooltip data may not be cached yet on login, causing on-use detection to
@@ -463,8 +463,8 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
         end
         if needsRetry then
             C_Timer.After(2, function()
-                for slotIndex in pairs(_trinketFrames) do
-                    UpdateTrinketFrame(slotIndex)
+                for slot in pairs(_trinketFrames) do
+                    UpdateTrinketFrame(slot)
                 end
                 if mod.QueueReanchor then
                     mod.QueueReanchor()
@@ -472,9 +472,9 @@ _trinketEventFrame:SetScript("OnEvent", function(_, evt, arg1, arg2)
             end)
         end
     elseif evt == "SPELL_UPDATE_COOLDOWN" then
-        for slotIndex, f in pairs(_trinketFrames) do
+        for slot, f in pairs(_trinketFrames) do
             if f._trinketIsOnUse then
-                UpdateTrinketCooldown(slotIndex)
+                UpdateTrinketCooldown(slot)
             end
         end
     end
@@ -657,11 +657,11 @@ do
                         -- it, and the glow it holds back is kicked through
                         -- here again once that glow ends (ns.CdGlowKick).
                         if not fd._cdStateGlowOn then
-                            local look = mod.CdReadyGlowStyle(glow2, ss2)
-                            local cr, cg, cb = mod.CdReadyGlowColor(look, ss2)
+                            local style = mod.CdReadyGlowStyle(glow2, ss2)
+                            local cr, cg, cb = mod.CdReadyGlowColor(style, ss2)
                             fd._cdStateGlowOn = mod.StartCdGlow(
                                 fd,
-                                look,
+                                style,
                                 cr,
                                 cg,
                                 cb,

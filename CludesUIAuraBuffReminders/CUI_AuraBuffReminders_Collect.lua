@@ -540,15 +540,15 @@ end
 function REMIND.EmitWeaponEnchantReminders(missing, co)
     local hasMH, mhExpire, _, _, hasOH, ohExpire = REMIND.WeaponEnchants()
     for idx = 1, 2 do
-        local slotIndex, has, expire
+        local slot, has, expire
         -- Plain if/else, not "cond and a or b": that idiom silently falls
         -- through to b whenever a (hasMH) is false, corrupting slot 16.
         if idx == 1 then
-            slotIndex, has, expire = 16, hasMH, mhExpire
+            slot, has, expire = 16, hasMH, mhExpire
         else
-            slotIndex, has, expire = 17, hasOH, ohExpire
+            slot, has, expire = 17, hasOH, ohExpire
         end
-        local r = REMIND._resolved.we[slotIndex]
+        local r = REMIND._resolved.we[slot]
         local category = r.cat
         local shouldRemind = false
         if category and not has then
@@ -563,16 +563,16 @@ function REMIND.EmitWeaponEnchantReminders(missing, co)
             local bestItemID = r.itemID
             local e = AcquireEntry()
             e.mode = "macro"
-            e.macro = "/use item:" .. bestItemID .. "\n/use " .. slotIndex
+            e.macro = "/use item:" .. bestItemID .. "\n/use " .. slot
             e.texture = C_Item.GetItemIconByID(bestItemID) or 134400
             -- Localizes the full slot name THEN shortens: ShortLabel truncates on whitespace (English -> Main/Off, space-less locales like zhTW stay intact). L() on the pre-truncated word would collide with the generic Off (disabled) translation.
-            e.label = ShortLabel(CludesUI.L(slotIndex == 16 and "Main Hand" or "Off Hand"))
+            e.label = ShortLabel(CludesUI.L(slot == 16 and "Main Hand" or "Off Hand"))
             e.tooltipItem = bestItemID
             e.qualityAtlas = REMIND.GetItemQualityAtlas(bestItemID)
             e.bagCount = CachedGetItemCount(bestItemID)
             e.desaturated = not r.hasBags
             e.cat = "consumable"
-            e.dismissKey = "consumable:weapon_enchant_" .. slotIndex
+            e.dismissKey = "consumable:weapon_enchant_" .. slot
             missing[#missing + 1] = e
         end
     end
@@ -1094,8 +1094,8 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
         if co3 and co3.enabled and co3.enabled.runeforge ~= false then
             local needsRune = false
             for idx = 1, 2 do
-                local slotIndex = (idx == 1) and 16 or 17
-                local itemLink = GetInventoryItemLink("player", slotIndex)
+                local slot = (idx == 1) and 16 or 17
+                local itemLink = GetInventoryItemLink("player", slot)
                 if itemLink then
                     local ench = itemLink:match("item:%d+:(-?%d+):")
                     local enchID = tonumber(ench) or 0

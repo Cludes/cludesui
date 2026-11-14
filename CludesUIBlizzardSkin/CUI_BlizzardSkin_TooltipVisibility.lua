@@ -70,9 +70,8 @@ do
     end
 
     local function ComparisonStateWatcherNeeded()
-        local modeName = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        return ComparisonSuppressionModeEnabled()
-            and (modeName == "outOfCombat" or modeName == "outOfBossCombat")
+        local mode = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
+        return ComparisonSuppressionModeEnabled() and (mode == "outOfCombat" or mode == "outOfBossCombat")
     end
 
     -- Shared decision: should GameTooltip be suppressed right now given the user's "Show
@@ -91,8 +90,8 @@ do
             end
             return false
         end
-        local modeName = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
-        if modeName == "always" then
+        local mode = (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
+        if mode == "always" then
             if UpdateStateWatcher and (_comparisonSupportActive or _comparisonStateWatcherRegistered) then
                 UpdateStateWatcher()
             end
@@ -107,11 +106,11 @@ do
         if ShowModifierHeld() then
             return false
         end
-        if modeName == "never" then
+        if mode == "never" then
             return true
-        elseif modeName == "outOfCombat" then
+        elseif mode == "outOfCombat" then
             return InCombatLockdown()
-        elseif modeName == "outOfBossCombat" then
+        elseif mode == "outOfBossCombat" then
             return IsEncounterInProgress()
         end
         return false
@@ -513,9 +512,9 @@ do
     end
     local function FireHoveredOnEnter()
         local foci = GetMouseFoci()
-        local anchorFrame = foci and foci[1]
-        if IsFrameForbidden(anchorFrame) then
-            anchorFrame = nil
+        local anchor = foci and foci[1]
+        if IsFrameForbidden(anchor) then
+            anchor = nil
         end
         if foci then
             for _, focus in ipairs(foci) do
@@ -531,7 +530,7 @@ do
                             if GameTooltip:IsShown() then
                                 return
                             end
-                            anchorFrame = widget
+                            anchor = widget
                             break
                         end
                     end
@@ -547,7 +546,7 @@ do
             end
         end
         if not GameTooltip:IsShown() and UnitExists("mouseover") then
-            GameTooltip_SetDefaultAnchor(GameTooltip, anchorFrame or UIParent)
+            GameTooltip_SetDefaultAnchor(GameTooltip, anchor or UIParent)
             GameTooltip:SetUnit("mouseover")
             if CludesUI._repointTooltipAtCursor then
                 CludesUI._repointTooltipAtCursor(GameTooltip)
@@ -620,8 +619,8 @@ do
         if not sample and CludesUI._repaintTooltipPreview then
             CludesUI._repaintTooltipPreview()
         end
-        local barFrame = sample or GameTooltipStatusBar
-        if not barFrame or not (styled or sample) then
+        local bar = sample or GameTooltipStatusBar
+        if not bar or not (styled or sample) then
             return
         end
         local saved = CludesUIDB
@@ -633,15 +632,15 @@ do
             end
             filePath = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
         end
-        barFrame:SetStatusBarTexture(filePath)
-        barFrame:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
+        bar:SetStatusBarTexture(filePath)
+        bar:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
     end
 
     if GameTooltipStatusBar then
         -- Re-assert alpha 0 each time Blizzard shows the bar so it can never flash back into view (SetAlpha doesn't call Show, so no recursion).
-        hooksecurefunc(GameTooltipStatusBar, "Show", function(barFrame)
+        hooksecurefunc(GameTooltipStatusBar, "Show", function(bar)
             if _healthStripHidden() then
-                barFrame:SetAlpha(0)
+                bar:SetAlpha(0)
             end
         end)
         CludesUI._applyTooltipHealthStrip()

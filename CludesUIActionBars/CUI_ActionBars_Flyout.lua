@@ -36,8 +36,8 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
         end
     end
 
-    local glyph = button.icon or button.Icon
-    if not glyph then
+    local icon = button.icon or button.Icon
+    if not icon then
         return
     end
 
@@ -62,8 +62,8 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
             mask:SetAllPoints(button)
         end
         mask:Show()
-        pcall(glyph.RemoveMaskTexture, glyph, mask)
-        glyph:AddMaskTexture(mask)
+        pcall(icon.RemoveMaskTexture, icon, mask)
+        icon:AddMaskTexture(mask)
 
         -- Expand icon for shape inset
         local shapeOffset = SHAPE_ICON_EXPAND_OFFSETS and SHAPE_ICON_EXPAND_OFFSETS[shape] or 0
@@ -75,16 +75,16 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
         local halfIE = iconExp / 2
         local Pix = CludesUI and CludesUI.PP
         if Pix then
-            glyph:ClearAllPoints()
-            Pix.Point(glyph, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
-            Pix.Point(glyph, "BOTTOMRIGHT", button, "BOTTOMRIGHT", halfIE, -halfIE)
+            icon:ClearAllPoints()
+            Pix.Point(icon, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
+            Pix.Point(icon, "BOTTOMRIGHT", button, "BOTTOMRIGHT", halfIE, -halfIE)
         end
 
         -- Shape texcoord expand
         local insetPx = SHAPE_INSETS and SHAPE_INSETS[shape] or 17
         local visRatio = (128 - 2 * insetPx) / 128
         local expand = ((1 / visRatio) - 1) * 0.5
-        glyph:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+        icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
 
         -- Mask cooldown
         if button.cooldown and not button.cooldown:IsForbidden() then
@@ -120,7 +120,7 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
     else
         -- Square / cropped / none
         if fd.shapeMask then
-            pcall(glyph.RemoveMaskTexture, glyph, fd.shapeMask)
+            pcall(icon.RemoveMaskTexture, icon, fd.shapeMask)
             if button.cooldown and not button.cooldown:IsForbidden() then
                 pcall(button.cooldown.RemoveMaskTexture, button.cooldown, fd.shapeMask)
                 pcall(button.cooldown.SetSwipeTexture, button.cooldown, "")
@@ -131,15 +131,15 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
             fd.shapeBorder:Hide()
         end
 
-        glyph:ClearAllPoints()
-        glyph:SetAllPoints(button)
+        icon:ClearAllPoints()
+        icon:SetAllPoints(button)
         if shape == "cropped" then
             local z = zoom or 0
-            glyph:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+            icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif zoom and zoom > 0 then
-            glyph:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+            icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         else
-            glyph:SetTexCoord(0, 1, 0, 1)
+            icon:SetTexCoord(0, 1, 0, 1)
         end
 
         local Pix = CludesUI and CludesUI.PP

@@ -90,11 +90,11 @@ local function NameFormatSources()
                 return isShown or all or "full"
             end,
             set = function(val)
-                local p, modeName = uf.db.profile, Stored(val)
+                local p, mode = uf.db.profile, Stored(val)
                 for idx = 1, #slots do
                     local s = p[slots[idx].unit]
                     if s then
-                        s[slots[idx].format] = modeName
+                        s[slots[idx].format] = mode
                     end
                 end
                 uf.ReloadFrames()
@@ -141,8 +141,8 @@ local function NameFormatSources()
     local np = MNS("CludesUINameplates")
     if np and np.db then
         local slotKeys, formatKey = np.textSlotKeys, {}
-        for _, slotIndex in ipairs(slotKeys) do
-            formatKey[slotIndex] = slotIndex .. "NameFormat"
+        for _, slot in ipairs(slotKeys) do
+            formatKey[slot] = slot .. "NameFormat"
         end
         entries[#entries + 1] = {
             text = "Enemy Player Nameplates",
@@ -157,10 +157,10 @@ local function NameFormatSources()
                     m = Merge(m, ModeOf(p[formatKey[totSlot]]))
                 end
                 for idx = 1, #slotKeys do
-                    local slotIndex = slotKeys[idx]
-                    local parsed = p[slotIndex] == "custom" and np.NP_CustomParse(slotIndex)
+                    local slot = slotKeys[idx]
+                    local parsed = p[slot] == "custom" and np.NP_CustomParse(slot)
                     if parsed and (parsed.has.name or parsed.has.target) then
-                        m = Merge(m, ModeOf(p[formatKey[slotIndex]]))
+                        m = Merge(m, ModeOf(p[formatKey[slot]]))
                     end
                 end
                 if not m then
@@ -171,9 +171,9 @@ local function NameFormatSources()
                 return m or "full"
             end,
             set = function(val)
-                local p, modeName = np.db.profile, Stored(val)
+                local p, mode = np.db.profile, Stored(val)
                 for idx = 1, #slotKeys do
-                    p[formatKey[slotKeys[idx]]] = modeName
+                    p[formatKey[slotKeys[idx]]] = mode
                 end
                 np.RefreshAllSettings()
             end,
@@ -468,8 +468,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 setValue = function() end,
             }
         end
-        local rowFrame
-        rowFrame, hgt = W:DualRow(
+        local row
+        row, hgt = W:DualRow(
             hostFrame,
             posY,
             Slot(
@@ -534,8 +534,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 region._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(refresh)
             end
-            List(rowFrame._leftRegion, "first")
-            List(rowFrame._rightRegion, "last")
+            List(row._leftRegion, "first")
+            List(row._rightRegion, "last")
         end
     end
 
@@ -801,11 +801,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             AF.Cfg()[key] = val
             AF.Apply()
         end
-        local _, classFile = UnitClass("player")
-        local labelText = classFile == "WARRIOR" and "Show Current Stance"
-            or classFile == "DRUID" and "Show Current Form"
-            or classFile == "PALADIN" and "Show Current Aura"
-            or classFile == "HUNTER" and "Show Current Aspect"
+        local _, class = UnitClass("player")
+        local labelText = class == "WARRIOR" and "Show Current Stance"
+            or class == "DRUID" and "Show Current Form"
+            or class == "PALADIN" and "Show Current Aura"
+            or class == "HUNTER" and "Show Current Aspect"
             or "Show Current Stance / Form"
 
         _, hgt = W:Spacer(hostFrame, posY, 20)
@@ -2779,14 +2779,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  PROFESSIONS
     ---------------------------------------------------------------------------
-    local PopFrame = CludesUI._Professions
-    if PopFrame then
+    local PF = CludesUI._Professions
+    if PF then
         local function pOff()
-            return not PopFrame.Get("enabled")
+            return not PF.Get("enabled")
         end
         local function Set(key, val)
-            PopFrame.Cfg()[key] = val
-            PopFrame.Apply()
+            PF.Cfg()[key] = val
+            PF.Apply()
         end
         _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
@@ -2810,7 +2810,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             disabled = pOff,
             tooltip = "Opens the Professions window. Also /cprof.",
             onClick = function()
-                PopFrame.Open()
+                PF.Open()
             end,
         })
         posY = posY - hgt
@@ -2820,7 +2820,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             disabled = pOff,
             tooltip = "A chat line once when a profession is ready for its next rank, with where to train it. /cprof rank checks now.",
             getValue = function()
-                return PopFrame.Get("rankAlert")
+                return PF.Get("rankAlert")
             end,
             setValue = function(val)
                 Set("rankAlert", val and true or false)
@@ -2831,7 +2831,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             disabled = pOff,
             tooltip = "The Recipe Finder also lists the recipes your skill is not high enough for yet.",
             getValue = function()
-                return PopFrame.Get("showLater")
+                return PF.Get("showLater")
             end,
             setValue = function(val)
                 Set("showLater", val and true or false)
@@ -2983,12 +2983,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             f.Cfg()[key] = val
             f.Apply()
         end
-        local function Tog(f, key, textValue, tipText, offset)
+        local function Tog(f, key, textValue, tipText, off)
             return {
                 type = "toggle",
                 text = textValue,
                 tooltip = tipText,
-                disabled = offset,
+                disabled = off,
                 getValue = function()
                     return f.Get(key)
                 end,
@@ -2997,15 +2997,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        local function Num(f, key, textValue, min, upper, step, offset)
+        local function Num(f, key, textValue, min, max, step, off)
             return {
                 type = "slider",
                 text = textValue,
                 min = min,
-                max = upper,
+                max = max,
                 step = step,
                 isPercent = false,
-                disabled = offset,
+                disabled = off,
                 getValue = function()
                     return f.Get(key)
                 end,
@@ -3103,12 +3103,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 f.Apply()
             end
         end
-        local function Tog(f, key, textValue, tipText, offset)
+        local function Tog(f, key, textValue, tipText, off)
             return {
                 type = "toggle",
                 text = textValue,
                 tooltip = tipText,
-                disabled = offset,
+                disabled = off,
                 getValue = function()
                     return f.Get(key)
                 end,
@@ -3117,15 +3117,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        local function Num(f, key, textValue, min, upper, step, offset)
+        local function Num(f, key, textValue, min, max, step, off)
             return {
                 type = "slider",
                 text = textValue,
                 min = min,
-                max = upper,
+                max = max,
                 step = step,
                 isPercent = false,
-                disabled = offset,
+                disabled = off,
                 getValue = function()
                     return f.Get(key)
                 end,
@@ -3709,13 +3709,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 if not st then
                     return { type = "label", text = "" }
                 end
-                local upper = st[3]
-                local step = upper >= 20 and 0.5 or (upper >= 5 and 0.1 or (upper >= 1 and 0.05 or 0.005))
+                local max = st[3]
+                local step = max >= 20 and 0.5 or (max >= 5 and 0.1 or (max >= 1 and 0.05 or 0.005))
                 return {
                     type = "slider",
                     text = st[2],
                     min = 0,
-                    max = upper,
+                    max = max,
                     step = step,
                     isPercent = false,
                     getValue = function()

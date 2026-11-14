@@ -27,8 +27,8 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local Keys = mod.K
-    local function SavedDB()
+    local K = mod.K
+    local function DB()
         return mod.DB()
     end
     local function Frame()
@@ -58,9 +58,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- { values, order } for a dropdown, from one of the module's {id, label} lists.
     local function Choices(entries)
         local values, sequence = {}, {}
-        for _, itemInfo in ipairs(entries) do
-            values[itemInfo.id] = itemInfo.label
-            sequence[#sequence + 1] = itemInfo.id
+        for _, item in ipairs(entries) do
+            values[item.id] = item.label
+            sequence[#sequence + 1] = item.id
         end
         return values, sequence
     end
@@ -78,7 +78,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return mod.SettingNumber(key, default)
             end,
             setValue = function(val)
-                SavedDB()[key] = Round(val)
+                DB()[key] = Round(val)
                 if apply then
                     apply(Round(val))
                 end
@@ -93,10 +93,10 @@ initFrame:SetScript("OnEvent", function(self)
             text = textValue,
             tooltip = tooltip,
             getValue = function()
-                return SavedDB()[key] and true or false
+                return DB()[key] and true or false
             end,
             setValue = function(val)
-                SavedDB()[key] = val and true or false
+                DB()[key] = val and true or false
                 if apply then
                     apply(val)
                 end
@@ -140,7 +140,7 @@ initFrame:SetScript("OnEvent", function(self)
             fontValues[f.id] = f.label
             fontOrder[#fontOrder + 1] = f.id
         end
-        local flagValues, flagOrder = Choices(Keys.FONT_FLAGS)
+        local flagValues, flagOrder = Choices(K.FONT_FLAGS)
         _, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Font",
@@ -148,10 +148,10 @@ initFrame:SetScript("OnEvent", function(self)
             order = fontOrder,
             tooltip = "CludesUI Global Font follows the font chosen under Global Settings > Fonts.",
             getValue = function()
-                return SavedDB().fontFace or GLOBAL_FONT
+                return DB().fontFace or GLOBAL_FONT
             end,
             setValue = function(val)
-                SavedDB().fontFace = (val ~= GLOBAL_FONT) and val or nil
+                DB().fontFace = (val ~= GLOBAL_FONT) and val or nil
                 mod.RefreshAllFonts()
             end,
         }, {
@@ -160,10 +160,10 @@ initFrame:SetScript("OnEvent", function(self)
             values = flagValues,
             order = flagOrder,
             getValue = function()
-                return SavedDB().fontFlags or "OUTLINE"
+                return DB().fontFlags or "OUTLINE"
             end,
             setValue = function(val)
-                SavedDB().fontFlags = val
+                DB().fontFlags = val
                 mod.RefreshAllFonts()
             end,
         })
@@ -175,18 +175,18 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Name Size",
                 "nameFontSize",
-                Keys.DEFAULT_NAME_FONT_SIZE,
-                Keys.MIN_FONT_SIZE,
-                Keys.MAX_FONT_SIZE,
+                K.DEFAULT_NAME_FONT_SIZE,
+                K.MIN_FONT_SIZE,
+                K.MAX_FONT_SIZE,
                 1,
                 mod.RefreshAllFonts
             ),
             Slider(
                 "Health Text Size",
                 "hpFontSize",
-                Keys.DEFAULT_HP_FONT_SIZE,
-                Keys.MIN_FONT_SIZE,
-                Keys.MAX_FONT_SIZE,
+                K.DEFAULT_HP_FONT_SIZE,
+                K.MIN_FONT_SIZE,
+                K.MAX_FONT_SIZE,
                 1,
                 mod.RefreshAllFonts
             )
@@ -207,36 +207,28 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:DualRow(
             hostFrame,
             posY,
-            Slider("Width", "frameWidth", Keys.DEFAULT_WIDTH, Keys.MIN_WIDTH, Keys.MAX_WIDTH, 5, function(val)
+            Slider("Width", "frameWidth", K.DEFAULT_WIDTH, K.MIN_WIDTH, K.MAX_WIDTH, 5, function(val)
                 local f = Frame()
                 if f and not InCombatLockdown() then
                     f:SetWidth(val)
                     f:FitNameToWidth()
                 end
             end),
-            Slider(
-                "Height",
-                "frameHeight",
-                Keys.DEFAULT_HEIGHT,
-                Keys.MIN_HEIGHT,
-                Keys.MAX_HEIGHT,
-                5,
-                function(val)
-                    local f = Frame()
-                    if f and not InCombatLockdown() then
-                        f:SetHeight(val)
-                    end
-                    mod.RefreshAuraContainerLayout(f)
-                    mod.RestyleAuraButtons()
+            Slider("Height", "frameHeight", K.DEFAULT_HEIGHT, K.MIN_HEIGHT, K.MAX_HEIGHT, 5, function(val)
+                local f = Frame()
+                if f and not InCombatLockdown() then
+                    f:SetHeight(val)
                 end
-            )
+                mod.RefreshAuraContainerLayout(f)
+                mod.RestyleAuraButtons()
+            end)
         )
         posY = posY - hgt
 
         _, hgt = W:SectionHeader(hostFrame, "CO-TANK DEBUFFS", posY)
         posY = posY - hgt
 
-        local filterValues, filterOrder = Choices(Keys.DEBUFF_FILTER_MODES)
+        local filterValues, filterOrder = Choices(K.DEBUFF_FILTER_MODES)
         _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Co-Tank Debuffs",
@@ -256,10 +248,10 @@ initFrame:SetScript("OnEvent", function(self)
             order = filterOrder,
             tooltip = "The game applies this filter itself, so it holds during boss fights.",
             getValue = function()
-                return SavedDB().debuffFilter or "ALL"
+                return DB().debuffFilter or "ALL"
             end,
             setValue = function(val)
-                SavedDB().debuffFilter = val
+                DB().debuffFilter = val
                 mod.RefreshDebuffFilter()
             end,
         })
@@ -271,9 +263,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Debuff Icons",
                 "maxDebuffs",
-                Keys.DEBUFF_DEFAULT_COUNT,
-                Keys.DEBUFF_MIN_COUNT,
-                Keys.DEBUFF_MAX_COUNT,
+                K.DEBUFF_DEFAULT_COUNT,
+                K.DEBUFF_MIN_COUNT,
+                K.DEBUFF_MAX_COUNT,
                 1,
                 function(val)
                     local f = Frame()
@@ -288,9 +280,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Debuff Icon Gap",
                 "debuffSpacing",
-                Keys.DEBUFF_SPACING,
-                Keys.ICON_SPACING_MIN,
-                Keys.ICON_SPACING_MAX,
+                K.DEBUFF_SPACING,
+                K.ICON_SPACING_MIN,
+                K.ICON_SPACING_MAX,
                 1,
                 mod.RefreshDebuffSpacing
             )
@@ -303,9 +295,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Highlight at Stacks",
                 "stackHighlightAt",
-                Keys.STACK_HIGHLIGHT_DEFAULT,
-                Keys.STACK_HIGHLIGHT_MIN,
-                Keys.STACK_HIGHLIGHT_MAX,
+                K.STACK_HIGHLIGHT_DEFAULT,
+                K.STACK_HIGHLIGHT_MIN,
+                K.STACK_HIGHLIGHT_MAX,
                 1,
                 IconsChanged,
                 "A debuff that reaches this many stacks gets a coloured border. 0 turns it off."
@@ -334,9 +326,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Defensive Icons",
                 "maxDefensives",
-                Keys.BIG_DEFENSIVES_DEFAULT_COUNT,
-                Keys.BIG_DEFENSIVES_MIN_COUNT,
-                Keys.BIG_DEFENSIVES_MAX_COUNT,
+                K.BIG_DEFENSIVES_DEFAULT_COUNT,
+                K.BIG_DEFENSIVES_MIN_COUNT,
+                K.BIG_DEFENSIVES_MAX_COUNT,
                 1,
                 function(val)
                     local f = Frame()
@@ -367,7 +359,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return mod.ExternalsEnabled()
                 end,
                 setValue = function(val)
-                    SavedDB().extEnabled = val and true or false
+                    DB().extEnabled = val and true or false
                     mod.RefreshExternals()
                 end,
             },
@@ -394,9 +386,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Icon Gap",
                 "extSpacing",
-                Keys.DEBUFF_SPACING,
-                Keys.ICON_SPACING_MIN,
-                Keys.ICON_SPACING_MAX,
+                K.DEBUFF_SPACING,
+                K.ICON_SPACING_MIN,
+                K.ICON_SPACING_MAX,
                 1,
                 mod.RefreshExternals
             )
@@ -406,16 +398,16 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:SectionHeader(hostFrame, "ICON LABELS", posY)
         posY = posY - hgt
 
-        local posValues, posOrder = Choices(Keys.STACK_COUNT_POSITIONS)
+        local posValues, posOrder = Choices(K.STACK_COUNT_POSITIONS)
         _, hgt = W:DualRow(
             hostFrame,
             posY,
             Slider(
                 "Stack Count Size",
                 "stackCountSize",
-                Keys.STACK_COUNT_DEFAULT_SIZE,
-                Keys.STACK_COUNT_MIN_SIZE,
-                Keys.STACK_COUNT_MAX_SIZE,
+                K.STACK_COUNT_DEFAULT_SIZE,
+                K.STACK_COUNT_MIN_SIZE,
+                K.STACK_COUNT_MAX_SIZE,
                 1,
                 mod.RefreshAllIconSettings,
                 "0 hides the stack count."
@@ -426,10 +418,10 @@ initFrame:SetScript("OnEvent", function(self)
                 values = posValues,
                 order = posOrder,
                 getValue = function()
-                    return SavedDB().stackCountPos or "BR_IN"
+                    return DB().stackCountPos or "BR_IN"
                 end,
                 setValue = function(val)
-                    SavedDB().stackCountPos = val
+                    DB().stackCountPos = val
                     mod.RefreshAllIconSettings()
                 end,
             }
@@ -443,8 +435,8 @@ initFrame:SetScript("OnEvent", function(self)
                 "Stack Count Nudge X",
                 "stackCountNudgeX",
                 0,
-                Keys.STACK_NUDGE_MIN,
-                Keys.STACK_NUDGE_MAX,
+                K.STACK_NUDGE_MIN,
+                K.STACK_NUDGE_MAX,
                 1,
                 mod.RefreshAllIconSettings
             ),
@@ -452,8 +444,8 @@ initFrame:SetScript("OnEvent", function(self)
                 "Stack Count Nudge Y",
                 "stackCountNudgeY",
                 0,
-                Keys.STACK_NUDGE_MIN,
-                Keys.STACK_NUDGE_MAX,
+                K.STACK_NUDGE_MIN,
+                K.STACK_NUDGE_MAX,
                 1,
                 mod.RefreshAllIconSettings
             )
@@ -469,19 +461,19 @@ initFrame:SetScript("OnEvent", function(self)
                 values = { icon = "On Icon", above = "Above Icon" },
                 order = { "icon", "above" },
                 getValue = function()
-                    return SavedDB().cdAbove and "above" or "icon"
+                    return DB().cdAbove and "above" or "icon"
                 end,
                 setValue = function(val)
-                    SavedDB().cdAbove = (val == "above")
+                    DB().cdAbove = (val == "above")
                     mod.RefreshAllIconSettings()
                 end,
             },
             Slider(
                 "On-Icon Timer Scale",
                 "cdFontScale",
-                Keys.CD_FONT_SCALE_DEFAULT,
-                Keys.CD_FONT_SCALE_MIN,
-                Keys.CD_FONT_SCALE_MAX,
+                K.CD_FONT_SCALE_DEFAULT,
+                K.CD_FONT_SCALE_MIN,
+                K.CD_FONT_SCALE_MAX,
                 1,
                 mod.RefreshAllIconSettings,
                 "0 hides the timer on the icon. 10 is full size."
@@ -495,9 +487,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Above-Icon Timer Size",
                 "timerTextSize",
-                Keys.TIMER_TEXT_DEFAULT_SIZE,
-                Keys.TIMER_TEXT_MIN_SIZE,
-                Keys.TIMER_TEXT_MAX_SIZE,
+                K.TIMER_TEXT_DEFAULT_SIZE,
+                K.TIMER_TEXT_MIN_SIZE,
+                K.TIMER_TEXT_MAX_SIZE,
                 1,
                 mod.RefreshAllIconSettings
             ),
@@ -516,16 +508,16 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:SectionHeader(hostFrame, "PRIVATE AURAS", posY)
         posY = posY - hgt
 
-        local growValues, growOrder = Choices(Keys.PRIVATE_AURA_GROW_DIRECTIONS)
+        local growValues, growOrder = Choices(K.PRIVATE_AURA_GROW_DIRECTIONS)
         _, hgt = W:DualRow(
             hostFrame,
             posY,
             Slider(
                 "Private Aura Slots",
                 "maxPrivateAuras",
-                Keys.PRIVATE_AURAS_DEFAULT_COUNT,
-                Keys.PRIVATE_AURAS_MIN_COUNT,
-                Keys.PRIVATE_AURAS_MAX_COUNT,
+                K.PRIVATE_AURAS_DEFAULT_COUNT,
+                K.PRIVATE_AURAS_MIN_COUNT,
+                K.PRIVATE_AURAS_MAX_COUNT,
                 1,
                 function(val)
                     local f = Frame()
@@ -541,9 +533,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Private Aura Size",
                 "privateAuraSize",
-                Keys.PRIVATE_AURA_SIZE_DEFAULT,
-                Keys.PRIVATE_AURA_SIZE_MIN,
-                Keys.PRIVATE_AURA_SIZE_MAX,
+                K.PRIVATE_AURA_SIZE_DEFAULT,
+                K.PRIVATE_AURA_SIZE_MIN,
+                K.PRIVATE_AURA_SIZE_MAX,
                 2,
                 function()
                     mod.RefreshPrivateAuraSize()
@@ -565,19 +557,19 @@ initFrame:SetScript("OnEvent", function(self)
                 values = growValues,
                 order = growOrder,
                 getValue = function()
-                    return SavedDB().privateAuraGrowDir or "LEFT"
+                    return DB().privateAuraGrowDir or "LEFT"
                 end,
                 setValue = function(val)
-                    SavedDB().privateAuraGrowDir = val
+                    DB().privateAuraGrowDir = val
                     mod.RefreshPrivateAuraGrow()
                 end,
             },
             Slider(
                 "Private Aura Gap",
                 "privateAuraSpacing",
-                Keys.DEBUFF_SPACING,
-                Keys.ICON_SPACING_MIN,
-                Keys.ICON_SPACING_MAX,
+                K.DEBUFF_SPACING,
+                K.ICON_SPACING_MIN,
+                K.ICON_SPACING_MAX,
                 1,
                 mod.RefreshPrivateAuraSpacing
             )
@@ -590,9 +582,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Border Scale",
                 "privateAuraBorderScale",
-                Keys.PRIVATE_AURA_BORDER_SCALE_DEFAULT,
-                Keys.PRIVATE_AURA_BORDER_SCALE_MIN,
-                Keys.PRIVATE_AURA_BORDER_SCALE_MAX,
+                K.PRIVATE_AURA_BORDER_SCALE_DEFAULT,
+                K.PRIVATE_AURA_BORDER_SCALE_MIN,
+                K.PRIVATE_AURA_BORDER_SCALE_MAX,
                 1,
                 mod.RefreshPrivateAuraGrow,
                 "0 hides the border."
@@ -600,9 +592,9 @@ initFrame:SetScript("OnEvent", function(self)
             Slider(
                 "Stack and Timer Scale",
                 "privateAuraStackScale",
-                Keys.PRIVATE_AURA_STACK_SCALE_DEFAULT,
-                Keys.PRIVATE_AURA_STACK_SCALE_MIN,
-                Keys.PRIVATE_AURA_STACK_SCALE_MAX,
+                K.PRIVATE_AURA_STACK_SCALE_DEFAULT,
+                K.PRIVATE_AURA_STACK_SCALE_MIN,
+                K.PRIVATE_AURA_STACK_SCALE_MAX,
                 1,
                 mod.RefreshPrivateAuraGrow
             )
@@ -623,7 +615,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- One alert: a switch on the left, its stack threshold on the right.
     local function AlertRow(W, hostFrame, posY, labelText, key, tooltip)
         local function Entry()
-            local alerts = SavedDB().spellAlerts
+            local alerts = DB().spellAlerts
             return alerts and alerts[key]
         end
         local _, hgt = W:DualRow(hostFrame, posY, {
@@ -635,7 +627,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return a and a.enabled and true or false
             end,
             setValue = function(val)
-                local saved = SavedDB()
+                local saved = DB()
                 saved.spellAlerts = saved.spellAlerts or {}
                 saved.spellAlerts[key] = saved.spellAlerts[key] or { threshold = 1 }
                 saved.spellAlerts[key].enabled = val and true or false
@@ -665,7 +657,7 @@ initFrame:SetScript("OnEvent", function(self)
         local W = CludesUI.Widgets
         local posY = yOffset
         local _, hgt
-        local saved = SavedDB()
+        local saved = DB()
 
         CludesUI:ClearContentHeader()
         mod.SpellData.SeedDefaults(saved)
@@ -680,7 +672,7 @@ initFrame:SetScript("OnEvent", function(self)
             placeholder = "TAUNT",
             tooltip = "The words shown on screen when an alert fires. Press Enter to save.",
             getValue = function()
-                return SavedDB().alertText or "TAUNT"
+                return DB().alertText or "TAUNT"
             end,
             setValue = function(textValue)
                 mod.Alert:SetText(textValue)
@@ -725,7 +717,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return
                 end
                 spellRef = math.floor(spellRef)
-                local d = SavedDB()
+                local d = DB()
                 d.spellAlerts = d.spellAlerts or {}
                 local existing = d.spellAlerts[spellRef]
                 d.spellAlerts[spellRef] = {
@@ -752,7 +744,7 @@ initFrame:SetScript("OnEvent", function(self)
                     buttonText = "Remove",
                     width = 90,
                     onClick = function()
-                        local alerts = SavedDB().spellAlerts
+                        local alerts = DB().spellAlerts
                         if alerts then
                             alerts[record.key] = nil
                         end
@@ -834,14 +826,14 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Click-Through",
             tooltip = "The frame ignores the mouse. Not available in combat.",
             getValue = function()
-                return SavedDB().clickThrough and true or false
+                return DB().clickThrough and true or false
             end,
             setValue = function(val)
                 if InCombatLockdown() then
                     Rebuild()
                     return
                 end
-                SavedDB().clickThrough = val and true or false
+                DB().clickThrough = val and true or false
                 local f = Frame()
                 if f then
                     f:EnableMouse(not val)
@@ -865,7 +857,7 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:SectionHeader(hostFrame, "CO-TANK", posY)
         posY = posY - hgt
 
-        local pinned = SavedDB().pinnedTank
+        local pinned = DB().pinnedTank
         local found = mod.FindCoTank()
         local foundName = found and UnitName(found)
         local status = pinned and ("Pinned: " .. pinned)
@@ -878,11 +870,11 @@ initFrame:SetScript("OnEvent", function(self)
             tooltip = status
                 .. ". Pin a player when there are more than two tanks in the group. Press Enter to save.",
             getValue = function()
-                return SavedDB().pinnedTank or ""
+                return DB().pinnedTank or ""
             end,
             setValue = function(textValue)
                 textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
-                SavedDB().pinnedTank = (textValue ~= "") and textValue or nil
+                DB().pinnedTank = (textValue ~= "") and textValue or nil
                 Rebuild()
             end,
         }, {
@@ -891,13 +883,13 @@ initFrame:SetScript("OnEvent", function(self)
             buttonText = pinned and "Unpin" or "Pin Current",
             width = 110,
             onClick = function()
-                if SavedDB().pinnedTank then
-                    SavedDB().pinnedTank = nil
+                if DB().pinnedTank then
+                    DB().pinnedTank = nil
                 else
                     local unitToken = mod.FindCoTank()
                     local name = unitToken and UnitName(unitToken)
                     if type(name) == "string" then
-                        SavedDB().pinnedTank = name
+                        DB().pinnedTank = name
                     end
                 end
                 Rebuild()

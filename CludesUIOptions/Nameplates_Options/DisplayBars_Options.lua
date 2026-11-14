@@ -21,7 +21,7 @@ local PoolGen, PoolIsIdle = CludesUI._Pool.Gen, CludesUI._Pool.IsIdle
 
 local function BuildDisplayBars(hostFrame, posY, context)
     local environ = mod._NPO_OptEnv
-    local BAR_W, SavedDB, DBColor, DBVal = environ.BAR_W, environ.DB, environ.DBColor, environ.DBVal
+    local BAR_W, DB, DBColor, DBVal = environ.BAR_W, environ.DB, environ.DBColor, environ.DBVal
     local defaultSet, displayCastIcons, hbtOrder, hbtValues =
         environ.defaults, environ.displayCastIcons, environ.hbtOrder, environ.hbtValues
     local LazyColorPreviewBar, npImpCastGlowDesc, optionState, pairs =
@@ -34,18 +34,18 @@ local function BuildDisplayBars(hostFrame, posY, context)
     local LiveApplyAuraText, RefreshAllTextures, ShowCogPopup =
         context.LiveApplyAuraText, context.RefreshAllTextures, context.ShowCogPopup
     local timerPosOrder, timerPosValues = context.timerPosOrder, context.timerPosValues
-    local Widgets = context.W
+    local W = context.W
     local _, hgt
 
     -----------------------------------------------------------------------
     --  HEALTH BAR
     -----------------------------------------------------------------------
     local healthBarHeader
-    healthBarHeader, hgt = Widgets:SectionHeader(hostFrame, "HEALTH AND CAST BAR", posY)
+    healthBarHeader, hgt = W:SectionHeader(hostFrame, "HEALTH AND CAST BAR", posY)
     posY = posY - hgt
 
     local healthBarHeightRow
-    healthBarHeightRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    healthBarHeightRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Health Bar Width",
         min = 100,
@@ -56,7 +56,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end,
         setValue = function(val)
             local extra = val - BAR_W
-            SavedDB().healthBarWidth = extra
+            DB().healthBarWidth = extra
             -- Classic WoW UI: the cast bar's width and shift are derived
             -- from the footprint so the two borders stay edge to edge, so
             -- it re-lays out rather than taking the raw width.
@@ -89,7 +89,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBVal("healthBarHeight")
         end,
         setValue = function(val)
-            SavedDB().healthBarHeight = val
+            DB().healthBarHeight = val
             -- Classic WoW UI: the border scales with the bar, and the cast
             -- bar's drop and width are derived from the health bar's
             -- height, so both re-run here.
@@ -117,11 +117,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     posY = posY - hgt
 
     local function castIconOff()
-        return SavedDB() and SavedDB().showCastIcon == false
+        return DB() and DB().showCastIcon == false
     end
 
     local castBarHeightRow
-    castBarHeightRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    castBarHeightRow, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
         text = "Cast Bar Height",
         min = 10,
@@ -131,7 +131,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBVal("castBarHeight") or defaultSet.castBarHeight
         end,
         setValue = function(val)
-            SavedDB().castBarHeight = val
+            DB().castBarHeight = val
             local barW = mod.GetHealthBarWidth()
             for _, backing in pairs(plates) do
                 mod.LayoutCastBar(backing, barW, val)
@@ -144,14 +144,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         type = "toggle",
         text = "Spell Icon",
         getValue = function()
-            local saved = SavedDB()
+            local saved = DB()
             if saved and saved.showCastIcon ~= nil then
                 return saved.showCastIcon
             end
             return defaultSet.showCastIcon
         end,
         setValue = function(val)
-            SavedDB().showCastIcon = val
+            DB().showCastIcon = val
             mod.RefreshAllSettings()
             UpdatePreview()
             CludesUI:RefreshPage()
@@ -188,8 +188,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castIconScale") or defaultSet.castIconScale
                     end,
                     set = function(val)
-                        SavedDB().castIconScale = val
-                        if not (SavedDB() and SavedDB().castIconFullSize) then
+                        DB().castIconScale = val
+                        if not (DB() and DB().castIconFullSize) then
                             for _, backing in pairs(plates) do
                                 backing.castIconFrame:SetScale(val)
                             end
@@ -207,7 +207,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castIconOffsetX") or defaultSet.castIconOffsetX or 0
                     end,
                     set = function(val)
-                        SavedDB().castIconOffsetX = val
+                        DB().castIconOffsetX = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -222,7 +222,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castIconOffsetY") or defaultSet.castIconOffsetY or 0
                     end,
                     set = function(val)
-                        SavedDB().castIconOffsetY = val
+                        DB().castIconOffsetY = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -239,14 +239,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     end,
                     requireState = "disabled",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castbarIconInWidth ~= nil then
                             return saved.castbarIconInWidth
                         end
                         return defaultSet.castbarIconInWidth
                     end,
                     set = function(val)
-                        SavedDB().castbarIconInWidth = val
+                        DB().castbarIconInWidth = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -263,14 +263,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     end,
                     requireState = "disabled",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castIconOnRight ~= nil then
                             return saved.castIconOnRight
                         end
                         return defaultSet.castIconOnRight
                     end,
                     set = function(val)
-                        SavedDB().castIconOnRight = val
+                        DB().castIconOnRight = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -287,14 +287,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     end,
                     requireState = "disabled",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castIconFullSize ~= nil then
                             return saved.castIconFullSize
                         end
                         return defaultSet.castIconFullSize
                     end,
                     set = function(val)
-                        SavedDB().castIconFullSize = val
+                        DB().castIconFullSize = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -307,14 +307,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return CludesUI.BlizzStyle.Get("nameplates")
                     end,
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.hideCastIconBorder ~= nil then
                             return saved.hideCastIconBorder and true or false
                         end
                         return false
                     end,
                     set = function(val)
-                        SavedDB().hideCastIconBorder = val and true or false
+                        DB().hideCastIconBorder = val and true or false
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -324,14 +324,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     label = "Use Target Border Color",
                     tooltip = "Colors your target's custom spell icon border, or a full-size wrapped 1-pixel one, with the target border color.",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castIconTargetBorder ~= nil then
                             return saved.castIconTargetBorder
                         end
                         return defaultSet.castIconTargetBorder
                     end,
                     set = function(val)
-                        SavedDB().castIconTargetBorder = val
+                        DB().castIconTargetBorder = val
                         mod.ApplyBorderWrapToAll()
                         -- The custom spell icon border (Icon Borders cog) takes the tint too.
                         if DBVal("castIconCustomBorder") == true then
@@ -348,7 +348,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Cast Background Opacity (+ swatch) | Cast Bar Border (+ swatch)
     local castBgRow
-    castBgRow, hgt = Widgets:DualRow(
+    castBgRow, hgt = W:DualRow(
         hostFrame,
         posY,
         mod.NP_BlizzOnlyGate({
@@ -361,8 +361,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return math.floor(((DBVal("castBgAlpha") or defaultSet.castBgAlpha) * 100) + 0.5)
             end,
             setValue = function(val)
-                SavedDB().castBgAlpha = val / 100
-                local c = (SavedDB() and SavedDB().castBgColor) or defaultSet.castBgColor
+                DB().castBgAlpha = val / 100
+                local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
                 for _, backing in pairs(plates) do
                     backing.castBG:SetColorTexture(c.r, c.g, c.b, val / 100)
                 end
@@ -380,7 +380,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("castBorderSize") or defaultSet.castBorderSize
             end,
             setValue = function(val)
-                SavedDB().castBorderSize = val
+                DB().castBorderSize = val
                 mod.RefreshCastBorder()
                 UpdatePreview()
             end,
@@ -390,11 +390,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local leftRgn = castBgRow._leftRegion
         local castBgColorGet = function()
-            local c = (SavedDB() and SavedDB().castBgColor) or defaultSet.castBgColor
+            local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
             return c.r, c.g, c.b
         end
         local castBgColorSet = function(r, g, b)
-            SavedDB().castBgColor = { r = r, g = g, b = b }
+            DB().castBgColor = { r = r, g = g, b = b }
             local a = DBVal("castBgAlpha") or defaultSet.castBgAlpha
             for _, backing in pairs(plates) do
                 backing.castBG:SetColorTexture(r, g, b, a)
@@ -422,11 +422,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local rightRgn = castBgRow._rightRegion
         local castBorderColorGet = function()
-            local c = (SavedDB() and SavedDB().castBorderColor) or defaultSet.castBorderColor
+            local c = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
             return c.r, c.g, c.b
         end
         local castBorderColorSet = function(r, g, b)
-            SavedDB().castBorderColor = { r = r, g = g, b = b }
+            DB().castBorderColor = { r = r, g = g, b = b }
             mod.RefreshCastBorderColor()
             UpdatePreview()
         end
@@ -448,13 +448,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Cast Timer: position dropdown (None/Right/Left), styled like the duration dropdowns. "None" hides it; Right/Left choose the side (reserving space, pushing shared-side cast text); Size/X/Y live in the inline cog.
     local castTimerRow
-    castTimerRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    castTimerRow, hgt = W:DualRow(hostFrame, posY, {
         type = "segmented",
         text = "Cast Timer",
         values = { none = "None", right = "Right", left = "Left" },
         order = { "none", "right", "left" },
         getValue = function()
-            local saved = SavedDB()
+            local saved = DB()
             local isShown = defaultSet.showCastTimer
             if saved and saved.showCastTimer ~= nil then
                 isShown = saved.showCastTimer
@@ -466,10 +466,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end,
         setValue = function(val)
             if val == "none" then
-                SavedDB().showCastTimer = false
+                DB().showCastTimer = false
             else
-                SavedDB().showCastTimer = true
-                SavedDB().castTimerSide = val
+                DB().showCastTimer = true
+                DB().castTimerSide = val
             end
             mod.RefreshAllSettings()
             UpdatePreview()
@@ -486,7 +486,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBVal("castBarOffsetY") or defaultSet.castBarOffsetY
         end,
         setValue = function(val)
-            SavedDB().castBarOffsetY = val
+            DB().castBarOffsetY = val
             local barW = mod.GetHealthBarWidth()
             local castH = mod.GetCastBarHeight()
             for _, backing in pairs(plates) do
@@ -499,11 +499,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local leftRgn = castTimerRow._leftRegion
         local ctColorGet = function()
-            local c = (SavedDB() and SavedDB().castTimerColor) or defaultSet.castTimerColor
+            local c = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
             return c.r, c.g, c.b
         end
         local ctColorSet = function(r, g, b)
-            SavedDB().castTimerColor = { r = r, g = g, b = b }
+            DB().castTimerColor = { r = r, g = g, b = b }
             for _, backing in pairs(plates) do
                 if backing.castTimer then
                     backing.castTimer:SetTextColor(r, g, b, 1)
@@ -522,7 +522,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTimerOffsetX") or defaultSet.castTimerOffsetX
                     end,
                     xSet = function(val)
-                        SavedDB().castTimerOffsetX = val
+                        DB().castTimerOffsetX = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -530,7 +530,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTimerOffsetY") or defaultSet.castTimerOffsetY
                     end,
                     ySet = function(val)
-                        SavedDB().castTimerOffsetY = val
+                        DB().castTimerOffsetY = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -538,7 +538,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTimerSize") or defaultSet.castTimerSize
                     end,
                     sizeSet = function(val)
-                        SavedDB().castTimerSize = val
+                        DB().castTimerSize = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -558,20 +558,20 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end)
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  CAST COLORS AND EFFECTS
     -----------------------------------------------------------------------
-    _, hgt = Widgets:SectionHeader(hostFrame, SECTION_CASTBAR, posY)
+    _, hgt = W:SectionHeader(hostFrame, SECTION_CASTBAR, posY)
     posY = posY - hgt
 
     -- Cast Color ---- Kick Ready Mid-Cast Hint
     local kickHintValues = { none = "None", tick = "Tick", tickbar = "Tick + Bar" }
     local kickHintOrder = { "none", "tick", "tickbar" }
     local castColorRow
-    castColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    castColorRow, hgt = W:DualRow(hostFrame, posY, {
         type = "multiSwatch",
         text = "Cast Color",
         swatches = {
@@ -581,7 +581,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return DBColor("castBar")
                 end,
                 setValue = function(r, g, b)
-                    SavedDB().castBar = { r = r, g = g, b = b }
+                    DB().castBar = { r = r, g = g, b = b }
                     RefreshAllPlates()
                     UpdatePreview()
                 end,
@@ -592,7 +592,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return DBColor("interruptReady")
                 end,
                 setValue = function(r, g, b)
-                    SavedDB().interruptReady = { r = r, g = g, b = b }
+                    DB().interruptReady = { r = r, g = g, b = b }
                     RefreshAllPlates()
                 end,
             },
@@ -602,7 +602,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return DBColor("castBarUninterruptible")
                 end,
                 setValue = function(r, g, b)
-                    SavedDB().castBarUninterruptible = { r = r, g = g, b = b }
+                    DB().castBarUninterruptible = { r = r, g = g, b = b }
                     RefreshAllPlates()
                 end,
             }),
@@ -612,11 +612,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return DBColor("castBarImportant")
                 end,
                 setValue = function(r, g, b)
-                    SavedDB().castBarImportant = { r = r, g = g, b = b }
+                    DB().castBarImportant = { r = r, g = g, b = b }
                     RefreshAllPlates()
                 end,
                 disabled = function()
-                    local saved = SavedDB()
+                    local saved = DB()
                     local enabled = saved and saved.importantCastColorEnabled
                     if enabled == nil then
                         enabled = defaultSet.importantCastColorEnabled
@@ -634,25 +634,25 @@ local function BuildDisplayBars(hostFrame, posY, context)
         tooltip = 'Shows where your interrupt will be ready during an enemy cast. "Tick" marks the exact spot on the cast bar; "Tick + Bar" also colours the window during which your interrupt will be available.',
         getValue = function()
             -- View over two underlying toggles (kickTickEnabled + interruptMidCastEnabled) so nothing migrates: tick off -> None, tick on -> Tick, tick+bar on -> Tick + Bar. Tick defaults true, so a fresh user reads "Tick".
-            local saved = SavedDB()
+            local saved = DB()
             local tick = true
             if saved and saved.kickTickEnabled ~= nil then
                 tick = saved.kickTickEnabled
             end
-            local barFrame = defaultSet.interruptMidCastEnabled
+            local bar = defaultSet.interruptMidCastEnabled
             if saved and saved.interruptMidCastEnabled ~= nil then
-                barFrame = saved.interruptMidCastEnabled
+                bar = saved.interruptMidCastEnabled
             end
             if not tick then
                 return "none"
             end
-            if barFrame then
+            if bar then
                 return "tickbar"
             end
             return "tick"
         end,
         setValue = function(val)
-            local saved = SavedDB()
+            local saved = DB()
             if val == "none" then
                 saved.kickTickEnabled = false
                 saved.interruptMidCastEnabled = false
@@ -678,7 +678,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         local ctrl = rightRgn and rightRgn._control
         if ctrl and CludesUI.BuildColorSwatch then
             local function midColorOff()
-                local saved = SavedDB()
+                local saved = DB()
                 local enabled = saved and saved.interruptMidCastEnabled
                 if enabled == nil then
                     enabled = defaultSet.interruptMidCastEnabled
@@ -689,11 +689,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 rightRgn,
                 castColorRow:GetFrameLevel() + 3,
                 function()
-                    local c = SavedDB().interruptMidCastColor or defaultSet.interruptMidCastColor
+                    local c = DB().interruptMidCastColor or defaultSet.interruptMidCastColor
                     return c.r, c.g, c.b
                 end,
                 function(r, g, b)
-                    SavedDB().interruptMidCastColor = { r = r, g = g, b = b }
+                    DB().interruptMidCastColor = { r = r, g = g, b = b }
                     mod.RefreshAllSettings()
                 end,
                 nil,
@@ -708,9 +708,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = midColorOff()
-                colorSwatch:SetAlpha(offset and 0.15 or 1)
-                colorSwatch:EnableMouse(not offset)
+                local off = midColorOff()
+                colorSwatch:SetAlpha(off and 0.15 or 1)
+                colorSwatch:EnableMouse(not off)
                 updateSwatch()
             end)
             colorSwatch:SetAlpha(midColorOff() and 0.15 or 1)
@@ -730,14 +730,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     label = "Show Shield Icon",
                     tooltip = "Show a shield icon on the cast bar when an enemy's cast cannot be interrupted.",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castBarShieldEnabled ~= nil then
                             return saved.castBarShieldEnabled
                         end
                         return defaultSet.castBarShieldEnabled
                     end,
                     set = function(val)
-                        SavedDB().castBarShieldEnabled = val
+                        DB().castBarShieldEnabled = val
                         RefreshAllPlates()
                     end,
                 },
@@ -746,14 +746,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     label = "Show Spark",
                     tooltip = "Show the bright spark at the leading edge of the cast bar fill.",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.castBarSparkEnabled ~= nil then
                             return saved.castBarSparkEnabled
                         end
                         return defaultSet.castBarSparkEnabled ~= false
                     end,
                     set = function(val)
-                        SavedDB().castBarSparkEnabled = val
+                        DB().castBarSparkEnabled = val
                         for _, backing in pairs(plates) do
                             if backing.castSpark then
                                 backing.castSpark:SetShown(val ~= false)
@@ -767,14 +767,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     label = "Important Cast Color",
                     tooltip = "Tint the cast bar with the Important colour when the enemy casts a spell the game flags as important.",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.importantCastColorEnabled ~= nil then
                             return saved.importantCastColorEnabled
                         end
                         return defaultSet.importantCastColorEnabled
                     end,
                     set = function(val)
-                        SavedDB().importantCastColorEnabled = val
+                        DB().importantCastColorEnabled = val
                         RefreshAllPlates()
                         CludesUI:RefreshPage()
                     end,
@@ -784,18 +784,18 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     label = "Interruptible While Kick Ready",
                     tooltip = "While your interrupt is ready, important casts keep the Interruptible color.",
                     get = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         if saved and saved.importantCastKickReadyAsInterruptible ~= nil then
                             return saved.importantCastKickReadyAsInterruptible
                         end
                         return defaultSet.importantCastKickReadyAsInterruptible
                     end,
                     set = function(val)
-                        SavedDB().importantCastKickReadyAsInterruptible = val
+                        DB().importantCastKickReadyAsInterruptible = val
                         RefreshAllPlates()
                     end,
                     disabled = function()
-                        local saved = SavedDB()
+                        local saved = DB()
                         local enabled = saved and saved.importantCastColorEnabled
                         if enabled == nil then
                             enabled = defaultSet.importantCastColorEnabled
@@ -815,7 +815,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         local impDesc = npImpCastGlowDesc
 
         local impGlowRow
-        impGlowRow, hgt = Widgets:DualRow(
+        impGlowRow, hgt = W:DualRow(
             hostFrame,
             posY,
             GO.DropdownSpec(
@@ -867,12 +867,12 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("castOverlayEnabled") == true
             end,
             setValue = function(val)
-                SavedDB().castOverlayEnabled = val
+                DB().castOverlayEnabled = val
                 mod.RefreshAllSettings()
             end,
         }
         local function flashOff()
-            local saved = SavedDB()
+            local saved = DB()
             local enabled = saved and saved.interruptedFlashEnabled
             if enabled == nil then
                 enabled = defaultSet.interruptedFlashEnabled
@@ -884,14 +884,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             text = "Show Interrupted Flash Effect",
             tooltip = 'Flash the enemy\'s cast bar and show "Interrupted" for a moment when their cast is interrupted. Use the swatch to change the flash colour.',
             getValue = function()
-                local saved = SavedDB()
+                local saved = DB()
                 if saved and saved.interruptedFlashEnabled ~= nil then
                     return saved.interruptedFlashEnabled
                 end
                 return defaultSet.interruptedFlashEnabled
             end,
             setValue = function(val)
-                SavedDB().interruptedFlashEnabled = val
+                DB().interruptedFlashEnabled = val
                 RefreshAllPlates()
                 -- Rebuild so the inline flash colour swatch greys/ungreys.
                 C_Timer.After(0, function()
@@ -917,7 +917,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 end
                 return nil
             end
-            row3, hgt = Widgets:DualRow(hostFrame, posY, {
+            row3, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Focus Text Reminders",
                 tooltip = 'Display the word "FOCUS" below caster/miniboss mobs in M+ if you have not set your focus. This is the same setting as in the FocusKick bar options. Disabled for specs with no kick.',
@@ -938,10 +938,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
             }, flashCfg)
             posY = posY - hgt
             swatchRegion = row3._rightRegion
-            _, hgt = Widgets:DualRow(hostFrame, posY, inFrontCfg, CludesUI.BlankRowCfg())
+            _, hgt = W:DualRow(hostFrame, posY, inFrontCfg, CludesUI.BlankRowCfg())
             posY = posY - hgt
         else
-            row3, hgt = Widgets:DualRow(hostFrame, posY, flashCfg, inFrontCfg)
+            row3, hgt = W:DualRow(hostFrame, posY, flashCfg, inFrontCfg)
             posY = posY - hgt
             swatchRegion = row3._leftRegion
         end
@@ -955,11 +955,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     rgn,
                     row3:GetFrameLevel() + 3,
                     function()
-                        local c = SavedDB().interruptedFlashColor or defaultSet.interruptedFlashColor
+                        local c = DB().interruptedFlashColor or defaultSet.interruptedFlashColor
                         return c.r, c.g, c.b
                     end,
                     function(r, g, b)
-                        SavedDB().interruptedFlashColor = { r = r, g = g, b = b }
+                        DB().interruptedFlashColor = { r = r, g = g, b = b }
                         RefreshAllPlates()
                     end,
                     nil,
@@ -976,9 +976,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 -- Blizzard Style uses the stock interrupted fill art, so the flash colour is
                 -- inert there: the build and every refresh grey the swatch out alike.
                 local function ApplyFlashSwatchState()
-                    local offset = flashOff() or mod.NP_BlizzOnly()
-                    colorSwatch:SetAlpha(offset and 0.15 or 1)
-                    colorSwatch:EnableMouse(not offset)
+                    local off = flashOff() or mod.NP_BlizzOnly()
+                    colorSwatch:SetAlpha(off and 0.15 or 1)
+                    colorSwatch:EnableMouse(not off)
                 end
                 CludesUI.RegisterWidgetRefresh(function()
                     ApplyFlashSwatchState()
@@ -989,14 +989,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  TARGET, FOCUS & HOVER EFFECTS
     -----------------------------------------------------------------------
     local tfxHeader
-    tfxHeader, hgt = Widgets:SectionHeader(hostFrame, "TARGET, FOCUS & HOVER EFFECTS", posY)
+    tfxHeader, hgt = W:SectionHeader(hostFrame, "TARGET, FOCUS & HOVER EFFECTS", posY)
     posY = posY - hgt
 
     local targetGlowRow
@@ -1026,7 +1026,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return math.floor(st.w * 24 / 16 + 0.5)
         end,
     }
-    targetGlowRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    targetGlowRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Target Effect",
         values = { __placeholder = "..." },
@@ -1048,10 +1048,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end,
         setValue = function(val)
             if val == "none" then
-                SavedDB().showTargetArrows = false
+                DB().showTargetArrows = false
             else
-                SavedDB().showTargetArrows = true
-                SavedDB().targetArrowStyle = val
+                DB().showTargetArrows = true
+                DB().targetArrowStyle = val
             end
             for _, backing in pairs(plates) do
                 backing:ApplyTarget()
@@ -1112,20 +1112,20 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
             function(k, val)
                 if k == "cludesui" then
-                    SavedDB().targetGlowCludesUI = val
+                    DB().targetGlowCludesUI = val
                 elseif k == "borderColor" then
-                    SavedDB().targetGlowBorderColor = val
+                    DB().targetGlowBorderColor = val
                 elseif k == "highlight" then
-                    SavedDB().targetGlowHighlight = val
+                    DB().targetGlowHighlight = val
                 elseif k == "borderSize" then
-                    SavedDB().targetGlowBorderSize = val
+                    DB().targetGlowBorderSize = val
                     -- First-enable snapshot: seed the cog slider with the user's CURRENT border size, so enabling changes nothing until they move it (one-time, never re-snapshots later).
-                    if val and SavedDB().targetBorderSizeValue == nil then
+                    if val and DB().targetBorderSizeValue == nil then
                         if mod.IsCustomBorderEnabled() then
-                            SavedDB().targetBorderSizeValue = DBVal("customBorderSize")
+                            DB().targetBorderSizeValue = DBVal("customBorderSize")
                                 or defaultSet.customBorderSize
                         else
-                            SavedDB().targetBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
+                            DB().targetBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
                         end
                     end
                 end
@@ -1175,7 +1175,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return c.r, c.g, c.b
                         end,
                         set = function(r, g, b)
-                            SavedDB().targetHighlightColor = { r = r, g = g, b = b }
+                            DB().targetHighlightColor = { r = r, g = g, b = b }
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
@@ -1192,7 +1192,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return math.floor((mod.GetTargetHighlightAlpha() * 100) + 0.5)
                         end,
                         set = function(val)
-                            SavedDB().targetHighlightAlpha = val / 100
+                            DB().targetHighlightAlpha = val / 100
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
@@ -1212,7 +1212,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return math.floor((mod.GetTargetGlowAlpha() * 100) + 0.5)
                         end,
                         set = function(val)
-                            SavedDB().targetGlowAlpha = val / 100
+                            DB().targetGlowAlpha = val / 100
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
@@ -1237,7 +1237,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("borderSize") or defaultSet.borderSize
                         end,
                         set = function(val)
-                            SavedDB().targetBorderSizeValue = val
+                            DB().targetBorderSizeValue = val
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
@@ -1271,7 +1271,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return c.r, c.g, c.b
             end,
             function(r, g, b)
-                SavedDB().targetBorderColor = { r = r, g = g, b = b }
+                DB().targetBorderColor = { r = r, g = g, b = b }
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1293,9 +1293,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
             CludesUI.HideWidgetTooltip()
         end)
         refreshTargetBorderSwatch = function()
-            local offset = not mod.GetTargetGlowBorderColor()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = not mod.GetTargetGlowBorderColor()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
             updateSwatch()
         end
         CludesUI.RegisterWidgetRefresh(refreshTargetBorderSwatch)
@@ -1310,7 +1310,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return c.r, c.g, c.b
             end,
             function(r, g, b)
-                SavedDB().targetGlowColor = { r = r, g = g, b = b }
+                DB().targetGlowColor = { r = r, g = g, b = b }
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1328,9 +1328,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
             CludesUI.HideWidgetTooltip()
         end)
         refreshTargetGlowSwatch = function()
-            local offset = not mod.GetTargetGlowCludesUI()
-            glowSwatch:SetAlpha(offset and 0.15 or 1)
-            glowSwatch:EnableMouse(not offset)
+            local off = not mod.GetTargetGlowCludesUI()
+            glowSwatch:SetAlpha(off and 0.15 or 1)
+            glowSwatch:EnableMouse(not off)
             updateGlowSwatch()
         end
         CludesUI.RegisterWidgetRefresh(refreshTargetGlowSwatch)
@@ -1358,7 +1358,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("targetArrowScale") or defaultSet.targetArrowScale or 1.0
                     end,
                     set = function(val)
-                        SavedDB().targetArrowScale = val
+                        DB().targetArrowScale = val
                         local _scKey = DBVal("targetArrowStyle")
                             or (DBVal("targetArrowDouble") and "double")
                             or "simple"
@@ -1395,12 +1395,12 @@ local function BuildDisplayBars(hostFrame, posY, context)
             if updateClass then
                 updateClass()
             end
-            local offset = arrowOff()
+            local off = arrowOff()
             local useClass = DBVal("targetArrowClassColor") == true
-            customSwatch:SetAlpha(offset and 0.15 or (useClass and 0.3 or 1))
-            classSwatch:SetAlpha(offset and 0.15 or (useClass and 1 or 0.3))
-            customSwatch:SetMouseClickEnabled(not offset)
-            classSwatch:SetMouseClickEnabled(not offset)
+            customSwatch:SetAlpha(off and 0.15 or (useClass and 0.3 or 1))
+            classSwatch:SetAlpha(off and 0.15 or (useClass and 1 or 0.3))
+            customSwatch:SetMouseClickEnabled(not off)
+            classSwatch:SetMouseClickEnabled(not off)
         end
         customSwatch, updateCustom = CludesUI.BuildColorSwatch(
             rightRgn,
@@ -1410,8 +1410,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return c.r, c.g, c.b
             end,
             function(r, g, b)
-                SavedDB().targetArrowColor = { r = r, g = g, b = b }
-                SavedDB().targetArrowClassColor = false
+                DB().targetArrowColor = { r = r, g = g, b = b }
+                DB().targetArrowClassColor = false
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1428,7 +1428,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return
             end
             if DBVal("targetArrowClassColor") == true then
-                SavedDB().targetArrowClassColor = false
+                DB().targetArrowClassColor = false
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1467,7 +1467,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             if arrowOff() then
                 return
             end
-            SavedDB().targetArrowClassColor = true
+            DB().targetArrowClassColor = true
             for _, backing in pairs(plates) do
                 backing:ApplyTarget()
             end
@@ -1520,7 +1520,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Enable Target Color ---- Target Texture
     local isTargetColorDisabled = function()
-        local saved = SavedDB()
+        local saved = DB()
         if saved and saved.targetColorEnabled ~= nil then
             return not saved.targetColorEnabled
         end
@@ -1538,7 +1538,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         return val
     end
     local isFocusColorDisabled = function()
-        local saved = SavedDB()
+        local saved = DB()
         if saved and saved.focusColorEnabled ~= nil then
             return not saved.focusColorEnabled
         end
@@ -1564,18 +1564,18 @@ local function BuildDisplayBars(hostFrame, posY, context)
     end
 
     local targetColorRow
-    targetColorRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    targetColorRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Target Color",
         getValue = function()
-            local saved = SavedDB()
+            local saved = DB()
             if saved and saved.targetColorEnabled ~= nil then
                 return saved.targetColorEnabled
             end
             return defaultSet.targetColorEnabled
         end,
         setValue = function(val)
-            SavedDB().targetColorEnabled = val
+            DB().targetColorEnabled = val
             RefreshAllPlates()
             if targetPrev then
                 if val then
@@ -1594,14 +1594,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         type = "toggle",
         text = "Enable Focus Color",
         getValue = function()
-            local saved = SavedDB()
+            local saved = DB()
             if saved and saved.focusColorEnabled ~= nil then
                 return saved.focusColorEnabled
             end
             return defaultSet.focusColorEnabled
         end,
         setValue = function(val)
-            SavedDB().focusColorEnabled = val
+            DB().focusColorEnabled = val
             RefreshAllPlates()
             if focusPrev then
                 if val then
@@ -1626,7 +1626,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBColor("target")
         end
         local targetColorSet = function(r, g, b)
-            SavedDB().target = { r = r, g = g, b = b }
+            DB().target = { r = r, g = g, b = b }
             RefreshAllPlates()
             if targetPrev then
                 targetPrev.UpdateColor()
@@ -1642,14 +1642,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         )
         Pix.Point(colorSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
-            local offset = isTargetColorDisabled()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = isTargetColorDisabled()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
             updateSwatch()
         end)
-        local offset = isTargetColorDisabled()
-        colorSwatch:SetAlpha(offset and 0.15 or 1)
-        colorSwatch:EnableMouse(not offset)
+        local off = isTargetColorDisabled()
+        colorSwatch:SetAlpha(off and 0.15 or 1)
+        colorSwatch:EnableMouse(not off)
     end
 
     -- Inline Focus Color swatch
@@ -1659,7 +1659,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBColor("focus")
         end
         local focusColorSet = function(r, g, b)
-            SavedDB().focus = { r = r, g = g, b = b }
+            DB().focus = { r = r, g = g, b = b }
             RefreshAllPlates()
             if focusPrev then
                 focusPrev.UpdateColor()
@@ -1675,14 +1675,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         )
         Pix.Point(colorSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
-            local offset = isFocusColorDisabled()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = isFocusColorDisabled()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
             updateSwatch()
         end)
-        local offset = isFocusColorDisabled()
-        colorSwatch:SetAlpha(offset and 0.15 or 1)
-        colorSwatch:EnableMouse(not offset)
+        local off = isFocusColorDisabled()
+        colorSwatch:SetAlpha(off and 0.15 or 1)
+        colorSwatch:EnableMouse(not off)
     end
 
     -- Target Texture ---- Focus Texture
@@ -1730,7 +1730,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         }
     end
     local textureDualRow
-    textureDualRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    textureDualRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Target Texture",
         values = ovtValues,
@@ -1738,7 +1738,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBVal("targetOverlayTexture") or defaultSet.targetOverlayTexture
         end,
         setValue = function(val)
-            SavedDB().targetOverlayTexture = val
+            DB().targetOverlayTexture = val
             RefreshAllPlates()
             if targetPrev and targetPrev.UpdateOverlay then
                 targetPrev.UpdateOverlay()
@@ -1754,7 +1754,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBVal("focusOverlayTexture") or defaultSet.focusOverlayTexture
         end,
         setValue = function(val)
-            SavedDB().focusOverlayTexture = val
+            DB().focusOverlayTexture = val
             RefreshAllPlates()
             if focusPrev and focusPrev.UpdateOverlay then
                 focusPrev.UpdateOverlay()
@@ -1785,7 +1785,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         )
                     end,
                     set = function(val)
-                        SavedDB().targetOverlayAlpha = val / 100
+                        DB().targetOverlayAlpha = val / 100
                         RefreshAllPlates()
                         if targetPrev and targetPrev.UpdateOverlay then
                             targetPrev.UpdateOverlay()
@@ -1803,7 +1803,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return val
                     end,
                     set = function(val)
-                        SavedDB().targetOverlayFullBgAlpha = val
+                        DB().targetOverlayFullBgAlpha = val
                         RefreshAllPlates()
                         if targetPrev and targetPrev.UpdateOverlay then
                             targetPrev.UpdateOverlay()
@@ -1816,7 +1816,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     tooltip = "Tints the pattern with the bar's current color instead of the custom overlay color.",
                     get = isTargetNoTint,
                     set = function(val)
-                        SavedDB().targetOverlayNoTint = val
+                        DB().targetOverlayNoTint = val
                         RefreshAllTextures()
                         if targetPrev and targetPrev.UpdateOverlay then
                             targetPrev.UpdateOverlay()
@@ -1831,11 +1831,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local leftRgn = textureDualRow._leftRegion
         local targetTexColorGet = function()
-            local c = (SavedDB() and SavedDB().targetOverlayColor) or defaultSet.targetOverlayColor
+            local c = (DB() and DB().targetOverlayColor) or defaultSet.targetOverlayColor
             return c.r, c.g, c.b
         end
         local targetTexColorSet = function(r, g, b)
-            SavedDB().targetOverlayColor = { r = r, g = g, b = b }
+            DB().targetOverlayColor = { r = r, g = g, b = b }
             RefreshAllPlates()
             if targetPrev and targetPrev.UpdateOverlay then
                 targetPrev.UpdateOverlay()
@@ -1852,14 +1852,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         Pix.Point(colorSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
         leftRgn._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
-            local offset = isTargetTextureNone() or isTargetNoTint()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = isTargetTextureNone() or isTargetNoTint()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
             updateSwatch()
         end)
-        local offset = isTargetTextureNone() or isTargetNoTint()
-        colorSwatch:SetAlpha(offset and 0.15 or 1)
-        colorSwatch:EnableMouse(not offset)
+        local off = isTargetTextureNone() or isTargetNoTint()
+        colorSwatch:SetAlpha(off and 0.15 or 1)
+        colorSwatch:EnableMouse(not off)
     end
 
     -- Inline Focus Texture cog (Opacity + No Tint), beside the control; the swatch sits left of it
@@ -1882,7 +1882,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         )
                     end,
                     set = function(val)
-                        SavedDB().focusOverlayAlpha = val / 100
+                        DB().focusOverlayAlpha = val / 100
                         RefreshFocusPreview()
                     end,
                 },
@@ -1897,7 +1897,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return val
                     end,
                     set = function(val)
-                        SavedDB().focusOverlayFullBgAlpha = val
+                        DB().focusOverlayFullBgAlpha = val
                         RefreshFocusPreview()
                     end,
                 },
@@ -1907,7 +1907,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     tooltip = "Tints the pattern with the bar's current color instead of the custom overlay color.",
                     get = isFocusNoTint,
                     set = function(val)
-                        SavedDB().focusOverlayNoTint = val
+                        DB().focusOverlayNoTint = val
                         RefreshAllTextures()
                         RefreshFocusPreview()
                     end,
@@ -1920,11 +1920,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local rightRgn = textureDualRow._rightRegion
         local focusTexColorGet = function()
-            local c = (SavedDB() and SavedDB().focusOverlayColor) or defaultSet.focusOverlayColor
+            local c = (DB() and DB().focusOverlayColor) or defaultSet.focusOverlayColor
             return c.r, c.g, c.b
         end
         local focusTexColorSet = function(r, g, b)
-            SavedDB().focusOverlayColor = { r = r, g = g, b = b }
+            DB().focusOverlayColor = { r = r, g = g, b = b }
             RefreshAllPlates()
             if focusPrev and focusPrev.UpdateOverlay then
                 focusPrev.UpdateOverlay()
@@ -1941,19 +1941,19 @@ local function BuildDisplayBars(hostFrame, posY, context)
         Pix.Point(colorSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
         rightRgn._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
-            local offset = isFocusTextureNone() or isFocusNoTint()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = isFocusTextureNone() or isFocusNoTint()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
             updateSwatch()
         end)
-        local offset = isFocusTextureNone() or isFocusNoTint()
-        colorSwatch:SetAlpha(offset and 0.15 or 1)
-        colorSwatch:EnableMouse(not offset)
+        local off = isFocusTextureNone() or isFocusNoTint()
+        colorSwatch:SetAlpha(off and 0.15 or 1)
+        colorSwatch:EnableMouse(not off)
     end
 
     -- Target Preview ---- Focus Preview
     local previewDualRow
-    previewDualRow, hgt = Widgets:DualRow(
+    previewDualRow, hgt = W:DualRow(
         hostFrame,
         posY,
         { type = "label", text = "Target Preview" },
@@ -2086,7 +2086,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     end
     do
         local hoverRow
-        hoverRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        hoverRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Hover Texture",
             tooltip = "Uses the Hover Effect color and opacity. Set to None for the flat hover highlight.",
@@ -2096,7 +2096,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("hoverOverlayTexture") or defaultSet.hoverOverlayTexture
             end,
             setValue = function(val)
-                SavedDB().hoverOverlayTexture = val
+                DB().hoverOverlayTexture = val
                 mod.RefreshHoverEffect()
                 UpdatePreview()
                 CludesUI:RefreshPage()
@@ -2157,22 +2157,22 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 end,
                 function(k, val)
                     if k == "cludesui" then
-                        SavedDB().hoverGlowCludesUI = val
+                        DB().hoverGlowCludesUI = val
                     elseif k == "borderColor" then
-                        SavedDB().hoverGlowBorderColor = val
+                        DB().hoverGlowBorderColor = val
                     elseif k == "highlight" then
-                        SavedDB().hoverGlowHighlight = val
+                        DB().hoverGlowHighlight = val
                     elseif k == "borderSize" then
-                        SavedDB().hoverGlowBorderSize = val
+                        DB().hoverGlowBorderSize = val
                         -- First-enable snapshot: seed the cog slider with the user's
                         -- CURRENT border size, so enabling changes nothing until they
                         -- move it (one-time, never re-snapshots later).
-                        if val and SavedDB().hoverBorderSizeValue == nil then
+                        if val and DB().hoverBorderSizeValue == nil then
                             if mod.IsCustomBorderEnabled() then
-                                SavedDB().hoverBorderSizeValue = DBVal("customBorderSize")
+                                DB().hoverBorderSizeValue = DBVal("customBorderSize")
                                     or defaultSet.customBorderSize
                             else
-                                SavedDB().hoverBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
+                                DB().hoverBorderSizeValue = DBVal("borderSize") or defaultSet.borderSize
                             end
                         end
                     end
@@ -2213,11 +2213,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             label = "Highlight Color",
                             hasAlpha = false,
                             get = function()
-                                local c = (SavedDB() and SavedDB().hoverColor) or defaultSet.hoverColor
+                                local c = (DB() and DB().hoverColor) or defaultSet.hoverColor
                                 return c.r, c.g, c.b
                             end,
                             set = function(r, g, b)
-                                SavedDB().hoverColor = { r = r, g = g, b = b }
+                                DB().hoverColor = { r = r, g = g, b = b }
                                 mod.RefreshHoverEffect()
                                 UpdatePreview()
                             end,
@@ -2234,7 +2234,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                                 )
                             end,
                             set = function(val)
-                                SavedDB().hoverAlpha = val / 100
+                                DB().hoverAlpha = val / 100
                                 mod.RefreshHoverEffect()
                                 UpdatePreview()
                             end,
@@ -2249,7 +2249,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                                 return math.floor((mod.GetHoverGlowAlpha() * 100) + 0.5)
                             end,
                             set = function(val)
-                                SavedDB().hoverGlowAlpha = val / 100
+                                DB().hoverGlowAlpha = val / 100
                                 mod.RefreshHoverEffect()
                             end,
                         },
@@ -2270,7 +2270,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                                 return DBVal("borderSize") or defaultSet.borderSize
                             end,
                             set = function(val)
-                                SavedDB().hoverBorderSizeValue = val
+                                DB().hoverBorderSizeValue = val
                                 mod.RefreshHoverEffect()
                             end,
                             disabled = function()
@@ -2292,7 +2292,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return c.r, c.g, c.b
                 end,
                 function(r, g, b)
-                    SavedDB().hoverBorderColor = { r = r, g = g, b = b }
+                    DB().hoverBorderColor = { r = r, g = g, b = b }
                     mod.RefreshHoverEffect()
                 end,
                 nil,
@@ -2307,9 +2307,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             refreshHoverBorderSwatch = function()
-                local offset = not mod.GetHoverGlowBorderColor()
-                hvBSwatch:SetAlpha(offset and 0.15 or 1)
-                hvBSwatch:EnableMouse(not offset)
+                local off = not mod.GetHoverGlowBorderColor()
+                hvBSwatch:SetAlpha(off and 0.15 or 1)
+                hvBSwatch:EnableMouse(not off)
                 hvUpdateBSwatch()
             end
             CludesUI.RegisterWidgetRefresh(refreshHoverBorderSwatch)
@@ -2324,7 +2324,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return c.r, c.g, c.b
                 end,
                 function(r, g, b)
-                    SavedDB().hoverGlowColor = { r = r, g = g, b = b }
+                    DB().hoverGlowColor = { r = r, g = g, b = b }
                     mod.RefreshHoverEffect()
                 end,
                 nil,
@@ -2339,9 +2339,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             refreshHoverGlowSwatch = function()
-                local offset = not mod.GetHoverGlowCludesUI()
-                hvGSwatch:SetAlpha(offset and 0.15 or 1)
-                hvGSwatch:EnableMouse(not offset)
+                local off = not mod.GetHoverGlowCludesUI()
+                hvGSwatch:SetAlpha(off and 0.15 or 1)
+                hvGSwatch:EnableMouse(not off)
                 hvUpdateGSwatch()
             end
             CludesUI.RegisterWidgetRefresh(refreshHoverGlowSwatch)
@@ -2368,7 +2368,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return val
                         end,
                         set = function(val)
-                            SavedDB().hoverOverlayFullBgAlpha = val
+                            DB().hoverOverlayFullBgAlpha = val
                             mod.RefreshHoverEffect()
                             UpdatePreview()
                         end,
@@ -2382,7 +2382,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     --  CLASS RESOURCE
     -----------------------------------------------------------------------
     local classResourceHeader
-    classResourceHeader, hgt = Widgets:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
+    classResourceHeader, hgt = W:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
     posY = posY - hgt
 
     local function classPowerDisabled()
@@ -2392,7 +2392,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     local classResourceSectionTop = posY -- track top of content rows
 
     local classResourceToggleRow
-    classResourceToggleRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    classResourceToggleRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Class Resource",
         getValue = function()
@@ -2402,7 +2402,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         setValue = CludesUI.DependentSetValue(function()
             return DBVal("showClassPower") == true
         end, function(val)
-            SavedDB().showClassPower = val
+            DB().showClassPower = val
             mod.ApplyClassPowerSetting()
             UpdatePreview()
             CludesUI:RefreshPage()
@@ -2418,12 +2418,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 disabled = classPowerDisabled,
                 disabledTooltip = "Show Class Resource",
                 getValue = function()
-                    local c = (SavedDB() and SavedDB().classPowerCustomColor)
-                        or defaultSet.classPowerCustomColor
+                    local c = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
                     return c.r, c.g, c.b
                 end,
                 setValue = function(r, g, b)
-                    SavedDB().classPowerCustomColor = { r = r, g = g, b = b }
+                    DB().classPowerCustomColor = { r = r, g = g, b = b }
                     mod.RefreshClassPower()
                     UpdatePreview()
                 end,
@@ -2433,7 +2432,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         val = defaultSet.classPowerClassColors
                     end
                     if val then
-                        SavedDB().classPowerClassColors = false
+                        DB().classPowerClassColors = false
                         mod.RefreshClassPower()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -2465,7 +2464,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    SavedDB().classPowerClassColors = true
+                    DB().classPowerClassColors = true
                     mod.RefreshClassPower()
                     UpdatePreview()
                     CludesUI:RefreshPage()
@@ -2486,7 +2485,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not classPowerDisabled() then
         -- Row 2: Position (with inline cog for X/Y) | Size
         local classResourceRow2
-        classResourceRow2, hgt = Widgets:DualRow(hostFrame, posY, {
+        classResourceRow2, hgt = W:DualRow(hostFrame, posY, {
             type = "segmented",
             text = "Position",
             values = { top = "Top", bottom = "Bottom" },
@@ -2494,7 +2493,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("classPowerPos") or defaultSet.classPowerPos
             end,
             setValue = function(val)
-                SavedDB().classPowerPos = val
+                DB().classPowerPos = val
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2509,7 +2508,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("classPowerScale") or defaultSet.classPowerScale
             end,
             setValue = function(val)
-                SavedDB().classPowerScale = val
+                DB().classPowerScale = val
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2531,7 +2530,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("classPowerXOffset") or defaultSet.classPowerXOffset
                         end,
                         xSet = function(val)
-                            SavedDB().classPowerXOffset = val
+                            DB().classPowerXOffset = val
                             mod.RefreshClassPower()
                             UpdatePreview()
                         end,
@@ -2539,7 +2538,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("classPowerYOffset") or defaultSet.classPowerYOffset
                         end,
                         ySet = function(val)
-                            SavedDB().classPowerYOffset = val
+                            DB().classPowerYOffset = val
                             mod.RefreshClassPower()
                             UpdatePreview()
                         end,
@@ -2550,7 +2549,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         -- Row 3: Bar Spacing + Background Color (with alpha)
         local classResourceRow3
-        classResourceRow3, hgt = Widgets:DualRow(hostFrame, posY, {
+        classResourceRow3, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             pixel = true,
             text = "Bar Spacing",
@@ -2561,7 +2560,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("classPowerGap") or defaultSet.classPowerGap
             end,
             setValue = function(val)
-                SavedDB().classPowerGap = val
+                DB().classPowerGap = val
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2570,11 +2569,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
             text = "Background Color",
             hasAlpha = true,
             getValue = function()
-                local c = (SavedDB() and SavedDB().classPowerBgColor) or defaultSet.classPowerBgColor
+                local c = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
                 return c.r, c.g, c.b, c.a
             end,
             setValue = function(r, g, b, a)
-                SavedDB().classPowerBgColor = { r = r, g = g, b = b, a = a }
+                DB().classPowerBgColor = { r = r, g = g, b = b, a = a }
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2583,7 +2582,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         -- Row 4: Shape | Border (inline thickness cog + color swatch on Border)
         local classResourceRow4
-        classResourceRow4, hgt = Widgets:DualRow(hostFrame, posY, {
+        classResourceRow4, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Shape",
             values = {
@@ -2620,7 +2619,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("classPowerShape") or defaultSet.classPowerShape
             end,
             setValue = function(val)
-                SavedDB().classPowerShape = val
+                DB().classPowerShape = val
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2631,7 +2630,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("classPowerBorder") == true
             end,
             setValue = function(val)
-                SavedDB().classPowerBorder = val
+                DB().classPowerBorder = val
                 mod.RefreshClassPower()
                 UpdatePreview()
                 CludesUI:RefreshPage()
@@ -2646,11 +2645,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return classPowerDisabled() or DBVal("classPowerBorder") ~= true
             end
             local colorGet = function()
-                local c = (SavedDB() and SavedDB().classPowerBorderColor) or defaultSet.classPowerBorderColor
+                local c = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
                 return c.r, c.g, c.b
             end
             local colorSet = function(r, g, b)
-                SavedDB().classPowerBorderColor = { r = r, g = g, b = b, a = 1 }
+                DB().classPowerBorderColor = { r = r, g = g, b = b, a = 1 }
                 mod.RefreshClassPower()
                 UpdatePreview()
             end
@@ -2670,7 +2669,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize
                         end,
                         set = function(val)
-                            SavedDB().classPowerBorderSize = val
+                            DB().classPowerBorderSize = val
                             mod.RefreshClassPower()
                             UpdatePreview()
                         end,
@@ -2683,14 +2682,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = colorSwatch
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = borderOff()
-                colorSwatch:SetAlpha(offset and 0.15 or 1)
-                colorSwatch:EnableMouse(not offset)
+                local off = borderOff()
+                colorSwatch:SetAlpha(off and 0.15 or 1)
+                colorSwatch:EnableMouse(not off)
                 updateSwatch()
             end)
-            local offset = borderOff()
-            colorSwatch:SetAlpha(offset and 0.15 or 1)
-            colorSwatch:EnableMouse(not offset)
+            local off = borderOff()
+            colorSwatch:SetAlpha(off and 0.15 or 1)
+            colorSwatch:EnableMouse(not off)
         end
     end -- close Class Resource hidden-while-disabled gate
 
@@ -2706,14 +2705,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         classResourceSection._isSpacer = true -- hide from search layout
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     -----------------------------------------------------------------------
     --  GENERAL TEXT
     -----------------------------------------------------------------------
     local generalTextHeader
-    generalTextHeader, hgt = Widgets:SectionHeader(hostFrame, "GENERAL TEXT", posY)
+    generalTextHeader, hgt = W:SectionHeader(hostFrame, "GENERAL TEXT", posY)
     posY = posY - hgt
 
     -- Duration controls are per aura type. "None" is the show/hide switch.
@@ -2729,8 +2728,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
             buff = { text = "Buff Duration", title = "Buff Duration Settings", key = "buffTimerPosition" },
             cc = { text = "CC Duration", title = "CC Duration Settings", key = "ccTimerPosition" },
         }
-        local function DurationDropdown(kindOf)
-            local conf = durationTypes[kindOf]
+        local function DurationDropdown(kind)
+            local conf = durationTypes[kind]
             return {
                 type = "dropdown",
                 text = conf.text,
@@ -2739,7 +2738,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     return DBVal(conf.key) or atFallback
                 end,
                 setValue = function(val)
-                    SavedDB()[conf.key] = val
+                    DB()[conf.key] = val
                     LiveApplyAuraText()
                     UpdatePreview()
                 end,
@@ -2750,14 +2749,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             LiveApplyAuraText()
             UpdatePreview()
         end
-        local function AttachDurationTools(regionFrame, kindOf)
-            local conf = durationTypes[kindOf]
+        local function AttachDurationTools(regionFrame, kind)
+            local conf = durationTypes[kind]
             local colorGet = function()
-                local c = AuraDurationVal(kindOf, "Color")
+                local c = AuraDurationVal(kind, "Color")
                 return c.r, c.g, c.b
             end
             local colorSet = function(r, g, b)
-                SavedDB()[kindOf .. "DurationTextColor"] = { r = r, g = g, b = b }
+                DB()[kind .. "DurationTextColor"] = { r = r, g = g, b = b }
                 RefreshDuration()
             end
 
@@ -2771,10 +2770,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         max = 20,
                         step = 1,
                         get = function()
-                            return AuraDurationVal(kindOf, "Size")
+                            return AuraDurationVal(kind, "Size")
                         end,
                         set = function(val)
-                            SavedDB()[kindOf .. "DurationTextSize"] = val
+                            DB()[kind .. "DurationTextSize"] = val
                             RefreshDuration()
                         end,
                     },
@@ -2785,10 +2784,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         max = 50,
                         step = 1,
                         get = function()
-                            return AuraDurationVal(kindOf, "X")
+                            return AuraDurationVal(kind, "X")
                         end,
                         set = function(val)
-                            SavedDB()[kindOf .. "DurationTextX"] = val
+                            DB()[kind .. "DurationTextX"] = val
                             RefreshDuration()
                         end,
                     },
@@ -2799,10 +2798,10 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         max = 50,
                         step = 1,
                         get = function()
-                            return AuraDurationVal(kindOf, "Y")
+                            return AuraDurationVal(kind, "Y")
                         end,
                         set = function(val)
-                            SavedDB()[kindOf .. "DurationTextY"] = val
+                            DB()[kind .. "DurationTextY"] = val
                             RefreshDuration()
                         end,
                     },
@@ -2824,8 +2823,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         local durationRow1
-        durationRow1, hgt =
-            Widgets:DualRow(hostFrame, posY, DurationDropdown("debuff"), DurationDropdown("buff"))
+        durationRow1, hgt = W:DualRow(hostFrame, posY, DurationDropdown("debuff"), DurationDropdown("buff"))
         posY = posY - hgt
         auraDurPosRow = durationRow1
         if not CludesUI._prebuilding then
@@ -2834,7 +2832,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         local durationRow2
-        durationRow2, hgt = Widgets:DualRow(hostFrame, posY, DurationDropdown("cc"), {
+        durationRow2, hgt = W:DualRow(hostFrame, posY, DurationDropdown("cc"), {
             type = "dropdown",
             text = "Aura Stacks",
             values = timerPosValues,
@@ -2842,7 +2840,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return DBVal("auraStackTextPosition") or asFallback
             end,
             setValue = function(val)
-                SavedDB().auraStackTextPosition = val
+                DB().auraStackTextPosition = val
                 LiveApplyAuraText()
                 UpdatePreview()
             end,
@@ -2858,11 +2856,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
             -- RIGHT: Aura Stacks inline color swatch
             local rightRgn = durationRow2._rightRegion
             local asColorGet = function()
-                local c = (SavedDB() and SavedDB().auraStackTextColor) or defaultSet.auraStackTextColor
+                local c = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
                 return c.r, c.g, c.b
             end
             local asColorSet = function(r, g, b)
-                SavedDB().auraStackTextColor = { r = r, g = g, b = b }
+                DB().auraStackTextColor = { r = r, g = g, b = b }
                 LiveApplyAuraText()
                 UpdatePreview()
             end
@@ -2881,7 +2879,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("auraStackTextSize") or defaultSet.auraStackTextSize
                         end,
                         set = function(val)
-                            SavedDB().auraStackTextSize = val
+                            DB().auraStackTextSize = val
                             LiveApplyAuraText()
                             UpdatePreview()
                         end,
@@ -2896,7 +2894,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("auraStackTextX") or defaultSet.auraStackTextX
                         end,
                         set = function(val)
-                            SavedDB().auraStackTextX = val
+                            DB().auraStackTextX = val
                             LiveApplyAuraText()
                             UpdatePreview()
                         end,
@@ -2911,7 +2909,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                             return DBVal("auraStackTextY") or defaultSet.auraStackTextY
                         end,
                         set = function(val)
-                            SavedDB().auraStackTextY = val
+                            DB().auraStackTextY = val
                             LiveApplyAuraText()
                             UpdatePreview()
                         end,
@@ -2938,20 +2936,20 @@ local function BuildDisplayBars(hostFrame, posY, context)
     local castTextPosValues = { none = "None", left = "Left", right = "Right", center = "Center" }
     local castTextPosOrder = { "none", "left", "right", "center" }
     local spellNameRow
-    spellNameRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    spellNameRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Spell Name",
         values = castTextPosValues,
         order = castTextPosOrder,
         getValue = function()
-            return (SavedDB() and SavedDB().castNameSide) or defaultSet.castNameSide
+            return (DB() and DB().castNameSide) or defaultSet.castNameSide
         end,
         setValue = function(val)
-            SavedDB().castNameSide = val
+            DB().castNameSide = val
             if val ~= "none" then
-                local ts = (SavedDB() and SavedDB().castTargetSide) or defaultSet.castTargetSide
+                local ts = (DB() and DB().castTargetSide) or defaultSet.castTargetSide
                 if ts == val then
-                    SavedDB().castTargetSide = "none"
+                    DB().castTargetSide = "none"
                 end
             end
             mod.RefreshAllSettings()
@@ -2968,14 +2966,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end,
         disabledTooltip = "This option requires Combine Spell Name and Target to be disabled.",
         getValue = function()
-            return (SavedDB() and SavedDB().castTargetSide) or defaultSet.castTargetSide
+            return (DB() and DB().castTargetSide) or defaultSet.castTargetSide
         end,
         setValue = function(val)
-            SavedDB().castTargetSide = val
+            DB().castTargetSide = val
             if val ~= "none" then
-                local nss = (SavedDB() and SavedDB().castNameSide) or defaultSet.castNameSide
+                local nss = (DB() and DB().castNameSide) or defaultSet.castNameSide
                 if nss == val then
-                    SavedDB().castNameSide = "none"
+                    DB().castNameSide = "none"
                 end
             end
             mod.RefreshAllSettings()
@@ -2990,7 +2988,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBColor("castNameColor")
         end
         local snColorSet = function(r, g, b)
-            SavedDB().castNameColor = { r = r, g = g, b = b }
+            DB().castNameColor = { r = r, g = g, b = b }
             for _, backing in pairs(plates) do
                 if backing.castName then
                     backing.castName:SetTextColor(r, g, b, 1)
@@ -3009,7 +3007,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castNameOffsetX") or defaultSet.castNameOffsetX
                     end,
                     xSet = function(val)
-                        SavedDB().castNameOffsetX = val
+                        DB().castNameOffsetX = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3017,7 +3015,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castNameOffsetY") or defaultSet.castNameOffsetY
                     end,
                     ySet = function(val)
-                        SavedDB().castNameOffsetY = val
+                        DB().castNameOffsetY = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3025,7 +3023,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castNameSize") or defaultSet.castNameSize
                     end,
                     sizeSet = function(val)
-                        SavedDB().castNameSize = val
+                        DB().castNameSize = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3042,9 +3040,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     end,
                     widthSet = function(val)
                         if DBVal("castCombineNameTarget") == true then
-                            SavedDB().castCombinedWidthPct = val
+                            DB().castCombinedWidthPct = val
                         else
-                            SavedDB().castNameWidthPct = val
+                            DB().castNameWidthPct = val
                         end
                         mod.RefreshAllSettings()
                         UpdatePreview()
@@ -3053,7 +3051,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castNameWrap") == true
                     end,
                     wrapSet = function(val)
-                        SavedDB().castNameWrap = val
+                        DB().castNameWrap = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3062,7 +3060,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castCombineNameTarget") == true
                     end,
                     toggleSet = function(val)
-                        SavedDB().castCombineNameTarget = val
+                        DB().castCombineNameTarget = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                         CludesUI:RefreshPage()
@@ -3092,7 +3090,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTargetOffsetX") or defaultSet.castTargetOffsetX
                     end,
                     xSet = function(val)
-                        SavedDB().castTargetOffsetX = val
+                        DB().castTargetOffsetX = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3100,7 +3098,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTargetOffsetY") or defaultSet.castTargetOffsetY
                     end,
                     ySet = function(val)
-                        SavedDB().castTargetOffsetY = val
+                        DB().castTargetOffsetY = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3108,7 +3106,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTargetSize") or defaultSet.castTargetSize
                     end,
                     sizeSet = function(val)
-                        SavedDB().castTargetSize = val
+                        DB().castTargetSize = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3120,7 +3118,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTargetWidthPct") or defaultSet.castTargetWidthPct
                     end,
                     widthSet = function(val)
-                        SavedDB().castTargetWidthPct = val
+                        DB().castTargetWidthPct = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3128,7 +3126,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         return DBVal("castTargetWrap") == true
                     end,
                     wrapSet = function(val)
-                        SavedDB().castTargetWrap = val
+                        DB().castTargetWrap = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end,
@@ -3155,7 +3153,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         )
         Pix.Point(ccSwatch, "RIGHT", rightRgn._lastInline or ctrl, "LEFT", -8, 0)
         ccSwatch:SetScript("OnClick", function()
-            SavedDB().castTargetClassColor = true
+            DB().castTargetClassColor = true
             for _, backing in pairs(plates) do
                 backing:UpdateHealth()
             end
@@ -3174,7 +3172,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return DBColor("castTargetColor")
         end
         local stColorSet = function(r, g, b)
-            SavedDB().castTargetColor = { r = r, g = g, b = b }
+            DB().castTargetColor = { r = r, g = g, b = b }
             for _, backing in pairs(plates) do
                 backing:UpdateHealth()
             end
@@ -3186,13 +3184,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
         rightRgn._lastInline = stSwatch
         stSwatch._eabOrigClick = stSwatch:GetScript("OnClick")
         stSwatch:SetScript("OnClick", function(self)
-            local saved = SavedDB()
+            local saved = DB()
             local cc = saved and saved.castTargetClassColor
             if cc == nil then
                 cc = defaultSet.castTargetClassColor
             end
             if cc then
-                SavedDB().castTargetClassColor = false
+                DB().castTargetClassColor = false
                 for _, backing in pairs(plates) do
                     backing:UpdateHealth()
                 end
@@ -3212,7 +3210,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end)
 
         CludesUI.RegisterWidgetRefresh(function()
-            local saved = SavedDB()
+            local saved = DB()
             local isCC = saved and saved.castTargetClassColor
             if isCC == nil then
                 isCC = defaultSet.castTargetClassColor
@@ -3222,7 +3220,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             stUpdate()
             ccUpdate()
         end)
-        local isCC = (SavedDB() and SavedDB().castTargetClassColor)
+        local isCC = (DB() and DB().castTargetClassColor)
         if isCC == nil then
             isCC = defaultSet.castTargetClassColor
         end

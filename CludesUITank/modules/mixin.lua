@@ -3,19 +3,19 @@ if mod.standalone then
     return
 end
 -- Core.lua is loaded before this file (see TOC), so ns.K is available.
-local Keys = mod.K
+local K = mod.K
 
 local CoTankAuras_Mixin = {}
 
 -- ── Settings getters ──────────────────────────────────────────────────────
 function CoTankAuras_Mixin:MaxShownPrivateAuras()
-    return self.maxPrivateAuras or mod.SettingNumber("maxPrivateAuras", Keys.PRIVATE_AURAS_DEFAULT_COUNT)
+    return self.maxPrivateAuras or mod.SettingNumber("maxPrivateAuras", K.PRIVATE_AURAS_DEFAULT_COUNT)
 end
 function CoTankAuras_Mixin:MaxShownDebuffs()
-    return self.maxDebuffs or mod.SettingNumber("maxDebuffs", Keys.DEBUFF_DEFAULT_COUNT)
+    return self.maxDebuffs or mod.SettingNumber("maxDebuffs", K.DEBUFF_DEFAULT_COUNT)
 end
 function CoTankAuras_Mixin:MaxShownDefensives()
-    return self.maxDefensives or mod.SettingNumber("maxDefensives", Keys.BIG_DEFENSIVES_DEFAULT_COUNT)
+    return self.maxDefensives or mod.SettingNumber("maxDefensives", K.BIG_DEFENSIVES_DEFAULT_COUNT)
 end
 function CoTankAuras_Mixin:ShowPrivateAuras()
     return self:MaxShownPrivateAuras() > 0
@@ -67,7 +67,7 @@ local function SetPreviewHighlight(f, stacks)
     local at = mod.StackHighlightAt()
     local enabled = at > 0 and stacks >= at
     if enabled and not f.stackEdges then
-        f.stackEdges = mod.CreateEdges(f, Keys.STACK_HIGHLIGHT_EDGE)
+        f.stackEdges = mod.CreateEdges(f, K.STACK_HIGHLIGHT_EDGE)
     end
     if not f.stackEdges then
         return
@@ -127,13 +127,13 @@ function CoTankAuras_Mixin:ShowMockDefensives()
     if not self.bigDefensives then
         return
     end
-    local mocks = Keys.MOCK_PREVIEW_DEFENSIVE_SPELLS
-    local upper = math.min(self:MaxShownDefensives(), #mocks)
+    local mocks = K.MOCK_PREVIEW_DEFENSIVE_SPELLS
+    local max = math.min(self:MaxShownDefensives(), #mocks)
     local nowTime = GetTime()
     for i, f in ipairs(self.bigDefensives) do
-        if i <= upper then
+        if i <= max then
             f.auraInstanceID = nil
-            f.icon:SetTexture(C_Spell.GetSpellTexture(mocks[i]) or Keys.MOCK_PREVIEW_DEBUFF_ICONS[i])
+            f.icon:SetTexture(C_Spell.GetSpellTexture(mocks[i]) or K.MOCK_PREVIEW_DEBUFF_ICONS[i])
             f.count:SetText("")
             f.count:SetAlpha(0)
             local duration = 8 + (i * 4)
@@ -163,12 +163,12 @@ end
 function CoTankAuras_Mixin:ShowMockDebuffs()
     local anyAtThreshold = false
     local highlightAt = mod.StackHighlightAt()
-    local mocks = Keys.MOCK_PREVIEW_DEBUFF_ICONS
-    local upper = math.min(self:MaxShownDebuffs(), #mocks)
+    local mocks = K.MOCK_PREVIEW_DEBUFF_ICONS
+    local max = math.min(self:MaxShownDebuffs(), #mocks)
     local nowTime = GetTime()
     for i = 1, #self.debuffs do
         local f = self.debuffs[i]
-        if i <= upper then
+        if i <= max then
             f.auraInstanceID = nil
             f.icon:SetTexture(mocks[i])
             -- Stable mock stacks (varies per slot for visual variety)
@@ -230,25 +230,25 @@ function CoTankAuras_Mixin:UpdateHealthBarColor()
     if mod.isTestMode then
         -- Paladin pink as mock class colour
         self.health:SetStatusBarColor(
-            0.96 * Keys.HEALTH_BAR_INTENSITY,
-            0.55 * Keys.HEALTH_BAR_INTENSITY,
-            0.73 * Keys.HEALTH_BAR_INTENSITY
+            0.96 * K.HEALTH_BAR_INTENSITY,
+            0.55 * K.HEALTH_BAR_INTENSITY,
+            0.73 * K.HEALTH_BAR_INTENSITY
         )
         return
     end
     local unit = self:GetAttribute("unit")
     local color
     if unit then
-        local _, classFile = UnitClass(unit)
-        if classFile then
-            color = RAID_CLASS_COLORS[classFile]
+        local _, class = UnitClass(unit)
+        if class then
+            color = RAID_CLASS_COLORS[class]
         end
     end
     if color then
         self.health:SetStatusBarColor(
-            color.r * Keys.HEALTH_BAR_INTENSITY,
-            color.g * Keys.HEALTH_BAR_INTENSITY,
-            color.b * Keys.HEALTH_BAR_INTENSITY
+            color.r * K.HEALTH_BAR_INTENSITY,
+            color.g * K.HEALTH_BAR_INTENSITY,
+            color.b * K.HEALTH_BAR_INTENSITY
         )
     else
         self.health:SetStatusBarColor(0.5, 0.5, 0.5)
@@ -257,7 +257,7 @@ end
 
 function CoTankAuras_Mixin:UpdateHealthText()
     if mod.isTestMode then
-        self:SetNameText(Keys.MOCK_NAMES[4]) -- "Iblameheals"
+        self:SetNameText(K.MOCK_NAMES[4]) -- "Iblameheals"
         self.hpText:SetText("65,432 | 65%")
         return
     end
@@ -391,26 +391,26 @@ function mod.ApplyIconSettings(f)
     local face = mod.FontPath()
     local flags = mod.FontFlags()
     -- Stack count size (0 = hidden)
-    local dim = mod.SettingNumber("stackCountSize", Keys.STACK_COUNT_DEFAULT_SIZE)
-    f.stackHidden = (dim <= 0)
-    f.count:SetFont(face, math.max(dim, 1), flags)
+    local size = mod.SettingNumber("stackCountSize", K.STACK_COUNT_DEFAULT_SIZE)
+    f.stackHidden = (size <= 0)
+    f.count:SetFont(face, math.max(size, 1), flags)
     f.count:SetTextColor(mod.FontColor("stackCountColor"))
     -- Stack count position, plus the free nudge offsets
     local posId = saved.stackCountPos or "BR_IN"
     local place
-    for _, p in ipairs(Keys.STACK_COUNT_POSITIONS) do
+    for _, p in ipairs(K.STACK_COUNT_POSITIONS) do
         if p.id == posId then
             place = p
             break
         end
     end
-    place = place or Keys.STACK_COUNT_POSITIONS[1]
+    place = place or K.STACK_COUNT_POSITIONS[1]
     local nudgeX = mod.SettingNumber("stackCountNudgeX", 0)
     local nudgeY = mod.SettingNumber("stackCountNudgeY", 0)
     f.count:ClearAllPoints()
     f.count:SetPoint(place.point, f, place.rel or place.point, place.px + nudgeX, place.py + nudgeY)
     -- Cooldown scale and position
-    local scaleInt = mod.SettingNumber("cdFontScale", Keys.CD_FONT_SCALE_DEFAULT)
+    local scaleInt = mod.SettingNumber("cdFontScale", K.CD_FONT_SCALE_DEFAULT)
     local scale = scaleInt / 10.0
     local cdAbove = saved.cdAbove or false
     if f.cd.SetFontScale then
@@ -419,7 +419,7 @@ function mod.ApplyIconSettings(f)
     f.cd:SetHideCountdownNumbers(cdAbove or scale <= 0)
     if f.timerText then
         f.timerText:SetShown(cdAbove)
-        local timerSize = mod.SettingNumber("timerTextSize", Keys.TIMER_TEXT_DEFAULT_SIZE)
+        local timerSize = mod.SettingNumber("timerTextSize", K.TIMER_TEXT_DEFAULT_SIZE)
         f.timerText:SetFont(face, math.max(timerSize, 1), flags)
         f.timerText:SetTextColor(mod.FontColor("timerTextColor"))
     end
@@ -432,15 +432,11 @@ function mod.RefreshAllFonts()
     local face = mod.FontPath()
     local flags = mod.FontFlags()
     if CoTankAuras.nameText then
-        CoTankAuras.nameText:SetFont(
-            face,
-            mod.SettingNumber("nameFontSize", Keys.DEFAULT_NAME_FONT_SIZE),
-            flags
-        )
+        CoTankAuras.nameText:SetFont(face, mod.SettingNumber("nameFontSize", K.DEFAULT_NAME_FONT_SIZE), flags)
         CoTankAuras.nameText:SetTextColor(mod.FontColor("nameTextColor"))
     end
     if CoTankAuras.hpText then
-        CoTankAuras.hpText:SetFont(face, mod.SettingNumber("hpFontSize", Keys.DEFAULT_HP_FONT_SIZE), flags)
+        CoTankAuras.hpText:SetFont(face, mod.SettingNumber("hpFontSize", K.DEFAULT_HP_FONT_SIZE), flags)
         CoTankAuras.hpText:SetTextColor(mod.FontColor("hpTextColor"))
     end
     if CoTankAuras.deadText then
@@ -479,7 +475,7 @@ function mod.RefreshDebuffSpacing()
     if not CoTankAuras.debuffs then
         return
     end
-    local spacing = mod.SettingNumber("debuffSpacing", Keys.DEBUFF_SPACING)
+    local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)
     for i, f in ipairs(CoTankAuras.debuffs) do
         f:ClearAllPoints()
         if i == 1 then
@@ -517,7 +513,7 @@ function mod.RefreshPrivateAuraSpacing()
     if not CoTankAuras or not CoTankAuras.anchorFrames then
         return
     end
-    local spacing = mod.SettingNumber("privateAuraSpacing", Keys.DEBUFF_SPACING)
+    local spacing = mod.SettingNumber("privateAuraSpacing", K.DEBUFF_SPACING)
     ApplyPrivateAuraGrow(CoTankAuras.anchorFrames, spacing)
 end
 
@@ -537,9 +533,9 @@ function mod.RefreshPrivateAuraSize()
     if InCombatLockdown() then
         return
     end
-    local dim = mod.SettingNumber("privateAuraSize", Keys.PRIVATE_AURA_SIZE_DEFAULT)
+    local size = mod.SettingNumber("privateAuraSize", K.PRIVATE_AURA_SIZE_DEFAULT)
     for _, boxHolder in ipairs(CoTankAuras.anchorFrames) do
-        boxHolder:SetSize(dim, dim)
+        boxHolder:SetSize(size, size)
     end
     CoTankAuras:CleanupPrivateAnchors()
     CoTankAuras:AttachPrivateAnchors()
@@ -594,7 +590,7 @@ local function CreateIconFrame(iconList, iconSize, anchorPoint, hostFrame, relat
     f:SetFrameStrata("MEDIUM")
     f:SetMouseClickEnabled(true)
     f:SetSize(iconSize, iconSize)
-    f:SetBackdrop({ edgeFile = Keys.BACKDROP_TEXTURE, edgeSize = 1 })
+    f:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
     f:SetBackdropBorderColor(0, 0, 0, 0.7)
     f.border = f
 
@@ -648,7 +644,7 @@ local function CreateIconFrame(iconList, iconSize, anchorPoint, hostFrame, relat
     if position == 1 then
         f:SetPoint(anchorPoint, hostFrame, relativePoint, ofsx, ofsy)
     else
-        f:SetPoint("RIGHT", iconList[position - 1], "LEFT", -Keys.DEBUFF_SPACING, 0)
+        f:SetPoint("RIGHT", iconList[position - 1], "LEFT", -K.DEBUFF_SPACING, 0)
     end
     f:SetAlpha(0)
     iconList[position] = f
@@ -657,8 +653,8 @@ end
 
 function CoTankAuras_Mixin:CreateDebuffContainer()
     self.debuffs = {}
-    for i = 1, Keys.DEBUFF_MAX_COUNT do
-        CreateIconFrame(self.debuffs, Keys.DEBUFF_ICON_SIZE, "TOPRIGHT", self, "BOTTOMRIGHT", 0, 0)
+    for i = 1, K.DEBUFF_MAX_COUNT do
+        CreateIconFrame(self.debuffs, K.DEBUFF_ICON_SIZE, "TOPRIGHT", self, "BOTTOMRIGHT", 0, 0)
     end
     self:RefreshDebuffLayout()
 end
@@ -668,9 +664,9 @@ function CoTankAuras_Mixin:CreateDefensiveContainer()
         return
     end
     self.bigDefensives = {}
-    local iconSize = Keys.DEFAULT_HEIGHT - Keys.POWER_BAR_HEIGHT - 16
-    for i = 1, Keys.BIG_DEFENSIVES_MAX_COUNT do
-        CreateIconFrame(self.bigDefensives, iconSize, "RIGHT", self.health, "RIGHT", -Keys.DEBUFF_SPACING, -2)
+    local iconSize = K.DEFAULT_HEIGHT - K.POWER_BAR_HEIGHT - 16
+    for i = 1, K.BIG_DEFENSIVES_MAX_COUNT do
+        CreateIconFrame(self.bigDefensives, iconSize, "RIGHT", self.health, "RIGHT", -K.DEBUFF_SPACING, -2)
     end
     self:RefreshDefensiveLayout()
 end
@@ -681,19 +677,19 @@ function CoTankAuras_Mixin:CreatePrivateAnchorContainers()
     end
     self.anchorFrames = {}
     local scaleFactor = mod.CalculateScaleFactor()
-    local dim = mod.SettingNumber("privateAuraSize", Keys.PRIVATE_AURA_SIZE_DEFAULT)
-    for i = 1, Keys.PRIVATE_AURAS_MAX_COUNT do
+    local size = mod.SettingNumber("privateAuraSize", K.PRIVATE_AURA_SIZE_DEFAULT)
+    for i = 1, K.PRIVATE_AURAS_MAX_COUNT do
         local boxHolder = CreateFrame("Frame", nil, self, "BackdropTemplate")
-        boxHolder:SetSize(dim, dim)
-        boxHolder:SetBackdrop({ edgeFile = Keys.BACKDROP_TEXTURE, edgeSize = 1 })
+        boxHolder:SetSize(size, size)
+        boxHolder:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
         boxHolder:SetBackdropBorderColor(0, 0, 0, 0)
-        local anchorFrame = CreateFrame("Frame", nil, boxHolder)
-        anchorFrame:SetAllPoints(boxHolder)
+        local anchor = CreateFrame("Frame", nil, boxHolder)
+        anchor:SetAllPoints(boxHolder)
         self.anchorFrames[i] = boxHolder
         self.anchorFrames[i]:SetAlpha(1)
         self.anchorFrames[i]:SetScale(scaleFactor)
     end
-    local spacing = mod.SettingNumber("privateAuraSpacing", Keys.DEBUFF_SPACING)
+    local spacing = mod.SettingNumber("privateAuraSpacing", K.DEBUFF_SPACING)
     ApplyPrivateAuraGrow(self.anchorFrames, spacing)
     self:RefreshAuraLayout()
 end
@@ -703,10 +699,10 @@ function CoTankAuras_Mixin:ShowMockPrivateAuras()
     if not self.anchorFrames then
         return
     end
-    local mocks = Keys.MOCK_PREVIEW_DEBUFF_ICONS
-    local upper = math.min(self:MaxShownPrivateAuras(), #mocks)
+    local mocks = K.MOCK_PREVIEW_DEBUFF_ICONS
+    local max = math.min(self:MaxShownPrivateAuras(), #mocks)
     for i, boxHolder in ipairs(self.anchorFrames) do
-        if i <= upper then
+        if i <= max then
             if not boxHolder.mockIcon then
                 local texture = boxHolder:CreateTexture(nil, "OVERLAY")
                 texture:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", 1, -1)
@@ -767,10 +763,10 @@ function CoTankAuras_Mixin:AttachPrivateAnchors()
     self.privateAnchorIDs = self.privateAnchorIDs or {}
     self.privateStackAnchorIDs = self.privateStackAnchorIDs or {}
     self.privateStackFrames = self.privateStackFrames or {}
-    local dim = mod.SettingNumber("privateAuraSize", Keys.PRIVATE_AURA_SIZE_DEFAULT)
-    local borderVal = mod.SettingNumber("privateAuraBorderScale", Keys.PRIVATE_AURA_BORDER_SCALE_DEFAULT)
+    local size = mod.SettingNumber("privateAuraSize", K.PRIVATE_AURA_SIZE_DEFAULT)
+    local borderVal = mod.SettingNumber("privateAuraBorderScale", K.PRIVATE_AURA_BORDER_SCALE_DEFAULT)
     local borderScale = borderVal <= 0 and -100 or borderVal
-    local stackScale = mod.SettingNumber("privateAuraStackScale", Keys.PRIVATE_AURA_STACK_SCALE_DEFAULT)
+    local stackScale = mod.SettingNumber("privateAuraStackScale", K.PRIVATE_AURA_STACK_SCALE_DEFAULT)
     for i = 1, #self.anchorFrames do
         local ident = C_UnitAuras.AddPrivateAuraAnchor({
             unitToken = unit,
@@ -779,8 +775,8 @@ function CoTankAuras_Mixin:AttachPrivateAnchors()
             showCountdownFrame = true,
             showCountdownNumbers = stackScale <= 1,
             iconInfo = {
-                iconWidth = dim - 4,
-                iconHeight = dim - 4,
+                iconWidth = size - 4,
+                iconHeight = size - 4,
                 borderScale = borderScale,
                 iconAnchor = {
                     point = "CENTER",
@@ -934,7 +930,7 @@ function CoTankAuras_Mixin:UpdateVisuals(_event, _unusedUnit, _info)
         end
         return
     end
-    self.nextUpdate = nowTime + Keys.UPDATE_THROTTLE
+    self.nextUpdate = nowTime + K.UPDATE_THROTTLE
     local unit = self:GetAttribute("unit")
     if not unit or not UnitExists(unit) then
         return

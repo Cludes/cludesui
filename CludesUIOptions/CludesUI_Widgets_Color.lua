@@ -531,12 +531,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local CK = 10 -- coarse checkerboard cell: 2 cols x 20 rows = 40 textures
         local ckCols = math.ceil(BAR_W / CK)
         local ckRows = math.ceil(SV_SIZE / CK)
-        for rowFrame = 0, ckRows - 1 do
-            for column = 0, ckCols - 1 do
-                local c = ((rowFrame + column) % 2 == 0) and 0.3 or 0.15
+        for row = 0, ckRows - 1 do
+            for col = 0, ckCols - 1 do
+                local c = ((row + col) % 2 == 0) and 0.3 or 0.15
                 local ck = alphaBar:CreateTexture(nil, "BACKGROUND")
                 ck:SetSize(CK, CK)
-                ck:SetPoint("TOPLEFT", alphaBar, "TOPLEFT", column * CK, -rowFrame * CK)
+                ck:SetPoint("TOPLEFT", alphaBar, "TOPLEFT", col * CK, -row * CK)
                 ck:SetColorTexture(c, c, c, 1)
                 if alphaMask then
                     ck:AddMaskTexture(alphaMask)
@@ -926,12 +926,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local favSwatches, rcSwatches = {}, {}
 
-        local function PopulateSwatchRow(swatchPool, rowFrame, payload)
+        local function PopulateSwatchRow(swatchPool, row, payload)
             local total = math.min(#payload, PICKER_MAX_SWATCHES)
             for idx = 1, math.max(total, #swatchPool) do
                 local button = swatchPool[idx]
                 if not button then
-                    button = MakeSwatchBtn(rowFrame, rowFrame._isFavorites)
+                    button = MakeSwatchBtn(row, row._isFavorites)
                     swatchPool[idx] = button
                 end
                 if idx <= total then
@@ -940,7 +940,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     button:Show()
                     button:ClearAllPoints()
                     if idx == 1 then
-                        button:SetPoint("LEFT", rowFrame, "LEFT", 0, 0)
+                        button:SetPoint("LEFT", row, "LEFT", 0, 0)
                     else
                         button:SetPoint("LEFT", swatchPool[idx - 1], "RIGHT", SWATCH_SPACING, 0)
                     end
@@ -989,7 +989,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         CludesUI.RegisterEscapeClose(dialog)
 
-        function dialog:Open(details, anchorFrame)
+        function dialog:Open(details, anchor)
             if dialog:IsShown() and cancelFunc then
                 cancelFunc()
             end
@@ -1026,11 +1026,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local scale = dialog:GetEffectiveScale()
             cx, cy = cx / scale, cy / scale
             -- Controller cursor: the hidden pointer is nowhere near the swatch it pressed.
-            if anchorFrame and CludesUI.PadCursorShown() then
-                padOpener = anchorFrame
-                local ax, ay = anchorFrame:GetCenter()
+            if anchor and CludesUI.PadCursorShown() then
+                padOpener = anchor
+                local ax, ay = anchor:GetCenter()
                 if ax and ay then
-                    local r = anchorFrame:GetEffectiveScale() / scale
+                    local r = anchor:GetEffectiveScale() / scale
                     cx, cy = ax * r, ay * r
                 end
             end
@@ -1063,9 +1063,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return dialog
     end
 
-    function CludesUI:ShowColorPicker(details, anchorFrame)
+    function CludesUI:ShowColorPicker(details, anchor)
         local dialog = self._colorPickerPopup or BuildColorPickerPopup()
-        dialog:Open(details, anchorFrame)
+        dialog:Open(details, anchor)
     end
 
     -- Shared color swatch: border + fill + UpdateSwatch + OnClick. Returns swatch (Button), UpdateSwatch (function), caller positions it. Border textures are deferred until first show to keep page builds light.
@@ -1289,7 +1289,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local function Update()
             local disabled = options.disabled and options.disabled()
-            local modeName = options.getMode()
+            local mode = options.getMode()
             if disabled then
                 local a = options.disabledAlpha or 0.3
                 customSwatch:SetAlpha(a)
@@ -1298,10 +1298,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     classSwatch:SetAlpha(a)
                 end
             else
-                customSwatch:SetAlpha(modeName == "custom" and 1 or 0.3)
-                defaultSwatch:SetAlpha(modeName == "default" and 1 or 0.3)
+                customSwatch:SetAlpha(mode == "custom" and 1 or 0.3)
+                defaultSwatch:SetAlpha(mode == "default" and 1 or 0.3)
                 if classSwatch then
-                    classSwatch:SetAlpha(modeName == "class" and 1 or 0.3)
+                    classSwatch:SetAlpha(mode == "class" and 1 or 0.3)
                 end
             end
             updateCustom()

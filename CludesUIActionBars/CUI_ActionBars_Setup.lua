@@ -1429,13 +1429,13 @@ function ABAR:FinishSetup()
     -- for slots whose contents stay put, so a numbered slot is probed against
     -- its last seen state first; slot 0 (every slot) always refreshes.
     local asbSlotFilled = {}
-    self:RegisterEvent("ACTIONBAR_SLOT_CHANGED", function(_, _, slotIndex)
-        if slotIndex and slotIndex ~= 0 then
-            local filled = HasAction(slotIndex) and true or false
-            if asbSlotFilled[slotIndex] == filled then
+    self:RegisterEvent("ACTIONBAR_SLOT_CHANGED", function(_, _, slot)
+        if slot and slot ~= 0 then
+            local filled = HasAction(slot) and true or false
+            if asbSlotFilled[slot] == filled then
                 return
             end
-            asbSlotFilled[slotIndex] = filled
+            asbSlotFilled[slot] = filled
         end
         QueueAlwaysShowButtonsRefresh()
     end)
@@ -1465,13 +1465,13 @@ function ABAR:FinishSetup()
     local petAttackStopped = false
     local PetBarDeferred
     PetBarDeferred = function()
-        local kindOf = _petPendingKind
+        local kind = _petPendingKind
         _petPendingKind = nil
-        if not kindOf then
+        if not kind then
             return
         end
         do
-            if kindOf == "cd" then
+            if kind == "cd" then
                 -- Cooldown-only path: safe during combat, no taint risk.
                 -- Update each button's cooldown frame directly.
                 for idx = 1, NUM_PET_ACTION_SLOTS do
@@ -1713,9 +1713,9 @@ function ABAR:FinishSetup()
         if popFrame and not popFrame:IsVisible() then
             return
         end
-        local kindOf = (evt == "PET_BAR_UPDATE_COOLDOWN") and "cd" or "full"
+        local kind = (evt == "PET_BAR_UPDATE_COOLDOWN") and "cd" or "full"
         local prev = _petPendingKind
-        _petPendingKind = (kindOf == "full" or prev == "full") and "full" or "cd"
+        _petPendingKind = (kind == "full" or prev == "full") and "full" or "cd"
         if not prev then
             C_Timer_After(0, PetBarDeferred)
         end
@@ -1781,12 +1781,12 @@ function ABAR:FinishSetup()
                 -- from the actual form even when the cooldown has not changed.
                 local texture, isActive, isCastable = GetShapeshiftFormInfo(idx)
                 button:SetChecked(isActive)
-                local glyph = paintIcons and button.icon
-                if glyph then
-                    glyph:SetTexture(texture)
+                local icon = paintIcons and button.icon
+                if icon then
+                    icon:SetTexture(texture)
                     if not (issecretvalue and issecretvalue(isCastable)) then
                         local c = isCastable and 1 or 0.4
-                        glyph:SetVertexColor(c, c, c)
+                        icon:SetVertexColor(c, c, c)
                     end
                 end
             end
@@ -1828,14 +1828,14 @@ function ABAR:FinishSetup()
             return
         end
         for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-            local barFrame = _G[record.name]
-            if barFrame then
+            local bar = _G[record.name]
+            if bar then
                 if not record.retainEvents then
-                    barFrame:UnregisterAllEvents()
+                    bar:UnregisterAllEvents()
                 end
                 -- No Hide(): see ReassertHiddenOnShow's note above
                 -- hiddenParent's creation. Reparenting alone is enough.
-                barFrame:SetParent(hiddenParent)
+                bar:SetParent(hiddenParent)
             end
         end
         -- Both event broadcasters are quieted at file-load time (top of file).
@@ -1857,9 +1857,9 @@ function ABAR:FinishSetup()
     -- ReassertHiddenOnShow reparents rather than Hide()s -- see its note above
     -- hiddenParent's creation.
     for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-        local barFrame = _G[record.name]
-        if barFrame then
-            mod.ReassertHiddenOnShow(barFrame)
+        local bar = _G[record.name]
+        if bar then
+            mod.ReassertHiddenOnShow(bar)
         end
     end
 

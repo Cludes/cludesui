@@ -32,18 +32,18 @@ end
 -- The target's left arrow sits just left of the name; while the badge is up it
 -- moves out past the badge instead of under it. Same fully-anchored form as
 -- the friendly plate builds (point+size regions drift inside plate subtrees).
-local function ArrowTo(fp, anchorFrame)
+local function ArrowTo(fp, anchor)
     local la = fp.leftArrow
-    if not la or fp._facArrowTo == anchorFrame then
+    if not la or fp._facArrowTo == anchor then
         return
     end
-    fp._facArrowTo = anchorFrame
+    fp._facArrowTo = anchor
     -- The width we set, never la:GetWidth(): the arrow hangs off the name, and a
     -- secret name (restricted content) makes its measured width secret.
     local posX = -(2 + (fp._arrowW or 16) / 2)
     la:ClearAllPoints()
-    la:SetPoint("TOP", anchorFrame, "LEFT", posX, 8)
-    la:SetPoint("BOTTOM", anchorFrame, "LEFT", posX, -8)
+    la:SetPoint("TOP", anchor, "LEFT", posX, 8)
+    la:SetPoint("BOTTOM", anchor, "LEFT", posX, -8)
 end
 
 -- Draw (or hide) the badge beside a friendly full plate's name. No events of
@@ -56,10 +56,10 @@ local function Refresh(fp)
         return
     end
     local b = badges[nameplate]
-    local atlas, dim
+    local atlas, size
     -- Slot None: no unit queries, only a badge left up from before is hidden.
     if mod.NP_GetFactionSlot() ~= "none" then
-        atlas, dim = mod.NP_FactionBadge(unitToken)
+        atlas, size = mod.NP_FactionBadge(unitToken)
     end
     local fontStr = fp.name
     if not (atlas and fontStr) then
@@ -79,16 +79,16 @@ local function Refresh(fp)
     b:SetPoint("RIGHT", fontStr, "LEFT", -2, 0)
     -- Repaint only when the art or the dim changes (inputs: faction, Icon Style, honor
     -- badge, dim).
-    local look = mod.NP_GetFactionStyle()
-    local badge = CludesUI.FactionBadgeFor(look, unitToken)
-    if b.facArt ~= atlas or b.facStyle ~= look or b.facBadge ~= badge then
-        CludesUI.SetFactionArt(b.tex, look, atlas, badge)
-        b.facArt, b.facStyle, b.facBadge = atlas, look, badge
+    local style = mod.NP_GetFactionStyle()
+    local badge = CludesUI.FactionBadgeFor(style, unitToken)
+    if b.facArt ~= atlas or b.facStyle ~= style or b.facBadge ~= badge then
+        CludesUI.SetFactionArt(b.tex, style, atlas, badge)
+        b.facArt, b.facStyle, b.facBadge = atlas, style, badge
     end
-    if b.facDim ~= dim then
-        b.tex:SetDesaturated(dim)
-        b.tex:SetAlpha(dim and 0.6 or 1)
-        b.facDim = dim
+    if b.facDim ~= size then
+        b.tex:SetDesaturated(size)
+        b.tex:SetAlpha(size and 0.6 or 1)
+        b.facDim = size
     end
     b:Show()
     ArrowTo(fp, b)

@@ -136,8 +136,8 @@ local function Dimensions(widget)
     return widget:GetWidth(), widget:GetHeight(), widget:GetEffectiveScale()
 end
 
-local function Extent(key, sideName, fallback)
-    local success, value = pcall(CludesUI._GetAnchorTargetExtent, key, sideName)
+local function Extent(key, side, fallback)
+    local success, value = pcall(CludesUI._GetAnchorTargetExtent, key, side)
     if not success then
         return
     end
@@ -152,7 +152,7 @@ local function Extent(key, sideName, fallback)
     end
 end
 
-function PA.Rect(key, widget, targetUnit)
+function PA.Rect(key, widget, target)
     if not widget then
         return
     end
@@ -169,7 +169,7 @@ function PA.Rect(key, widget, targetUnit)
     end
     local ratio = scale / UIParent:GetEffectiveScale()
     l, r, t, b = (l + il) * ratio, (r - ir) * ratio, (t - it) * ratio, (b + ib) * ratio
-    if targetUnit and CludesUI._GetAnchorTargetExtent then
+    if target and CludesUI._GetAnchorTargetExtent then
         l, r = Extent(key, "LEFT", l), Extent(key, "RIGHT", r)
         t, b = Extent(key, "TOP", t), Extent(key, "BOTTOM", b)
     end
@@ -179,19 +179,19 @@ function PA.Rect(key, widget, targetUnit)
     return l, r, t, b
 end
 
-function PA.Point(key, widget, anchorPoint, targetUnit)
+function PA.Point(key, widget, anchorPoint, target)
     local p = POINTS[anchorPoint]
     if not p then
         return
     end
-    local l, r, t, b = PA.Rect(key, widget, targetUnit)
+    local l, r, t, b = PA.Rect(key, widget, target)
     if not l then
         return
     end
     return l + (r - l) * p[1], b + (t - b) * p[2]
 end
 
-function PA.Center(childKey, childFrame, details, targetUnit, wid, hgt)
+function PA.Center(childKey, childFrame, details, target, wid, hgt)
     if not PA.Valid(details) then
         return
     end
@@ -211,7 +211,7 @@ function PA.Center(childKey, childFrame, details, targetUnit, wid, hgt)
             return
         end
     end
-    local tx, ty = PA.Point(details.target, targetUnit, details.targetPoint, true)
+    local tx, ty = PA.Point(details.target, target, details.targetPoint, true)
     if not tx then
         return
     end
@@ -243,13 +243,13 @@ local function WritePoint(widget, anchorPoint, rel, rp, posX, posY)
     CludesUI.SetFramePoint(widget, anchorPoint, rel, rp, posX, posY)
 end
 
-function PA.Capture(childKey, details, childFrame, targetUnit)
+function PA.Capture(childKey, details, childFrame, target)
     if not PA.Valid(details) then
         return
     end
-    childFrame, targetUnit = childFrame or PA.Frame(childKey), targetUnit or PA.Frame(details.target)
+    childFrame, target = childFrame or PA.Frame(childKey), target or PA.Frame(details.target)
     local cx, cy = PA.Point(childKey, childFrame, details.sourcePoint)
-    local tx, ty = PA.Point(details.target, targetUnit, details.targetPoint, true)
+    local tx, ty = PA.Point(details.target, target, details.targetPoint, true)
     if not cx or not tx then
         return
     end
@@ -332,11 +332,11 @@ function PA.Place(childKey, childFrame, details, cx, cy, wid, hgt)
     return bx, by, not same
 end
 
-function PA.EarlyApply(key, details, childFrame, targetUnit)
+function PA.EarlyApply(key, details, childFrame, target)
     if not PA.Valid(details) or (InCombatLockdown() and childFrame:IsProtected()) then
         return
     end
-    local cx, cy = PA.Center(key, childFrame, details, targetUnit)
+    local cx, cy = PA.Center(key, childFrame, details, target)
     if not cx then
         return
     end

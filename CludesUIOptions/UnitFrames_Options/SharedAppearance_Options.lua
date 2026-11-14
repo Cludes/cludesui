@@ -33,7 +33,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     local saved, frameList, optionState, portraitArtValues =
         environ.db, environ.frames, environ.optState, environ.portraitArtValues
     local TexBgRowCfg = environ.TexBgRowCfg
-    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     local SVal = context.SVal
     local _, hgt
 
@@ -41,7 +41,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     --  DISPLAY
     -------------------------------------------------------------------
     local sharedDisplayHeader
-    sharedDisplayHeader, hgt = Widgets:SectionHeader(hostFrame, "DISPLAY", posY)
+    sharedDisplayHeader, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
     posY = posY - hgt
     -- The Move in Unlock Mode button on the unit's first section: the selected
     -- unit's own mover, which exists only for the CludesUI frame source (a
@@ -70,8 +70,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             if d.detachedPortraitShape == "none" then
                 d.detachedPortraitShape = "portrait"
             end
-            local sideName = d.portraitSide
-            if sideName == "insideleft" or sideName == "insideright" or sideName == "insidecenter" then
+            local side = d.portraitSide
+            if side == "insideleft" or side == "insideright" or side == "insidecenter" then
                 d.portraitSide = "left"
             end
             ReloadAndUpdate()
@@ -161,7 +161,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     end
     local visRow
     visRow, hgt = CludesUI.BuildVisibilityRow(
-        Widgets,
+        W,
         hostFrame,
         posY,
         {
@@ -176,8 +176,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             -- Spec Override carrying "never" used to leave the frame uncreated for
             -- the session with no way back but a /reload. "never" is hidden by the
             -- visibility pass instead (ns.UpdateFrameVisibility), which reverses.
-            applyScalarFn = function(s, modeName)
-                s.barVisibility = modeName
+            applyScalarFn = function(s, mode)
+                s.barVisibility = mode
             end,
             onChanged = function()
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()
@@ -341,8 +341,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             if dst == source then
                 return
             end
-            CludesUI.VisFullCopy(dst, source, "barVisibility", nil, function(t, modeName)
-                t.barVisibility = modeName
+            CludesUI.VisFullCopy(dst, source, "barVisibility", nil, function(t, mode)
+                t.barVisibility = mode
             end)
             SyncUnitVisBooleans(dst)
         end
@@ -410,7 +410,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- per-unit (drives health/power/cast/absorb); db.profile.healthBarTexture is the fallback when unset.
     local barTexRow
     local hbtValues, hbtOrder = BuildBarTexDropdown()
-    barTexRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    barTexRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Bar Texture",
         values = hbtValues,
@@ -507,7 +507,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- Row 3: Border Style (+ cog) | Border (slider + double inline swatches)
     local sharedScaleBorderRow
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-    sharedScaleBorderRow, hgt = Widgets:DualRow(
+    sharedScaleBorderRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -601,7 +601,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
                 end,
                 apply = ReloadAndUpdate,
             })
-            _, hgt = Widgets:DualRow(
+            _, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
@@ -1069,7 +1069,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     local ufStrataValues = CludesUI.FRAME_STRATA_LABELS
     local ufStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
     local tipStrataRow
-    tipStrataRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    tipStrataRow, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Show Tooltip For",
         tooltip = "Choose which tooltips appear on hover. Affects all unit frames, including boss frames.",
@@ -1268,7 +1268,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- Show Decimal on Health Text (global): one decimal on health value (240.5k)
     -- and health percent (77.3%) for every unit. Default off.
     local decRow
-    decRow, hgt = Widgets:DualRow(hostFrame, posY, {
+    decRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Decimal on Health Text",
         tooltip = "Show one decimal place on health text: health values like 240.5k and health percent like 77.3%. Power text is unaffected. Off by default.",
@@ -1556,7 +1556,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             }
         end
         local pctRow
-        pctRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        pctRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Threat % on Target",
             tooltip = "Shows your threat percentage on the target frame while you are in combat with it. The cog adds the focus frame.",
@@ -1632,7 +1632,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- Blizzard Style, target frame: the coloured strip behind the name,
     -- or an uncoloured header matching the player frame.
     if optionState.selectedUnit == "target" and CludesUI.BlizzStyle.Active("unitframes") == "blizzard" then
-        _, hgt = Widgets:DualRow(hostFrame, posY, {
+        _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Blizz Colored Target Header",
             tooltip = "Colors the strip behind the target's name by its reaction.",
@@ -1652,7 +1652,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
         posY = posY - hgt
     end
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY
@@ -1668,7 +1668,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         environ.optState, environ.portraitArtOrder, environ.portraitArtValues, environ.portraitModeOrder2
     local portraitModeValues2, portraitNonPlayerOrder, portraitNonPlayerValues =
         environ.portraitModeValues2, environ.portraitNonPlayerOrder, environ.portraitNonPlayerValues
-    local Widgets, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     local SVal = context.SVal
     local _, hgt
 
@@ -1676,7 +1676,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
     --  PORTRAIT
     -------------------------------------------------------------------
     local sharedPortraitHeader
-    sharedPortraitHeader, hgt = Widgets:SectionHeader(hostFrame, "PORTRAIT", posY)
+    sharedPortraitHeader, hgt = W:SectionHeader(hostFrame, "PORTRAIT", posY)
     posY = posY - hgt
 
     -- Forward declarations for cross-row updates
@@ -1685,7 +1685,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
 
     -- Row 1: Portrait Mode + Art Style
     local sharedPortraitModeRow
-    sharedPortraitModeRow, hgt = Widgets:DualRow(
+    sharedPortraitModeRow, hgt = W:DualRow(
         hostFrame,
         posY,
         CludesUI.BlizzStyle.Gate("unitframes", {
@@ -1713,12 +1713,12 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 -- Reset detached-only settings when leaving detached mode
                 if v ~= "detached" then
                     UNIT_DB_MAP[optionState.selectedUnit]().portraitSize = 0
-                    local sideName = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
+                    local side = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
                     if
-                        sideName == "top"
-                        or sideName == "insideleft"
-                        or sideName == "insideright"
-                        or sideName == "insidecenter"
+                        side == "top"
+                        or side == "insideleft"
+                        or side == "insideright"
+                        or side == "insidecenter"
                     then
                         UNIT_DB_MAP[optionState.selectedUnit]().portraitSide = "left"
                     end
@@ -1784,12 +1784,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         if prefs.detachedPortraitShape == "none" then
                             prefs.detachedPortraitShape = "portrait"
                         end
-                        local sideName = prefs.portraitSide
-                        if
-                            sideName == "insideleft"
-                            or sideName == "insideright"
-                            or sideName == "insidecenter"
-                        then
+                        local side = prefs.portraitSide
+                        if side == "insideleft" or side == "insideright" or side == "insidecenter" then
                             prefs.portraitSide = "left"
                         end
                     end
@@ -2023,7 +2019,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
     -- Mode's setValue rebuilds the page on any mode change).
     if SVal("portraitNonPlayerOn", false) and SVal("portraitStyle", "attached") ~= "none" then
         local nonPlayerRow
-        nonPlayerRow, hgt = Widgets:DualRow(
+        nonPlayerRow, hgt = W:DualRow(
             hostFrame,
             posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
@@ -2128,19 +2124,17 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         }
         local portraitLocationOrder = { "left", "right", "top", "insideleft", "insideright", "insidecenter" }
         local sharedSizePosRow
-        sharedSizePosRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedSizePosRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Size",
             min = -50,
             max = 100,
             step = 1,
             disabled = function()
-                local look = SVal("portraitStyle", "attached")
-                local sideName = SVal("portraitSide", "left")
-                local isInside = sideName == "insideleft"
-                    or sideName == "insideright"
-                    or sideName == "insidecenter"
-                return look ~= "detached" and not isInside
+                local style = SVal("portraitStyle", "attached")
+                local side = SVal("portraitSide", "left")
+                local isInside = side == "insideleft" or side == "insideright" or side == "insidecenter"
+                return style ~= "detached" and not isInside
             end,
             disabledTooltip = "Only available in Detached or Inside modes",
             rawTooltip = true,
@@ -2427,7 +2421,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
     -- Detached; the mode dropdown's setValue forces the rebuild on any change.
     if SVal("portraitStyle", "attached") == "detached" then
         local sharedShapeBorderRow
-        sharedShapeBorderRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedShapeBorderRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Shape",
             values = detPortraitShapeValues,
@@ -2755,13 +2749,13 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         if (d.detachedPortraitBorderSize or 7) ~= bs then
                             return false
                         end
-                        for k, spec_def in pairs(SB_EXTRAS) do
+                        for k, def in pairs(SB_EXTRAS) do
                             local sv, dv = source[k], d[k]
                             if sv == nil then
-                                sv = spec_def
+                                sv = def
                             end
                             if dv == nil then
-                                dv = spec_def
+                                dv = def
                             end
                             if sv ~= dv then
                                 return false
@@ -2828,7 +2822,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
             return not DVal("on")
         end
         local dragonRow
-        dragonRow, hgt = Widgets:DualRow(
+        dragonRow, hgt = W:DualRow(
             hostFrame,
             posY,
             CludesUI.BlizzStyle.Gate("unitframes", {
@@ -2964,7 +2958,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         end
     end -- close dragon row hidden-at-None gate
 
-    _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+    _, hgt = W:Spacer(hostFrame, posY, 20)
     posY = posY - hgt
 
     return posY, sharedPortraitHeader, sharedPortraitModeRow
@@ -2980,7 +2974,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         environ.btbPositionValues, environ.btbTextOrder, environ.btbTextValues, environ.classIconLocOrder
     local classIconLocValues, classIconOrder, classIconValues, optionState =
         environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
-    local Widgets, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
+    local W, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
     local _, hgt
 
     -------------------------------------------------------------------
@@ -2992,13 +2986,13 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
     local _sharedBtbWidthRgn
     local sharedBtbToggleRow
     if not CludesUI.BlizzStyle.Get("unitframes") then
-        _, hgt = Widgets:Spacer(hostFrame, posY, 20)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
-        sharedBtbHeader, hgt = Widgets:SectionHeader(hostFrame, "TEXT BAR", posY)
+        sharedBtbHeader, hgt = W:SectionHeader(hostFrame, "TEXT BAR", posY)
         posY = posY - hgt
 
         -- Row 1: Enable Text Bar + Position
-        sharedBtbToggleRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedBtbToggleRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Text Bar",
             getValue = function()
@@ -3222,7 +3216,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
     if SVal("bottomTextBar", false) and not CludesUI.BlizzStyle.Get("unitframes") then
         -- Row 2: Height + Width
         local sharedBtbHeightRow
-        sharedBtbHeightRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedBtbHeightRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Height",
             min = 0,
@@ -3417,7 +3411,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         end
 
         -- Row 3: Left Text + Right Text
-        sharedBtbTextRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedBtbTextRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Left Text",
             values = BtbValues("btbLeft", SetBtbLeft),
@@ -3628,8 +3622,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 btbLRgn,
                 btbLRgn:GetFrameLevel() + 5,
                 function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    local _, class = UnitClass("player")
+                    local cc = class and CludesUI.GetClassColor(class)
                     if cc then
                         return cc.r, cc.g, cc.b
                     end
@@ -3726,12 +3720,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBlSwatches()
-                local offset = blOff()
+                local off = blOff()
                 local isClass = SVal("btbLeftClassColor", false)
                 local isPower = SVal("btbLeftPowerColor", false)
-                blSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
-                blClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
-                blPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
+                blSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
+                blClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
+                blPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 blUpdateSwatch()
@@ -3902,8 +3896,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 btbRRgn,
                 btbRRgn:GetFrameLevel() + 5,
                 function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    local _, class = UnitClass("player")
+                    local cc = class and CludesUI.GetClassColor(class)
                     if cc then
                         return cc.r, cc.g, cc.b
                     end
@@ -4000,12 +3994,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBrSwatches()
-                local offset = brOff()
+                local off = brOff()
                 local isClass = SVal("btbRightClassColor", false)
                 local isPower = SVal("btbRightPowerColor", false)
-                brSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
-                brClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
-                brPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
+                brSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
+                brClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
+                brPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 brUpdateSwatch()
@@ -4132,7 +4126,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         end
 
         -- Row 4: Center Text + Class Icon
-        sharedBtbCenterRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedBtbCenterRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Center Text",
             values = BtbValues("btbCenter", SetBtbCenter),
@@ -4337,8 +4331,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 btbCRgn,
                 btbCRgn:GetFrameLevel() + 5,
                 function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and CludesUI.GetClassColor(classFile)
+                    local _, class = UnitClass("player")
+                    local cc = class and CludesUI.GetClassColor(class)
                     if cc then
                         return cc.r, cc.g, cc.b
                     end
@@ -4435,12 +4429,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBcSwatches()
-                local offset = bcOff()
+                local off = bcOff()
                 local isClass = SVal("btbCenterClassColor", false)
                 local isPower = SVal("btbCenterPowerColor", false)
-                bcSwatch:SetAlpha((isClass or isPower or offset) and 0.3 or 1)
-                bcClassSwatch:SetAlpha((isClass and not offset) and 1 or 0.3)
-                bcPowerSwatch:SetAlpha((isPower and not offset) and 1 or 0.3)
+                bcSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
+                bcClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
+                bcPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 bcUpdateSwatch()
@@ -4636,7 +4630,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, saved =
         environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
     local optionState = environ.optState
-    local Widgets, SApplySupport, SDB, SGetSupported =
+    local W, SApplySupport, SDB, SGetSupported =
         context.W, context.SApplySupport, context.SDB, context.SGetSupported
     local SSetSupported, SValSupported, SVisible =
         context.SSetSupported, context.SValSupported, context.SVisible
@@ -4646,7 +4640,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     -------------------------------------------------------------------
     --  EXTRAS
     -------------------------------------------------------------------
-    sharedAddHeader, hgt = Widgets:SectionHeader(hostFrame, "EXTRAS", posY)
+    sharedAddHeader, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
     posY = posY - hgt
 
     -- Row 1: Combat Indicator (absorb settings live in the ABSORBS section above)
@@ -4735,7 +4729,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                 end,
             }
         end
-        sharedAddRow1, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedAddRow1, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Combat Indicator",
             values = combatIndValues,
@@ -4978,11 +4972,11 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             combatSwatchBlock:Hide()
             local function UpdateSwatchVisibility()
                 local colorMode = SValSupported("combatIndicatorColor", "custom")
-                local look = SValSupported("combatIndicatorStyle", "class")
+                local style = SValSupported("combatIndicatorStyle", "class")
                 -- All custom combat icons (combat0..5) are shown as-is, so the custom-
                 -- color swatch doesn't apply to them.
-                local isRawIcon = look:find("^combat%d") and true or false
-                local usable = colorMode == "custom" and look ~= "none" and not isRawIcon
+                local isRawIcon = style:find("^combat%d") and true or false
+                local usable = colorMode == "custom" and style ~= "none" and not isRawIcon
                 combatSwatch:SetAlpha(usable and 1 or 0.3)
                 if usable then
                     combatSwatchBlock:Hide()
@@ -5043,7 +5037,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         return SValSupported("raidMarkerEnabled", false) == false
     end
     local sharedAddRow4
-    sharedAddRow4, hgt = Widgets:DualRow(hostFrame, posY, {
+    sharedAddRow4, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Raid Marker",
         getValue = function()
@@ -5231,7 +5225,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     end
     if leaderIndSupported() then
         local leaderSyncUnits = { "player", "target" }
-        sharedAddRow5, hgt = Widgets:DualRow(hostFrame, posY, {
+        sharedAddRow5, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Leader Indicator",
             getValue = function()
@@ -5423,7 +5417,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                 and not CludesUI.BlizzStyle.Get("unitframes")
         end
         local eliteRow
-        eliteRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        eliteRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Elite/Rare Indicator",
             tooltip = "Marks elite, rare elite and rare targets; the Pixels Dragon style also marks players.",
@@ -5593,7 +5587,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             modeOrder = { "off", "always" }
         end
         local factionRow
-        factionRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        factionRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Faction Indicator",
             values = modeValues,
@@ -5750,7 +5744,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     -- row mirrored, the same account-wide settings (CludesUI.RestedIndicatorCfg).
     if optionState.selectedUnit == "player" then
         local restRow
-        restRow, hgt = Widgets:DualRow(hostFrame, posY, CludesUI.RestedIndicatorCfg(), CludesUI.BlankRowCfg())
+        restRow, hgt = W:DualRow(hostFrame, posY, CludesUI.RestedIndicatorCfg(), CludesUI.BlankRowCfg())
         posY = posY - hgt
         CludesUI.BuildRestedIndicatorCog(restRow._leftRegion)
     end
@@ -5760,7 +5754,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     -- out while the Target frame is on Blizzard Default.
     if optionState.selectedUnit == "target" then
         local soundRow
-        soundRow, hgt = Widgets:DualRow(hostFrame, posY, {
+        soundRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Targeting Sound Effects",
             tooltip = "Plays the game's sounds when you select or lose a target.",

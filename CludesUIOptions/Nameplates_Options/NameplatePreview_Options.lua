@@ -25,23 +25,23 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- levels over the health bar: text +10/+11, auras +9, raised auras +13 (their
 -- duration text +15). The refresh re-parents the name and its marker to the
 -- text tier before this runs, so MEDIUM needs nothing.
-local function PreviewNameStrata(popFrame, healthBar, nameFS, nameRaidFrame, strata)
+local function PreviewNameStrata(popFrame, health, nameFS, nameRaidFrame, strata)
     if strata == "MEDIUM" then
         return
     end
     local low = (strata == "BACKGROUND" or strata == "LOW")
     local key = low and "_npNameLowHost" or "_npNameHighHost"
-    local hostRegion = popFrame[key]
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, popFrame)
-        hostRegion:SetAllPoints(healthBar)
-        popFrame[key] = hostRegion
+    local host = popFrame[key]
+    if not host then
+        host = CreateFrame("Frame", nil, popFrame)
+        host:SetAllPoints(health)
+        popFrame[key] = host
     end
-    hostRegion:SetFrameLevel(healthBar:GetFrameLevel() + (low and 7 or 16))
-    nameFS:SetParent(hostRegion)
+    host:SetFrameLevel(health:GetFrameLevel() + (low and 7 or 16))
+    nameFS:SetParent(host)
     if nameRaidFrame:IsShown() then
-        nameRaidFrame:SetParent(hostRegion)
-        nameRaidFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 1)
+        nameRaidFrame:SetParent(host)
+        nameRaidFrame:SetFrameLevel(host:GetFrameLevel() + 1)
     end
 end
 
@@ -110,7 +110,7 @@ local function ChainPreview(cx)
         end
         if #members >= 2 then
             local yOff = DBVal(place .. "SlotYOffset") or 0
-            local sideName = (place == "left" or place == "right")
+            local side = (place == "left" or place == "right")
             local corner = (place == "topleft" or place == "topright")
             -- The shown members: a row (list, count, sz, h, gap) or an icon (frame, sz),
             -- with the bottom edge its own placement gives it over the slot's reference.
@@ -119,13 +119,13 @@ local function ChainPreview(cx)
                 local ident = members[i]
                 local r = cx.rows[ident]
                 if r then
-                    local baseValue = 0
-                    if sideName then
-                        baseValue = yOff
+                    local base = 0
+                    if side then
+                        base = yOff
                     elseif corner then
-                        baseValue = cx.debuffY + yOff
+                        base = cx.debuffY + yOff
                     end
-                    isShown[#isShown + 1] = { id = ident, row = r, base = baseValue }
+                    isShown[#isShown + 1] = { id = ident, row = r, base = base }
                 else
                     local ic = cx.icons[ident]
                     local f = ic.frame
@@ -134,13 +134,13 @@ local function ChainPreview(cx)
                         f = cx.factionFrame
                     end
                     if f:IsShown() then
-                        local baseValue = 0
-                        if sideName then
-                            baseValue = yOff + barH / 2 - ic.sz / 2
+                        local base = 0
+                        if side then
+                            base = yOff + barH / 2 - ic.sz / 2
                         elseif corner then
-                            baseValue = ((ident == "raidmarker") and 0 or 2) + yOff
+                            base = ((ident == "raidmarker") and 0 or 2) + yOff
                         end
-                        isShown[#isShown + 1] = { id = ident, frame = f, sz = ic.sz, base = baseValue }
+                        isShown[#isShown + 1] = { id = ident, frame = f, sz = ic.sz, base = base }
                     end
                 end
             end
@@ -243,7 +243,7 @@ local function ChainPreview(cx)
                         Place(isShown[i], i + 1, prev, "left")
                     end
                 end
-                if sideName then
+                if side then
                     for i = k, 1, -1 do
                         local m = isShown[i]
                         local posY, hgt = m.base, m.row and m.row.h or m.sz
@@ -268,10 +268,10 @@ local PV_LVL_COLOR = { r = 1, g = 1, b = 1 }
 function mod.NPO_PreviewSlotColor(slotKey)
     local environ = mod._NPO_OptEnv
     local saved, defaultSet = environ.DB(), environ.defaults
-    local modeName = mod.NP_SlotColorMode(slotKey, saved)
-    if modeName == "class" then
+    local mode = mod.NP_SlotColorMode(slotKey, saved)
+    if mode == "class" then
         return (saved and saved.enemyNameHostileColor) or defaultSet.hostile
-    elseif modeName == "level" then
+    elseif mode == "level" then
         local r, g, b = CludesUI.GetLevelColor("player", UnitEffectiveLevel("player"), true)
         if r then
             PV_LVL_COLOR.r, PV_LVL_COLOR.g, PV_LVL_COLOR.b = r, g, b
@@ -289,7 +289,7 @@ end
 --- @return number height consumed
 local function BuildNameplatePreview(hostFrame, parentW)
     local environ = mod._NPO_OptEnv
-    local ADDON_NAME, BAR_W, SavedDB, DBVal = environ.ADDON_NAME, environ.BAR_W, environ.DB, environ.DBVal
+    local ADDON_NAME, BAR_W, DB, DBVal = environ.ADDON_NAME, environ.BAR_W, environ.DB, environ.DBVal
     local defaultSet, displayCastIcons, GetNPOptOutline, NAME_RAID_MARKER_GAP =
         environ.defaults, environ.displayCastIcons, environ.GetNPOptOutline, environ.NAME_RAID_MARKER_GAP
     local optionState, pcall, Pix, RandomizePreviewValues =
@@ -372,9 +372,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
     local UnsnapTex = CludesUI.PP.DisablePixelSnap
 
     -- Health bar the central anchor for everything
-    local healthBar = CreateFrame("StatusBar", nil, popFrame)
-    healthBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    UnsnapTex(healthBar:GetStatusBarTexture())
+    local health = CreateFrame("StatusBar", nil, popFrame)
+    health:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    UnsnapTex(health:GetStatusBarTexture())
     -- Preview constants packed to reduce upvalue count
     local PV_CONST = {
         FAKE_MAX_HP = 10000,
@@ -403,75 +403,73 @@ local function BuildNameplatePreview(hostFrame, parentW)
     end
     local previewHpPct = optionState._previewHpPct
     local previewHpVal = math.floor(PV_CONST.FAKE_MAX_HP * previewHpPct / 100)
-    healthBar:SetMinMaxValues(0, PV_CONST.FAKE_MAX_HP)
-    healthBar:SetValue(previewHpVal)
-    healthBar:SetFrameLevel(popFrame:GetFrameLevel() + 10)
-    healthBar:SetStatusBarColor(0.85, 0.20, 0.20, 1)
+    health:SetMinMaxValues(0, PV_CONST.FAKE_MAX_HP)
+    health:SetValue(previewHpVal)
+    health:SetFrameLevel(popFrame:GetFrameLevel() + 10)
+    health:SetStatusBarColor(0.85, 0.20, 0.20, 1)
 
-    local healthBG = healthBar:CreateTexture(nil, "BACKGROUND")
+    local healthBG = health:CreateTexture(nil, "BACKGROUND")
     healthBG:SetAllPoints()
-    local _hbg = (SavedDB() and SavedDB().bgColor) or defaultSet.bgColor
+    local _hbg = (DB() and DB().bgColor) or defaultSet.bgColor
     local _hba = (DBVal("bgAlpha") or defaultSet.bgAlpha)
     healthBG:SetColorTexture(_hbg.r, _hbg.g, _hbg.b, _hba)
     UnsnapTex(healthBG)
 
     -- Hash line on preview health bar
-    local previewHashLine = healthBar:CreateTexture(nil, "OVERLAY", nil, 3)
+    local previewHashLine = health:CreateTexture(nil, "OVERLAY", nil, 3)
     previewHashLine:SetColorTexture(1, 1, 1, 0.8)
     UnsnapTex(previewHashLine)
     previewHashLine:SetWidth(Snap(2))
-    previewHashLine:SetPoint("TOP", healthBar, "TOP", 0, 0)
-    previewHashLine:SetPoint("BOTTOM", healthBar, "BOTTOM", 0, 0)
+    previewHashLine:SetPoint("TOP", health, "TOP", 0, 0)
+    previewHashLine:SetPoint("BOTTOM", health, "BOTTOM", 0, 0)
     previewHashLine:Hide()
 
     -- Absorb preview: the live plates' own clip-frame bars and placement
     -- (ns.NP_BuildAbsorbBars), so the preview draws exactly what plates do.
-    local absorbMask = healthBar:CreateMaskTexture()
-    absorbMask:SetAllPoints(healthBar)
+    local absorbMask = health:CreateMaskTexture()
+    absorbMask:SetAllPoints(health)
     absorbMask:SetTexture("Interface\\Buttons\\WHITE8X8")
     local pvAbs = {}
-    mod.NP_BuildAbsorbBars(pvAbs, healthBar, absorbMask)
+    mod.NP_BuildAbsorbBars(pvAbs, health, absorbMask)
     local function ApplyPreviewAbsorbStyle()
-        local look = DBVal("absorbStyle") or "blizzard"
-        local texture = mod.NP_ABSORB_STYLE_TEX[look]
-            or mod.ResolveOverlayTexPath(look)
+        local style = DBVal("absorbStyle") or "blizzard"
+        local texture = mod.NP_ABSORB_STYLE_TEX[style]
+            or mod.ResolveOverlayTexPath(style)
             or mod.NP_ABSORB_STYLE_TEX.blizzard
         local alpha = DBVal("absorbAlpha")
         if alpha then
             alpha = alpha / 100
-        elseif look == "clean" then
+        elseif style == "clean" then
             alpha = (DBVal("absorbCleanAlpha") or 30) / 100
         else
-            alpha = mod.NP_ABSORB_STYLE_ALPHA[look] or 0.8
+            alpha = mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8
         end
         local r, g, b = 1, 1, 1
-        if look ~= "blizzard" then
-            local c = (SavedDB() and SavedDB().absorbColor)
-                or defaultSet.absorbColor
-                or { r = 1, g = 1, b = 1 }
+        if style ~= "blizzard" then
+            local c = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
             r, g, b = c.r, c.g, c.b
         end
-        for _, barFrame in ipairs({ pvAbs.absorb, pvAbs.absorbForward }) do
-            barFrame:SetStatusBarTexture(texture)
-            barFrame:SetStatusBarColor(r, g, b, alpha)
-            local fillTex = barFrame:GetStatusBarTexture()
-            if fillTex then
-                fillTex:SetDrawLayer("ARTWORK", 1)
-                fillTex:AddMaskTexture(absorbMask)
+        for _, bar in ipairs({ pvAbs.absorb, pvAbs.absorbForward }) do
+            bar:SetStatusBarTexture(texture)
+            bar:SetStatusBarColor(r, g, b, alpha)
+            local fill = bar:GetStatusBarTexture()
+            if fill then
+                fill:SetDrawLayer("ARTWORK", 1)
+                fill:AddMaskTexture(absorbMask)
             end
         end
     end
     local function ToggleAbsorbPreview()
         if optionState.showAbsorbPreview then
-            local modeName = DBVal("absorbEdgeMode") or "overlay"
+            local mode = DBVal("absorbEdgeMode") or "overlay"
             -- A shield smaller than the empty health (preview health is
             -- 60-75%), so each placement draws somewhere different: past the
             -- health edge, back over it, or at either end of the bar. A shield
             -- past empty health would draw Overlay and From Right Edge alike.
             local shield = 0.15
-            mod.NP_SizeAbsorbBars(pvAbs, healthBar:GetWidth(), healthBar:GetHeight())
-            if pvAbs._absEdge ~= modeName or pvAbs._absFill ~= healthBar:GetStatusBarTexture() then
-                mod.NP_LayoutAbsorbBars(pvAbs, healthBar, modeName)
+            mod.NP_SizeAbsorbBars(pvAbs, health:GetWidth(), health:GetHeight())
+            if pvAbs._absEdge ~= mode or pvAbs._absFill ~= health:GetStatusBarTexture() then
+                mod.NP_LayoutAbsorbBars(pvAbs, health, mode)
             end
             ApplyPreviewAbsorbStyle()
             pvAbs.absorb:SetMinMaxValues(0, 1)
@@ -494,11 +492,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     -- Wrapper frame around the health bar: a plain Frame (not StatusBar) so the image border parented to it never interacts with StatusBar internals; sized to match the health bar exactly.
     local healthWrapper = CreateFrame("Frame", nil, popFrame)
-    healthWrapper:SetFrameLevel(healthBar:GetFrameLevel() + 4)
+    healthWrapper:SetFrameLevel(health:GetFrameLevel() + 4)
 
     -- Border set builder: 9-slice image border on a plain Frame, using PixelUtil (mirrors the UnitFrames preview).
     local function CreatePreviewBorderSet(hostFrame, texture)
-        local bc = (SavedDB() and SavedDB().borderColor) or defaultSet.borderColor
+        local bc = (DB() and DB().borderColor) or defaultSet.borderColor
         local f = CreateFrame("Frame", nil, hostFrame)
         f:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
         f:SetAllPoints()
@@ -675,8 +673,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
     end
 
     -- Target "Highlight" preview: translucent wash over the health bar (color/opacity via the Target Highlight cog); getter refs stashed on previewGlow (already an Update() upvalue) to avoid new upvalues in the near-cap closure.
-    previewGlow.highlight = healthBar:CreateTexture(nil, "OVERLAY", nil, 5)
-    previewGlow.highlight:SetAllPoints(healthBar)
+    previewGlow.highlight = health:CreateTexture(nil, "OVERLAY", nil, 5)
+    previewGlow.highlight:SetAllPoints(health)
     do
         local hc = mod.GetTargetHighlightColor()
         previewGlow.highlight:SetColorTexture(hc.r, hc.g, hc.b, mod.GetTargetHighlightAlpha())
@@ -700,26 +698,26 @@ local function BuildNameplatePreview(hostFrame, parentW)
     previewGlow.forever = CludesUI.BlizzStyle.Forever("nameplates")
 
     -- Text overlay frame: renders above health bar fill and borders (same as real addon)
-    local healthTextFrame = CreateFrame("Frame", nil, healthBar)
-    healthTextFrame:SetAllPoints(healthBar)
-    healthTextFrame:SetFrameLevel(healthBar:GetFrameLevel() + 11)
+    local healthTextFrame = CreateFrame("Frame", nil, health)
+    healthTextFrame:SetAllPoints(health)
+    healthTextFrame:SetFrameLevel(health:GetFrameLevel() + 11)
 
     -- Top text overlay: renders above health bar + borders so top-slot text is never hidden
     local topTextFrame = CreateFrame("Frame", nil, popFrame)
-    topTextFrame:SetAllPoints(healthBar)
-    topTextFrame:SetFrameLevel(healthBar:GetFrameLevel() + 10)
+    topTextFrame:SetAllPoints(health)
+    topTextFrame:SetFrameLevel(health:GetFrameLevel() + 10)
 
     -- Name text (anchored BOTTOM to health TOP, +4px gap, width 113)
     local nameFS = popFrame:CreateFontString(nil, "OVERLAY")
     SetPVFont(nameFS, FONT_PATH, 11, GetNPOptOutline())
-    nameFS:SetPoint("BOTTOM", healthBar, "TOP", 0, 4)
+    nameFS:SetPoint("BOTTOM", health, "TOP", 0, 4)
     nameFS:SetWordWrap(false)
     nameFS:SetMaxLines(1)
     nameFS:SetText(CludesUI.L("Enemy Name Text"))
     nameFS:SetTextColor(1, 1, 1, 1)
 
     local nameRaidFrame = CreateFrame("Frame", nil, popFrame)
-    nameRaidFrame:SetFrameLevel(healthBar:GetFrameLevel() + 12)
+    nameRaidFrame:SetFrameLevel(health:GetFrameLevel() + 12)
     nameRaidFrame:Hide()
     local nameRaidIcon = nameRaidFrame:CreateTexture(nil, "ARTWORK")
     nameRaidIcon:SetAllPoints()
@@ -731,13 +729,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- Health percentage text (right-aligned inside health bar)
     local hpText = healthTextFrame:CreateFontString(nil, "OVERLAY")
     SetPVFont(hpText, FONT_PATH, 10, GetNPOptOutline())
-    hpText:SetPoint("RIGHT", healthBar, -2, 0)
+    hpText:SetPoint("RIGHT", health, -2, 0)
     hpText:SetText(previewHpPct .. "%")
 
     -- Health number (centered, hidden by default)
     local hpNumber = healthTextFrame:CreateFontString(nil, "OVERLAY")
     SetPVFont(hpNumber, FONT_PATH, 10, GetNPOptOutline())
-    hpNumber:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
+    hpNumber:SetPoint("CENTER", health, "CENTER", 0, 0)
     local hpNumStr = tostring(previewHpVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
     hpNumber:SetText(hpNumStr)
     hpNumber:Hide()
@@ -745,7 +743,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- Standalone level FontString mirrors the live plate's levelText; the player's level stands in for the mob level. Plain text: its colour comes from the slot's Text Coloring mode (previewGlow.slotColor).
     local lvlText = healthTextFrame:CreateFontString(nil, "OVERLAY")
     SetPVFont(lvlText, FONT_PATH, 10, GetNPOptOutline())
-    lvlText:SetPoint("CENTER", healthBar, "CENTER", 0, 0)
+    lvlText:SetPoint("CENTER", health, "CENTER", 0, 0)
     lvlText:SetText((mod.GetUnitLevelText and mod.GetUnitLevelText("player")) or "??")
     lvlText:Hide()
     -- Target of Target sample: the preview mob targets the player (WoW Forever:
@@ -764,7 +762,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- Paints a custom text's sample; true when it names the unit (its width then
     -- ends where the name's would, as live).
     popFrame._pvCustom = function(fontStr, slotKey)
-        local c = mod.NP_CustomCompiled(slotKey, SavedDB())
+        local c = mod.NP_CustomCompiled(slotKey, DB())
         if c then
             mod.NP_PaintCustom(fontStr, c, nil, slotKey)
         else
@@ -778,7 +776,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- Its colour: in Class mode the player's class colour (the sample target),
     -- else the slot colour passed in.
     popFrame._totSampleColor = function(slotKey, r, g, b)
-        if slotKey and mod.NP_SlotColorMode(slotKey, SavedDB()) == "class" then
+        if slotKey and mod.NP_SlotColorMode(slotKey, DB()) == "class" then
             local _, ct = UnitClass("player")
             local cc = ct and CludesUI.GetClassColor(ct)
             if cc then
@@ -790,9 +788,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     -- Raid marker: custom marker.png image, position/size from settings
     local MARKER_PATH = "Interface\\AddOns\\CludesUI\\media\\marker.png"
-    local raidFrame = CreateFrame("Frame", nil, healthBar)
+    local raidFrame = CreateFrame("Frame", nil, health)
     -- +12 keeps the marker above name/health text (healthTextFrame is health+11), matching the live plate.
-    raidFrame:SetFrameLevel(healthBar:GetFrameLevel() + 12)
+    raidFrame:SetFrameLevel(health:GetFrameLevel() + 12)
     local raidIcon = raidFrame:CreateTexture(nil, "ARTWORK")
     raidIcon:SetAllPoints()
     raidIcon:SetTexture(MARKER_PATH)
@@ -803,12 +801,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
     arrows.left = popFrame:CreateTexture(nil, "OVERLAY")
     arrows.left:SetTexture(ARROW_PATH .. "arrow_left.png")
     arrows.left:SetSize(11, 16)
-    arrows.left:SetPoint("RIGHT", healthBar, "LEFT", -8, 0)
+    arrows.left:SetPoint("RIGHT", health, "LEFT", -8, 0)
     arrows.left:Hide()
     arrows.right = popFrame:CreateTexture(nil, "OVERLAY")
     arrows.right:SetTexture(ARROW_PATH .. "arrow_right.png")
     arrows.right:SetSize(11, 16)
-    arrows.right:SetPoint("LEFT", healthBar, "RIGHT", 8, 0)
+    arrows.right:SetPoint("LEFT", health, "RIGHT", 8, 0)
     arrows.right:Hide()
     popFrame._arrows = arrows -- expose for Update resizing
 
@@ -827,7 +825,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- pos, x, y, w, h and shown for the extent passes).
     do
         local f = CreateFrame("Frame", nil, popFrame)
-        f:SetFrameLevel(healthBar:GetFrameLevel() + 2)
+        f:SetFrameLevel(health:GetFrameLevel() + 2)
         local fontStr = f:CreateFontString(nil, "OVERLAY")
         SetPVFont(fontStr, FONT_PATH, 12, GetNPOptOutline())
         fontStr:SetPoint("CENTER", f, "CENTER", 0, 0)
@@ -848,7 +846,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     local castBG = cast:CreateTexture(nil, "BACKGROUND")
     castBG:SetAllPoints()
-    local _pcbg = (SavedDB() and SavedDB().castBgColor) or defaultSet.castBgColor
+    local _pcbg = (DB() and DB().castBgColor) or defaultSet.castBgColor
     local _pcba = (DBVal("castBgAlpha") or defaultSet.castBgAlpha)
     castBG:SetColorTexture(_pcbg.r, _pcbg.g, _pcbg.b, _pcba)
     UnsnapTex(castBG)
@@ -859,7 +857,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     -- Cast icon (flush to the left of the cast bar)
     castParts.iconFrame = CreateFrame("Frame", nil, cast)
-    castParts.iconFrame:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+    castParts.iconFrame:SetFrameLevel(health:GetFrameLevel() + 1)
     castParts.iconFrame:SetSize(CAST_H, CAST_H)
     castParts.iconFrame:SetPoint("TOPRIGHT", cast, "TOPLEFT", 0, 0)
     AddBorder(castParts.iconFrame)
@@ -932,39 +930,39 @@ local function BuildNameplatePreview(hostFrame, parentW)
             healthBG:SetAtlas(B.barBg)
             healthBG:SetVertexColor(1, 1, 1, 1)
             healthBG:ClearAllPoints()
-            healthBG:SetPoint("TOPLEFT", healthBar, "TOPLEFT", -2, 3)
-            healthBG:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 6, -6)
+            healthBG:SetPoint("TOPLEFT", health, "TOPLEFT", -2, 3)
+            healthBG:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 6, -6)
         end
         -- The stock fill art's footprint masks the fill, the highlight
         -- wash and the shadow inside the background's rim, as live.
-        local maskTex = previewGlow.blizzMask
-        if not maskTex and success(B.bar) then
-            maskTex = healthBar:CreateMaskTexture()
-            maskTex:SetAtlas(B.bar)
-            mod.NP_SeatBarMask(maskTex, healthBar)
-            previewGlow.blizzMask = maskTex
+        local mask = previewGlow.blizzMask
+        if not mask and success(B.bar) then
+            mask = health:CreateMaskTexture()
+            mask:SetAtlas(B.bar)
+            mod.NP_SeatBarMask(mask, health)
+            previewGlow.blizzMask = mask
         end
-        if maskTex then
-            local fillTex = healthBar:GetStatusBarTexture()
-            if fillTex and previewGlow.blizzMaskedFill ~= fillTex then
-                pcall(fillTex.RemoveMaskTexture, fillTex, maskTex)
-                fillTex:AddMaskTexture(maskTex)
-                previewGlow.blizzMaskedFill = fillTex
+        if mask then
+            local fill = health:GetStatusBarTexture()
+            if fill and previewGlow.blizzMaskedFill ~= fill then
+                pcall(fill.RemoveMaskTexture, fill, mask)
+                fill:AddMaskTexture(mask)
+                previewGlow.blizzMaskedFill = fill
             end
             if not previewGlow.blizzMaskedHL then
-                previewGlow.highlight:AddMaskTexture(maskTex)
+                previewGlow.highlight:AddMaskTexture(mask)
                 previewGlow.blizzMaskedHL = true
             end
         end
         if mod.NP_BlizzBarShadow then
-            mod.NP_BlizzBarShadow(healthBar, healthBar:GetHeight(), maskTex)
+            mod.NP_BlizzBarShadow(health, health:GetHeight(), mask)
         end
         -- Selection ring while the target glow preview is on, else the
         -- deselected overlay every other plate carries.
         local sel, desel = previewGlow.blizzSel, previewGlow.blizzDesel
         local fv = previewGlow.forever and success(B.selYellow)
         if not sel and (fv or success(B.selected)) and success(B.deselected) then
-            sel = healthBar:CreateTexture(nil, "OVERLAY", nil, 5)
+            sel = health:CreateTexture(nil, "OVERLAY", nil, 5)
             if fv then
                 -- WoW Forever's thin yellow ring, as live.
                 sel:SetAtlas(B.selYellow)
@@ -976,10 +974,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 sel:SetPoint("BOTTOMRIGHT", healthBG, "BOTTOMRIGHT", -3, 3)
             end
             previewGlow.blizzSel = sel
-            desel = healthBar:CreateTexture(nil, "OVERLAY", nil, 4)
+            desel = health:CreateTexture(nil, "OVERLAY", nil, 4)
             desel:SetAtlas(B.deselected)
-            desel:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 1)
-            desel:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, -1)
+            desel:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 1)
+            desel:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, -1)
             previewGlow.blizzDesel = desel
         end
         if sel then
@@ -1024,11 +1022,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- (ns.NP_ApplyForeverLevelBox), with a level 60 at an even match.
         if previewGlow.forever and success(B.lvlBg) then
             local L = mod.NP_FOREVER_LVL
-            local boxFrame = previewGlow.fvBox
-            if not boxFrame then
+            local box = previewGlow.fvBox
+            if not box then
                 -- The live box's own frame; the mock paints its text.
-                boxFrame = mod.NP_BuildForeverLevelBox(healthBar)
-                local fontStr = boxFrame._fs
+                box = mod.NP_BuildForeverLevelBox(health)
+                local fontStr = box._fs
                 -- Font BEFORE any SetText: a FontString with no font raises.
                 SetPVFont(fontStr, FONT_PATH, L.font, GetNPOptOutline())
                 fontStr:SetText("60")
@@ -1038,23 +1036,23 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 else
                     fontStr:SetTextColor(1, 0.82, 0, 1)
                 end
-                if boxFrame._sel then
-                    boxFrame._sel:SetVertexColor(L.target[1], L.target[2], L.target[3])
+                if box._sel then
+                    box._sel:SetVertexColor(L.target[1], L.target[2], L.target[3])
                 end
-                previewGlow.fvBox = boxFrame
+                previewGlow.fvBox = box
                 -- Exposed for the click-navigation hit overlays (built
                 -- after the first pf:Update()); the overlay hides with it.
-                popFrame._fvLevelBox = boxFrame
+                popFrame._fvLevelBox = box
             end
-            local bh = healthBar:GetHeight() + L.pad
-            boxFrame:SetSize(L.w, bh)
-            SetPVFont(boxFrame._fs, FONT_PATH, mod.NP_ForeverLevelFont(bh), GetNPOptOutline())
+            local bh = health:GetHeight() + L.pad
+            box:SetSize(L.w, bh)
+            SetPVFont(box._fs, FONT_PATH, mod.NP_ForeverLevelFont(bh), GetNPOptOutline())
             -- Its target border rides the ring's preview toggle.
-            if boxFrame._sel then
-                boxFrame._sel:SetShown(optionState.showTargetGlowPreview and true or false)
+            if box._sel then
+                box._sel:SetShown(optionState.showTargetGlowPreview and true or false)
             end
             -- Show Level Box, as live.
-            boxFrame:SetShown(mod.NP_ForeverBoxOn())
+            box:SetShown(mod.NP_ForeverBoxOn())
         end
     end
     -- Classic WoW UI: the vanilla borders over the mock, as the live plates
@@ -1084,11 +1082,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         local hp = previewGlow.classicHealthArt
         if not hp then
-            local hostRegion = CreateFrame("Frame", nil, healthBar)
-            hostRegion:SetAllPoints(healthBar)
-            hostRegion:EnableMouse(false)
-            hostRegion:SetFrameLevel(healthBar:GetFrameLevel() + 6)
-            hp = mod.NP_ClassicBorderPieces(hostRegion, C.health)
+            local host = CreateFrame("Frame", nil, health)
+            host:SetAllPoints(health)
+            host:EnableMouse(false)
+            host:SetFrameLevel(health:GetFrameLevel() + 6)
+            hp = mod.NP_ClassicBorderPieces(host, C.health)
             previewGlow.classicHealthArt = hp
             local lv = healthTextFrame:CreateFontString(nil, "OVERLAY")
             -- Font BEFORE any SetText: a FontString with no font raises.
@@ -1108,13 +1106,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
             castParts.iconFrame:SetFrameLevel(ch:GetFrameLevel() + 1)
         end
         local kh, kc = barH, castH
-        mod.NP_SeatClassicBorder(hp, healthBar, kh)
+        mod.NP_SeatClassicBorder(hp, health, kh)
         mod.NP_SeatClassicBorder(previewGlow.classicCastArt, cast, kc)
         local lv = previewGlow.classicLevel
         SetPVFont(lv, FONT_PATH, mod.NP_ClassicLevelSize(kh), GetNPOptOutline())
         local lx, ly = mod.NP_ClassicLevelOffset(kh)
         lv:ClearAllPoints()
-        lv:SetPoint("CENTER", healthBar, "RIGHT", lx, ly)
+        lv:SetPoint("CENTER", health, "RIGHT", lx, ly)
         lv:Show()
         castParts.spark:SetTexture(C.spark)
         castParts.spark:SetSize(C.sparkSize * kc, C.sparkSize * kc)
@@ -1182,13 +1180,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         backdrop:SetTexture(CP.WHITE)
         backdrop:SetVertexColor(0.082, 0.082, 0.082, 1)
         backdrop:Hide()
-        local pipTex = popFrame:CreateTexture(nil, "OVERLAY", nil, 3)
-        pipTex:SetTexture(CP.WHITE)
-        pipTex:SetVertexColor(1, 1, 1, 1)
-        pipTex:SetSize(CP.PIP_W, CP.PIP_H)
-        pipTex:Hide()
-        pipTex._bg = backdrop
-        CP.pips[i] = pipTex
+        local pip = popFrame:CreateTexture(nil, "OVERLAY", nil, 3)
+        pip:SetTexture(CP.WHITE)
+        pip:SetVertexColor(1, 1, 1, 1)
+        pip:SetSize(CP.PIP_W, CP.PIP_H)
+        pip:Hide()
+        pip._bg = backdrop
+        CP.pips[i] = pip
     end
     -- Bar-type class resource (e.g. stagger) preview
     CP.bar = CreateFrame("StatusBar", nil, popFrame)
@@ -1223,7 +1221,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- coordinates. Returns the offset to draw, the real offset (only when
     -- clamped), and the clamped group's inboard edge with the direction into
     -- the plate (for the badge).
-    function CP.Clamp(topPos, yDir, offset, ph, healthTopY, castBotY)
+    function CP.Clamp(topPos, yDir, off, ph, healthTopY, castBotY)
         local anchorY = topPos and healthTopY or castBotY
         local bandTop = -2 -- just inside pf top
         -- Just below the cast bar: measured from castBotY (which includes the
@@ -1231,7 +1229,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- cast drop (classic) must not read as clamped at tiny offsets.
         -- 13 = the preview's 15px lower pad minus the 2px margin.
         local bandBot = castBotY - ph - 13
-        local edge = anchorY + yDir * offset
+        local edge = anchorY + yDir * off
         local gTop = (yDir == 1) and (edge + ph) or edge
         local gBot = (yDir == 1) and edge or (edge - ph)
         local shift = 0
@@ -1245,7 +1243,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local edgeInboard = (shift < 0) and (gBot + shift) or (gTop + shift)
         local dirInboard = (shift < 0) and -1 or 1
         return yDir * ((edge + shift) - anchorY), -- clamped offset (cpYShown)
-            (shift ~= 0) and offset or nil, -- real offset, only when clamped
+            (shift ~= 0) and off or nil, -- real offset, only when clamped
             edgeInboard,
             dirInboard
     end
@@ -1281,7 +1279,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local d = CreateFrame("Frame", nil, popFrame)
         d:SetSize(26, 26)
         d:SetPoint("BOTTOM", nameFS, "TOP", (i - (PV_CONST.DEBUFF_COUNT + 1) / 2) * 30, 2)
-        d:SetFrameLevel(healthBar:GetFrameLevel() + 9)
+        d:SetFrameLevel(health:GetFrameLevel() + 9)
         AddBorder(d)
 
         d.icon = d:CreateTexture(nil, "ARTWORK")
@@ -1327,7 +1325,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     for i = 1, PV_CONST.BUFF_COUNT do
         local bf = CreateFrame("Frame", nil, popFrame)
         bf:SetSize(24, 24)
-        bf:SetFrameLevel(healthBar:GetFrameLevel() + 9)
+        bf:SetFrameLevel(health:GetFrameLevel() + 9)
         AddBorder(bf)
         bf.icon = bf:CreateTexture(nil, "ARTWORK")
         UnsnapTex(bf.icon)
@@ -1355,7 +1353,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     for i = 1, PV_CONST.CC_COUNT do
         local castFrame = CreateFrame("Frame", nil, popFrame)
         castFrame:SetSize(24, 24)
-        castFrame:SetFrameLevel(healthBar:GetFrameLevel() + 9)
+        castFrame:SetFrameLevel(health:GetFrameLevel() + 9)
         AddBorder(castFrame)
         castFrame.icon = castFrame:CreateTexture(nil, "ARTWORK")
         UnsnapTex(castFrame.icon)
@@ -1462,7 +1460,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 return
             end
             local ib = mod.GetIconBorderEnabled
-            local saved = SavedDB()
+            local saved = DB()
             if (saved and saved.castIconSeparator) or cast._iconSeam then
                 mod.NP_ApplyCastIconSeparator(cast, castParts.iconFrame, saved, customOn and showIcon)
             end
@@ -1522,7 +1520,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local arrowW = math.floor(arrowSt.w * arrowScale + 0.5)
         local arrowH = math.floor(16 * arrowScale + 0.5)
         if popFrame._arrows then
-            local _acr, _acg, _acb = mod.GetTargetArrowColor(SavedDB())
+            local _acr, _acg, _acb = mod.GetTargetArrowColor(DB())
             popFrame._arrows.left:SetTexture(mod.TARGET_ARROW_DIR .. arrowSt.l .. ".png")
             popFrame._arrows.right:SetTexture(mod.TARGET_ARROW_DIR .. arrowSt.r .. ".png")
             popFrame._arrows.left:SetVertexColor(_acr, _acg, _acb)
@@ -1530,7 +1528,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             popFrame._arrows.left:SetSize(arrowW, arrowH)
             popFrame._arrows.right:SetSize(arrowW, arrowH)
         end
-        local cbColor = (SavedDB() and SavedDB().castBar) or defaultSet.castBar
+        local cbColor = (DB() and DB().castBar) or defaultSet.castBar
         local debuffY = DBVal("debuffYOffset") or defaultSet.debuffYOffset
 
         -- Class power top push: extra offset for name/auras when pips sit above the bar
@@ -1548,7 +1546,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- Apply current random preview values (regenerated on tab switch only)
         local curHpPct = optionState._previewHpPct or 70
         local curHpVal = math.floor(PV_CONST.FAKE_MAX_HP * curHpPct / 100)
-        healthBar:SetValue(curHpVal)
+        health:SetValue(curHpVal)
         local pctStr = curHpPct .. "%"
         local pctNoSignStr = tostring(curHpPct)
         local hpNumStr = tostring(curHpVal):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
@@ -1563,11 +1561,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         do
             -- Backgrounds and Textured Background as live (the Blizzard Style
             -- pass below wins).
-            local hbgC = (SavedDB() and SavedDB().bgColor) or defaultSet.bgColor
-            local cbgC = (SavedDB() and SavedDB().castBgColor) or defaultSet.castBgColor
+            local hbgC = (DB() and DB().bgColor) or defaultSet.bgColor
+            local cbgC = (DB() and DB().castBgColor) or defaultSet.castBgColor
             mod.NP_TexBgPaint(
                 healthBG,
-                mod.NP_TexBgPath(SavedDB(), false),
+                mod.NP_TexBgPath(DB(), false),
                 hbgC.r,
                 hbgC.g,
                 hbgC.b,
@@ -1575,7 +1573,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             )
             mod.NP_TexBgPaint(
                 castParts.bg,
-                mod.NP_TexBgPath(SavedDB(), true),
+                mod.NP_TexBgPath(DB(), true),
                 cbgC.r,
                 cbgC.g,
                 cbgC.b,
@@ -1586,7 +1584,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- Cast bar border (pixel-perfect, mirrors the real nameplates)
         do
             local cbSz = DBVal("castBorderSize") or defaultSet.castBorderSize or 0
-            local cbC = (SavedDB() and SavedDB().castBorderColor) or defaultSet.castBorderColor
+            local cbC = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
             -- Classic WoW UI: no CUI edge; the vanilla cast border is drawn at the end of Update.
             if previewGlow.classic then
                 cbSz = 0
@@ -1627,7 +1625,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if pcb and CludesUI.ApplyBorderStyle then
                 local ctex = DBVal("customBorderTexture") or defaultSet.customBorderTexture
                 local csz = DBVal("customBorderSize") or defaultSet.customBorderSize
-                local ccol = (SavedDB() and SavedDB().customBorderColor) or defaultSet.customBorderColor
+                local ccol = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
                 local ca = DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1
                 local cbehind = DBVal("customBorderBehind")
                 if cbehind == nil then
@@ -1637,7 +1635,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     cbehind and math.max(0, healthWrapper:GetFrameLevel() - 1)
                         or (healthWrapper:GetFrameLevel() + 2)
                 )
-                local cpx = CludesUI.BorderPx(SavedDB() and SavedDB().customBorderSizePx, csz, ctex)
+                local cpx = CludesUI.BorderPx(DB() and DB().customBorderSizePx, csz, ctex)
                 CludesUI.ApplyBorderStyle(
                     pcb,
                     csz,
@@ -1668,7 +1666,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     ccol.g,
                     ccol.b,
                     ca,
-                    healthBar
+                    health
                 )
                 -- The mock cast bar sits above this border's frame: lift the seam over its
                 -- fill, under its text (cast + 5), as it draws on a live plate.
@@ -1716,14 +1714,14 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if DBVal("wrapBorderCastbar") == true then
                 radius = 0
             end
-            local look = customOn and (DBVal("customBorderTexture") or defaultSet.customBorderTexture)
+            local style = customOn and (DBVal("customBorderTexture") or defaultSet.customBorderTexture)
                 or "solid"
             -- A custom style that cannot round keeps the cast bar square too.
-            if not CludesUI.RoundedStyleOK(look) then
+            if not CludesUI.RoundedStyleOK(style) then
                 radius = 0
             end
             if radius > 0 and not customOn and pcb and simpleBorderFrame:IsShown() then
-                local bc = (SavedDB() and SavedDB().borderColor) or defaultSet.borderColor
+                local bc = (DB() and DB().borderColor) or defaultSet.borderColor
                 simpleBorderFrame:Hide()
                 for _, e in ipairs(_solidEdges) do
                     e:Hide()
@@ -1747,12 +1745,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 CludesUI.RoundCorners(popFrame, radius, {
                     roots = {},
-                    rect = healthBar,
+                    rect = health,
                     border = pcb,
-                    style = look,
+                    style = style,
                     corners = corners,
                     textures = {
-                        healthBar:GetStatusBarTexture(),
+                        health:GetStatusBarTexture(),
                         healthBG,
                         pvAbs.absorb:GetStatusBarTexture(),
                         pvAbs.absorbForward:GetStatusBarTexture(),
@@ -1809,7 +1807,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             record.tex:SetPoint("BOTTOMRIGHT", record.parent, "BOTTOMRIGHT", -inset, inset)
         end
 
-        local bc = (SavedDB() and SavedDB().borderColor) or defaultSet.borderColor
+        local bc = (DB() and DB().borderColor) or defaultSet.borderColor
         if previewGlow.classic then
             bc = previewGlow.black
         end
@@ -1879,15 +1877,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local debuffSlotVal = DBVal("debuffSlot") or defaultSet.debuffSlot
         local buffSlotVal = DBVal("buffSlot") or defaultSet.buffSlot
         local ccSlotVal = DBVal("ccSlot") or defaultSet.ccSlot
-        local debuffSz = mod.NP_ElementSize("debuffs", SavedDB())
-        local buffSz = mod.NP_ElementSize("buffs", SavedDB())
-        local ccSz = mod.NP_ElementSize("ccs", SavedDB())
+        local debuffSz = mod.NP_ElementSize("debuffs", DB())
+        local buffSz = mod.NP_ElementSize("buffs", DB())
+        local ccSz = mod.NP_ElementSize("ccs", DB())
 
         -- Aura tier as on the live plate: auras (800) sit below the text tier (900),
         -- unless the slot's Raise Strata lifts them to HIGH, above everything else.
         -- Here: text health+10/+11, auras +9, raised auras +13 (hit overlays +15).
         do
-            local hl = healthBar:GetFrameLevel()
+            local hl = health:GetFrameLevel()
             for k = 1, 3 do
                 local entries = (k == 1 and debuffs) or (k == 2 and buffs) or ccs
                 local slotVal = (k == 1 and debuffSlotVal) or (k == 2 and buffSlotVal) or ccSlotVal
@@ -1922,7 +1920,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
         -- Raid marker position and size (slot-based)
         local rmPos = DBVal("raidMarkerPos") or defaultSet.raidMarkerPos
-        local rmSize = mod.NP_ElementSize("raidmarker", SavedDB())
+        local rmSize = mod.NP_ElementSize("raidmarker", DB())
         local rmXOff, rmYOff = 0, 0
         if rmPos ~= "none" then
             rmXOff = DBVal(rmPos .. "SlotXOffset") or 0
@@ -1941,7 +1939,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local showRM = optionState.showRaidMarkerPreview or optionState._sliderDragShowRaidMarker
 
         -- Cast spell icon settings (mirror ns.GetCastIconReserve), computed once and reused by the core icons, cast bar, and target arrows below; barH/castH are already-snapped profile numbers in scope.
-        local icdb = SavedDB()
+        local icdb = DB()
         local showIcon = true
         if icdb and icdb.showCastIcon ~= nil then
             showIcon = icdb.showCastIcon
@@ -1972,8 +1970,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- The full-size icon pushes an element beside it only where their spans
         -- meet, as live during a cast (ns.NP_FullIconPush; the preview always
         -- shows its cast bar): the element centres on the bar plus y, sz tall.
-        local function FullPush(sideName, posY, sz)
-            if previewGlow.classic or not (showIcon and fullSize) or (sideName == "right") ~= onRight then
+        local function FullPush(side, posY, sz)
+            if previewGlow.classic or not (showIcon and fullSize) or (side == "right") ~= onRight then
                 return 0
             end
             local mid = barH / 2 + posY
@@ -1990,12 +1988,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
         else
             if rmPos == "top" then
-                raidFrame:SetPoint("BOTTOM", healthBar, "TOP", rmXOff, debuffY + cpPush + rmYOff)
+                raidFrame:SetPoint("BOTTOM", health, "TOP", rmXOff, debuffY + cpPush + rmYOff)
             elseif rmPos == "left" then
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 raidFrame:SetPoint(
                     "RIGHT",
-                    healthBar,
+                    health,
                     "LEFT",
                     -sideOff - castIconLeftPush - FullPush("left", rmYOff, rmSize) + rmXOff,
                     rmYOff
@@ -2004,7 +2002,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 raidFrame:SetPoint(
                     "LEFT",
-                    healthBar,
+                    health,
                     "RIGHT",
                     sideOff + castIconRightPush + FullPush("right", rmYOff, rmSize) + rmXOff,
                     rmYOff
@@ -2012,18 +2010,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
             elseif rmPos == "topleft" then
                 raidFrame:SetPoint(
                     "BOTTOMLEFT",
-                    healthBar,
+                    health,
                     "TOPLEFT",
                     rmXOff,
-                    cpPush + mod.NP_TopCornerLift("topleft", SavedDB()) + rmYOff
+                    cpPush + mod.NP_TopCornerLift("topleft", DB()) + rmYOff
                 )
             elseif rmPos == "topright" then
                 raidFrame:SetPoint(
                     "BOTTOMRIGHT",
-                    healthBar,
+                    health,
                     "TOPRIGHT",
                     rmXOff,
-                    cpPush + mod.NP_TopCornerLift("topright", SavedDB()) + rmYOff
+                    cpPush + mod.NP_TopCornerLift("topright", DB()) + rmYOff
                 )
             elseif rmPos == "bottom" then
                 raidFrame:SetPoint("TOP", cast, "BOTTOM", rmXOff, -2 + rmYOff)
@@ -2045,25 +2043,25 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local hideRare = DBVal("classificationHideRare")
         -- The elite sample at the Elite/Rare Indicator's own size, or the quest
         -- mark it shows while that is off at the Quest Indicator's.
-        local reIconSz = mod.NP_ElementSize(hideRare and "quest" or "rare", SavedDB())
+        local reIconSz = mod.NP_ElementSize(hideRare and "quest" or "rare", DB())
         local showCL = optionState.showClassificationPreview or optionState._sliderDragShowClassification
         classIcon:SetSize(reIconSz, reIconSz)
         -- Both halves off (the WoW Forever look's seed can leave that when the
         -- Quest Indicator was already off, and the Quest Objective Text can take
         -- the Quest Indicator's place): live plates draw nothing there.
-        if clPos == "none" or not showCL or (hideRare and not mod.NP_QuestIconOn(SavedDB())) then
+        if clPos == "none" or not showCL or (hideRare and not mod.NP_QuestIconOn(DB())) then
             classIcon:Hide()
             if popFrame._classOverlay then
                 popFrame._classOverlay:Hide()
             end
         else
             if clPos == "top" then
-                classIcon:SetPoint("BOTTOM", healthBar, "TOP", clXOff, debuffY + cpPush + clYOff)
+                classIcon:SetPoint("BOTTOM", health, "TOP", clXOff, debuffY + cpPush + clYOff)
             elseif clPos == "left" then
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 classIcon:SetPoint(
                     "RIGHT",
-                    healthBar,
+                    health,
                     "LEFT",
                     -sideOff - castIconLeftPush - FullPush("left", clYOff, reIconSz) + clXOff,
                     clYOff
@@ -2072,7 +2070,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 classIcon:SetPoint(
                     "LEFT",
-                    healthBar,
+                    health,
                     "RIGHT",
                     sideOff + castIconRightPush + FullPush("right", clYOff, reIconSz) + clXOff,
                     clYOff
@@ -2080,18 +2078,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
             elseif clPos == "topleft" then
                 classIcon:SetPoint(
                     "BOTTOMLEFT",
-                    healthBar,
+                    health,
                     "TOPLEFT",
                     clXOff,
-                    2 + cpPush + mod.NP_TopCornerLift("topleft", SavedDB()) + clYOff
+                    2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + clYOff
                 )
             elseif clPos == "topright" then
                 classIcon:SetPoint(
                     "BOTTOMRIGHT",
-                    healthBar,
+                    health,
                     "TOPRIGHT",
                     clXOff,
-                    2 + cpPush + mod.NP_TopCornerLift("topright", SavedDB()) + clYOff
+                    2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + clYOff
                 )
             elseif clPos == "bottom" then
                 classIcon:SetPoint("TOP", cast, "BOTTOM", clXOff, -2 + clYOff)
@@ -2123,7 +2121,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         else
             local fcX = DBVal(fcPos .. "SlotXOffset") or 0
             local fcY = DBVal(fcPos .. "SlotYOffset") or 0
-            local fcSz = mod.NP_ElementSize("faction", SavedDB())
+            local fcSz = mod.NP_ElementSize("faction", DB())
             -- Sharing the slot with a showing Rare/Quest icon: stack behind it,
             -- overlapping by 40%, up or down in the Bottom slot (matches
             -- NameplateFrame:UpdateFaction).
@@ -2139,15 +2137,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if fcPos == "top" then
                 factionTopExtent = debuffY + fcSz + fcY
             elseif fcPos == "topleft" or fcPos == "topright" then
-                factionTopExtent = 2 + fcSz + mod.NP_TopCornerLift(fcPos, SavedDB()) + fcY
+                factionTopExtent = 2 + fcSz + mod.NP_TopCornerLift(fcPos, DB()) + fcY
             end
             if fcPos == "top" then
-                factionIcon:SetPoint("BOTTOM", healthBar, "TOP", fcX, debuffY + cpPush + fcY)
+                factionIcon:SetPoint("BOTTOM", health, "TOP", fcX, debuffY + cpPush + fcY)
             elseif fcPos == "left" then
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 factionIcon:SetPoint(
                     "RIGHT",
-                    healthBar,
+                    health,
                     "LEFT",
                     -sideOff - castIconLeftPush - FullPush("left", fcY, fcSz) + fcX,
                     fcY
@@ -2156,7 +2154,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                 factionIcon:SetPoint(
                     "LEFT",
-                    healthBar,
+                    health,
                     "RIGHT",
                     sideOff + castIconRightPush + FullPush("right", fcY, fcSz) + fcX,
                     fcY
@@ -2164,18 +2162,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
             elseif fcPos == "topleft" then
                 factionIcon:SetPoint(
                     "BOTTOMLEFT",
-                    healthBar,
+                    health,
                     "TOPLEFT",
                     fcX,
-                    2 + cpPush + mod.NP_TopCornerLift("topleft", SavedDB()) + fcY
+                    2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + fcY
                 )
             elseif fcPos == "topright" then
                 factionIcon:SetPoint(
                     "BOTTOMRIGHT",
-                    healthBar,
+                    health,
                     "TOPRIGHT",
                     fcX,
-                    2 + cpPush + mod.NP_TopCornerLift("topright", SavedDB()) + fcY
+                    2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + fcY
                 )
             elseif fcPos == "bottom" then
                 factionIcon:SetPoint("TOP", cast, "BOTTOM", fcX, -2 + fcY)
@@ -2192,7 +2190,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         do
             local qt = popFrame._qt
             local f = qt.frame
-            local place = mod.NP_GetQuestTextSlot(SavedDB())
+            local place = mod.NP_GetQuestTextSlot(DB())
             qt.pos = place
             f:ClearAllPoints()
             if place == "none" or not optionState.showQuestTextPreview then
@@ -2205,7 +2203,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local posX = DBVal(place .. "SlotXOffset") or 0
                 local posY = DBVal(place .. "SlotYOffset") or 0
                 local fontStr = qt.fs
-                local textSize = mod.NP_QuestTextSize(SavedDB())
+                local textSize = mod.NP_QuestTextSize(DB())
                 SetPVFont(fontStr, fontFile, textSize, npOutline)
                 local counterW = math.max(math.ceil(fontStr:GetStringWidth() or 0), 1)
                 local counterH = math.max(math.ceil(fontStr:GetStringHeight() or 0), 1)
@@ -2215,18 +2213,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local textX, iconX, iconSize
                     wid, hgt, textX, iconX, iconSize =
                         mod.NP_QuestTypeIconLayout(counterW, counterH, textSize, scale)
-                    local glyph = qt.icon
-                    if not glyph then
-                        glyph = f:CreateTexture(nil, "ARTWORK")
-                        glyph:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
-                        qt.icon = glyph
+                    local icon = qt.icon
+                    if not icon then
+                        icon = f:CreateTexture(nil, "ARTWORK")
+                        icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
+                        qt.icon = icon
                     end
                     fontStr:ClearAllPoints()
                     fontStr:SetPoint("CENTER", f, "CENTER", textX, 0)
-                    glyph:ClearAllPoints()
-                    glyph:SetSize(iconSize, iconSize)
-                    glyph:SetPoint("LEFT", f, "CENTER", iconX, 0)
-                    glyph:Show()
+                    icon:ClearAllPoints()
+                    icon:SetSize(iconSize, iconSize)
+                    icon:SetPoint("LEFT", f, "CENTER", iconX, 0)
+                    icon:Show()
                     qt.iconLayoutOn = true
                 else
                     if qt.iconLayoutOn then
@@ -2240,12 +2238,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 f:SetSize(wid, hgt)
                 if place == "top" then
-                    f:SetPoint("BOTTOM", healthBar, "TOP", posX, debuffY + cpPush + posY)
+                    f:SetPoint("BOTTOM", health, "TOP", posX, debuffY + cpPush + posY)
                 elseif place == "left" then
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                     f:SetPoint(
                         "RIGHT",
-                        healthBar,
+                        health,
                         "LEFT",
                         -sideOff - castIconLeftPush - FullPush("left", posY, hgt) + posX,
                         posY
@@ -2254,7 +2252,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                     f:SetPoint(
                         "LEFT",
-                        healthBar,
+                        health,
                         "RIGHT",
                         sideOff + castIconRightPush + FullPush("right", posY, hgt) + posX,
                         posY
@@ -2262,18 +2260,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 elseif place == "topleft" then
                     f:SetPoint(
                         "BOTTOMLEFT",
-                        healthBar,
+                        health,
                         "TOPLEFT",
                         posX,
-                        2 + cpPush + mod.NP_TopCornerLift("topleft", SavedDB()) + posY
+                        2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + posY
                     )
                 elseif place == "topright" then
                     f:SetPoint(
                         "BOTTOMRIGHT",
-                        healthBar,
+                        health,
                         "TOPRIGHT",
                         posX,
-                        2 + cpPush + mod.NP_TopCornerLift("topright", SavedDB()) + posY
+                        2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + posY
                     )
                 elseif place == "bottom" then
                     f:SetPoint("TOP", cast, "BOTTOM", posX, -2 + posY)
@@ -2304,7 +2302,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         cast:ClearAllPoints()
         cast:SetSize(math.max(1, pCastW - pIconW), castH)
-        cast:SetPoint("TOPLEFT", healthBar, "BOTTOMLEFT", pShiftX, pCastY)
+        cast:SetPoint("TOPLEFT", health, "BOTTOMLEFT", pShiftX, pCastY)
         do
             local cTexKey = DBVal("castBarTexture") or "none"
             local cTexPath =
@@ -2396,21 +2394,21 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     element == "healthPercentNoSign" and (dec and pctNoSignStrDec or pctNoSignStr)
                         or (dec and pctStrDec or pctStr)
                 )
-                hpText:SetPoint(point, healthBar, anchor, xOff, yOff)
+                hpText:SetPoint(point, health, anchor, xOff, yOff)
                 hpText:SetTextColor(cr, cg, cb, 1)
                 hpText:Show()
             elseif element == "healthNumber" then
                 SetPVFont(hpNumber, fontFile, fontSize, npOutline)
                 hpNumber:SetParent(healthTextFrame)
                 hpNumber:SetText(hpNumStr)
-                hpNumber:SetPoint(point, healthBar, anchor, xOff, yOff)
+                hpNumber:SetPoint(point, health, anchor, xOff, yOff)
                 hpNumber:SetTextColor(cr, cg, cb, 1)
                 hpNumber:Show()
             elseif mod.IsComboHealthText(element) then
                 SetPVFont(hpText, fontFile, fontSize, npOutline)
                 hpText:SetParent(healthTextFrame)
                 mod.SetCombinedHealthText(hpText, element, dec and pctStrDec or pctStr, hpNumStr, hpMaxStr)
-                hpText:SetPoint(point, healthBar, anchor, xOff, yOff)
+                hpText:SetPoint(point, health, anchor, xOff, yOff)
                 hpText:SetTextColor(cr, cg, cb, 1)
                 hpText:Show()
             elseif element == "level" or element == "targetOfTarget" then
@@ -2423,7 +2421,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     fontStr:SetText(popFrame._totSample(slotKey))
                 end
                 fontStr:SetParent(healthTextFrame)
-                fontStr:SetPoint(point, healthBar, anchor, xOff, yOff)
+                fontStr:SetPoint(point, health, anchor, xOff, yOff)
                 fontStr:SetTextColor(cr, cg, cb, 1)
                 fontStr:Show()
             elseif element == "custom" then
@@ -2431,7 +2429,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 SetPVFont(fontStr, fontFile, fontSize, npOutline)
                 fontStr:SetParent(healthTextFrame)
                 namesUnit = popFrame._pvCustom(fontStr, slotKey)
-                fontStr:SetPoint(point, healthBar, anchor, xOff, yOff)
+                fontStr:SetPoint(point, health, anchor, xOff, yOff)
                 fontStr:SetTextColor(cr, cg, cb, 1)
                 fontStr:Show()
             end
@@ -2457,7 +2455,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if namesUnit and not noClip then
                 -- The bar left by the other bar texts (live: NP_BarRestWidth).
                 hw = math.max(
-                    (barW - mod.GetHealthBarWidth() + mod.NP_BarRestWidth(slotKey, SavedDB())) * hwpct / 100,
+                    (barW - mod.GetHealthBarWidth() + mod.NP_BarRestWidth(slotKey, DB())) * hwpct / 100,
                     20
                 )
             elseif hwpct < 100 then
@@ -2488,21 +2486,21 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         or (dec and pctStrDec or pctStr)
                 )
                 hpText:SetParent(topTextFrame)
-                hpText:SetPoint("BOTTOM", healthBar, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
+                hpText:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
                 hpText:SetTextColor(cr, cg, cb, 1)
                 hpText:Show()
             elseif element == "healthNumber" then
                 SetPVFont(hpNumber, fontFile, fontSize, npOutline)
                 hpNumber:SetText(hpNumStr)
                 hpNumber:SetParent(topTextFrame)
-                hpNumber:SetPoint("BOTTOM", healthBar, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
+                hpNumber:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
                 hpNumber:SetTextColor(cr, cg, cb, 1)
                 hpNumber:Show()
             elseif mod.IsComboHealthText(element) then
                 SetPVFont(hpText, fontFile, fontSize, npOutline)
                 mod.SetCombinedHealthText(hpText, element, dec and pctStrDec or pctStr, hpNumStr, hpMaxStr)
                 hpText:SetParent(topTextFrame)
-                hpText:SetPoint("BOTTOM", healthBar, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
+                hpText:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
                 hpText:SetTextColor(cr, cg, cb, 1)
                 hpText:Show()
             elseif element == "level" or element == "targetOfTarget" then
@@ -2515,7 +2513,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     fontStr:SetText(popFrame._totSample(slotKey))
                 end
                 fontStr:SetParent(topTextFrame)
-                fontStr:SetPoint("BOTTOM", healthBar, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
+                fontStr:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
                 fontStr:SetTextColor(cr, cg, cb, 1)
                 fontStr:Show()
             elseif element == "custom" then
@@ -2523,7 +2521,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 SetPVFont(fontStr, fontFile, fontSize, npOutline)
                 namesUnit = popFrame._pvCustom(fontStr, slotKey)
                 fontStr:SetParent(topTextFrame)
-                fontStr:SetPoint("BOTTOM", healthBar, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
+                fontStr:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
                 fontStr:SetTextColor(cr, cg, cb, 1)
                 fontStr:Show()
             end
@@ -2543,8 +2541,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         barW
                         - 2
                             * math.max(
-                                mod.NP_TopCornerTextWidth("textSlotTopLeft", SavedDB()),
-                                mod.NP_TopCornerTextWidth("textSlotTopRight", SavedDB())
+                                mod.NP_TopCornerTextWidth("textSlotTopLeft", DB()),
+                                mod.NP_TopCornerTextWidth("textSlotTopRight", DB())
                             )
                     )
                         * hwpct
@@ -2580,7 +2578,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 return
             end
             nameRaidFrame:SetParent((pvNameSlotKey == "textSlotTop") and topTextFrame or healthTextFrame)
-            nameRaidFrame:SetFrameLevel(healthBar:GetFrameLevel() + 12)
+            nameRaidFrame:SetFrameLevel(health:GetFrameLevel() + 12)
             nameRaidFrame:SetSize(pvNameMarkerSize, pvNameMarkerSize)
             nameRaidFrame:ClearAllPoints()
             nameRaidFrame:SetPoint("RIGHT", nameFS, "LEFT", -NAME_RAID_MARKER_GAP, 0)
@@ -2614,7 +2612,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
             SetPVFont(nameFS, fontFile, fontSize, npOutline)
             nameFS:SetParent(healthTextFrame)
-            nameFS:SetPoint(point, healthBar, anchor, xOff + txOff + markerShift, tyOff)
+            nameFS:SetPoint(point, health, anchor, xOff + txOff + markerShift, tyOff)
             nameFS:SetJustifyH(justify)
             if
                 nameSlotKey == "textSlotBottomLeft"
@@ -2638,7 +2636,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     if details.key ~= nameSlotKey then
                         local el = details.slot
                         if el == "custom" then
-                            usedWidth = usedWidth + mod.NP_CustomWidth(details.key, SavedDB())
+                            usedWidth = usedWidth + mod.NP_CustomWidth(details.key, DB())
                         elseif el ~= "none" and not mod.IsNameElement(el) then
                             usedWidth = usedWidth + mod.EstimateHealthTextWidth(el)
                         end
@@ -2661,7 +2659,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             nameFS:SetParent(topTextFrame)
             nameFS:SetPoint(
                 "BOTTOM",
-                healthBar,
+                health,
                 "TOP",
                 topXOff + (pvNameMarkerReserve * 0.5),
                 4 + nameYOff + cpPush + topYOff
@@ -2672,8 +2670,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 - pvNameMarkerReserve
                 - 2
                     * math.max(
-                        mod.NP_TopCornerTextWidth("textSlotTopLeft", SavedDB()),
-                        mod.NP_TopCornerTextWidth("textSlotTopRight", SavedDB())
+                        mod.NP_TopCornerTextWidth("textSlotTopLeft", DB()),
+                        mod.NP_TopCornerTextWidth("textSlotTopRight", DB())
                     )
             if rmPos ~= "none" and showRM then
                 nameW = nameW - 2 * (rmSize - 2) - 7
@@ -2885,22 +2883,22 @@ local function BuildNameplatePreview(hostFrame, parentW)
         LayoutPreviewNameRaidMarker()
         PreviewNameStrata(
             popFrame,
-            healthBar,
+            health,
             nameFS,
             nameRaidFrame,
             pvNameSlotKey and DBVal(pvNameSlotKey .. "Strata") or "MEDIUM"
         )
 
         -- Health bar color: always uses "enemies in combat" color
-        local eic = (SavedDB() and SavedDB().enemyInCombat) or defaultSet.enemyInCombat
-        healthBar:SetStatusBarColor(eic.r, eic.g, eic.b, 1)
+        local eic = (DB() and DB().enemyInCombat) or defaultSet.enemyInCombat
+        health:SetStatusBarColor(eic.r, eic.g, eic.b, 1)
 
         -- Cast text sizes, colors, and offsets
         local cns = DBVal("castNameSize") or defaultSet.castNameSize
         local cts = DBVal("castTargetSize") or defaultSet.castTargetSize
-        local cnc = (SavedDB() and SavedDB().castNameColor) or defaultSet.castNameColor
+        local cnc = (DB() and DB().castNameColor) or defaultSet.castNameColor
         local ctmSz = DBVal("castTimerSize") or defaultSet.castTimerSize
-        local ctmC = (SavedDB() and SavedDB().castTimerColor) or defaultSet.castTimerColor
+        local ctmC = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
         local cnOX = DBVal("castNameOffsetX") or defaultSet.castNameOffsetX
         local cnOY = DBVal("castNameOffsetY") or defaultSet.castNameOffsetY
         local ctOX = DBVal("castTargetOffsetX") or defaultSet.castTargetOffsetX
@@ -2912,7 +2910,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         SetPVFont(castParts.timerFS, fontFile, ctmSz, npOutline)
         castParts.timerFS:SetTextColor(ctmC.r, ctmC.g, ctmC.b, 1)
         castParts.nameFS:SetTextColor(cnc.r, cnc.g, cnc.b, 1)
-        local dbRef = SavedDB()
+        local dbRef = DB()
         local pvShowTimer = defaultSet.showCastTimer
         if dbRef and dbRef.showCastTimer ~= nil then
             pvShowTimer = dbRef.showCastTimer
@@ -3019,7 +3017,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- Name/target/timer widths are set per-element above (each uses its configured % of bar width; timer uses its reserved slot) to mirror the in-game layout.
 
         -- Helper: position a single preview frame into a slot
-        local function PlaceInSlot(widget, slotName, slotPos, total, iconW, iconH, slotSpacing, sxOff, syOff)
+        local function PlaceInSlot(widget, slotName, index, total, iconW, iconH, slotSpacing, sxOff, syOff)
             sxOff = sxOff or 0
             syOff = syOff or 0
             -- Vertical center-to-center distance: cropped icons are shorter, so "up"-growth stacked slots pack tighter. slotSpacing is horizontal (gap+width); swap width for height here (equal when uncropped).
@@ -3041,7 +3039,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 elseif slotTop ~= "none" then
                     anchor = hpText
                 else
-                    anchor = healthBar
+                    anchor = health
                 end
                 -- Only add cpPush when anchoring to health bar (top slot is "none")
                 local slotCpPush = (slotTop == "none") and cpPush or 0
@@ -3049,7 +3047,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     "BOTTOM",
                     anchor,
                     "TOP",
-                    (slotPos - (total + 1) / 2) * slotSpacing + sxOff,
+                    (index - (total + 1) / 2) * slotSpacing + sxOff,
                     debuffY + slotCpPush + syOff
                 )
             elseif slotName == "left" or slotName == "right" then
@@ -3059,76 +3057,52 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local sideOff = (DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset)
                     + mod.NP_ClassicSide(slotName)
                     + FullPush(slotName, syOff + iconH / 2 - barH / 2, iconH)
-                    + (slotPos - 1) * slotSpacing
+                    + (index - 1) * slotSpacing
                 if slotName == "left" then
-                    widget:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMLEFT", -sideOff + sxOff, syOff)
+                    widget:SetPoint("BOTTOMRIGHT", health, "BOTTOMLEFT", -sideOff + sxOff, syOff)
                 else
-                    widget:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMRIGHT", sideOff + sxOff, syOff)
+                    widget:SetPoint("BOTTOMLEFT", health, "BOTTOMRIGHT", sideOff + sxOff, syOff)
                 end
             elseif slotName == "topleft" then
                 local growth = DBVal("topleftSlotGrowth") or defaultSet.topleftSlotGrowth
-                local position = slotPos - 1 -- 0 for icon 1, never moves
+                local position = index - 1 -- 0 for icon 1, never moves
                 local baseX = sxOff
                 -- Above the Top Left text while one shows, as live.
-                local baseY = debuffY + cpPush + mod.NP_TopCornerLift("topleft", SavedDB()) + syOff
+                local baseY = debuffY + cpPush + mod.NP_TopCornerLift("topleft", DB()) + syOff
                 if growth == "up" then
-                    widget:SetPoint(
-                        "BOTTOMLEFT",
-                        healthBar,
-                        "TOPLEFT",
-                        baseX,
-                        baseY + position * slotSpacingV
-                    )
+                    widget:SetPoint("BOTTOMLEFT", health, "TOPLEFT", baseX, baseY + position * slotSpacingV)
                 elseif growth == "right" then
-                    widget:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", baseX + position * slotSpacing, baseY)
+                    widget:SetPoint("BOTTOMLEFT", health, "TOPLEFT", baseX + position * slotSpacing, baseY)
                 else
-                    widget:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", baseX - position * slotSpacing, baseY)
+                    widget:SetPoint("BOTTOMLEFT", health, "TOPLEFT", baseX - position * slotSpacing, baseY)
                 end
             elseif slotName == "topright" then
                 local growth = DBVal("toprightSlotGrowth") or defaultSet.toprightSlotGrowth
-                local position = slotPos - 1 -- 0 for icon 1, never moves
+                local position = index - 1 -- 0 for icon 1, never moves
                 local baseX = sxOff
                 -- Above the Top Right text while one shows, as live.
-                local baseY = debuffY + cpPush + mod.NP_TopCornerLift("topright", SavedDB()) + syOff
+                local baseY = debuffY + cpPush + mod.NP_TopCornerLift("topright", DB()) + syOff
                 if growth == "up" then
-                    widget:SetPoint(
-                        "BOTTOMRIGHT",
-                        healthBar,
-                        "TOPRIGHT",
-                        baseX,
-                        baseY + position * slotSpacingV
-                    )
+                    widget:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", baseX, baseY + position * slotSpacingV)
                 elseif growth == "left" then
-                    widget:SetPoint(
-                        "BOTTOMRIGHT",
-                        healthBar,
-                        "TOPRIGHT",
-                        baseX - position * slotSpacing,
-                        baseY
-                    )
+                    widget:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", baseX - position * slotSpacing, baseY)
                 else
-                    widget:SetPoint(
-                        "BOTTOMRIGHT",
-                        healthBar,
-                        "TOPRIGHT",
-                        baseX + position * slotSpacing,
-                        baseY
-                    )
+                    widget:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", baseX + position * slotSpacing, baseY)
                 end
             elseif slotName == "bottom" then
                 widget:SetPoint(
                     "TOP",
                     cast,
                     "BOTTOM",
-                    (slotPos - (total + 1) / 2) * slotSpacing + sxOff,
+                    (index - (total + 1) / 2) * slotSpacing + sxOff,
                     -2 + syOff
                 )
             end
         end
 
-        local function AuraDurationVal(kindOf, suffix)
-            local saved = SavedDB()
-            local key = kindOf .. "DurationText" .. suffix
+        local function AuraDurationVal(kind, suffix)
+            local saved = DB()
+            local key = kind .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
             if saved and saved[key] ~= nil then
                 return saved[key]
@@ -3151,7 +3125,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local ccDurY = AuraDurationVal("cc", "Y")
         local ccDurC = AuraDurationVal("cc", "Color")
         local auraStackSz = DBVal("auraStackTextSize") or defaultSet.auraStackTextSize
-        local auraStackC = (SavedDB() and SavedDB().auraStackTextColor) or defaultSet.auraStackTextColor
+        local auraStackC = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
         local auraStackX = DBVal("auraStackTextX") or defaultSet.auraStackTextX
         local auraStackY = DBVal("auraStackTextY") or defaultSet.auraStackTextY
         local auraStackPos = DBVal("auraStackTextPosition") or defaultSet.auraStackTextPosition
@@ -3161,13 +3135,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local ccTPos = DBVal("ccTimerPosition") or atPos
 
         -- Helper: apply timer position to a duration text fontstring
-        local function ApplyTimerPos(durText, auraFrame, place, dim, posX, posY, color)
+        local function ApplyTimerPos(durText, auraFrame, place, size, posX, posY, color)
             if place == "none" then
                 durText:Hide()
                 return
             end
             durText:Show()
-            durText:SetFont(fontFile, dim, CludesUI.SlugFlag("OUTLINE, SLUG"))
+            durText:SetFont(fontFile, size, CludesUI.SlugFlag("OUTLINE, SLUG"))
             durText:SetTextColor(color.r, color.g, color.b, 1)
             durText:ClearAllPoints()
             if place == "center" then
@@ -3353,12 +3327,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- The Rare/Quest member counts only while a half is on or the badge rides it (as live).
             r = cx.icons.class
             r.frame, r.sz = classIcon, reIconSz
-            r.slot = (hideRare and not mod.NP_QuestIconOn(SavedDB()) and not fcCombined) and "none" or clPos
+            r.slot = (hideRare and not mod.NP_QuestIconOn(DB()) and not fcCombined) and "none" or clPos
             r = cx.icons.qtext
             r.frame, r.slot, r.sz = popFrame._qt.frame, popFrame._qt.pos, popFrame._qt.h
             r = cx.icons.faction
             r.frame, r.slot = factionIcon, fcCombined and "none" or fcPos
-            r.sz = mod.NP_ElementSize("faction", SavedDB())
+            r.sz = mod.NP_ElementSize("faction", DB())
             cx.classFaction, cx.factionFrame = fcCombined, factionIcon
             ChainPreview(cx)
         end
@@ -3375,13 +3349,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
             local rightExtent = castIconRightPush + FullPush("right", 0, arrowH)
             -- One element on `side`, centred on the bar plus y, sz tall, reaching
             -- `reach` past the bar's edge.
-            local function add(sideName, posY, sz, reach)
+            local function add(side, posY, sz, reach)
                 if math.abs(posY) >= (sz + arrowH) / 2 then
                     return
                 end
-                if sideName == "left" then
+                if side == "left" then
                     leftExtent = math.max(leftExtent, reach)
-                elseif sideName == "right" then
+                elseif side == "right" then
                     rightExtent = math.max(rightExtent, reach)
                 end
             end
@@ -3419,19 +3393,19 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- Side icons (raid marker, classification, Quest Objective Text,
             -- faction), each past its own cast icon push; w: the element's width
             -- (sz, its height, when nil).
-            local function addIcon(sideName, posY, sz, xOff, wid)
-                if sideName ~= "left" and sideName ~= "right" then
+            local function addIcon(side, posY, sz, xOff, wid)
+                if side ~= "left" and side ~= "right" then
                     return
                 end
                 add(
-                    sideName,
+                    side,
                     posY,
                     sz,
                     sideOff
-                        + ((sideName == "left") and castIconLeftPush or castIconRightPush)
-                        + FullPush(sideName, posY, sz)
+                        + ((side == "left") and castIconLeftPush or castIconRightPush)
+                        + FullPush(side, posY, sz)
                         + (wid or sz)
-                        + ((sideName == "left") and -xOff or xOff)
+                        + ((side == "left") and -xOff or xOff)
                 )
             end
             if raidFrame:IsShown() then
@@ -3448,12 +3422,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 -- Stacked behind a showing Rare/Quest icon it sits higher.
                 local fy = (DBVal(fcPos .. "SlotYOffset") or 0)
                     + ((fcCombined and classIcon:IsShown()) and math.floor(reIconSz * 0.6 + 0.5) or 0)
-                addIcon(
-                    fcPos,
-                    fy,
-                    mod.NP_ElementSize("faction", SavedDB()),
-                    DBVal(fcPos .. "SlotXOffset") or 0
-                )
+                addIcon(fcPos, fy, mod.NP_ElementSize("faction", DB()), DBVal(fcPos .. "SlotXOffset") or 0)
             end
             -- A side chain's outermost element is hugged at its outer bottom corner,
             -- the arrow centred on the bar, as live.
@@ -3467,7 +3436,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     barH / 2 - chainEnd.left.y
                 )
             else
-                arrows.left:SetPoint("RIGHT", healthBar, "LEFT", -(leftExtent + 8), 0)
+                arrows.left:SetPoint("RIGHT", health, "LEFT", -(leftExtent + 8), 0)
             end
             if chainEnd.right then
                 arrows.right:SetPoint(
@@ -3478,7 +3447,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     barH / 2 - chainEnd.right.y
                 )
             else
-                arrows.right:SetPoint("LEFT", healthBar, "RIGHT", rightExtent + 8, 0)
+                arrows.right:SetPoint("LEFT", health, "RIGHT", rightExtent + 8, 0)
             end
             arrows.left:Show()
             arrows.right:Show()
@@ -3513,7 +3482,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     end
                     cornerExtent = math.max(
                         cornerExtent,
-                        debuffY + mod.NP_TopCornerLift(slotVal, SavedDB()) + iconH + stackH + yOff
+                        debuffY + mod.NP_TopCornerLift(slotVal, DB()) + iconH + stackH + yOff
                     )
                 end
             end
@@ -3524,8 +3493,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 if rmPos == "top" then
                     cornerExtent = math.max(cornerExtent, debuffY + rmSize + rmYOff)
                 elseif isCorner(rmPos) then
-                    cornerExtent =
-                        math.max(cornerExtent, mod.NP_TopCornerLift(rmPos, SavedDB()) + rmSize + rmYOff)
+                    cornerExtent = math.max(cornerExtent, mod.NP_TopCornerLift(rmPos, DB()) + rmSize + rmYOff)
                 end
             end
             if showCL then
@@ -3533,7 +3501,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     cornerExtent = math.max(cornerExtent, debuffY + reIconSz + clYOff)
                 elseif isCorner(clPos) then
                     cornerExtent =
-                        math.max(cornerExtent, 2 + mod.NP_TopCornerLift(clPos, SavedDB()) + reIconSz + clYOff)
+                        math.max(cornerExtent, 2 + mod.NP_TopCornerLift(clPos, DB()) + reIconSz + clYOff)
                 end
             end
             -- The Quest Objective Text, placed like the Rare/Quest icon.
@@ -3543,15 +3511,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     cornerExtent = math.max(cornerExtent, debuffY + qt.h + qt.y)
                 elseif isCorner(qt.pos) then
                     cornerExtent =
-                        math.max(cornerExtent, 2 + mod.NP_TopCornerLift(qt.pos, SavedDB()) + qt.h + qt.y)
+                        math.max(cornerExtent, 2 + mod.NP_TopCornerLift(qt.pos, DB()) + qt.h + qt.y)
                 end
             end
             cornerExtent = math.max(cornerExtent, factionTopExtent)
             -- The Top Left / Top Right texts themselves (their top over the bar).
             cornerExtent = math.max(
                 cornerExtent,
-                mod.NP_TopCornerLift("topleft", SavedDB()),
-                mod.NP_TopCornerLift("topright", SavedDB())
+                mod.NP_TopCornerLift("topleft", DB()),
+                mod.NP_TopCornerLift("topright", DB())
             )
             -- Only include name text height when something is actually in the top slot
             local topTextH = (slotTop ~= "none") and (topFontSz + 4 + nameYOff + topYOff) or 0
@@ -3562,8 +3530,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- 15 matches the bottom margin below the cast bar in totalH
             healthFromTop = Snap(15 + math.max(topStackH, cornerExtent) + cpPush)
         end
-        healthBar:ClearAllPoints()
-        healthBar:SetSize(barW, barH)
+        health:ClearAllPoints()
+        health:SetSize(barW, barH)
 
         -- Size the plain-Frame wrapper to match the health bar exactly; the image border lives on this wrapper (not the StatusBar).
         healthWrapper:ClearAllPoints()
@@ -3575,13 +3543,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         if dragging and _cachedRawBarW then
             local delta = (rawBarW - _cachedRawBarW) / 2
             xOff = _cachedXOff - delta
-            healthBar:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
+            health:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
             healthWrapper:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
         else
             xOff = Snap((pfW - barW) / 2)
             _cachedRawBarW = rawBarW
             _cachedXOff = xOff
-            healthBar:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
+            health:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
             healthWrapper:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
         end
 
@@ -3591,9 +3559,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
         if hlEnabled and hlPct and hlPct > 0 then
             local hlX = barW * (hlPct / 100)
             previewHashLine:ClearAllPoints()
-            previewHashLine:SetPoint("TOP", healthBar, "TOPLEFT", hlX, 0)
-            previewHashLine:SetPoint("BOTTOM", healthBar, "BOTTOMLEFT", hlX, 0)
-            local hlc = (SavedDB() and SavedDB().hashLineColor) or defaultSet.hashLineColor
+            previewHashLine:SetPoint("TOP", health, "TOPLEFT", hlX, 0)
+            previewHashLine:SetPoint("BOTTOM", health, "BOTTOMLEFT", hlX, 0)
+            local hlc = (DB() and DB().hashLineColor) or defaultSet.hashLineColor
             previewHashLine:SetColorTexture(hlc.r, hlc.g, hlc.b, 0.8)
             previewHashLine:Show()
         else
@@ -3605,8 +3573,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             local texKey = DBVal("healthBarTexture") or "none"
             local texPath =
                 CludesUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
-            healthBar:SetStatusBarTexture(texPath)
-            UnsnapTex(healthBar:GetStatusBarTexture())
+            health:SetStatusBarTexture(texPath)
+            UnsnapTex(health:GetStatusBarTexture())
         end
 
         -- Class power pips (preview): the renderer is a nested function, defined and called once right here so its ~38 locals live in their own scope -- pf.Update was over Lua 5.1's 200-local-per-function cap.
@@ -3679,12 +3647,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 if useClassColors then
                     cpColor = CP.CLASS_COLORS[playerClass] or CP.DEFAULT_COLOR
                 else
-                    local cc = (SavedDB() and SavedDB().classPowerCustomColor)
-                        or defaultSet.classPowerCustomColor
+                    local cc = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
                     cpColor = { cc.r, cc.g, cc.b }
                 end
 
-                local cpBgCol = (SavedDB() and SavedDB().classPowerBgColor) or defaultSet.classPowerBgColor
+                local cpBgCol = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
 
                 if cpIsBarType then
                     -- Bar-type preview (stagger): single StatusBar
@@ -3706,7 +3673,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     if cpPos == "top" then
                         anchorPoint = "BOTTOM"
                         anchorRelPoint = "TOP"
-                        anchorFrame = healthBar
+                        anchorFrame = health
                         yDir = 1
                     else
                         anchorPoint = "TOP"
@@ -3717,21 +3684,21 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local cpYShown, cpYReal, cpEdgeIn, cpDirIn =
                         CP.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
 
-                    local barFrame = CP.bar
-                    barFrame:ClearAllPoints()
-                    barFrame:SetSize(barW, scaledH)
-                    barFrame:SetPoint(
+                    local bar = CP.bar
+                    bar:ClearAllPoints()
+                    bar:SetSize(barW, scaledH)
+                    bar:SetPoint(
                         anchorPoint,
                         anchorFrame,
                         anchorRelPoint,
                         Snap(cpXOff),
                         Snap(yDir * cpYShown)
                     )
-                    barFrame:SetMinMaxValues(0, 100)
-                    barFrame:SetValue(45) -- preview at 45% (moderate stagger)
-                    barFrame:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow for preview
-                    barFrame._bg:SetColorTexture(cpBgCol.r, cpBgCol.g, cpBgCol.b, cpBgCol.a)
-                    barFrame:Show()
+                    bar:SetMinMaxValues(0, 100)
+                    bar:SetValue(45) -- preview at 45% (moderate stagger)
+                    bar:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow for preview
+                    bar._bg:SetColorTexture(cpBgCol.r, cpBgCol.g, cpBgCol.b, cpBgCol.a)
+                    bar:Show()
 
                     if cpPos ~= "top" then
                         cpExtraH = scaledH
@@ -3757,7 +3724,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local cpGap = DBVal("classPowerGap") or defaultSet.classPowerGap
                     local cpShape = DBVal("classPowerShape") or defaultSet.classPowerShape
                     local cpBorderOn = DBVal("classPowerBorder") == true
-                    local cpBorderCol = (SavedDB() and SavedDB().classPowerBorderColor)
+                    local cpBorderCol = (DB() and DB().classPowerBorderColor)
                         or defaultSet.classPowerBorderColor
                     local cpBorderPx = cpBorderOn
                             and Snap(DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize)
@@ -3774,7 +3741,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     if cpPos == "top" then
                         anchorPoint = "BOTTOM"
                         anchorRelPoint = "TOP"
-                        anchorFrame = healthBar
+                        anchorFrame = health
                         yDir = 1
                     else
                         -- Bottom: attach below cast bar (preview always shows cast bar)
@@ -3786,8 +3753,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local cpYShown, cpYReal, cpEdgeIn, cpDirIn =
                         CP.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
 
-                    local cpEmptyCol = (SavedDB() and SavedDB().classPowerEmptyColor)
-                        or defaultSet.classPowerEmptyColor
+                    local cpEmptyCol = (DB() and DB().classPowerEmptyColor) or defaultSet.classPowerEmptyColor
 
                     -- Pre-compute each pip's left-edge X in group-local coords; anchor via BOTTOMLEFT/TOPLEFT to avoid half-pixel center offsets.
                     local pipPositions = {}
@@ -3800,12 +3766,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local leftAnchor = (anchorPoint == "BOTTOM") and "BOTTOMLEFT" or "TOPLEFT"
 
                     for i = 1, CP.MAX_POSSIBLE do
-                        local pipTex = CP.pips[i]
+                        local pip = CP.pips[i]
                         if i <= cpMax then
-                            pipTex:ClearAllPoints()
-                            pipTex:SetSize(scaledW, scaledH)
+                            pip:ClearAllPoints()
+                            pip:SetSize(scaledW, scaledH)
                             local pipLeftX = Snap(pipPositions[i] - halfGroup + cpXOff)
-                            pipTex:SetPoint(
+                            pip:SetPoint(
                                 leftAnchor,
                                 anchorFrame,
                                 anchorRelPoint,
@@ -3814,10 +3780,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                             )
 
                             -- Background behind each pip
-                            local backdrop = pipTex._bg
+                            local backdrop = pip._bg
                             if backdrop then
                                 backdrop:ClearAllPoints()
-                                backdrop:SetAllPoints(pipTex)
+                                backdrop:SetAllPoints(pip)
                                 backdrop:SetTexture(CP.WHITE)
                                 backdrop:SetTexCoord(0, 1, 0, 1)
                                 backdrop:SetDesaturated(false)
@@ -3825,7 +3791,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                                 backdrop:Show()
                             end
 
-                            mod.ApplyPipShape(popFrame, pipTex, cpShape, cpBorderOn, cpBorderCol, cpBorderPx)
+                            mod.ApplyPipShape(popFrame, pip, cpShape, cpBorderOn, cpBorderCol, cpBorderPx)
 
                             if cpIconKind == "holypower" then
                                 local num = (i - 1) % 5 + 1
@@ -3841,51 +3807,46 @@ local function BuildNameplatePreview(hostFrame, parentW)
                                     backdrop:Show()
                                 end
                                 if i <= cpCur then
-                                    pipTex:SetAtlas("nameplates-holypower" .. position .. "-on")
+                                    pip:SetAtlas("nameplates-holypower" .. position .. "-on")
                                     if flip then
-                                        pipTex:SetTexCoord(1, 0, 0, 1)
+                                        pip:SetTexCoord(1, 0, 0, 1)
                                     end
-                                    pipTex:SetVertexColor(1, 1, 1, 1)
-                                    UnsnapTex(pipTex)
-                                    pipTex:Show()
+                                    pip:SetVertexColor(1, 1, 1, 1)
+                                    UnsnapTex(pip)
+                                    pip:Show()
                                 else
-                                    pipTex:Hide()
+                                    pip:Hide()
                                 end
                             elseif cpIconKind then
-                                pipTex:SetAtlas(mod.GetPipIconAtlas(cpIconKind, i <= cpCur, i))
+                                pip:SetAtlas(mod.GetPipIconAtlas(cpIconKind, i <= cpCur, i))
                                 if (i > cpCur) and mod.CP_ICON_DIM_EMPTY[cpIconKind] then
-                                    pipTex:SetVertexColor(0.35, 0.35, 0.35, 1)
+                                    pip:SetVertexColor(0.35, 0.35, 0.35, 1)
                                 else
-                                    pipTex:SetVertexColor(1, 1, 1, 1)
+                                    pip:SetVertexColor(1, 1, 1, 1)
                                 end
-                                UnsnapTex(pipTex)
-                                pipTex:Show()
+                                UnsnapTex(pip)
+                                pip:Show()
                             else
-                                pipTex:SetTexture(CP.WHITE)
-                                pipTex:SetTexCoord(0, 1, 0, 1)
+                                pip:SetTexture(CP.WHITE)
+                                pip:SetTexCoord(0, 1, 0, 1)
                                 if i <= cpCur then
-                                    pipTex:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
+                                    pip:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
                                 else
-                                    pipTex:SetVertexColor(
-                                        cpEmptyCol.r,
-                                        cpEmptyCol.g,
-                                        cpEmptyCol.b,
-                                        cpEmptyCol.a
-                                    )
+                                    pip:SetVertexColor(cpEmptyCol.r, cpEmptyCol.g, cpEmptyCol.b, cpEmptyCol.a)
                                 end
-                                UnsnapTex(pipTex)
-                                pipTex:Show()
+                                UnsnapTex(pip)
+                                pip:Show()
                             end
                         else
-                            pipTex:Hide()
-                            if pipTex._bg then
-                                pipTex._bg:Hide()
+                            pip:Hide()
+                            if pip._bg then
+                                pip._bg:Hide()
                             end
-                            if pipTex._border then
-                                pipTex._border:Hide()
+                            if pip._border then
+                                pip._border:Hide()
                             end
-                            if pipTex._borderBox then
-                                pipTex._borderBox:Hide()
+                            if pip._borderBox then
+                                pip._borderBox:Hide()
                             end
                         end
                     end
@@ -4061,7 +4022,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     popFrame._classIcon = classIcon
     popFrame._factionIcon = factionIcon
     popFrame._questTextFrame = popFrame._qt.frame
-    popFrame._health = healthBar
+    popFrame._health = health
     popFrame._healthWrapper = healthWrapper
     popFrame._cpPips = CP.pips
     popFrame._cpBar = CP.bar

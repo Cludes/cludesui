@@ -133,21 +133,20 @@ function TextTags.Bind(schema, map)
         category.map[key] = val
     end
     for idx = 1, #schema.tags do
-        local spec_def, bound = schema.tags[idx], {}
-        for k = 1, #spec_def.keys do
-            local key = spec_def.keys[k]
+        local def, bound = schema.tags[idx], {}
+        for k = 1, #def.keys do
+            local key = def.keys[k]
             if category.map[key] ~= nil then
                 bound[#bound + 1] = key
                 category.keys[#category.keys + 1] = key
             end
         end
         if #bound > 0 then
-            category.tags[#category.tags + 1] =
-                { tag = spec_def.tag, aliases = spec_def.aliases, keys = bound }
-            category.names[spec_def.tag] = spec_def.tag
-            if spec_def.aliases then
-                for a = 1, #spec_def.aliases do
-                    category.names[spec_def.aliases[a]] = spec_def.tag
+            category.tags[#category.tags + 1] = { tag = def.tag, aliases = def.aliases, keys = bound }
+            category.names[def.tag] = def.tag
+            if def.aliases then
+                for a = 1, #def.aliases do
+                    category.names[def.aliases[a]] = def.tag
                 end
             end
         end
@@ -378,13 +377,13 @@ function TextTags.HelpText(category, options)
                 lines[#lines + 1] = ""
                 lines[#lines + 1] = head .. CludesUI.L("Modifiers") .. "|r"
             end
-            local lineTex = MOD .. mod .. "|r"
-            for alias, targetUnit in pairs(modAliases) do
-                if targetUnit == mod then
-                    lineTex = lineTex .. orWord .. MOD .. alias .. "|r"
+            local line = MOD .. mod .. "|r"
+            for alias, target in pairs(modAliases) do
+                if target == mod then
+                    line = line .. orWord .. MOD .. alias .. "|r"
                 end
             end
-            lines[#lines + 1] = lineTex .. (modDescs[mod] and ("  " .. DIM .. modDescs[mod] .. "|r") or "")
+            lines[#lines + 1] = line .. (modDescs[mod] and ("  " .. DIM .. modDescs[mod] .. "|r") or "")
         end
     end
     local examples = options and options.examples or category.schema.examples
@@ -641,7 +640,7 @@ function TextTags.MenuValues(values, edit, o)
     end
     local mo = val._menuOpts or {}
     val._menuOpts = mo
-    local glyph, iconColor, labelColor = mo.icon, mo.iconColor, mo.labelColor
+    local icon, iconColor, labelColor = mo.icon, mo.iconColor, mo.labelColor
     local selected, removeKey = o and o.selected, o and o.removeKey
     mo.icon = function(key)
         if key == "custom" then
@@ -650,8 +649,8 @@ function TextTags.MenuValues(values, edit, o)
         if key == removeKey then
             return CLOSE_ICON
         end
-        if glyph then
-            return glyph(key)
+        if icon then
+            return icon(key)
         end
     end
     mo.iconSize = mo.iconSize or function()

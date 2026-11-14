@@ -335,7 +335,7 @@ do
         widget:SetHeight(Pix.Scale(hgt))
     end
 
-    function Pix.Point(obj, anchorFrame, p1, p2, p3, p4)
+    function Pix.Point(obj, anchor, p1, p2, p3, p4)
         if not p1 then
             p1 = obj:GetParent()
         end
@@ -351,27 +351,27 @@ do
         if type(p4) == "number" then
             p4 = Pix.Scale(p4)
         end
-        obj:SetPoint(anchorFrame, p1, p2, p3, p4)
+        obj:SetPoint(anchor, p1, p2, p3, p4)
     end
 
-    function Pix.SetInside(obj, anchorFrame, xOff, yOff)
-        anchorFrame = anchorFrame or obj:GetParent()
+    function Pix.SetInside(obj, anchor, xOff, yOff)
+        anchor = anchor or obj:GetParent()
         local inset = Pix.Scale(xOff or 1)
         local insetY = Pix.Scale(yOff or 1)
         obj:ClearAllPoints()
         Pix.DisablePixelSnap(obj)
-        obj:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", inset, -insetY)
-        obj:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -inset, insetY)
+        obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", inset, -insetY)
+        obj:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -inset, insetY)
     end
 
-    function Pix.SetOutside(obj, anchorFrame, xOff, yOff)
-        anchorFrame = anchorFrame or obj:GetParent()
+    function Pix.SetOutside(obj, anchor, xOff, yOff)
+        anchor = anchor or obj:GetParent()
         local outset = Pix.Scale(xOff or 1)
         local outsetY = Pix.Scale(yOff or 1)
         obj:ClearAllPoints()
         Pix.DisablePixelSnap(obj)
-        obj:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", -outset, outsetY)
-        obj:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", outset, -outsetY)
+        obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", -outset, outsetY)
+        obj:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", outset, -outsetY)
     end
 
     ---------------------------------------------------------------------------
@@ -399,19 +399,19 @@ do
         end
 
         -- Textures and FontStrings expose SetSnapToPixelGrid directly
-        local targetUnit = obj
+        local target = obj
         if not obj.SetSnapToPixelGrid and obj.GetStatusBarTexture then
             -- StatusBars need their inner texture unsnapped instead
-            targetUnit = obj:GetStatusBarTexture()
-            if type(targetUnit) ~= "table" or not targetUnit.SetSnapToPixelGrid then
+            target = obj:GetStatusBarTexture()
+            if type(target) ~= "table" or not target.SetSnapToPixelGrid then
                 _pixelSnapDisabled[obj] = true
                 return
             end
         end
 
-        if targetUnit.SetSnapToPixelGrid then
-            targetUnit:SetSnapToPixelGrid(false)
-            targetUnit:SetTexelSnappingBias(0)
+        if target.SetSnapToPixelGrid then
+            target:SetSnapToPixelGrid(false)
+            target:SetTexelSnappingBias(0)
         end
         _pixelSnapDisabled[obj] = true
     end
@@ -780,19 +780,19 @@ do
             local record = allBorders[idx]
             local f = record.frame
             if f and record.container then
-                local hostFrame, modeName = f, nil
+                local hostFrame, mode = f, nil
                 for _ = 1, 10 do
                     local success, p = pcall(GetParentFn, hostFrame)
                     if not success or not p then
                         break
                     end
                     hostFrame = p
-                    modeName = roots[hostFrame]
-                    if modeName then
+                    mode = roots[hostFrame]
+                    if mode then
                         break
                     end
                 end
-                if modeName and modeName ~= "skip" and (modeName ~= "shown" or f:IsVisible()) then
+                if mode and mode ~= "skip" and (mode ~= "shown" or f:IsVisible()) then
                     SnapEntry(record)
                 end
             end
@@ -838,14 +838,14 @@ do
         bd.gen = gen
         bd.borderSize = borderSize
         bd.colDirty = nil
-        local column = bd.borderColor
-        if column then
-            column[1], column[2], column[3], column[4] = r, g, b, a
+        local col = bd.borderColor
+        if col then
+            col[1], col[2], col[3], col[4] = r, g, b, a
         else
-            column = { r, g, b, a }
-            bd.borderColor = column
+            col = { r, g, b, a }
+            bd.borderColor = col
         end
-        c._bdColor = column
+        c._bdColor = col
         c._hideTop, c._hideBottom, c._hideLeft, c._hideRight = nil, nil, nil, nil
         c._snapEdge = nil
         if c._pendingSnap then
@@ -1022,29 +1022,23 @@ do
         -- (RaidFrames dispel colors in combat) can be WRITTEN to textures but never compared or
         -- cached (the compare errors on a secret, and caching one breaks the NEXT clean call's
         -- compare too); secrets skip the guard, leave the cache on the last CLEAN color, and mark dirty so the next clean color repaints.
-        local column = bd.borderColor
+        local col = bd.borderColor
         local secret = issecretvalue
             and (issecretvalue(r) or issecretvalue(g) or issecretvalue(b) or issecretvalue(a))
         if secret then
             bd.colDirty = true
-        elseif column then
-            if
-                not bd.colDirty
-                and column[1] == r
-                and column[2] == g
-                and column[3] == b
-                and column[4] == a
-            then
+        elseif col then
+            if not bd.colDirty and col[1] == r and col[2] == g and col[3] == b and col[4] == a then
                 return -- unchanged; the four texture writes below are redundant
             end
             bd.colDirty = nil
-            column[1], column[2], column[3], column[4] = r, g, b, a
+            col[1], col[2], col[3], col[4] = r, g, b, a
         else
-            column = { r, g, b, a }
-            bd.borderColor = column
+            col = { r, g, b, a }
+            bd.borderColor = col
         end
-        if column then
-            bd.container._bdColor = column
+        if col then
+            bd.container._bdColor = col
         end
 
         local c = bd.container
@@ -1093,15 +1087,15 @@ do
     -- 7px thick), scaled by (7 - rawBorderSize) and clipped by `mask`. Called with `:`
     -- so self.Point resolves to whichever PP module owns host's frame hierarchy
     -- (world PP vs PanelPP) -- calling with `.` shifts every argument left by one.
-    function Pix:ApplyMaskedShapeBorder(hostRegion, maskTex, texPath, rawBorderSize, r, g, b, a)
-        if not hostRegion then
+    function Pix:ApplyMaskedShapeBorder(host, mask, texPath, rawBorderSize, r, g, b, a)
+        if not host then
             return
         end
         rawBorderSize = rawBorderSize or 0
         if rawBorderSize <= 0 or not texPath then
-            if hostRegion._shapeBorderShown then
-                hostRegion._shapeBorderTex:Hide()
-                hostRegion._shapeBorderShown = nil
+            if host._shapeBorderShown then
+                host._shapeBorderTex:Hide()
+                host._shapeBorderShown = nil
             end
             return
         end
@@ -1109,40 +1103,40 @@ do
         -- Every field guarded: callers invoke this on every restyle pass regardless
         -- of whether the border changed, and Remove/AddMaskTexture aren't cheap.
         if
-            hostRegion._shapeBorderShown
-            and hostRegion._sbTex == texPath
-            and hostRegion._sbSize == rawBorderSize
-            and hostRegion._sbMask == maskTex
-            and hostRegion._sbR == r
-            and hostRegion._sbG == g
-            and hostRegion._sbB == b
-            and hostRegion._sbA == a
+            host._shapeBorderShown
+            and host._sbTex == texPath
+            and host._sbSize == rawBorderSize
+            and host._sbMask == mask
+            and host._sbR == r
+            and host._sbG == g
+            and host._sbB == b
+            and host._sbA == a
         then
             return
         end
-        if not hostRegion._shapeBorderTex then
-            hostRegion._shapeBorderTex = hostRegion:CreateTexture(nil, "OVERLAY")
-            local t = hostRegion._shapeBorderTex
+        if not host._shapeBorderTex then
+            host._shapeBorderTex = host:CreateTexture(nil, "OVERLAY")
+            local t = host._shapeBorderTex
             if t.SetSnapToPixelGrid then
                 t:SetSnapToPixelGrid(false)
                 t:SetTexelSnappingBias(0)
             end
         end
-        local texture = hostRegion._shapeBorderTex
+        local texture = host._shapeBorderTex
         local bExp = 7 - math.min(rawBorderSize, 7)
         texture:ClearAllPoints()
-        self.Point(texture, "TOPLEFT", hostRegion, "TOPLEFT", -bExp, bExp)
-        self.Point(texture, "BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", bExp, -bExp)
-        if maskTex then
-            pcall(texture.RemoveMaskTexture, texture, maskTex)
-            pcall(texture.AddMaskTexture, texture, maskTex)
+        self.Point(texture, "TOPLEFT", host, "TOPLEFT", -bExp, bExp)
+        self.Point(texture, "BOTTOMRIGHT", host, "BOTTOMRIGHT", bExp, -bExp)
+        if mask then
+            pcall(texture.RemoveMaskTexture, texture, mask)
+            pcall(texture.AddMaskTexture, texture, mask)
         end
         texture:SetTexture(texPath)
         texture:SetVertexColor(r, g, b, a)
         texture:Show()
-        hostRegion._sbTex, hostRegion._sbSize, hostRegion._sbMask, hostRegion._sbR, hostRegion._sbG, hostRegion._sbB, hostRegion._sbA =
-            texPath, rawBorderSize, maskTex, r, g, b, a
-        hostRegion._shapeBorderShown = true
+        host._sbTex, host._sbSize, host._sbMask, host._sbR, host._sbG, host._sbB, host._sbA =
+            texPath, rawBorderSize, mask, r, g, b, a
+        host._shapeBorderShown = true
     end
 
     -- Callers switching away from a shaped border (to the plain-line border, or off
@@ -1150,10 +1144,10 @@ do
     -- above trusts _shapeBorderShown, so an external hide it doesn't know about leaves
     -- a later ApplyMaskedShapeBorder call with the exact same args wrongly skipping
     -- its own Show().
-    function Pix:HideMaskedShapeBorder(hostRegion)
-        if hostRegion and hostRegion._shapeBorderShown then
-            hostRegion._shapeBorderTex:Hide()
-            hostRegion._shapeBorderShown = nil
+    function Pix:HideMaskedShapeBorder(host)
+        if host and host._shapeBorderShown then
+            host._shapeBorderTex:Hide()
+            host._shapeBorderShown = nil
         end
     end
 
@@ -1269,28 +1263,28 @@ do
         obj:SetPoint(arg1, arg2, arg3, arg4, arg5)
     end
 
-    function PanelPP.SetInside(obj, anchorFrame, xOff, yOff)
-        if not anchorFrame then
-            anchorFrame = obj:GetParent()
+    function PanelPP.SetInside(obj, anchor, xOff, yOff)
+        if not anchor then
+            anchor = obj:GetParent()
         end
         local posX = PanelPP.Scale(xOff or 1)
         local posY = PanelPP.Scale(yOff or 1)
         obj:ClearAllPoints()
         PanelPP.DisablePixelSnap(obj)
-        obj:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", posX, -posY)
-        obj:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -posX, posY)
+        obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", posX, -posY)
+        obj:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -posX, posY)
     end
 
-    function PanelPP.SetOutside(obj, anchorFrame, xOff, yOff)
-        if not anchorFrame then
-            anchorFrame = obj:GetParent()
+    function PanelPP.SetOutside(obj, anchor, xOff, yOff)
+        if not anchor then
+            anchor = obj:GetParent()
         end
         local posX = PanelPP.Scale(xOff or 1)
         local posY = PanelPP.Scale(yOff or 1)
         obj:ClearAllPoints()
         PanelPP.DisablePixelSnap(obj)
-        obj:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", -posX, posY)
-        obj:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", posX, -posY)
+        obj:SetPoint("TOPLEFT", anchor, "TOPLEFT", -posX, posY)
+        obj:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", posX, -posY)
     end
 
     -- DisablePixelSnap is scale-independent -- just reuse PP's version
@@ -1953,7 +1947,7 @@ do
     --- the lead overlaps anchor; else it is anchor's side toward the lead and the lead
     --- hangs past anchor. Hides tex when the style has no divider or its border is off.
     --- The caller tints tex. Settings and UI-scale re-layout passes only.
-    function CludesUI.PlaceBorderDividerV(texture, anchorFrame, right, over, textureKey, step, edgePx, es)
+    function CludesUI.PlaceBorderDividerV(texture, anchor, right, over, textureKey, step, edgePx, es)
         local thick = CludesUI.BorderCompanionThickness(textureKey, step, edgePx, es)
         if not thick or thick <= 0 then
             texture:Hide()
@@ -1965,12 +1959,12 @@ do
         texture:ClearAllPoints()
         if right then
             texture:SetTexCoord(1, 0, 0, 1)
-            texture:SetPoint("TOPRIGHT", anchorFrame, over and "TOPLEFT" or "TOPRIGHT", lead, 0)
-            texture:SetPoint("BOTTOMRIGHT", anchorFrame, over and "BOTTOMLEFT" or "BOTTOMRIGHT", lead, 0)
+            texture:SetPoint("TOPRIGHT", anchor, over and "TOPLEFT" or "TOPRIGHT", lead, 0)
+            texture:SetPoint("BOTTOMRIGHT", anchor, over and "BOTTOMLEFT" or "BOTTOMRIGHT", lead, 0)
         else
             texture:SetTexCoord(0, 1, 0, 1)
-            texture:SetPoint("TOPLEFT", anchorFrame, over and "TOPRIGHT" or "TOPLEFT", -lead, 0)
-            texture:SetPoint("BOTTOMLEFT", anchorFrame, over and "BOTTOMRIGHT" or "BOTTOMLEFT", -lead, 0)
+            texture:SetPoint("TOPLEFT", anchor, over and "TOPRIGHT" or "TOPLEFT", -lead, 0)
+            texture:SetPoint("BOTTOMLEFT", anchor, over and "BOTTOMRIGHT" or "BOTTOMLEFT", -lead, 0)
         end
         texture:SetWidth(thick)
         texture:Show()
@@ -2294,7 +2288,7 @@ do
             bdFrame:SetPoint("BOTTOMRIGHT", borderFrame, "BOTTOMRIGHT", offsetX + sx, -offsetY + sy)
             -- Edge fill (SetBorderEdgeFill): on an owner that moves by sub-pixels the Pixels
             -- line covers the owner's edge pixel only with its soft fade; hard strips under it.
-            local fillTex = bdFrame._edgeFill
+            local fill = bdFrame._edgeFill
             if
                 _px.edgeFill[borderFrame]
                 and CludesUI._pixelArtBorders[textureKey]
@@ -2303,13 +2297,13 @@ do
                 and sx == 0
                 and sy == 0
             then
-                if not fillTex then
-                    fillTex = {}
+                if not fill then
+                    fill = {}
                     for idx = 1, 4 do
-                        fillTex[idx] = bdFrame:CreateTexture(nil, "BACKGROUND")
-                        fillTex[idx]:SetColorTexture(1, 1, 1, 1)
+                        fill[idx] = bdFrame:CreateTexture(nil, "BACKGROUND")
+                        fill[idx]:SetColorTexture(1, 1, 1, 1)
                     end
-                    bdFrame._edgeFill = fillTex
+                    bdFrame._edgeFill = fill
                     -- Opaque only: under translucent art a strip would stack darker.
                     -- The hook stays for good: while the fill is off it returns at once
                     -- (the apply that turns it on recolours after setting fill.on).
@@ -2337,7 +2331,7 @@ do
                 -- 1px in; out no further than the solid line reaches (3/28 of the edge).
                 local px1 = Pix.perfect / ses
                 local out = math.min(px1, edgeSize * 3 / 28)
-                local t, bt, l, rt = fillTex[1], fillTex[2], fillTex[3], fillTex[4]
+                local t, bt, l, rt = fill[1], fill[2], fill[3], fill[4]
                 t:ClearAllPoints()
                 t:SetPoint("TOPLEFT", borderFrame, "TOPLEFT", 0, out)
                 t:SetPoint("BOTTOMRIGHT", borderFrame, "TOPRIGHT", 0, -px1)
@@ -2350,9 +2344,9 @@ do
                 rt:ClearAllPoints()
                 rt:SetPoint("TOPLEFT", borderFrame, "TOPRIGHT", -px1, 0)
                 rt:SetPoint("BOTTOMRIGHT", borderFrame, "BOTTOMRIGHT", out, 0)
-                fillTex.on = true
-            elseif fillTex then
-                fillTex.on = nil
+                fill.on = true
+            elseif fill then
+                fill.on = nil
             end
             -- SetBackdrop re-runs the nine-slice texcoord math, dividing by THIS frame's current
             -- width/height, and owners' sizes can be secret (map-pin tooltips); the upstream
@@ -2376,7 +2370,7 @@ do
             bdFrame:SetBackdropBorderColor(r, g, b, a)
             bdFrame:Show()
             borderFrame:Show()
-            if fillTex then
+            if fill then
                 CludesUI.SyncBorderEdgeFill(borderFrame)
             end
             -- An exact edge is pixels at UIParent scale, so a UI scale change must re-apply
@@ -2947,15 +2941,15 @@ do
     --- Shows each edge fill strip only while its edge piece draws; call after hiding a piece.
     function CludesUI.SyncBorderEdgeFill(borderFrame)
         local bdFrame = BdFrameFor(borderFrame)
-        local fillTex = bdFrame and bdFrame._edgeFill
-        if not fillTex then
+        local fill = bdFrame and bdFrame._edgeFill
+        if not fill then
             return
         end
-        local enabled = fillTex.on == true and fillTex.opaque ~= false
+        local enabled = fill.on == true and fill.opaque ~= false
         local te, be, le, re = bdFrame.TopEdge, bdFrame.BottomEdge, bdFrame.LeftEdge, bdFrame.RightEdge
-        fillTex[1]:SetShown(enabled and te ~= nil and te:IsShown())
-        fillTex[2]:SetShown(enabled and be ~= nil and be:IsShown())
-        fillTex[3]:SetShown(enabled and le ~= nil and le:IsShown())
-        fillTex[4]:SetShown(enabled and re ~= nil and re:IsShown())
+        fill[1]:SetShown(enabled and te ~= nil and te:IsShown())
+        fill[2]:SetShown(enabled and be ~= nil and be:IsShown())
+        fill[3]:SetShown(enabled and le ~= nil and le:IsShown())
+        fill[4]:SetShown(enabled and re ~= nil and re:IsShown())
     end
 end

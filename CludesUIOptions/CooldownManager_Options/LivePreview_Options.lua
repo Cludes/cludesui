@@ -21,7 +21,7 @@ local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
 --- Build the live CDM bar preview in the content header (interactive)
 local function BuildCDMLivePreview(hostFrame, yOff)
     local environ = mod._CDMO_OptEnv
-    local _cdmActivePreviewOn, SavedDB, FONT_PATH, GetCDMOptOutline =
+    local _cdmActivePreviewOn, DB, FONT_PATH, GetCDMOptOutline =
         environ._cdmActivePreviewOn, environ.DB, environ.FONT_PATH, environ.GetCDMOptOutline
     local NormalizeToBase, optionState, Pix, Refresh =
         environ.NormalizeToBase, environ.optState, environ.PP, environ.Refresh
@@ -32,7 +32,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         environ.StartActiveStatePreview,
         environ.StopActiveStatePreview,
         environ.UpdateCDMPreviewAndResize
-    local p = SavedDB()
+    local p = DB()
     if not p or not p.cdmBars then
         return 0
     end
@@ -399,13 +399,13 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 end
             end
         end
-        for _, rowFrame in pairs(rowsByY) do
-            local rowCenterY = rowFrame.y - iconSz / 2
+        for _, row in pairs(rowsByY) do
+            local rowCenterY = row.y - iconSz / 2
             local d = math.abs(localY - rowCenterY)
             if d < bestRowDist then
                 bestRowDist = d
-                bestRowStart = rowFrame.startIdx
-                bestRowEnd = rowFrame.endIdx
+                bestRowStart = row.startIdx
+                bestRowEnd = row.endIdx
             end
         end
 
@@ -488,12 +488,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     end
 
     --- Apply visual feedback for drag: shift icons for insert, highlight for swap
-    local function ApplyDragFeedback(modeName, targetIdx, fromIdx, slotCount)
+    local function ApplyDragFeedback(mode, targetIdx, fromIdx, slotCount)
         local edge = SelectedCDMBar()
         -- Preview always renders left-to-right; drag feedback must match.
         local growLeft = false
 
-        if modeName == "swap" then
+        if mode == "swap" then
             insertLine:Hide()
             if swapTargetIdx and swapTargetIdx ~= targetIdx then
                 local s = previewSlots[swapTargetIdx]
@@ -718,15 +718,15 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     and rightSlot._baseX
                     and StackedSlots(leftSlot, rightSlot)
                 then
-                    local upper, lower = leftSlot, rightSlot
-                    if lower._baseY > upper._baseY then
-                        upper, lower = lower, upper
+                    local max, lower = leftSlot, rightSlot
+                    if lower._baseY > max._baseY then
+                        max, lower = lower, max
                     end
                     -- Centered in the gap the icons are opening (their shifted positions; the
                     -- drawn height, which a cropped icon shape makes shorter than the size).
-                    lineX = upper._baseX
+                    lineX = max._baseX
                     lineY = (
-                        (upper._baseY + (upper._targetOffY or 0) - upper:GetHeight())
+                        (max._baseY + (max._targetOffY or 0) - max:GetHeight())
                         + (lower._baseY + (lower._targetOffY or 0))
                     ) / 2
                 elseif rightSlot and rightSlot:IsShown() and rightSlot._baseX then
@@ -783,18 +783,18 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     -- click hint wherever a click opens its settings (the OnClick rules
     -- below: no settings on a custom aura bar, for a custom item on the
     -- default buffs bar, or while a Spec Override is being edited).
-    local function ShowSlotTip(slotIndex)
+    local function ShowSlotTip(slot)
         local name
-        if slotIndex._previewSpellID then
-            name = (slotIndex._previewArtID and C_Spell.GetSpellName(slotIndex._previewArtID))
-                or C_Spell.GetSpellName(slotIndex._previewSpellID)
-        elseif slotIndex._previewTipItemID then
-            name = C_Item.GetItemNameByID(slotIndex._previewTipItemID)
+        if slot._previewSpellID then
+            name = (slot._previewArtID and C_Spell.GetSpellName(slot._previewArtID))
+                or C_Spell.GetSpellName(slot._previewSpellID)
+        elseif slot._previewTipItemID then
+            name = C_Item.GetItemNameByID(slot._previewTipItemID)
         end
         if not name then
             return
         end
-        if slotIndex._previewBlizzHidden then
+        if slot._previewBlizzHidden then
             name = name
                 .. "\n"
                 .. CludesUI.Lf(
@@ -808,88 +808,88 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if
             edge
             and edge.barType ~= "custom_buff"
-            and not (edge.key == "buffs" and slotIndex._previewItemID)
+            and not (edge.key == "buffs" and slot._previewItemID)
             and not CludesUI.SpecOverrides_EditSessionActive()
         then
             name = name .. "\n" .. CludesUI.L("Click spell for alert settings")
         end
-        CludesUI.ShowWidgetTooltip(slotIndex, name)
+        CludesUI.ShowWidgetTooltip(slot, name)
     end
 
     local function CreatePreviewSlot(position)
-        local slotIndex = CreateFrame("Button", nil, popFrame)
+        local slot = CreateFrame("Button", nil, popFrame)
         -- A reused header hands this slot out again for a new build: what the
         -- live icon passes cached on its previous dress (shape and stock style
         -- frames, the keybind badge) went with that dress, so they start anew.
-        mod._ecmeFC[slotIndex] = nil
-        slotIndex:SetSize(1, 1)
-        slotIndex:RegisterForClicks("LeftButtonUp", "RightButtonDown", "MiddleButtonDown")
+        mod._ecmeFC[slot] = nil
+        slot:SetSize(1, 1)
+        slot:RegisterForClicks("LeftButtonUp", "RightButtonDown", "MiddleButtonDown")
         -- Expand hit area so small icons are easier to click/drag
-        slotIndex:SetHitRectInsets(-6, -6, -6, -6)
-        slotIndex:Hide()
+        slot:SetHitRectInsets(-6, -6, -6, -6)
+        slot:Hide()
 
-        local sBg = slotIndex:CreateTexture(nil, "BACKGROUND")
+        local sBg = slot:CreateTexture(nil, "BACKGROUND")
         sBg:SetAllPoints()
         sBg:SetColorTexture(0.08, 0.08, 0.08, 0.6)
         if sBg.SetSnapToPixelGrid then
             sBg:SetSnapToPixelGrid(false)
             sBg:SetTexelSnappingBias(0)
         end
-        slotIndex._bg = sBg
+        slot._bg = sBg
 
-        local sIcon = slotIndex:CreateTexture(nil, "ARTWORK")
+        local sIcon = slot:CreateTexture(nil, "ARTWORK")
         sIcon:SetAllPoints()
         if sIcon.SetSnapToPixelGrid then
             sIcon:SetSnapToPixelGrid(false)
             sIcon:SetTexelSnappingBias(0)
         end
-        slotIndex._icon = sIcon
-        slotIndex._tex = sIcon -- alias for shape system compatibility
+        slot._icon = sIcon
+        slot._tex = sIcon -- alias for shape system compatibility
 
         local sEdges = {}
         local Pix = CludesUI and CludesUI.PP
         if Pix then
-            Pix.CreateBorder(slotIndex, 0, 0, 0, 1, 1, "OVERLAY", 7)
+            Pix.CreateBorder(slot, 0, 0, 0, 1, 1, "OVERLAY", 7)
         end
-        slotIndex._edges = sEdges -- empty; borders managed by PP
+        slot._edges = sEdges -- empty; borders managed by PP
 
         -- Hosted-buff marker border: gold (same color as the buff "+" add button), same 2px
         -- geometry as the hover highlight, always ON for buff icons hosted on this CD/utility
         -- bar so they read apart from the cooldowns at a glance. Level +1 -- UNDER the hover highlight (+2), so hovering still shows the accent border on top.
         local slotPP = CludesUI and CludesUI.PP
-        local slotHostCont = CreateFrame("Frame", nil, slotIndex)
+        local slotHostCont = CreateFrame("Frame", nil, slot)
         slotHostCont:SetAllPoints()
-        slotHostCont:SetFrameLevel(slotIndex:GetFrameLevel() + 1)
+        slotHostCont:SetFrameLevel(slot:GetFrameLevel() + 1)
         local hostBrd = slotPP and slotPP.CreateBorder(slotHostCont, 1, 0.82, 0.25, 1, 2, "OVERLAY", 7)
         if hostBrd then
             hostBrd:Hide()
         end
-        slotIndex._hostBrd = hostBrd
+        slot._hostBrd = hostBrd
         -- Hover highlight (2px accent border, child container avoids conflict with existing PP border)
         local eg = CludesUI.CLUDES_GREEN
-        local slotHlCont = CreateFrame("Frame", nil, slotIndex)
+        local slotHlCont = CreateFrame("Frame", nil, slot)
         slotHlCont:SetAllPoints()
-        slotHlCont:SetFrameLevel(slotIndex:GetFrameLevel() + 2)
+        slotHlCont:SetFrameLevel(slot:GetFrameLevel() + 2)
         local slotBrd = slotPP and slotPP.CreateBorder(slotHlCont, eg.r, eg.g, eg.b, 1, 2, "OVERLAY", 7)
         if slotBrd then
             slotBrd:Hide()
         end
-        slotIndex._hlBrd = slotBrd
+        slot._hlBrd = slotBrd
         -- Text overlay (renders above border)
-        local pvTextOvr = CreateFrame("Frame", nil, slotIndex)
-        pvTextOvr:SetAllPoints(slotIndex)
+        local pvTextOvr = CreateFrame("Frame", nil, slot)
+        pvTextOvr:SetAllPoints(slot)
         -- +5: the keybind badge sits two levels under this overlay (+3/+4),
         -- above the slot border (+1) and the hosted-buff marker (+2).
-        pvTextOvr:SetFrameLevel(slotIndex:GetFrameLevel() + 5)
+        pvTextOvr:SetFrameLevel(slot:GetFrameLevel() + 5)
         pvTextOvr:EnableMouse(false)
-        slotIndex._pvTextOverlay = pvTextOvr
+        slot._pvTextOverlay = pvTextOvr
 
-        slotIndex._stackText = pvTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(slotIndex._stackText, FONT_PATH, 11)
-        slotIndex._stackText:SetPoint("BOTTOMRIGHT", pvTextOvr, "BOTTOMRIGHT", 0, 2)
-        slotIndex._stackText:SetJustifyH("RIGHT")
-        slotIndex._stackText:Hide()
-        local stackTxt = slotIndex._stackText
+        slot._stackText = pvTextOvr:CreateFontString(nil, "OVERLAY")
+        SetPVFont(slot._stackText, FONT_PATH, 11)
+        slot._stackText:SetPoint("BOTTOMRIGHT", pvTextOvr, "BOTTOMRIGHT", 0, 2)
+        slot._stackText:SetJustifyH("RIGHT")
+        slot._stackText:Hide()
+        local stackTxt = slot._stackText
 
         -- Keybind text (mirrors _keybindText on real CDM icons)
         local kbTxt = pvTextOvr:CreateFontString(nil, "OVERLAY")
@@ -898,34 +898,34 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         kbTxt:SetPoint("TOPLEFT", pvTextOvr, "TOPLEFT", 2, -2)
         kbTxt:SetJustifyH("LEFT")
         kbTxt:Hide()
-        slotIndex._keybindText = kbTxt
+        slot._keybindText = kbTxt
 
-        slotIndex:SetScript("OnEnter", function()
+        slot:SetScript("OnEnter", function()
             if dragSlot then
                 return
             end
             local bdHov = SelectedCDMBar()
             -- Custom shapes: tint the shape border instead of square edges
-            if slotIndex._shapeBorder and slotIndex._shapeBorder:IsShown() then
-                slotIndex._shapeBorder:SetVertexColor(eg.r, eg.g, eg.b, 1)
+            if slot._shapeBorder and slot._shapeBorder:IsShown() then
+                slot._shapeBorder:SetVertexColor(eg.r, eg.g, eg.b, 1)
             else
                 if slotBrd then
                     slotBrd:Show()
                 end
             end
-            ShowSlotTip(slotIndex)
+            ShowSlotTip(slot)
         end)
-        slotIndex:SetScript("OnLeave", function()
+        slot:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
             if dragSlot then
                 return
             end
             local bdHov = SelectedCDMBar()
-            if slotIndex._shapeBorder and slotIndex._shapeBorder:IsShown() then
-                if slotIndex._previewHostedBuff then
+            if slot._shapeBorder and slot._shapeBorder:IsShown() then
+                if slot._previewHostedBuff then
                     -- Hosted buff: restore the persistent gold tint, not
                     -- the bar border color.
-                    slotIndex._shapeBorder:SetVertexColor(1, 0.82, 0.25, 1)
+                    slot._shapeBorder:SetVertexColor(1, 0.82, 0.25, 1)
                 else
                     local bR, bG, bB = 0, 0, 0
                     if bdHov then
@@ -940,7 +940,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             end
                         end
                     end
-                    slotIndex._shapeBorder:SetVertexColor(bR, bG, bB, 1)
+                    slot._shapeBorder:SetVertexColor(bR, bG, bB, 1)
                 end
             else
                 if slotBrd then
@@ -949,11 +949,11 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         end)
 
-        slotIndex._slotIdx = position
+        slot._slotIdx = position
 
         -- Right-click: spell picker to replace; Middle-click: remove
         -- Default buff bar: no interaction (Blizzard controls the list)
-        slotIndex:SetScript("OnClick", function(self, btnFrame)
+        slot:SetScript("OnClick", function(self, btnFrame)
             if GetTime() - dragEndTime < 0.2 then
                 return
             end
@@ -1422,7 +1422,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end)
         end
 
-        slotIndex:SetScript("OnMouseDown", function(self, btnFrame)
+        slot:SetScript("OnMouseDown", function(self, btnFrame)
             if btnFrame ~= "LeftButton" then
                 return
             end
@@ -1457,7 +1457,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end)
         end)
 
-        slotIndex:SetScript("OnMouseUp", function(self, btnFrame)
+        slot:SetScript("OnMouseUp", function(self, btnFrame)
             if btnFrame == "LeftButton" and pendingDragSlot then
                 -- Mouse released before threshold not a drag, let OnClick handle it
                 pendingDragSlot = nil
@@ -1465,7 +1465,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         end)
 
-        return slotIndex
+        return slot
     end
 
     for i = 1, MAX_PREVIEW_ICONS do
@@ -1907,12 +1907,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     and not (groupsFv and groupsFv[ident])
                     and not (mod.CDM_AuraIconKeeps and mod.CDM_AuraIconKeeps(ident))
                 then
-                    local baseValue, live = NormalizeToBase(ident), ResolveToLive(ident)
-                    if not (known(ident) or known(baseValue) or known(live)) then
+                    local base, live = NormalizeToBase(ident), ResolveToLive(ident)
+                    if not (known(ident) or known(base) or known(live)) then
                         if listedFv == nil then
                             listedFv = mod.CDMForeverListedSet() or false
                         end
-                        unseen = listedFv and not (listedFv[ident] or listedFv[baseValue] or listedFv[live])
+                        unseen = listedFv and not (listedFv[ident] or listedFv[base] or listedFv[live])
                             or false
                     end
                 end
@@ -1984,8 +1984,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
 
         -- Per-row icon count for centering
-        local function RowIconCount(rowFrame)
-            if rowFrame == 0 then
+        local function RowIconCount(row)
+            if row == 0 then
                 return topRowCount
             end
             return bottomRowCount
@@ -2022,19 +2022,19 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Position helper: places frame at grid position (col, row).
         -- Center any row that has fewer icons than stride. `row` is the
         -- DATA row; the visual row flips when pvReversed.
-        local function PosAtGrid(widget, column, rowFrame)
+        local function PosAtGrid(widget, col, row)
             Pix.Size(widget, iconSize, iconH)
             widget:ClearAllPoints()
-            local rowCount = RowIconCount(rowFrame)
+            local rowCount = RowIconCount(row)
             local rowHasLess = (rowCount > 0 and rowCount < stride)
-            local vRow = pvReversed and (numRows - 1 - rowFrame) or rowFrame
+            local vRow = pvReversed and (numRows - 1 - row) or row
             local rowOffset = 0
             if isVert then
                 if rowHasLess then
                     rowOffset = math.floor((stride - rowCount) * (iconH + spacing) / 2)
                 end
                 local px = startX + vRow * (iconSize + spacing)
-                local py = startY - column * (iconH + spacing) - rowOffset
+                local py = startY - col * (iconH + spacing) - rowOffset
                 Pix.Point(widget, "TOPLEFT", self, "TOPLEFT", px, py)
                 widget._baseX = px
                 widget._baseY = py
@@ -2042,7 +2042,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if rowHasLess then
                     rowOffset = math.floor((stride - rowCount) * (iconSize + spacing) / 2)
                 end
-                local px = startX + column * (iconSize + spacing) + rowOffset
+                local px = startX + col * (iconSize + spacing) + rowOffset
                 local py = startY - vRow * (iconH + spacing)
                 Pix.Point(widget, "TOPLEFT", self, "TOPLEFT", px, py)
                 widget._baseX = px
@@ -2067,37 +2067,37 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Layout: fill bottom-up. Icons 1..topRowCount go to top row (row 0),
         -- remaining icons fill rows 1..numRows-1 (full bottom rows).
         for i = 1, math.min(gridSlots, MAX_PREVIEW_ICONS) do
-            local slotIndex = previewSlots[i]
-            slotIndex._slotIdx = i
+            local slot = previewSlots[i]
+            slot._slotIdx = i
             -- The assignedSpells indices this slot covers (a legacy-duplicate
             -- buff slot covers >1); nil when nothing was collapsed. Used by the
             -- settings popup's "Remove Spell" so it clears the whole duplicate.
-            slotIndex._dataGroup = popFrame._buffDispGroups and popFrame._buffDispGroups[i] or nil
+            slot._dataGroup = popFrame._buffDispGroups and popFrame._buffDispGroups[i] or nil
 
             -- Map sequential index to bottom-up grid position
-            local column, rowFrame
+            local col, row
             if i <= topRowCount then
-                column = i - 1
-                rowFrame = 0
+                col = i - 1
+                row = 0
             else
                 local bottomIdx = i - topRowCount - 1
-                column = bottomIdx % stride
-                rowFrame = 1 + math.floor(bottomIdx / stride)
+                col = bottomIdx % stride
+                row = 1 + math.floor(bottomIdx / stride)
             end
-            PosAtGrid(slotIndex, column, rowFrame)
+            PosAtGrid(slot, col, row)
 
             if i <= total then
                 -- Spell slot
                 local ident = tracked[i]
-                slotIndex._previewSpellID = nil -- reset each update
-                slotIndex._previewCdID = trackedCd and trackedCd[i] or nil
-                slotIndex._previewItemID = nil
-                slotIndex._previewHostedBuff = nil
-                slotIndex._previewIsEmptySlot = nil
+                slot._previewSpellID = nil -- reset each update
+                slot._previewCdID = trackedCd and trackedCd[i] or nil
+                slot._previewItemID = nil
+                slot._previewHostedBuff = nil
+                slot._previewIsEmptySlot = nil
                 -- What the hover tooltip names: the spell whose art shows, or the item.
-                slotIndex._previewArtID = nil
-                slotIndex._previewTipItemID = nil
-                slotIndex._previewBlizzHidden = nil
+                slot._previewArtID = nil
+                slot._previewTipItemID = nil
+                slot._previewBlizzHidden = nil
                 if ident then
                     local texture
                     local cdClaim = mod.CdClaimMarkerToCdID and mod.CdClaimMarkerToCdID(ident)
@@ -2142,10 +2142,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             if not texture and displayID ~= csid then
                                 texture = C_Spell.GetSpellTexture(csid)
                             end
-                            slotIndex._previewSpellID = csid
-                            slotIndex._previewArtID = displayID
-                            slotIndex._previewCdID = cdClaim
-                            slotIndex._previewHostedBuff = true
+                            slot._previewSpellID = csid
+                            slot._previewArtID = displayID
+                            slot._previewCdID = cdClaim
+                            slot._previewHostedBuff = true
                         else
                             -- Tracked trinket row with its buff down reads no
                             -- spellID: show the item worn in that slot.
@@ -2155,7 +2155,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             if type(eqSlot) == "number" and not issecretvalue(eqSlot) then
                                 local itemId = GetInventoryItemID("player", eqSlot)
                                 texture = itemId and C_Item.GetItemIconByID(itemId) or nil
-                                slotIndex._previewTipItemID = itemId
+                                slot._previewTipItemID = itemId
                             end
                         end
                     elseif hostedSid then
@@ -2167,62 +2167,62 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         if not texture and displayID ~= hostedSid then
                             texture = C_Spell.GetSpellTexture(hostedSid)
                         end
-                        slotIndex._previewSpellID = hostedSid
-                        slotIndex._previewArtID = displayID
-                        slotIndex._previewHostedBuff = true
+                        slot._previewSpellID = hostedSid
+                        slot._previewArtID = displayID
+                        slot._previewHostedBuff = true
                     elseif mod.IsEmptySlotMarker(ident) then
                         -- Empty Slot: blank placeholder, no icon/tooltip identity.
-                        slotIndex._previewIsEmptySlot = true
+                        slot._previewIsEmptySlot = true
                     elseif ident <= -100 then
                         -- On-use bag item: negated itemID. The art and the item the
                         -- live icon shows (a resolved potion variant, or Blizzard's
                         -- own row's art), so the preview matches the bar in game.
                         local dispID
                         texture, dispID = mod.ItemEntryPreview(edge.key, ident)
-                        slotIndex._previewItemID = -ident
-                        slotIndex._previewTipItemID = dispID or -ident
+                        slot._previewItemID = -ident
+                        slot._previewTipItemID = dispID or -ident
                     elseif ident < 0 then
                         -- Trinket slot: get icon from equipped item
                         local itemId = GetInventoryItemID("player", -ident)
                         texture = itemId and C_Item.GetItemIconByID(itemId) or nil
-                        slotIndex._previewTipItemID = itemId
+                        slot._previewTipItemID = itemId
                     else
                         -- Resolve to live override for texture lookup.
-                        local displayID = ResolveIconArt(ident, slotIndex._previewCdID)
+                        local displayID = ResolveIconArt(ident, slot._previewCdID)
                         texture = C_Spell.GetSpellTexture(displayID)
                         if not texture and displayID ~= ident then
                             texture = C_Spell.GetSpellTexture(ident)
                         end
-                        slotIndex._previewSpellID = ident
-                        slotIndex._previewArtID = displayID
-                        slotIndex._previewBlizzHidden = blizzHiddenSet and blizzHiddenSet[ident] or nil
+                        slot._previewSpellID = ident
+                        slot._previewArtID = displayID
+                        slot._previewBlizzHidden = blizzHiddenSet and blizzHiddenSet[ident] or nil
                     end
                     if texture then
-                        slotIndex._icon:SetTexture(texture)
-                        slotIndex._icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+                        slot._icon:SetTexture(texture)
+                        slot._icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
                         local pvUnlearned = (unlearnedSet and unlearnedSet[ident])
                             or (tcSet and tcSet[ident] == "off")
                             or (blizzHiddenSet and blizzHiddenSet[ident])
                             or false
-                        slotIndex._icon:SetDesaturated(pvUnlearned)
-                        slotIndex._icon:SetAlpha(pvUnlearned and 0.55 or 1)
+                        slot._icon:SetDesaturated(pvUnlearned)
+                        slot._icon:SetAlpha(pvUnlearned and 0.55 or 1)
                     else
-                        slotIndex._icon:SetTexture(nil)
+                        slot._icon:SetTexture(nil)
                     end
                 else
-                    slotIndex._icon:SetTexture(nil)
+                    slot._icon:SetTexture(nil)
                 end
             else
                 -- Blank slot (empty grid filler)
-                slotIndex._icon:SetTexture(nil)
-                slotIndex._previewSpellID = nil
-                slotIndex._previewBlizzHidden = nil
-                slotIndex._previewCdID = nil
-                slotIndex._previewItemID = nil
-                slotIndex._previewHostedBuff = nil
-                slotIndex._previewIsEmptySlot = nil
-                slotIndex._previewArtID = nil
-                slotIndex._previewTipItemID = nil
+                slot._icon:SetTexture(nil)
+                slot._previewSpellID = nil
+                slot._previewBlizzHidden = nil
+                slot._previewCdID = nil
+                slot._previewItemID = nil
+                slot._previewHostedBuff = nil
+                slot._previewIsEmptySlot = nil
+                slot._previewArtID = nil
+                slot._previewTipItemID = nil
             end
 
             local bSz = edge.borderSize or 1
@@ -2232,93 +2232,81 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             if bPx and bTex == "solid" then
                 bSz = bPx
             end
-            slotIndex._icon:ClearAllPoints()
-            Pix.Point(slotIndex._icon, "TOPLEFT", slotIndex, "TOPLEFT", bSz, -bSz)
-            Pix.Point(slotIndex._icon, "BOTTOMRIGHT", slotIndex, "BOTTOMRIGHT", -bSz, bSz)
-            slotIndex._icon:Show()
+            slot._icon:ClearAllPoints()
+            Pix.Point(slot._icon, "TOPLEFT", slot, "TOPLEFT", bSz, -bSz)
+            Pix.Point(slot._icon, "BOTTOMRIGHT", slot, "BOTTOMRIGHT", -bSz, bSz)
+            slot._icon:Show()
 
-            if Pix.GetBorders(slotIndex) then
-                Pix.SetBorderColor(slotIndex, bR, bG, bB, 1)
-                Pix.SetBorderSize(slotIndex, bSz)
+            if Pix.GetBorders(slot) then
+                Pix.SetBorderColor(slot, bR, bG, bB, 1)
+                Pix.SetBorderSize(slot, bSz)
             end
-            slotIndex._bg:SetColorTexture(
-                edge.bgR or 0.08,
-                edge.bgG or 0.08,
-                edge.bgB or 0.08,
-                edge.bgA or 0.6
-            )
-            if slotIndex._bg.SetSnapToPixelGrid then
-                slotIndex._bg:SetSnapToPixelGrid(false)
-                slotIndex._bg:SetTexelSnappingBias(0)
+            slot._bg:SetColorTexture(edge.bgR or 0.08, edge.bgG or 0.08, edge.bgB or 0.08, edge.bgA or 0.6)
+            if slot._bg.SetSnapToPixelGrid then
+                slot._bg:SetSnapToPixelGrid(false)
+                slot._bg:SetTexelSnappingBias(0)
             end
 
-            mod.ApplyShapeToCDMIcon(slotIndex, shape, edge)
+            mod.ApplyShapeToCDMIcon(slot, shape, edge)
             -- Blizzard Style: no CUI border or background; the live art pass
             -- adds the viewer's rounded mask and ring to the slot exactly as
             -- it does to a bar's own icons. The preview's overlays (text,
             -- hover and hosted-buff borders, glow) move above the ring, at
             -- the levels their live counterparts use.
             if CludesUI.BlizzStyle.Get("cdmicons") and mod.CdmApplyBlizzIconArt then
-                if Pix.GetBorders(slotIndex) then
-                    Pix.HideBorder(slotIndex)
+                if Pix.GetBorders(slot) then
+                    Pix.HideBorder(slot)
                 end
-                slotIndex._bg:Hide()
-                mod.CdmApplyBlizzIconArt(slotIndex)
-                local lvl = slotIndex:GetFrameLevel()
-                if slotIndex._pvTextOverlay then
-                    slotIndex._pvTextOverlay:SetFrameLevel(lvl + 23)
+                slot._bg:Hide()
+                mod.CdmApplyBlizzIconArt(slot)
+                local lvl = slot:GetFrameLevel()
+                if slot._pvTextOverlay then
+                    slot._pvTextOverlay:SetFrameLevel(lvl + 23)
                 end
-                if slotIndex._hlBrd then
-                    slotIndex._hlBrd:GetParent():SetFrameLevel(lvl + 17)
+                if slot._hlBrd then
+                    slot._hlBrd:GetParent():SetFrameLevel(lvl + 17)
                 end
-                if slotIndex._hostBrd then
-                    slotIndex._hostBrd:GetParent():SetFrameLevel(lvl + 16)
+                if slot._hostBrd then
+                    slot._hostBrd:GetParent():SetFrameLevel(lvl + 16)
                 end
-                if slotIndex._glowOverlay then
-                    slotIndex._glowOverlay:SetFrameLevel(lvl + 16)
+                if slot._glowOverlay then
+                    slot._glowOverlay:SetFrameLevel(lvl + 16)
                 end
             end
             -- Talent Conditions corner mark (built on first use; slots are shared across bars, so always
             -- repainted once it exists). After the style pass: it sits just under the text overlay's level.
-            if tcSet or slotIndex._tcMark then
-                mod.PaintTalentCondMark(slotIndex, tcSet and i <= total and tcSet[tracked[i]] or nil)
+            if tcSet or slot._tcMark then
+                mod.PaintTalentCondMark(slot, tcSet and i <= total and tcSet[tracked[i]] or nil)
             end
             -- For custom shapes, ensure the square highlight border stays hidden
             -- (ApplyShapeToCDMIcon hides the slot's own PP border but not _hlBrd)
             -- (Blizzard Style forces shape none, whatever the profile carries.)
             if
-                slotIndex._hlBrd
+                slot._hlBrd
                 and shape ~= "square"
                 and shape ~= "csquare"
                 and shape ~= "none"
                 and not CludesUI.BlizzStyle.Get("cdmicons")
             then
-                slotIndex._hlBrd:Hide()
+                slot._hlBrd:Hide()
             end
             -- Hosted-buff gold border: always on for a buff icon hosted on
             -- this CD/utility bar. Square-family shapes use the dedicated
             -- gold strips; masked shapes tint the shape border instead
             -- (their square strips are hidden, like the hover highlight).
-            if slotIndex._hostBrd then
-                if
-                    slotIndex._previewHostedBuff
-                    and not (slotIndex._shapeBorder and slotIndex._shapeBorder:IsShown())
-                then
-                    slotIndex._hostBrd:Show()
+            if slot._hostBrd then
+                if slot._previewHostedBuff and not (slot._shapeBorder and slot._shapeBorder:IsShown()) then
+                    slot._hostBrd:Show()
                 else
-                    slotIndex._hostBrd:Hide()
+                    slot._hostBrd:Hide()
                 end
             end
-            if
-                slotIndex._previewHostedBuff
-                and slotIndex._shapeBorder
-                and slotIndex._shapeBorder:IsShown()
-            then
-                slotIndex._shapeBorder:SetVertexColor(1, 0.82, 0.25, 1)
+            if slot._previewHostedBuff and slot._shapeBorder and slot._shapeBorder:IsShown() then
+                slot._shapeBorder:SetVertexColor(1, 0.82, 0.25, 1)
             end
 
             -- Stack count preview text
-            if slotIndex._stackText then
+            if slot._stackText then
                 if i <= total then
                     -- Show charge count for charge-based spells (default: on)
                     -- Match real bar styling exactly (RefreshCDMIconAppearance)
@@ -2352,11 +2340,11 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         scPoint = "BOTTOMRIGHT"
                         scY = scY + 2
                     end
-                    CludesUI.ApplyIconTextFont(slotIndex._stackText, scFont, scSize, "cdm")
-                    slotIndex._stackText:SetTextColor(scR, scG, scB)
-                    slotIndex._stackText:ClearAllPoints()
-                    slotIndex._stackText:SetPoint(scPoint, slotIndex, scPoint, scX, scY)
-                    local spellRef = slotIndex._previewSpellID
+                    CludesUI.ApplyIconTextFont(slot._stackText, scFont, scSize, "cdm")
+                    slot._stackText:SetTextColor(scR, scG, scB)
+                    slot._stackText:ClearAllPoints()
+                    slot._stackText:SetPoint(scPoint, slot, scPoint, scX, scY)
+                    local spellRef = slot._previewSpellID
                     local chargeInfo = spellRef
                         and C_Spell.GetSpellCharges
                         and C_Spell.GetSpellCharges(spellRef)
@@ -2378,45 +2366,45 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         showC = (sdSc.customSpellForceCount and sdSc.customSpellForceCount[spellRef]) or false
                     end
                     if showC and maxC and maxC > 1 then
-                        slotIndex._stackText:SetText(tostring(maxC))
-                        slotIndex._stackText:Show()
-                    elseif slotIndex._previewItemID and (edge.showItemCount ~= false) then
+                        slot._stackText:SetText(tostring(maxC))
+                        slot._stackText:Show()
+                    elseif slot._previewItemID and (edge.showItemCount ~= false) then
                         -- Preset potions/healthstones: fake item count so users can
                         -- preview and style the count text (mirrors charge preview).
-                        slotIndex._stackText:SetText("5")
-                        slotIndex._stackText:Show()
+                        slot._stackText:SetText("5")
+                        slot._stackText:Show()
                     else
-                        slotIndex._stackText:Hide()
+                        slot._stackText:Hide()
                     end
                 else
-                    slotIndex._stackText:Hide()
+                    slot._stackText:Hide()
                 end
             end
 
             -- Use the live renderer so font, anchors and badge alpha agree.
-            if slotIndex._keybindText then
-                mod.StyleCDMKeybind(slotIndex._keybindText, edge, slotIndex, 1, FONT_PATH)
-                local spellRef = slotIndex._previewSpellID
+            if slot._keybindText then
+                mod.StyleCDMKeybind(slot._keybindText, edge, slot, 1, FONT_PATH)
+                local spellRef = slot._previewSpellID
                 if edge.showKeybind and spellRef then
                     -- The live icons' lookup: id, override, base, then name.
                     local key = mod.ResolveCDMKeybind(spellRef)
                     if key then
-                        slotIndex._keybindText:SetText(key)
-                        slotIndex._keybindText:Show()
+                        slot._keybindText:SetText(key)
+                        slot._keybindText:Show()
                     else
-                        slotIndex._keybindText:Hide()
+                        slot._keybindText:Hide()
                     end
                 else
-                    slotIndex._keybindText:Hide()
+                    slot._keybindText:Hide()
                 end
                 -- StyleCDMKeybind above already styled the badge: visibility only.
-                mod.ShowCDMKeybindBadge(slotIndex._keybindText, edge)
+                mod.ShowCDMKeybindBadge(slot._keybindText, edge)
             end
 
             if i <= total then
-                slotIndex:Show()
+                slot:Show()
             else
-                slotIndex:Hide()
+                slot:Hide()
             end
         end
 

@@ -10,7 +10,7 @@ end -- one spec per class on WoW Forever, nothing to switch: no factory, no load
 local ADDON_NAME, mod = ...
 local L = mod.L
 local MEDIA = mod.MEDIA
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -22,18 +22,18 @@ local floor = math.floor
 local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  SPEC (specialisation, loot-spec, loadout popups)
@@ -65,8 +65,8 @@ local function HookLoadoutPointer()
     end)
 end
 
-mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     specInstances[#specInstances + 1] = instance
     HookLoadoutPointer()
@@ -146,9 +146,9 @@ mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
         specCache = {}
         numSpecs = GetNumSpecializations() or 0
         for idx = 1, numSpecs do
-            local ident, name, _, glyph, role = C_SpecializationInfo.GetSpecializationInfo(idx)
+            local ident, name, _, icon, role = C_SpecializationInfo.GetSpecializationInfo(idx)
             if ident then
-                specCache[idx] = { id = ident, name = name, icon = glyph, role = role }
+                specCache[idx] = { id = ident, name = name, icon = icon, role = role }
             end
         end
     end
@@ -228,7 +228,7 @@ mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
     local function BuildPopup(
         pool,
         hostFrame,
-        titleText,
+        title,
         entries,
         onClickEntry,
         noCatcher,
@@ -265,10 +265,10 @@ mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
         dialog._title:ClearAllPoints()
         dialog._title:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -PAD)
         local maxW, yOff
-        if titleText and titleText ~= "" then
+        if title and title ~= "" then
             mod.SetFont(dialog._title, fontSize)
             -- Localize here: these popups SetText directly instead of the Tip_* helpers that normally route fixed strings through the locale.
-            dialog._title:SetText(CludesUI.L(titleText))
+            dialog._title:SetText(CludesUI.L(title))
             dialog._title:SetTextColor(1, 1, 1, 1)
             dialog._title:Show()
             maxW = dialog._title:GetStringWidth()
@@ -739,7 +739,7 @@ mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
             -- Blizzard style: the game's own spec icon, cropped off its border.
             if (blockCfg.settings or {}).iconStyle == "wow" and specInfo and specInfo.icon then
                 specIcon:SetTexture(specInfo.icon)
-                Keys.CropStockIcon(specIcon)
+                K.CropStockIcon(specIcon)
             elseif file then
                 specIcon:SetTexture(SPEC_MEDIA .. file .. ".png")
                 specIcon:SetTexCoord(0, 1, 0, 1)
@@ -876,18 +876,18 @@ mod.BlockFactories.spec = function(blockCfg, slotIndex, contentFrame, barCtx)
             self:Hide()
             return
         end
-        local subFrame = subnavPool and subnavPool._popup
-        local subShown = subFrame and subFrame:IsShown()
+        local sub = subnavPool and subnavPool._popup
+        local subShown = sub and sub:IsShown()
         if
             specButton:IsMouseOver(8, -8, -8, 8)
             or dialog:IsMouseOver(8, -8, -8, 8)
-            or (subShown and subFrame:IsMouseOver(8, -8, -8, 8))
+            or (subShown and sub:IsMouseOver(8, -8, -8, 8))
         then
             return
         end
         dialog:Hide()
         if subShown then
-            subFrame:Hide()
+            sub:Hide()
         end
         self:Hide()
     end)

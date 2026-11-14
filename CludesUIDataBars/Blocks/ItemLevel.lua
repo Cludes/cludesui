@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local _G = _G
@@ -14,28 +14,28 @@ local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
 local format = string.format
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
-local ParkSecureFrame = Keys.ParkSecureFrame
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
+local ParkSecureFrame = K.ParkSecureFrame
 
 -------------------------------------------------------------------------------
 --  ITEM LEVEL (equipped / total, with an optional prefix)
 -------------------------------------------------------------------------------
-mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     -- PLAYER_REGEN_ENABLED: geometry and the secure click overlay both wait for regen, so the block needs a pass there.
     instance.events = {
@@ -59,7 +59,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
     btnFrame:EnableMouse(true)
     btnFrame:RegisterForClicks("AnyUp")
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
     local ilvlText = btnFrame:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, ilvlText)
 
@@ -100,26 +100,26 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
         EnsureClickButton()
 
         local s = D()
-        Keys.SetBlockIcon(glyph, blockCfg)
+        K.SetBlockIcon(icon, blockCfg)
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         local gap = ICON_GAP
 
         local sum, equipped = AvgIlvl()
         -- Published for the "Band" text swatch (and its options preview).
-        Keys.lastAvgIlvl = equipped or sum
+        K.lastAvgIlvl = equipped or sum
 
         local p = s.precision
         if p == nil then
             p = 0
         end
-        local modeName = s.value or "equipped"
+        local mode = s.value or "equipped"
         local body
-        if modeName == "total" then
+        if mode == "total" then
             body = Fmt(sum, p)
-        elseif modeName == "both" then
+        elseif mode == "both" then
             body = Fmt(equipped, p) .. " / " .. Fmt(sum, p)
         else
             body = Fmt(equipped, p)
@@ -139,15 +139,15 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
         local iconSz = 0
         if prefixText == "icon" then
             iconSz = fontSize + 2
-            glyph:Show()
+            icon:Show()
         else
-            glyph:Hide()
+            icon:Hide()
         end
 
         mod.SetFont(ilvlText, fontSize, barCfg)
         do
             local ir, ig, ib = IconColorOf(blockCfg)
-            glyph:SetVertexColor(ir, ig, ib, 1)
+            icon:SetVertexColor(ir, ig, ib, 1)
         end
         if mouseOver then
             ilvlText:SetTextColor(mod.GetAccent())
@@ -163,24 +163,24 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
         end
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             ilvlText:SetText(textValue)
             local totalH = 8
             if iconSz > 0 then
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
             mod.SetWrappedText(ilvlText, innerW, "CENTER")
             ilvlText:ClearAllPoints()
             if iconSz > 0 then
-                ilvlText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+                ilvlText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
                 ilvlText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
             totalH = totalH + mod.SnapToPixelGrid(ilvlText:GetStringHeight()) + 4
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -188,9 +188,9 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
             mod.ResetInlineText(ilvlText, "LEFT")
             ilvlText:SetText(textValue)
             if iconSz > 0 then
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
             ilvlText:ClearAllPoints()
             local xOff = 0
@@ -200,8 +200,8 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
             ilvlText:SetPoint("LEFT", btnFrame, "LEFT", xOff, 0)
             local tw = mod.SnapToPixelGrid(ilvlText:GetStringWidth())
             local totalW = min(slotW, xOff + tw + 4)
-            contentFrame:SetSize(upper(totalW, 10), barH)
-            btnFrame:SetSize(upper(totalW, 10), barH)
+            contentFrame:SetSize(max(totalW, 10), barH)
+            btnFrame:SetSize(max(totalW, 10), barH)
         end
 
         MaybeRelayout(instance)
@@ -312,9 +312,9 @@ mod.BlockFactories.ilvl = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

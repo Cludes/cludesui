@@ -42,10 +42,10 @@ local function PNG(name)
     return { file = MEDIA .. name, w = 18, h = 18, gold = true }
 end
 -- A kit entry: the base button's fields, then the entry's own.
-local function Entry(baseValue, t)
+local function Entry(base, t)
     t = t or {}
-    if baseValue then
-        for k, val in pairs(baseValue) do
+    if base then
+        for k, val in pairs(base) do
             if t[k] == nil then
                 t[k] = val
             end
@@ -336,14 +336,14 @@ function CHAT.SB_BuildBackdrop(sidebar, d)
     edge:SetAllPoints()
     edge:SetFrameLevel(sidebar:GetFrameLevel())
     edge:EnableMouse(false)
-    local fillTex = edge:CreateTexture(nil, "BACKGROUND")
-    fillTex:SetPoint("TOPLEFT", sidebar, "TOPLEFT", -2, 3)
-    fillTex:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 2, -6)
+    local fill = edge:CreateTexture(nil, "BACKGROUND")
+    fill:SetPoint("TOPLEFT", sidebar, "TOPLEFT", -2, 3)
+    fill:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 2, -6)
     local function Corner(anchorPoint, posX, posY, l, r, t, b)
         local c = edge:CreateTexture(nil, "BORDER")
         c:SetTexture(BD .. "UI-ChatFrame-BorderCorner")
         c:SetSize(8, 8)
-        c:SetPoint(anchorPoint, fillTex, anchorPoint, posX, posY)
+        c:SetPoint(anchorPoint, fill, anchorPoint, posX, posY)
         c:SetTexCoord(l, r, t, b)
         return c
     end
@@ -377,7 +377,7 @@ function CHAT.SB_BuildBackdrop(sidebar, d)
     topY:SetHeight(16)
     topY:SetPoint("TOPLEFT", tl, "TOPRIGHT")
     topY:SetPoint("TOPRIGHT", tr, "TOPLEFT")
-    d.sbBackdrop, d.sbFill = edge, fillTex
+    d.sbBackdrop, d.sbFill = edge, fill
     d.sbRims = { tl, bl, tr, br, leftX, right, bottom, topY }
     if CHAT.SB_SyncBackdrop then
         CHAT.SB_SyncBackdrop(true)
@@ -389,8 +389,8 @@ end
 function CHAT._SB_SyncBackdropImpl(force)
     local cf1 = _G.ChatFrame1
     local d = cf1 and CFD(cf1)
-    local fillTex = d and d.sbFill
-    if not fillTex then
+    local fill = d and d.sbFill
+    if not fill then
         return
     end
     -- Hidden (Hide Sidebar Background): nothing to paint; showing it again
@@ -419,7 +419,7 @@ function CHAT._SB_SyncBackdropImpl(force)
         return
     end
     m[1], m[2], m[3], m[4] = r, g, b, a
-    fillTex:SetColorTexture(r, g, b, a)
+    fill:SetColorTexture(r, g, b, a)
     local rims = d.sbRims
     for idx = 1, #rims do
         rims[idx]:SetVertexColor(r, g, b, a)

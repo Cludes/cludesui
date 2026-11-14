@@ -113,9 +113,9 @@ end
 
 --- The slot this item has on the list, if any.
 function module.BisSlotOf(itemId)
-    for slotIndex, ident in pairs(List()) do
+    for slot, ident in pairs(List()) do
         if ident == itemId then
-            return slotIndex
+            return slot
         end
     end
 end
@@ -130,9 +130,9 @@ function module.ToggleBis(itemLink)
     if not ident then
         return Say("that is not an item.")
     end
-    local slotIndex = module.BisSlotOf(ident)
-    if slotIndex then
-        List()[slotIndex] = nil
+    local slot = module.BisSlotOf(ident)
+    if slot then
+        List()[slot] = nil
         Say(("took %s off your list."):format(select(2, C_Item.GetItemInfo(ident)) or ("item " .. ident)))
         if Refresh then
             Refresh()
@@ -144,18 +144,18 @@ function module.ToggleBis(itemLink)
     if not slots then
         return Say("that item is not gear.")
     end
-    local targetUnit = slots[1]
+    local target = slots[1]
     for _, s in ipairs(slots) do
         if not List()[s] then
-            targetUnit = s
+            target = s
             break
         end
     end
-    List()[targetUnit] = ident
+    List()[target] = ident
     Say(
         ("%s is your BiS for %s."):format(
             select(2, C_Item.GetItemInfo(ident)) or ("item " .. ident),
-            SLOT_NAME[targetUnit]
+            SLOT_NAME[target]
         )
     )
     if Refresh then
@@ -175,18 +175,18 @@ function module.ExportBis()
 end
 
 function module.ImportBis(textValue)
-    local classFile, body = (textValue or ""):match("^%s*CUIBIS1:(%u+):([%d=,]*)%s*$")
-    if not classFile then
+    local class, body = (textValue or ""):match("^%s*CUIBIS1:(%u+):([%d=,]*)%s*$")
+    if not class then
         return Say("that is not a CludesUI BiS line.")
     end
-    if classFile ~= CLASS then
+    if class ~= CLASS then
         return Say("that list is for another class.")
     end
     local entries, num = {}, 0
-    for slotIndex, ident in body:gmatch("(%d+)=(%d+)") do
-        slotIndex, ident = tonumber(slotIndex), tonumber(ident)
-        if SLOT_NAME[slotIndex] then
-            entries[slotIndex] = ident
+    for slot, ident in body:gmatch("(%d+)=(%d+)") do
+        slot, ident = tonumber(slot), tonumber(ident)
+        if SLOT_NAME[slot] then
+            entries[slot] = ident
             num = num + 1
         end
     end
@@ -224,12 +224,12 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if type(ident) ~= "number" or Secret(ident) then
             return
         end
-        local slotIndex = module.BisSlotOf(ident)
-        if slotIndex then
+        local slot = module.BisSlotOf(ident)
+        if slot then
             tooltip:AddLine(
                 ("|cffff9933*|r %sBiS for %s|r%s"):format(
                     CludesUI.Kit.AccentHex(),
-                    SLOT_NAME[slotIndex],
+                    SLOT_NAME[slot],
                     module.Owned(ident) and "  |cff60d080(yours)|r" or ""
                 )
             )
@@ -249,15 +249,15 @@ local function Announce(itemLink)
     if not ident or module.Owned(ident) then
         return
     end
-    local slotIndex = module.BisSlotOf(ident)
-    if not slotIndex then
+    local slot = module.BisSlotOf(ident)
+    if not slot then
         return
     end
     if said[ident] and GetTime() - said[ident] < 30 then
         return
     end
     said[ident] = GetTime()
-    local textValue = ("BiS dropped: %s (%s)"):format(itemLink, SLOT_NAME[slotIndex])
+    local textValue = ("BiS dropped: %s (%s)"):format(itemLink, SLOT_NAME[slot])
     if RaidNotice_AddMessage and RaidWarningFrame then
         RaidNotice_AddMessage(
             RaidWarningFrame,

@@ -26,7 +26,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function SavedDB()
+    local function DB()
         return mod.DB()
     end
 
@@ -43,7 +43,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function NotEnabled()
-        return not SavedDB().enabled
+        return not DB().enabled
     end
 
     -- Why a control is locked, shown as written (rawTooltip).
@@ -163,10 +163,10 @@ initFrame:SetScript("OnEvent", function(self)
         for k in pairs(gearIcons) do
             gearIcons[k] = nil
         end
-        for _, group in ipairs(mod.ListEquipmentSets()) do
-            entries[#entries + 1] = { key = group.name, text = group.name }
-            gearIcons[group.name] = group.icon
-            sig[#sig + 1] = tostring(group.name) .. "=" .. tostring(group.icon)
+        for _, set in ipairs(mod.ListEquipmentSets()) do
+            entries[#entries + 1] = { key = set.name, text = set.name }
+            gearIcons[set.name] = set.icon
+            sig[#sig + 1] = tostring(set.name) .. "=" .. tostring(set.icon)
         end
         return entries, table.concat(sig, "\n")
     end
@@ -260,11 +260,11 @@ initFrame:SetScript("OnEvent", function(self)
             end
             return tostring(zone) .. "  " .. TXT_OPEN_WORLD
         end
-        local kindOf = INSTANCE_KIND[context.instanceType] or INSTANCE_KIND_OTHER
+        local kind = INSTANCE_KIND[context.instanceType] or INSTANCE_KIND_OTHER
         if context.difficultyName and context.difficultyName ~= "" then
-            kindOf = kindOf .. ", " .. context.difficultyName
+            kind = kind .. ", " .. context.difficultyName
         end
-        return tostring(context.name) .. "  " .. Grey(kindOf)
+        return tostring(context.name) .. "  " .. Grey(kind)
     end
 
     -- The difficulty a per-difficulty assignment here covers. A running key
@@ -445,7 +445,7 @@ initFrame:SetScript("OnEvent", function(self)
                 text = "Enable Loadout Manager",
                 tooltip = "Swaps gear and talents as you change content.",
                 getValue = function()
-                    return SavedDB().enabled
+                    return DB().enabled
                 end,
                 setValue = function(val)
                     mod.SetEnabled(val)
@@ -488,7 +488,7 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 },
                 function(k)
-                    return SavedDB()[k == "gear" and "gearEnabled" or "talentEnabled"] and true or false
+                    return DB()[k == "gear" and "gearEnabled" or "talentEnabled"] and true or false
                 end,
                 function(k, val)
                     mod.SetChannelEnabled(k, val)
@@ -516,7 +516,7 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Queue In Combat",
                         tooltip = "Apply a swap due in combat once it ends.",
                         get = function()
-                            return SavedDB().queueInCombat and true or false
+                            return DB().queueInCombat and true or false
                         end,
                         set = function(val)
                             mod.SetQueueInCombat(val)
@@ -527,10 +527,10 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Re-Swap On Spec Change",
                         tooltip = "Swap again on a spec change in an instance.",
                         get = function()
-                            return SavedDB().specSwap and true or false
+                            return DB().specSwap and true or false
                         end,
                         set = function(val)
-                            SavedDB().specSwap = val and true or false
+                            DB().specSwap = val and true or false
                         end,
                     },
                 },
@@ -544,7 +544,7 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Talent-Change Warning",
             tooltip = "Show DON'T MOVE while talents change.",
             getValue = function()
-                return SavedDB().specWarning and true or false
+                return DB().specWarning and true or false
             end,
             setValue = function(val)
                 mod.SetSpecWarning(val)
@@ -553,10 +553,10 @@ initFrame:SetScript("OnEvent", function(self)
             type = "toggle",
             text = "Announce Swaps In Chat",
             getValue = function()
-                return SavedDB().announce and true or false
+                return DB().announce and true or false
             end,
             setValue = function(val)
-                SavedDB().announce = val and true or false
+                DB().announce = val and true or false
             end,
         })
         posY = posY - hgt
@@ -623,9 +623,9 @@ initFrame:SetScript("OnEvent", function(self)
         local gearValues, gearOrder, gearUpdate, gearAttach =
             LivePicker(DIM .. CludesUI.L("No gear set") .. "|r", GearEntries, {
                 icon = function(key)
-                    local glyph = gearIcons[key]
-                    if glyph then
-                        return glyph, 0.08, 0.92, 0.08, 0.92
+                    local icon = gearIcons[key]
+                    if icon then
+                        return icon, 0.08, 0.92, 0.08, 0.92
                     end
                 end,
             })
@@ -1006,12 +1006,12 @@ initFrame:SetScript("OnEvent", function(self)
 
         for idx = 1, #TYPE_LAYOUT, 2 do
             local leftX, right = TYPE_INFO[TYPE_LAYOUT[idx]], TYPE_INFO[TYPE_LAYOUT[idx + 1]]
-            local rowFrame
-            rowFrame, hgt = W:DualRow(hostFrame, posY, TypeHalf(leftX), TypeHalf(right))
+            local row
+            row, hgt = W:DualRow(hostFrame, posY, TypeHalf(leftX), TypeHalf(right))
             posY = posY - hgt
-            TypeControls(rowFrame._leftRegion, leftX)
+            TypeControls(row._leftRegion, leftX)
             if right then
-                TypeControls(rowFrame._rightRegion, right)
+                TypeControls(row._rightRegion, right)
             end
         end
 

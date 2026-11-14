@@ -113,14 +113,14 @@ local function IsFile(art)
     return art:find("\\", 1, true) ~= nil
 end
 
-local function TryArt(glyph, art)
+local function TryArt(icon, art)
     if IsFile(art) then
-        return glyph:SetTexture(art)
+        return icon:SetTexture(art)
     end
     if not C_Texture.GetAtlasInfo(art) then
         return false
     end
-    glyph:SetAtlas(art)
+    icon:SetAtlas(art)
     return true
 end
 
@@ -146,26 +146,26 @@ local function ClassIcon(token)
 end
 
 local function Paint(pin, npc)
-    local glyph, kindOf = pin.icon, npc[3]
+    local icon, kind = pin.icon, npc[3]
     SetRound(pin, false)
-    for _, art in ipairs(MAP_ART[kindOf] or EMPTY) do
-        if TryArt(glyph, art) then
-            glyph:SetTexCoord(0, 1, 0, 1)
+    for _, art in ipairs(MAP_ART[kind] or EMPTY) do
+        if TryArt(icon, art) then
+            icon:SetTexCoord(0, 1, 0, 1)
             pin.border:Hide()
             return
         end
     end
-    if ROUND_ART[kindOf] then
+    if ROUND_ART[kind] then
         SetRound(pin, true)
-        glyph:SetTexture(CATEGORIES[kindOf][2])
-        glyph:SetTexCoord(0, 1, 0, 1)
+        icon:SetTexture(CATEGORIES[kind][2])
+        icon:SetTexCoord(0, 1, 0, 1)
         pin.border:Hide()
         return
     end
-    glyph:SetTexture(
-        CATEGORIES[kindOf][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
+    icon:SetTexture(
+        CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
     )
-    glyph:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
+    icon:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
     pin.border:Show()
 end
 
@@ -176,9 +176,9 @@ local function ShowTip(pin)
     end
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
-    local titleText = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if titleText ~= npc[4] then
-        GameTooltip:AddLine(titleText, CludesUI.Kit.Accent())
+    local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
+    if title ~= npc[4] then
+        GameTooltip:AddLine(title, CludesUI.Kit.Accent())
     end
     GameTooltip:Show()
 end
@@ -213,28 +213,28 @@ local function FlightsElsewhere()
     return mt and mt.On and mt.On("flights")
 end
 
-local function Wanted(npc, faction, classFile, shops)
-    local kindOf = npc[3]
-    local category = CATEGORIES[kindOf]
+local function Wanted(npc, faction, class, shops)
+    local kind = npc[3]
+    local category = CATEGORIES[kind]
     if not category or not Get(category[1]) then
         return false
     end
     if not (npc[7] or ""):find(faction, 1, true) then
         return false
     end
-    if kindOf == "mail" or kindOf == "spirit" then
+    if kind == "mail" or kind == "spirit" then
         return true
     end
-    if not (shops or EVERYWHERE[kindOf]) then
+    if not (shops or EVERYWHERE[kind]) then
         return false
     end
-    if kindOf == "class" and npc[6] ~= classFile then
+    if kind == "class" and npc[6] ~= class then
         return false
     end
-    if kindOf == "stable" and classFile ~= "HUNTER" then
+    if kind == "stable" and class ~= "HUNTER" then
         return false
     end
-    if kindOf == "flight" and FlightsElsewhere() then
+    if kind == "flight" and FlightsElsewhere() then
         return false
     end
     return true
@@ -271,8 +271,8 @@ local function Place(npc)
         pins[used] = p
     end
     p.npc, p.x, p.y = npc, npc[1] / 100, npc[2] / 100
-    local dim = Get("size")
-    p:SetSize(dim, dim)
+    local size = Get("size")
+    p:SetSize(size, size)
     Paint(p, npc)
     Anchor(p)
     p:Show()
@@ -289,11 +289,11 @@ local function Draw()
     end
     local d = Data()
     local faction = Faction()
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local shops = not Get("capitalsOnly") or d.capitals[mapID]
     for _, entries in ipairs({ d.npcs[mapID], d.mail[mapID], d.spirit[mapID] }) do
         for _, npc in ipairs(entries or EMPTY) do
-            if Wanted(npc, faction, classFile, shops) then
+            if Wanted(npc, faction, class, shops) then
                 Place(npc)
             end
         end
@@ -361,15 +361,15 @@ local spots = {}
 
 local function MiniNew()
     local pin = NewPin(Minimap)
-    local dim = Get("size") * 0.9
-    pin:SetSize(dim, dim)
+    local size = Get("size") * 0.9
+    pin:SetSize(size, size)
     return pin
 end
 
 local function MiniPaint(pin, entries, idx)
     pin.npc = entries[idx]
-    local dim = Get("size") * 0.9
-    pin:SetSize(dim, dim)
+    local size = Get("size") * 0.9
+    pin:SetSize(size, size)
     Paint(pin, entries[idx])
 end
 

@@ -9,7 +9,7 @@ end -- no Great Vault on WoW Forever: no factory, no keystone feed (the main fil
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -21,21 +21,21 @@ local wipe = wipe
 local format = string.format
 local tsort = table.sort
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -------------------------------------------------------------------------------
 --  GREAT VAULT (weekly reward progress + owned / party keystones)
@@ -107,9 +107,9 @@ local function GVRowTokens(activityType, isRaid)
         local details = acts and acts[idx]
         local textValue, status = "-", "empty"
         if details then
-            local progress = upper(0, tonumber(details.progress) or 0)
-            local threshold = upper(0, tonumber(details.threshold) or 0)
-            local level = upper(0, tonumber(details.level) or 0)
+            local progress = max(0, tonumber(details.progress) or 0)
+            local threshold = max(0, tonumber(details.threshold) or 0)
+            local level = max(0, tonumber(details.level) or 0)
             if threshold > 0 then
                 if progress >= threshold then
                     status = "done"
@@ -365,8 +365,8 @@ local function GVBuildPartyRows()
             end
             local dungeon = details and GVDungeonName(details.mapID)
             if dungeon then
-                local _, classFile = UnitClass(unitToken)
-                local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                local _, class = UnitClass(unitToken)
+                local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                 GVAddPartyRow(
                     GetUnitName(unitToken) or unitToken,
                     dungeon,
@@ -389,8 +389,8 @@ local function GVBuildPartyRows()
     return _gvPartyCount
 end
 
-mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = { "GROUP_ROSTER_UPDATE", "PLAYER_ENTERING_WORLD" }
 
@@ -401,15 +401,15 @@ mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barC
     btnFrame:EnableMouse(true)
     btnFrame:RegisterForClicks("AnyUp")
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
-    Keys.SetBlockIcon(glyph, blockCfg)
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
+    K.SetBlockIcon(icon, blockCfg)
     local labelText = btnFrame:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, labelText)
 
     function instance:Refresh()
         local barCfg = barCtx.cfg
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
         -- Core translator, not the file's English-only `L` table: vault terms share catalog entries with the minimap's vault tooltip.
         local textValue = CludesUI.L("Great Vault")
@@ -417,17 +417,17 @@ mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barC
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             mod.SetFont(labelText, fontSize, barCfg)
             labelText:SetText(textValue)
-            glyph:SetSize(iconSz, iconSz)
-            glyph:ClearAllPoints()
-            glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+            icon:SetSize(iconSz, iconSz)
+            icon:ClearAllPoints()
+            icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             mod.SetWrappedText(labelText, innerW, "CENTER")
             labelText:ClearAllPoints()
-            labelText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+            labelText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             local totalH = 8 + iconSz + 2 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -436,26 +436,26 @@ mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barC
             mod.SetFont(labelText, fontSize, barCfg)
             mod.ResetInlineText(labelText, "LEFT")
             labelText:SetText(textValue)
-            glyph:SetSize(iconSz, iconSz)
-            glyph:ClearAllPoints()
-            glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+            icon:SetSize(iconSz, iconSz)
+            icon:ClearAllPoints()
+            icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             labelText:ClearAllPoints()
             labelText:SetPoint("LEFT", btnFrame, "LEFT", iconSz + gap, 0)
             local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
             local totalW = min(slotW, iconSz + gap + tw + 4)
-            contentFrame:SetSize(upper(totalW, 10), barH)
-            btnFrame:SetSize(upper(totalW, 10), barH)
+            contentFrame:SetSize(max(totalW, 10), barH)
+            btnFrame:SetSize(max(totalW, 10), barH)
         end
 
         if mouseOver then
             local ar, ag, ab = mod.GetAccent()
             labelText:SetTextColor(ar, ag, ab, 1)
-            glyph:SetVertexColor(ar, ag, ab, 1)
+            icon:SetVertexColor(ar, ag, ab, 1)
         else
             local cbr, cbg, cbb = BlockColorOf(blockCfg)
             local ir, ig, ib = IconColorOf(blockCfg)
             labelText:SetTextColor(cbr, cbg, cbb, 1)
-            glyph:SetVertexColor(ir, ig, ib, 1)
+            icon:SetVertexColor(ir, ig, ib, 1)
         end
         MaybeRelayout(instance)
     end
@@ -552,9 +552,9 @@ mod.BlockFactories.greatvault = function(blockCfg, slotIndex, contentFrame, barC
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

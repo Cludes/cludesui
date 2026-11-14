@@ -77,9 +77,9 @@ local fonted = {} -- [i] = { fs, size }
 local buttonLabels = {} -- the footer buttons' labels
 local fontKey, fontFile, fontFlags
 
-local function SetTCFont(fontStr, dim)
-    fonted[#fonted + 1] = { fs = fontStr, size = dim }
-    CludesUI.ApplyModuleFont(fontStr, nil, dim, fontKey)
+local function SetTCFont(fontStr, size)
+    fonted[#fonted + 1] = { fs = fontStr, size = size }
+    CludesUI.ApplyModuleFont(fontStr, nil, size, fontKey)
 end
 
 local function UseFont(key)
@@ -110,13 +110,13 @@ local function ReadNode(configID, nodeID, details)
     local entries = {}
     for _, entryID in ipairs(details.entryIDs or EMPTY) do
         local record = C_Traits.GetEntryInfo(configID, entryID)
-        local spec_def = record and record.definitionID and C_Traits.GetDefinitionInfo(record.definitionID)
-        local spellId = spec_def and spec_def.spellID
+        local def = record and record.definitionID and C_Traits.GetDefinitionInfo(record.definitionID)
+        local spellId = def and def.spellID
         if spellId then
             entries[#entries + 1] = {
                 entryID = entryID,
                 spellID = spellId,
-                icon = spec_def.overrideIcon or C_Spell.GetSpellTexture(spellId) or 134400,
+                icon = def.overrideIcon or C_Spell.GetSpellTexture(spellId) or 134400,
             }
         end
     end
@@ -242,10 +242,10 @@ local function ReadForeverTrees()
         local cells = CludesUI.TalentTreeGrid(configID, t.nodes)
         local nodes = {}
         for _, nodeID in ipairs(t.nodes) do
-            local cellFrame = cells[nodeID]
-            local node = cellFrame and ReadNode(configID, nodeID, cellFrame.info)
+            local cell = cells[nodeID]
+            local node = cell and ReadNode(configID, nodeID, cell.info)
             if node then
-                node.x, node.y = cellFrame.col, cellFrame.row
+                node.x, node.y = cell.col, cell.row
                 if node.x > span.x then
                     span.x = node.x
                 end
@@ -499,19 +499,19 @@ local function LayoutPanel(panelFrame, nodes, span)
         end
         for _, num in ipairs(nodes) do
             for _, edge in ipairs(num.edges or EMPTY) do
-                local targetUnit = edge.targetNode and byID[edge.targetNode]
-                if targetUnit then
+                local target = edge.targetNode and byID[edge.targetNode]
+                if target then
                     usedLines = usedLines + 1
-                    local lineTex = lines[usedLines]
-                    if not lineTex then
-                        lineTex = area:CreateLine(nil, "BACKGROUND")
-                        lineTex:SetThickness(1.5)
-                        lines[usedLines] = lineTex
+                    local line = lines[usedLines]
+                    if not line then
+                        line = area:CreateLine(nil, "BACKGROUND")
+                        line:SetThickness(1.5)
+                        lines[usedLines] = line
                     end
-                    lineTex:SetColorTexture(0.45, 0.45, 0.45, 0.6)
-                    lineTex:SetStartPoint("TOPLEFT", area, num._cx, -num._cy)
-                    lineTex:SetEndPoint("TOPLEFT", area, targetUnit._cx, -targetUnit._cy)
-                    lineTex:Show()
+                    line:SetColorTexture(0.45, 0.45, 0.45, 0.6)
+                    line:SetStartPoint("TOPLEFT", area, num._cx, -num._cy)
+                    line:SetEndPoint("TOPLEFT", area, target._cx, -target._cy)
+                    line:Show()
                 end
             end
         end
@@ -604,15 +604,15 @@ LayoutOffTree = function()
         for idx = 1, num do
             local c = offTree[idx]
             local chip = chips[idx] or MakeChip(idx)
-            local column = (idx - 1) % CHIP_COLS
-            local rowFrame = math.floor((idx - 1) / CHIP_COLS)
+            local col = (idx - 1) % CHIP_COLS
+            local row = math.floor((idx - 1) / CHIP_COLS)
             chip:ClearAllPoints()
             chip:SetPoint(
                 "TOPLEFT",
                 offFrame,
                 "TOPLEFT",
-                column * (CHIP_W + CHIP_GAP_X),
-                -(OFF_LABEL_H + rowFrame * (CHIP_H + CHIP_GAP_Y))
+                col * (CHIP_W + CHIP_GAP_X),
+                -(OFF_LABEL_H + row * (CHIP_H + CHIP_GAP_Y))
             )
             chip.index = idx
             chip.x:SetAlpha(0.6)
@@ -643,10 +643,10 @@ end
 -------------------------------------------------------------------------------
 --  Frames (built once, on first open)
 -------------------------------------------------------------------------------
-local function MakePanel(slotPos)
+local function MakePanel(index)
     local widget = CreateFrame("Frame", nil, dialog)
     widget:SetSize(PANEL_W, PANEL_H)
-    widget:SetPoint("TOPLEFT", dialog, "TOPLEFT", SIDE_PAD + (slotPos - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
+    widget:SetPoint("TOPLEFT", dialog, "TOPLEFT", SIDE_PAD + (index - 1) * (PANEL_W + PANEL_GAP), -HEADER_H)
     local backdrop = widget:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.060, 0.049, 0.037, 1)
@@ -668,7 +668,7 @@ local function MakePanel(slotPos)
     empty:SetText(CludesUI.L("Talent data is not available right now."))
     empty:Hide()
 
-    panels[slotPos] = {
+    panels[index] = {
         frame = widget,
         label = labelText,
         area = area,

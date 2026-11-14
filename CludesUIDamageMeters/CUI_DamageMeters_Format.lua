@@ -19,7 +19,7 @@ Inner.broken = true
 
 local CUI = CludesUI
 
-local BAR_TEX, SavedDB, _deathStamps = Inner.BAR_TEX, Inner.DB, Inner._deathStamps
+local BAR_TEX, DB, _deathStamps = Inner.BAR_TEX, Inner.DB, Inner._deathStamps
 local _targetsCache, CleanupFeignCache = Inner._targetsCache, Inner.CleanupFeignCache
 local GetCurrentViewDuration = Inner.GetCurrentViewDuration
 
@@ -42,8 +42,8 @@ end
 -- name, so each takes a font family: Cyrillic, Korean and Chinese names draw in
 -- the client's own faces where the chosen font has no such letters. Every font
 -- write to these strings goes through here (a plain SetFont would pin the face).
-local function SetDMFont(fontStr, dim, flagsOverride, fontOverride)
-    CludesUI.ApplyModuleFontFamily(fontStr, fontOverride, dim, "damageMeters", flagsOverride)
+local function SetDMFont(fontStr, size, flagsOverride, fontOverride)
+    CludesUI.ApplyModuleFontFamily(fontStr, fontOverride, size, "damageMeters", flagsOverride)
 end
 
 -- Accent color helper
@@ -86,13 +86,13 @@ local function AppendDMSharedMedia()
 end
 
 local function GetBarTexturePath()
-    local conf = SavedDB()
+    local conf = DB()
     local key = conf and conf.barTexture or "none"
     return CUI.ResolveTexturePath(DM_BAR_TEXTURES, key, BAR_TEX), key
 end
 
 local function GetBreakdownBarTexturePath()
-    local conf = SavedDB()
+    local conf = DB()
     local key = conf and conf.breakdownBarTexture
     if not key or key == "match" then
         key = conf and conf.barTexture or "none"
@@ -104,14 +104,14 @@ end
 local THIN_LINE_KEYS = { ["thin-line-top"] = "TOP", ["thin-line-bottom"] = "BOTTOM" }
 local THIN_LINE_PX = 1
 
-local function SetupThinLine(fillTex, edge)
-    if not fillTex._thinLine then
-        local tl = CreateFrame("StatusBar", nil, fillTex)
+local function SetupThinLine(fill, edge)
+    if not fill._thinLine then
+        local tl = CreateFrame("StatusBar", nil, fill)
         tl:SetStatusBarTexture(BAR_TEX)
-        fillTex._thinLine = tl
+        fill._thinLine = tl
         -- Hook SetStatusBarColor to forward to overlay
-        local origSSBC = fillTex.SetStatusBarColor
-        fillTex.SetStatusBarColor = function(self, r, g, b, a)
+        local origSSBC = fill.SetStatusBarColor
+        fill.SetStatusBarColor = function(self, r, g, b, a)
             if self._thinLine and self._thinLineActive then
                 self._thinLine:SetStatusBarColor(r, g, b, a)
                 origSSBC(self, 0, 0, 0, 0)
@@ -120,63 +120,63 @@ local function SetupThinLine(fillTex, edge)
             end
         end
         -- Hook SetMinMaxValues + SetValue to sync overlay
-        local origSMMV = fillTex.SetMinMaxValues
-        fillTex.SetMinMaxValues = function(self, lo, hi)
+        local origSMMV = fill.SetMinMaxValues
+        fill.SetMinMaxValues = function(self, lo, hi)
             origSMMV(self, lo, hi)
             if self._thinLine and self._thinLineActive then
                 self._thinLine:SetMinMaxValues(lo, hi)
             end
         end
-        local origSV = fillTex.SetValue
-        fillTex.SetValue = function(self, val)
+        local origSV = fill.SetValue
+        fill.SetValue = function(self, val)
             origSV(self, val)
             if self._thinLine and self._thinLineActive then
                 self._thinLine:SetValue(val)
             end
         end
     end
-    local tl = fillTex._thinLine
+    local tl = fill._thinLine
     local Pix = CUI and CUI.PP
     local px = THIN_LINE_PX * ((Pix and Pix.mult) or 1)
     tl:ClearAllPoints()
     if edge == "TOP" then
-        tl:SetPoint("TOPLEFT", fillTex, "TOPLEFT", 0, 0)
-        tl:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
+        tl:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
+        tl:SetPoint("TOPRIGHT", fill, "TOPRIGHT", 0, 0)
     else
-        tl:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMLEFT", 0, 0)
-        tl:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
+        tl:SetPoint("BOTTOMLEFT", fill, "BOTTOMLEFT", 0, 0)
+        tl:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
     end
     tl:SetHeight(px)
     tl:Show()
-    fillTex._thinLineActive = true
+    fill._thinLineActive = true
 end
 
-local function ClearThinLine(fillTex)
-    if not fillTex._thinLineActive then
+local function ClearThinLine(fill)
+    if not fill._thinLineActive then
         return
     end
-    fillTex._thinLineActive = false
-    if fillTex._thinLine then
-        fillTex._thinLine:Hide()
+    fill._thinLineActive = false
+    if fill._thinLine then
+        fill._thinLine:Hide()
     end
     -- Thin-line mode left the fill transparent; reset to opaque so the bar is visible immediately (RefreshUI applies the real color)
-    fillTex:SetStatusBarColor(1, 1, 1, 1)
+    fill:SetStatusBarColor(1, 1, 1, 1)
 end
 
-local function ApplyBarTexture(fillTex, texPath, texKey)
+local function ApplyBarTexture(fill, texPath, texKey)
     -- Blizzard Style: the user's texture as below, plus the stock bevel over
     -- it (strips on the fill, independent of the texture path). Classic WoW
     -- UI bars are plain rectangles: no strips.
     if mod.DMStyle() == "blizzard" then
-        mod.DMApplyBlizzFill(fillTex)
+        mod.DMApplyBlizzFill(fill)
     end
     local edge = THIN_LINE_KEYS[texKey]
     if edge then
-        fillTex:SetStatusBarTexture(BAR_TEX)
-        SetupThinLine(fillTex, edge)
+        fill:SetStatusBarTexture(BAR_TEX)
+        SetupThinLine(fill, edge)
     else
-        fillTex:SetStatusBarTexture(texPath)
-        ClearThinLine(fillTex)
+        fill:SetStatusBarTexture(texPath)
+        ClearThinLine(fill)
     end
 end
 
@@ -288,8 +288,8 @@ local function StripRealm(name, source, attacker)
     if Ambiguate then
         name = Ambiguate(name, "short") or name
     end
-    local modeName = (source or attacker) and SavedDB().nameFormat
-    if not modeName then
+    local mode = (source or attacker) and DB().nameFormat
+    if not mode then
         return name
     end
     local player
@@ -299,7 +299,7 @@ local function StripRealm(name, source, attacker)
     else
         local own = source.isLocalPlayer
         if own ~= nil and not issecretvalue(own) and own == true then
-            return ShortName(CUI.WithSurname(UnitName("player")), modeName) or name
+            return ShortName(CUI.WithSurname(UnitName("player")), mode) or name
         end
         if issecretvalue(name) then
             return name
@@ -310,7 +310,7 @@ local function StripRealm(name, source, attacker)
     if not player then
         return name
     end
-    return ShortName(name, modeName)
+    return ShortName(name, mode)
 end
 
 local IsSecret = CUI.IsSecret
@@ -565,8 +565,8 @@ end
 -- Class icon sprite system
 local CLASS_ICON_SPRITE_BASE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\"
 local CLASS_ICON_SPRITE_TEX = {}
-for _, look in ipairs({ "modern", "dark", "light", "clean", "pixelsComic" }) do
-    CLASS_ICON_SPRITE_TEX[look] = CLASS_ICON_SPRITE_BASE .. look .. ".tga"
+for _, style in ipairs({ "modern", "dark", "light", "clean", "pixelsComic" }) do
+    CLASS_ICON_SPRITE_TEX[style] = CLASS_ICON_SPRITE_BASE .. style .. ".tga"
 end
 local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
@@ -607,16 +607,16 @@ local function ZoomCoords(u1, u2, v1, v2, z)
 end
 
 local function ResolveIcon(source, iconTex, barH)
-    local conf = SavedDB()
-    local look = conf.iconStyle or "spec"
+    local conf = DB()
+    local style = conf.iconStyle or "spec"
     local zoom = conf.classIconZoom or 0.06
-    if look == "none" then
+    if style == "none" then
         iconTex:Hide()
         return 0
     end
 
-    local classFile = source.classFilename
-    if not classFile or (issecretvalue and issecretvalue(classFile)) or classFile == "" then
+    local class = source.classFilename
+    if not class or (issecretvalue and issecretvalue(class)) or class == "" then
         iconTex:Hide()
         return 0
     end
@@ -625,7 +625,7 @@ local function ResolveIcon(source, iconTex, barH)
     if source.threatPet and type(source.specIconID) == "number" then
         iconTex:SetTexture(source.specIconID)
         iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-    elseif look == "spec" then
+    elseif style == "spec" then
         -- WoW Forever hides specIconID (always secret since 1.60.1): the class icon below stands in.
         local specIcon = source.specIconID
         if specIcon and not IsSecret(specIcon) and type(specIcon) == "number" and specIcon ~= 0 then
@@ -638,24 +638,24 @@ local function ResolveIcon(source, iconTex, barH)
             return barH
         end
         iconTex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
-        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
+        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
             iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))
         else
             iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
-    elseif look == "blizzard" then
+    elseif style == "blizzard" then
         iconTex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
-        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]
+        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
             iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))
         else
             iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     else
-        local coords = CLASS_SPRITE_COORDS[classFile]
+        local coords = CLASS_SPRITE_COORDS[class]
         if coords then
-            iconTex:SetTexture(CLASS_ICON_SPRITE_TEX[look] or (CLASS_ICON_SPRITE_BASE .. look .. ".tga"))
+            iconTex:SetTexture(CLASS_ICON_SPRITE_TEX[style] or (CLASS_ICON_SPRITE_BASE .. style .. ".tga"))
             local zoom = conf.spriteIconZoom or 0
             if zoom ~= 0 then
                 iconTex:SetTexCoord(ZoomCoords(coords[1], coords[2], coords[3], coords[4], zoom))

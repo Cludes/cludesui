@@ -11,7 +11,7 @@ local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
 CUI_NS.unlockParts = CUI_NS.unlockParts or {}
 CUI_NS.unlockParts.Session = function(LM)
-    local mod, ABAR, min, upper = CUI_NS, LM.EAB, LM.min, LM.max
+    local mod, ABAR, min, max = CUI_NS, LM.EAB, LM.min, LM.max
     local sin, FONT_PATH, MOVER_ALPHA, ALL_BAR_ORDER = LM.sin, LM.FONT_PATH, LM.MOVER_ALPHA, LM.ALL_BAR_ORDER
     local registeredElements, registeredOrder, RebuildRegisteredOrder, movers =
         LM.registeredElements, LM.registeredOrder, LM.RebuildRegisteredOrder, LM.movers
@@ -59,11 +59,11 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Action bars: for any bar that has NO saved position, capture its live position
         for _, barId in ipairs(ALL_BAR_ORDER) do
             if not snapshotPositions[barId] then
-                local barFrame = LM.GetBarFrame(barId)
-                if barFrame then
-                    local nPts = barFrame:GetNumPoints()
+                local bar = LM.GetBarFrame(barId)
+                if bar then
+                    local nPts = bar:GetNumPoints()
                     if nPts and nPts > 0 then
-                        local anchorPoint, _, relPoint, posX, posY = barFrame:GetPoint(1)
+                        local anchorPoint, _, relPoint, posX, posY = bar:GetPoint(1)
                         if anchorPoint then
                             snapshotPositions[barId] =
                                 { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
@@ -189,11 +189,11 @@ CUI_NS.unlockParts.Session = function(LM)
         local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
         local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
         if cdmBars and cdmBars.bars then
-            for _, barFrame in ipairs(cdmBars.bars) do
+            for _, bar in ipairs(cdmBars.bars) do
                 -- bar.key guard: ghost bars (keyless skeletons from stale
                 -- override writes) have nothing to snapshot.
-                if barFrame.key then
-                    snapshotGrowDirs["CDM_" .. barFrame.key] = barFrame.growDirection or false
+                if bar.key then
+                    snapshotGrowDirs["CDM_" .. bar.key] = bar.growDirection or false
                 end
             end
         end
@@ -219,10 +219,10 @@ CUI_NS.unlockParts.Session = function(LM)
         CludesUI._unlockSnapRawPos = rawSnap
         local cdmPos = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBarPositions
         if cdmPos and cdmBars and cdmBars.bars then
-            for _, barFrame in ipairs(cdmBars.bars) do
-                local e = cdmPos[barFrame.key]
+            for _, bar in ipairs(cdmBars.bars) do
+                local e = cdmPos[bar.key]
                 if e then
-                    rawSnap["CDM_" .. barFrame.key] = CopyTable(e)
+                    rawSnap["CDM_" .. bar.key] = CopyTable(e)
                 end
             end
         end
@@ -343,9 +343,9 @@ CUI_NS.unlockParts.Session = function(LM)
                 LM.SaveBarPosition(barId, pt, rpt, px, py)
                 -- Install anchor guard for action bar positions
                 if not elem then
-                    local barFrame = LM.GetBarFrame(barId)
-                    if barFrame then
-                        InstallAnchorGuard(barFrame, barId)
+                    local bar = LM.GetBarFrame(barId)
+                    if bar then
+                        InstallAnchorGuard(bar, barId)
                     end
                 end
             end
@@ -605,9 +605,9 @@ CUI_NS.unlockParts.Session = function(LM)
                 local cdmA = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
                 local cdmB = cdmA and cdmA.db and cdmA.db.profile and cdmA.db.profile.cdmBars
                 if cdmB and cdmB.bars then
-                    for _, barFrame in ipairs(cdmB.bars) do
-                        if barFrame.key == rawKey then
-                            barFrame.growDirection = val
+                    for _, bar in ipairs(cdmB.bars) do
+                        if bar.key == rawKey then
+                            bar.growDirection = val
                             break
                         end
                     end
@@ -639,8 +639,8 @@ CUI_NS.unlockParts.Session = function(LM)
         for barId, _ in pairs(pendingPositions) do
             local ai = anchorDB and anchorDB[barId]
             if not (ai and ai.target) then
-                local barFrame = LM.GetBarFrame(barId)
-                if barFrame then
+                local bar = LM.GetBarFrame(barId)
+                if bar then
                     local snap = snapshotPositions[barId]
                     local revElem = registeredElements[barId]
                     if revElem and revElem.noInitHook then
@@ -651,9 +651,9 @@ CUI_NS.unlockParts.Session = function(LM)
                     elseif snap and not snap._fromLiveFrame then
                         if not LM.ApplyCenterPosition(barId, snap) then
                             pcall(function()
-                                CludesUI.ClearFramePoints(barFrame)
+                                CludesUI.ClearFramePoints(bar)
                                 CludesUI.SetFramePoint(
-                                    barFrame,
+                                    bar,
                                     snap.point,
                                     UIParent,
                                     snap.relPoint,
@@ -662,8 +662,8 @@ CUI_NS.unlockParts.Session = function(LM)
                                 )
                             end)
                         end
-                    elseif barFrame.UpdateGridLayout then
-                        pcall(barFrame.UpdateGridLayout, barFrame)
+                    elseif bar.UpdateGridLayout then
+                        pcall(bar.UpdateGridLayout, bar)
                     end
                 end
             end
@@ -1072,26 +1072,26 @@ CUI_NS.unlockParts.Session = function(LM)
             if anchorLinePool[position] then
                 return anchorLinePool[position]
             end
-            local lineTex = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 1)
-            lineTex:SetThickness(3)
-            lineTex:SetSnapToPixelGrid(false)
-            lineTex:SetTexelSnappingBias(0)
-            lineTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
-            anchorLinePool[position] = lineTex
-            return lineTex
+            local line = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 1)
+            line:SetThickness(3)
+            line:SetSnapToPixelGrid(false)
+            line:SetTexelSnappingBias(0)
+            line:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
+            anchorLinePool[position] = line
+            return line
         end
 
         local function GetAnchorPulse(position)
             if anchorPulsePool[position] then
                 return anchorPulsePool[position]
             end
-            local lineTex = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 2)
-            lineTex:SetThickness(3)
-            lineTex:SetSnapToPixelGrid(false)
-            lineTex:SetTexelSnappingBias(0)
-            lineTex:SetTexture("Interface\\AnimaChannelingDevice\\AnimaChannelingDeviceLineVerticalMask")
-            anchorPulsePool[position] = lineTex
-            return lineTex
+            local line = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 2)
+            line:SetThickness(3)
+            line:SetSnapToPixelGrid(false)
+            line:SetTexelSnappingBias(0)
+            line:SetTexture("Interface\\AnimaChannelingDevice\\AnimaChannelingDeviceLineVerticalMask")
+            anchorPulsePool[position] = line
+            return line
         end
 
         -- Per-line animation state keyed by "childKey:targetKey"
@@ -1128,7 +1128,7 @@ CUI_NS.unlockParts.Session = function(LM)
                             local ease = 1 - (1 - t) * (1 - t)
 
                             position = position + 1
-                            local lineTex = GetAnchorLine(position)
+                            local line = GetAnchorLine(position)
                             -- Child center (line origin)
                             local x1 = ((cm:GetLeft() or 0) + (cm:GetRight() or 0)) * 0.5
                             local y1 = ((cm:GetBottom() or 0) + (cm:GetTop() or 0)) * 0.5
@@ -1154,16 +1154,16 @@ CUI_NS.unlockParts.Session = function(LM)
                             -- Partial endpoint based on animation progress
                             local ex = x1 + (x2 - x1) * ease
                             local ey = y1 + (y2 - y1) * ease
-                            lineTex:SetStartPoint("BOTTOMLEFT", UIParent, x1, y1)
-                            lineTex:SetEndPoint("BOTTOMLEFT", UIParent, ex, ey)
+                            line:SetStartPoint("BOTTOMLEFT", UIParent, x1, y1)
+                            line:SetEndPoint("BOTTOMLEFT", UIParent, ex, ey)
                             local pointR, pointG, pointB, pointA
                             if details.mode == "POINT" then
                                 pointR, pointG, pointB, pointA = CludesUI.GetPointAnchorColor("line")
-                                lineTex:SetVertexColor(pointR, pointG, pointB, pointA * 0.75 * ease)
+                                line:SetVertexColor(pointR, pointG, pointB, pointA * 0.75 * ease)
                             else
-                                lineTex:SetVertexColor(1, 0.7, 0.3, 0.75 * ease)
+                                line:SetVertexColor(1, 0.7, 0.3, 0.75 * ease)
                             end
-                            lineTex:Show()
+                            line:Show()
 
                             -- Pulse overlay: streak that sweeps child->parent, loops every 3s
                             local pulse = GetAnchorPulse(position)
@@ -1403,18 +1403,18 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Scan line: the screen's width, a bright line with a soft glow either side.
         local scan = CreateFrame("Frame", nil, A)
         scan:SetHeight(THICK + 2 * SCAN_GLOW)
-        local lineTex = scan:CreateTexture(nil, "OVERLAY")
-        lineTex:SetPoint("LEFT")
-        lineTex:SetPoint("RIGHT")
-        lineTex:SetHeight(THICK)
+        local line = scan:CreateTexture(nil, "OVERLAY")
+        line:SetPoint("LEFT")
+        line:SetPoint("RIGHT")
+        line:SetHeight(THICK)
         local above = scan:CreateTexture(nil, "ARTWORK")
-        above:SetPoint("BOTTOMLEFT", lineTex, "TOPLEFT")
-        above:SetPoint("BOTTOMRIGHT", lineTex, "TOPRIGHT")
+        above:SetPoint("BOTTOMLEFT", line, "TOPLEFT")
+        above:SetPoint("BOTTOMRIGHT", line, "TOPRIGHT")
         above:SetHeight(SCAN_GLOW)
         above:SetColorTexture(1, 1, 1, 1)
         local below = scan:CreateTexture(nil, "ARTWORK")
-        below:SetPoint("TOPLEFT", lineTex, "BOTTOMLEFT")
-        below:SetPoint("TOPRIGHT", lineTex, "BOTTOMRIGHT")
+        below:SetPoint("TOPLEFT", line, "BOTTOMLEFT")
+        below:SetPoint("TOPRIGHT", line, "BOTTOMRIGHT")
         below:SetHeight(SCAN_GLOW)
         below:SetColorTexture(1, 1, 1, 1)
         scan:Hide()
@@ -1436,7 +1436,7 @@ CUI_NS.unlockParts.Session = function(LM)
             for i = 1, 8 do
                 arms[i]:SetColorTexture(r, g, b, 1)
             end
-            lineTex:SetColorTexture(r, g, b, 0.9)
+            line:SetColorTexture(r, g, b, 0.9)
             above:SetGradient("VERTICAL", CreateColor(r, g, b, 0.22), CreateColor(r, g, b, 0))
             below:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
         end
@@ -1745,7 +1745,7 @@ CUI_NS.unlockParts.Session = function(LM)
         local A = LM.openAnimFrame
         local emblem = A._emblem
         A.Paint(CludesUI._specialUnlockGroup)
-        local startHalf = upper(EMBLEM_HALF + 20, min(panelStartW, panelStartH) * 0.5)
+        local startHalf = max(EMBLEM_HALF + 20, min(panelStartW, panelStartH) * 0.5)
         emblem:SetScale(1)
         emblem:ClearAllPoints()
         emblem:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
@@ -2077,7 +2077,7 @@ CUI_NS.unlockParts.Session = function(LM)
 
                 -- The grid shows behind the scan line as it sweeps down.
                 if LM.gridFrame and LM.gridFrame:IsShown() then
-                    LM.gridFrame:SetAlpha(upper(0, min(1, (elapsed - SCAN_START) / SCAN_DUR)))
+                    LM.gridFrame:SetAlpha(max(0, min(1, (elapsed - SCAN_START) / SCAN_DUR)))
                 end
             end
 
@@ -2088,7 +2088,7 @@ CUI_NS.unlockParts.Session = function(LM)
             if elapsed < MORPH then
                 local t = EaseInOutCubic(elapsed / MORPH)
                 if panelFrame and not panelHidden then
-                    panelFrame:SetScale(panelRealScale * upper(0.01, 1 - 0.4 * t))
+                    panelFrame:SetScale(panelRealScale * max(0.01, 1 - 0.4 * t))
                     panelFrame:SetAlpha(1 - min(1, elapsed / 0.2))
                     if t > 0.95 then
                         panelHidden = true
@@ -2129,7 +2129,7 @@ CUI_NS.unlockParts.Session = function(LM)
             -- The bar drops in from above, settling with a slight overshoot.
             local hud = LM.hudFrame
             if hud and hud:IsShown() then
-                local u = min(1, upper(0, (elapsed - BAR_START) / BAR_DUR)) - 1
+                local u = min(1, max(0, (elapsed - BAR_START) / BAR_DUR)) - 1
                 local e = 1 + 2.2 * u * u * u + 1.2 * u * u
                 hud:ClearAllPoints()
                 hud:SetPoint("TOP", UIParent, "TOP", 0, (BANNER_PX_H + 10) * (hud:GetScale() or 1) * (1 - e))
@@ -2138,16 +2138,16 @@ CUI_NS.unlockParts.Session = function(LM)
             -- The emblem flies up into the bar's badge, shrinking to its size:
             -- the brackets land on the badge's border and the logo on its logo.
             local ft = (elapsed - FLY_START) / FLY_DUR
-            local targetUnit = hud and hud._badgeLogo
-            if ft > 0 and targetUnit and targetUnit:GetCenter() then
+            local target = hud and hud._badgeLogo
+            if ft > 0 and target and target:GetCenter() then
                 local f = EaseInOutCubic(min(1, ft))
                 local uiS = UIParent:GetEffectiveScale()
-                local tR = targetUnit:GetEffectiveScale() / uiS
+                local tR = target:GetEffectiveScale() / uiS
                 local aR = A:GetEffectiveScale() / uiS
-                local tScale = targetUnit:GetWidth() / EMBLEM_LOGO * tR / aR
+                local tScale = target:GetWidth() / EMBLEM_LOGO * tR / aR
                 emblem:SetScale(1 + (tScale - 1) * f)
                 -- The logo's centre, from the screen's centre, in UIParent units.
-                local tx, ty = targetUnit:GetCenter()
+                local tx, ty = target:GetCenter()
                 local cx, cy = UIParent:GetCenter()
                 local posX, posY = (tx * tR - cx) * f, (ty * tR - cy) * f
                 local k = uiS / emblem:GetEffectiveScale()

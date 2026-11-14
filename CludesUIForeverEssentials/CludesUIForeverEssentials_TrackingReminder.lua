@@ -163,23 +163,23 @@ local function Refresh()
         return
     end
     dirty = false
-    local dim = Get("iconSize")
+    local size = Get("iconSize")
     local entries = Enabled() and Missing() or {}
     for idx, ident in ipairs(entries) do
         local b = Button(idx)
         b.spellID = ident
         b:SetAttribute("spell", ident)
         b.icon:SetTexture(C_Spell.GetSpellTexture(ident))
-        b:SetSize(dim, dim)
+        b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
         b:Show()
     end
     for idx = #entries + 1, #buttons do
         buttons[idx]:Hide()
         buttons[idx].spellID = nil
     end
-    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
+    holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
 end
 
 local ev = CreateFrame("Frame")
@@ -236,8 +236,8 @@ F.Start(Apply, {
         return holderFrame
     end,
     size = function()
-        local dim = Get("iconSize")
-        return dim * 3 + GAP * 2, dim
+        local size = Get("iconSize")
+        return size * 3 + GAP * 2, size
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

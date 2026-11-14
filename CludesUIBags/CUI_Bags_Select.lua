@@ -334,9 +334,9 @@ function mod.RepaintJunkItem(itemId)
     for _ = 1, 2 do
         for _, btn in pairs(pool) do
             if btn:IsShown() and btn:GetParent():IsShown() then
-                local bag, slotIndex = btn:GetParent():GetID(), btn:GetID()
-                if C_Container.GetContainerItemID(bag, slotIndex) == itemId then
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local bag, slot = btn:GetParent():GetID(), btn:GetID()
+                if C_Container.GetContainerItemID(bag, slot) == itemId then
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
                     if details then
                         if btn._lvIcon then
                             mod.ListPaintJunk(btn, details)
@@ -562,9 +562,9 @@ end
 -------------------------------------------------------------------------------
 do
     local function BuildButtons()
-        local headerFrame = CUI_Bags._bagsBtn:GetParent()
+        local header = CUI_Bags._bagsBtn:GetParent()
         -- Placed by SyncHeaderIcons, left of the next shown header icon
-        local junk = CreateFrame("Button", nil, headerFrame)
+        local junk = CreateFrame("Button", nil, header)
         junk:SetSize(22, 22)
         -- Our own coin art (the item badge and the Junk category keep the game's
         -- coin). It sits inside a thin margin: drawn 24 px, the coin fills the button
@@ -616,7 +616,7 @@ do
         junk:SetScript("OnDoubleClick", function() end)
         CUI_Bags._junkBtn = junk
 
-        local sell = CreateFrame("Button", nil, headerFrame)
+        local sell = CreateFrame("Button", nil, header)
         sell:SetPoint("RIGHT", junk, "LEFT", -6, 0)
         local backdrop = sell:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -692,9 +692,9 @@ do
         end
         -- The leftmost shown icon bounds the search on Forever and the title on CUI.
         if forever then
-            local search, headerFrame = self._searchBox, bags:GetParent()
+            local search, header = self._searchBox, bags:GetParent()
             search:ClearAllPoints()
-            search:SetPoint("LEFT", headerFrame, "TOPLEFT", 45, headerFrame._foreverToolsY)
+            search:SetPoint("LEFT", header, "TOPLEFT", 45, header._foreverToolsY)
             search:SetPoint("RIGHT", edge, "LEFT", -6, 0)
         end
         if not junkOn and self._junkMode then
@@ -719,24 +719,24 @@ do
         local kept = 0
         for bag = 0, 5 do
             if not (special and special[bag]) then
-                for slotIndex = 1, C_Container.GetContainerNumSlots(bag) or 0 do
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
                     if
                         details
                         and details.itemID
                         and CUI_CategoryManager:IsJunk(details.itemID, details.quality)
                     then
                         local keep = details.hasNoValue
-                            or setGear[bag * 1000 + slotIndex]
+                            or setGear[bag * 1000 + slot]
                             or (pinned and IsItemPinned(pinned, details.hyperlink, details.itemID))
                         if not keep then
-                            local p = C_Container.GetContainerItemPurchaseInfo(bag, slotIndex, false)
+                            local p = C_Container.GetContainerItemPurchaseInfo(bag, slot, false)
                             keep = p and p.refundSeconds and p.refundSeconds > 0
                         end
                         if keep then
                             kept = kept + 1
                         else
-                            slots[#slots + 1] = bag * 1000 + slotIndex
+                            slots[#slots + 1] = bag * 1000 + slot
                             ids[#ids + 1] = details.itemID
                         end
                     end
@@ -847,14 +847,14 @@ do
             while live and idx < #slots do
                 idx = idx + 1
                 local key = slots[idx]
-                local bag, slotIndex = math.floor(key / 1000), key % 1000
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                local bag, slot = math.floor(key / 1000), key % 1000
+                local details = C_Container.GetContainerItemInfo(bag, slot)
                 -- Still the gathered item, and not locked
                 if details and details.itemID == ids[idx] and not details.isLocked then
                     values[idx] = ((details.hyperlink and select(11, GetItemInfo(details.hyperlink))) or 0)
                         * (details.stackCount or 1)
                     sent[#sent + 1] = idx
-                    C_Container.UseContainerItem(bag, slotIndex)
+                    C_Container.UseContainerItem(bag, slot)
                     C_Timer.After(0.08, step)
                     return
                 end

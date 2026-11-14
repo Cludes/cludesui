@@ -44,7 +44,7 @@ local function Install()
 
     local buttons = {} -- slot -> its button
     local voiced = {} -- questID -> whether the addon shows Play for it
-    local offset = false
+    local off = false
 
     local function Voiced(questID)
         local val = voiced[questID]
@@ -55,8 +55,8 @@ local function Install()
         return val
     end
 
-    local function Dress(slotIndex, questID)
-        local b = buttons[slotIndex]
+    local function Dress(slot, questID)
+        local b = buttons[slot]
         if not Voiced(questID) then
             if b then
                 b:Hide()
@@ -64,10 +64,10 @@ local function Install()
             return
         end
         if not b then
-            b = CreateFrame("Button", nil, slotIndex)
+            b = CreateFrame("Button", nil, slot)
             b:SetSize(SIZE, SIZE)
             b:SetHitRectInsets(1, 1, 1, 1)
-            b:SetPoint("TOPRIGHT", slotIndex, "TOPRIGHT", 0, 0)
+            b:SetPoint("TOPRIGHT", slot, "TOPRIGHT", 0, 0)
             spoken:DressBoxButton(b)
             b:SetBox(BOX, SIZE, SIZE)
             -- Its glyph follows the addon's queue (play, stop, replay).
@@ -77,7 +77,7 @@ local function Install()
             back:SetPoint("TOPLEFT", 1, -1)
             back:SetPoint("BOTTOMRIGHT", -1, 1)
             back:SetColorTexture(0, 0, 0, 0.6)
-            buttons[slotIndex] = b
+            buttons[slot] = b
         end
         -- Bound again only when the pooled row shows another quest: a binding
         -- sets new scripts.
@@ -89,12 +89,12 @@ local function Install()
         b:Show()
     end
 
-    local function Row(slotIndex, questID)
-        if offset then
+    local function Row(slot, questID)
+        if off then
             return
         end
-        if not pcall(Dress, slotIndex, questID) then
-            offset = true
+        if not pcall(Dress, slot, questID) then
+            off = true
             for _, b in pairs(buttons) do
                 b:Hide()
             end

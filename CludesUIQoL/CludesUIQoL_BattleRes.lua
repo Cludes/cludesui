@@ -67,7 +67,7 @@ local defaultSet = {
 
 local addon = {}
 addon.db = nil
-local function Prm()
+local function P()
     return addon.db and addon.db.profile and addon.db.profile.battleRes
 end
 
@@ -83,7 +83,7 @@ local function _previewActive()
 end
 
 local function IsTextMode()
-    local p = Prm()
+    local p = P()
     return (p and p.displayMode) == "text"
 end
 
@@ -93,7 +93,7 @@ end
 --  through the shared font registry, and outline overrides stay slug-gated.
 -------------------------------------------------------------------------------
 local function GetBrezFont()
-    local p = Prm()
+    local p = P()
     local key = (p and p.font) or "__global"
     if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
@@ -105,15 +105,15 @@ local function GetBrezFont()
 end
 
 local function GetBrezOutline()
-    local p = Prm()
-    local modeName = (p and p.outlineMode) or "__global"
-    if modeName == "outline" then
+    local p = P()
+    local mode = (p and p.outlineMode) or "__global"
+    if mode == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
-    if modeName == "thick" then
+    if mode == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
-    if modeName == "none" then
+    if mode == "none" then
         return ""
     end
     return (CludesUI.GetFontOutlineFlag("qol")) or (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
@@ -123,24 +123,24 @@ end
 -- duration / count texts keep the fixed house style via SetBrezIconFont
 -- below. Empty flags = Drop Shadow mode, primed via FontObject (instance
 -- shadow setters do not render).
-local function SetBrezFont(fontStr, dim)
+local function SetBrezFont(fontStr, size)
     if not fontStr then
         return
     end
     local flags = GetBrezOutline()
     CludesUI.PrimeFontShadow(fontStr, flags == "")
-    fontStr:SetFont(GetBrezFont(), dim, flags)
+    fontStr:SetFont(GetBrezFont(), size, flags)
 end
 
 -- Icon-mode duration / count texts: fixed module font + forced crisp
 -- outline (slug-gated), untouched by the Font / Font Outline settings.
-local function SetBrezIconFont(fontStr, dim)
+local function SetBrezIconFont(fontStr, size)
     if not fontStr then
         return
     end
     fontStr:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
-        dim,
+        size,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
 end
@@ -177,8 +177,8 @@ end
 
 -- Custom-shape outline: the shape's mask grown by the border size and filled with
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
-local function _applyShapeOutline(hostRegion, shape, bs, r, g, b, a)
-    local t = hostRegion._cuiOutline
+local function _applyShapeOutline(host, shape, bs, r, g, b, a)
+    local t = host._cuiOutline
     local maskPath = shape and CludesUI.SHAPE_MASKS[shape]
     local Pix = CludesUI and CludesUI.PP
     if not (maskPath and Pix) or bs <= 0 then
@@ -188,19 +188,19 @@ local function _applyShapeOutline(hostRegion, shape, bs, r, g, b, a)
         return
     end
     if not t then
-        t = hostRegion:CreateTexture(nil, "BACKGROUND", nil, 7)
-        hostRegion._cuiOutlineMask = hostRegion:CreateMaskTexture()
-        t:AddMaskTexture(hostRegion._cuiOutlineMask)
-        hostRegion._cuiOutline = t
+        t = host:CreateTexture(nil, "BACKGROUND", nil, 7)
+        host._cuiOutlineMask = host:CreateMaskTexture()
+        t:AddMaskTexture(host._cuiOutlineMask)
+        host._cuiOutline = t
     end
-    local m = hostRegion._cuiOutlineMask
+    local m = host._cuiOutlineMask
     -- The mask's opening is its middle (128 - 2 * inset) / 128: grow it by bs over
     -- that ratio so the outline reaches bs pixels past the icon's own edge.
     local inset = CludesUI.SHAPE_INSETS[shape] or 17
     local grow = _snapOff(Pix.FromPixels(bs * 128 / (128 - 2 * inset)))
     m:ClearAllPoints()
-    m:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", -grow, grow)
-    m:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", grow, -grow)
+    m:SetPoint("TOPLEFT", host, "TOPLEFT", -grow, grow)
+    m:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", grow, -grow)
     m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     t:ClearAllPoints()
     t:SetAllPoints(m)
@@ -214,7 +214,7 @@ local function ApplyShape()
     if not widget then
         return
     end
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end
@@ -225,10 +225,10 @@ local function ApplyShape()
 
     -- Frame sizing: square by default; for "cropped" the height is 80% of width
     -- (mirrors Action Bars line 2263: btnH = btnH * 0.80).
-    local dim = p.iconSize or 40
-    local fw, fh = dim, dim
+    local size = p.iconSize or 40
+    local fw, fh = size, size
     if shape == "cropped" then
-        fh = math.floor(dim * 0.80 + 0.5)
+        fh = math.floor(size * 0.80 + 0.5)
     end
     if Pix and Pix.Snap then
         fw, fh = Pix.Snap(fw), Pix.Snap(fh)
@@ -392,7 +392,7 @@ end
 -- placeholder string; live polling overwrites it the moment the tracker
 -- shows (UpdateVisibility polls immediately on Show).
 local function ApplyText()
-    local p = Prm()
+    local p = P()
     if not p or not textFS then
         return
     end
@@ -428,7 +428,7 @@ local function ApplyPosition()
     if not widget then
         return
     end
-    local p = Prm()
+    local p = P()
     if not p then
         return
     end
@@ -508,7 +508,7 @@ function mod.ApplyInstanceEvent(st, evt)
 end
 
 local function ShouldShow()
-    local p = Prm()
+    local p = P()
     if not p or not p.enabled then
         return false
     end
@@ -657,7 +657,7 @@ local function PollCharges()
 
     _setCount(tostring(charges), charges <= 0)
     _setDur(timeText)
-    local p = Prm()
+    local p = P()
     _setDesat(p and p.desaturateNoCharges ~= false and charges <= 0)
     if cooldownFrame then
         if recharging then
@@ -838,7 +838,7 @@ end
 -- mid-key still catches up on events missed while unregistered.
 local _eventsRegistered = false
 _syncEventRegistration = function()
-    local p = Prm()
+    local p = P()
     local wanted = (p and p.enabled and (p.visibility or "MPLUS_AND_RAID") ~= "NEVER") and true or false
     if wanted == _eventsRegistered then
         return
@@ -876,7 +876,7 @@ local function RegisterUnlock()
     if not MK then
         return
     end
-    local loadPos, clearPos = mod.CenterPosFns(Prm)
+    local loadPos, clearPos = mod.CenterPosFns(P)
 
     CludesUI:RegisterUnlockElements({
         MK({
@@ -886,7 +886,7 @@ local function RegisterUnlock()
             order = 600,
             noAnchorTarget = true, -- icon size changes; nothing should be anchored to it
             isHidden = function()
-                local p = Prm()
+                local p = P()
                 return not p or not p.enabled or (p.visibility == "NEVER")
             end,
             getFrame = function()
@@ -896,7 +896,7 @@ local function RegisterUnlock()
                 return widget
             end,
             getSize = function()
-                local p = Prm()
+                local p = P()
                 if p and p.displayMode == "text" then
                     -- Text display: the frame is sized to the measured text
                     -- box by ApplyText, so report that instead of iconSize.
@@ -913,7 +913,7 @@ local function RegisterUnlock()
             end,
             linkedDimensions = true, -- always square; one slider drives both
             setWidth = function(_, wid)
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end
@@ -931,7 +931,7 @@ local function RegisterUnlock()
                 end
             end,
             setHeight = function(_, hgt)
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end
@@ -956,7 +956,7 @@ local function RegisterUnlock()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = Prm()
+                local p = P()
                 if not p then
                     return
                 end

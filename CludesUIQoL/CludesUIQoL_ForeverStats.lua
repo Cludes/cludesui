@@ -44,7 +44,7 @@ end
 local NUM, PCT = "%.0f", "%.2f%%"
 
 -- key, label, abbreviated label, label hue, figure format, getter, shown by default
-local function Stl(key, labelText, short, hex, fmt, get, enabled)
+local function S(key, labelText, short, hex, fmt, get, enabled)
     return { key = key, label = labelText, short = short, hex = hex, fmt = fmt, get = get, on = enabled }
 end
 
@@ -52,23 +52,23 @@ local GROUPS = {
     {
         title = "Offensive",
         stats = {
-            Stl("ap", "Attack Power", "AP", HUE.ap, NUM, function()
+            S("ap", "Attack Power", "AP", HUE.ap, NUM, function()
                 return Sum(UnitAttackPower("player"))
             end, true),
-            Stl("rap", "Ranged AP", "RAP", HUE.ap, NUM, function()
+            S("rap", "Ranged AP", "RAP", HUE.ap, NUM, function()
                 return Sum(UnitRangedAttackPower("player"))
             end),
-            Stl("mcrit", "Melee Crit", "M.Crit", HUE.crit, PCT, GetCritChance),
-            Stl("rcrit", "Ranged Crit", "R.Crit", HUE.crit, PCT, GetRangedCritChance),
-            Stl("mhaste", "Melee Haste", "M.Haste", HUE.haste, PCT, GetMeleeHaste),
+            S("mcrit", "Melee Crit", "M.Crit", HUE.crit, PCT, GetCritChance),
+            S("rcrit", "Ranged Crit", "R.Crit", HUE.crit, PCT, GetRangedCritChance),
+            S("mhaste", "Melee Haste", "M.Haste", HUE.haste, PCT, GetMeleeHaste),
             -- Base and ammo haste, as the character pane adds them.
-            Stl("rhaste", "Ranged Haste", "R.Haste", HUE.haste, PCT, function()
+            S("rhaste", "Ranged Haste", "R.Haste", HUE.haste, PCT, function()
                 return Sum(GetRangedHaste())
             end),
-            Stl("mhit", "Melee Hit", "Hit", HUE.hit, PCT, GetHitModifier),
+            S("mhit", "Melee Hit", "Hit", HUE.hit, PCT, GetHitModifier),
             -- Off-hand hit, as the character pane shows it ("?" on a client
             -- without the getter).
-            Stl("ohit", "Off-hand Hit", "OH Hit", HUE.hit, PCT, function()
+            S("ohit", "Off-hand Hit", "OH Hit", HUE.hit, PCT, function()
                 if GetOffhandHitModifier then
                     return GetOffhandHitModifier()
                 end
@@ -79,7 +79,7 @@ local GROUPS = {
         title = "Spell",
         stats = {
             -- The highest school's bonus, so school-specific gear counts.
-            Stl("sp", "Spell Power", "SP", HUE.sp, NUM, function()
+            S("sp", "Spell Power", "SP", HUE.sp, NUM, function()
                 local best = 0
                 for idx = 2, 7 do
                     local val = GetSpellBonusDamage(idx)
@@ -92,63 +92,63 @@ local GROUPS = {
                 end
                 return best
             end),
-            Stl("healing", "Healing Power", "Heal", HUE.healing, NUM, GetSpellBonusHealing),
-            Stl("scrit", "Spell Crit", "S.Crit", HUE.crit, PCT, GetSpellCritChance),
-            Stl("shaste", "Spell Haste", "S.Haste", HUE.haste, PCT, function()
+            S("healing", "Healing Power", "Heal", HUE.healing, NUM, GetSpellBonusHealing),
+            S("scrit", "Spell Crit", "S.Crit", HUE.crit, PCT, GetSpellCritChance),
+            S("shaste", "Spell Haste", "S.Haste", HUE.haste, PCT, function()
                 return UnitSpellHaste("player")
             end),
-            Stl("shit", "Spell Hit", "S.Hit", HUE.hit, PCT, GetSpellHitModifier),
-            Stl("spen", "Spell Pen", "S.Pen", HUE.spen, NUM, GetSpellPenetration),
+            S("shit", "Spell Hit", "S.Hit", HUE.hit, PCT, GetSpellHitModifier),
+            S("spen", "Spell Pen", "S.Pen", HUE.spen, NUM, GetSpellPenetration),
         },
     },
     {
         title = "Spell Power / School",
         stats = {
-            Stl("sp_holy", "Holy SP", "Holy", HUE.holy, NUM, SchoolPower(2)),
-            Stl("sp_fire", "Fire SP", "Fire", HUE.fire, NUM, SchoolPower(3)),
-            Stl("sp_frost", "Frost SP", "Frost", HUE.frost, NUM, SchoolPower(5)),
-            Stl("sp_nature", "Nature SP", "Nature", HUE.nature, NUM, SchoolPower(4)),
-            Stl("sp_shadow", "Shadow SP", "Shadow", HUE.shadow, NUM, SchoolPower(6)),
-            Stl("sp_arcane", "Arcane SP", "Arcane", HUE.arcane, NUM, SchoolPower(7)),
+            S("sp_holy", "Holy SP", "Holy", HUE.holy, NUM, SchoolPower(2)),
+            S("sp_fire", "Fire SP", "Fire", HUE.fire, NUM, SchoolPower(3)),
+            S("sp_frost", "Frost SP", "Frost", HUE.frost, NUM, SchoolPower(5)),
+            S("sp_nature", "Nature SP", "Nature", HUE.nature, NUM, SchoolPower(4)),
+            S("sp_shadow", "Shadow SP", "Shadow", HUE.shadow, NUM, SchoolPower(6)),
+            S("sp_arcane", "Arcane SP", "Arcane", HUE.arcane, NUM, SchoolPower(7)),
         },
     },
     {
         title = "Defensive",
         stats = {
-            Stl("armor", "Armor", "Armor", HUE.armor, NUM, function()
+            S("armor", "Armor", "Armor", HUE.armor, NUM, function()
                 return (select(2, UnitArmor("player")))
             end),
-            Stl("defense", "Defense", "Def", HUE.armor, NUM, function()
+            S("defense", "Defense", "Def", HUE.armor, NUM, function()
                 return Sum(UnitDefenseSkill("player"))
             end),
-            Stl("dodge", "Dodge", "Dodge", HUE.avoid, PCT, GetDodgeChance),
-            Stl("parry", "Parry", "Parry", HUE.avoid, PCT, GetParryChance),
-            Stl("block", "Block", "Block", HUE.avoid, PCT, GetBlockChance),
-            Stl("blockval", "Block Value", "Blk V", HUE.avoid, NUM, GetShieldBlock),
+            S("dodge", "Dodge", "Dodge", HUE.avoid, PCT, GetDodgeChance),
+            S("parry", "Parry", "Parry", HUE.avoid, PCT, GetParryChance),
+            S("block", "Block", "Block", HUE.avoid, PCT, GetBlockChance),
+            S("blockval", "Block Value", "Blk V", HUE.avoid, NUM, GetShieldBlock),
         },
     },
     -- No Holy: resistance index 1 is no player stat (always 0, not on the pane).
     {
         title = "Resistances",
         stats = {
-            Stl("res_fire", "Fire Resist", "Fire R", HUE.fire, NUM, Resist(2)),
-            Stl("res_frost", "Frost Resist", "Frost R", HUE.frost, NUM, Resist(4)),
-            Stl("res_nature", "Nature Resist", "Nat R", HUE.nature, NUM, Resist(3)),
-            Stl("res_shadow", "Shadow Resist", "Shad R", HUE.shadow, NUM, Resist(5)),
-            Stl("res_arcane", "Arcane Resist", "Arc R", HUE.arcane, NUM, Resist(6)),
+            S("res_fire", "Fire Resist", "Fire R", HUE.fire, NUM, Resist(2)),
+            S("res_frost", "Frost Resist", "Frost R", HUE.frost, NUM, Resist(4)),
+            S("res_nature", "Nature Resist", "Nat R", HUE.nature, NUM, Resist(3)),
+            S("res_shadow", "Shadow Resist", "Shad R", HUE.shadow, NUM, Resist(5)),
+            S("res_arcane", "Arcane Resist", "Arc R", HUE.arcane, NUM, Resist(6)),
         },
     },
     {
         title = "Regen & Utility",
         stats = {
-            Stl("mp5", "Mana Regen", "MP5", HUE.mp5, NUM, function()
+            S("mp5", "Mana Regen", "MP5", HUE.mp5, NUM, function()
                 local regen = GetManaRegen()
                 if issecretvalue(regen) then
                     return nil
                 end
                 return floor(regen * 5)
             end, true),
-            Stl("hp5", "Health Regen", "HP5", HUE.hp5, NUM, function()
+            S("hp5", "Health Regen", "HP5", HUE.hp5, NUM, function()
                 local regen = GetHealthRegen()
                 if issecretvalue(regen) then
                     return nil
@@ -156,7 +156,7 @@ local GROUPS = {
                 return floor(regen * 5)
             end, true),
             -- Run speed against the base 7 yards a second.
-            Stl("movespeed", "Movement Speed", "MS", HUE.speed, "%.0f%%", function()
+            S("movespeed", "Movement Speed", "MS", HUE.speed, "%.0f%%", function()
                 local run = select(2, GetUnitSpeed("player"))
                 if issecretvalue(run) then
                     return nil

@@ -159,11 +159,11 @@ local EX_KEY = {
 }
 local NO_BLESSINGS = {}
 local OLD_SINGLE = {} -- the older single-key form, one cached list per key
-local function Choice(s, role, classFile)
+local function Choice(s, role, class)
     local key = BLESS_KEY[role]
-    if classFile then
+    if class then
         local ex = s[EX_KEY[role]]
-        local own = type(ex) == "table" and ex[classFile]
+        local own = type(ex) == "table" and ex[class]
         if type(own) == "table" then
             return own
         end
@@ -284,12 +284,12 @@ local function Trusted(idx)
     local nowTime = GetTime()
     if trustedAt ~= nowTime then
         trustedAt = nowTime
-        local Stl = C_Secrets
+        local S = C_Secrets
         for fi = 1, NUM_FAMILIES do
             local success = true
-            if Stl and Stl.ShouldSpellAuraBeSecret then
+            if S and S.ShouldSpellAuraBeSecret then
                 for _, ident in ipairs(FAMILIES[fi].ranks) do
-                    local good, secret = pcall(Stl.ShouldSpellAuraBeSecret, ident)
+                    local good, secret = pcall(S.ShouldSpellAuraBeSecret, ident)
                     if not good or issecretvalue(secret) or secret ~= false then
                         success = false
                         break
@@ -394,11 +394,11 @@ local function MissingBlessing(s, st, unitToken)
     if not BLESS_KEY[role] then
         role = "DAMAGER"
     end
-    local _, classFile = UnitClass(unitToken)
-    if issecretvalue(classFile) then
-        classFile = nil
+    local _, class = UnitClass(unitToken)
+    if issecretvalue(class) then
+        class = nil
     end
-    local wanted = Choice(s, role, classFile)
+    local wanted = Choice(s, role, class)
     for wid = 1, #wanted do
         local key = wanted[wid]
         local idx = BLESS_INDEX[key]
@@ -425,11 +425,11 @@ local function Serves(fam, unitToken)
     if not only then
         return true
     end
-    local _, classFile = UnitClass(unitToken)
-    if issecretvalue(classFile) then
+    local _, class = UnitClass(unitToken)
+    if issecretvalue(class) then
         return false
     end
-    return only[classFile] == true
+    return only[class] == true
 end
 
 local function Evaluate(unitToken, restricted)
@@ -536,8 +536,8 @@ end
 -------------------------------------------------------------------------------
 --  Overlay
 -------------------------------------------------------------------------------
-local function Overlay(hostRegion, level)
-    local o = CreateFrame("Frame", nil, hostRegion)
+local function Overlay(host, level)
+    local o = CreateFrame("Frame", nil, host)
     o:SetFrameLevel(level)
     o:EnableMouse(false)
     o.slots = {}
@@ -575,7 +575,7 @@ local function HideOverlay(o)
     o:Hide()
 end
 
-local function ApplyGlows(o, s, num, dim)
+local function ApplyGlows(o, s, num, size)
     local G = CludesUI.Glows
     local specInfo = G.SpecFromPrefix(glowSpec, s, "missingBuffsGlow")
     if not specInfo then
@@ -584,16 +584,16 @@ local function ApplyGlows(o, s, num, dim)
     end
     specInfo.excludes = NO_SHAPE
     for idx = 1, num do
-        local slotIndex = o.slots[idx]
-        local g = slotIndex.glow
+        local slot = o.slots[idx]
+        local g = slot.glow
         if not g then
             g = CreateFrame("Frame", nil, o)
-            g:SetAllPoints(slotIndex.bg)
+            g:SetAllPoints(slot.bg)
             g:SetFrameLevel(o:GetFrameLevel() + 2)
             g:EnableMouse(false)
-            slotIndex.glow = g
+            slot.glow = g
         end
-        G.StartSpecGlow(g, specInfo, dim, dim, "icon")
+        G.StartSpecGlow(g, specInfo, size, size, "icon")
         g.fvOn = true
     end
     StopGlows(o, num + 1)
@@ -603,63 +603,63 @@ end
 -- the overlay is exactly as wide as its icons, so a right-side position grows
 -- leftward and a centred one stays centred. Same 9-point spots and edge inset
 -- as the raid marker.
-local function Layout(o, s, healthBar, entries, num)
+local function Layout(o, s, health, entries, num)
     local snap = mod.PixelSnap or function(val)
         return val
     end
-    local dim = snap(s.missingBuffsSize or 22)
+    local size = snap(s.missingBuffsSize or 22)
     -- One physical pixel: the icon edge and the gap between icons.
     local edge = snap(1)
     if edge <= 0 then
         edge = 1
     end
     for idx = 1, NUM_FAMILIES do
-        local slotIndex = o.slots[idx]
+        local slot = o.slots[idx]
         if idx <= num then
-            local posX = (idx - 1) * (dim + edge)
-            slotIndex.bg:ClearAllPoints()
-            slotIndex.bg:SetPoint("TOPLEFT", o, "TOPLEFT", posX, 0)
-            slotIndex.bg:SetSize(dim, dim)
-            slotIndex.tex:ClearAllPoints()
-            slotIndex.tex:SetPoint("TOPLEFT", slotIndex.bg, "TOPLEFT", edge, -edge)
-            slotIndex.tex:SetPoint("BOTTOMRIGHT", slotIndex.bg, "BOTTOMRIGHT", -edge, edge)
-            slotIndex.tex:SetTexture(FamilyIcon(entries[idx]))
-            slotIndex.bg:Show()
-            slotIndex.tex:Show()
+            local posX = (idx - 1) * (size + edge)
+            slot.bg:ClearAllPoints()
+            slot.bg:SetPoint("TOPLEFT", o, "TOPLEFT", posX, 0)
+            slot.bg:SetSize(size, size)
+            slot.tex:ClearAllPoints()
+            slot.tex:SetPoint("TOPLEFT", slot.bg, "TOPLEFT", edge, -edge)
+            slot.tex:SetPoint("BOTTOMRIGHT", slot.bg, "BOTTOMRIGHT", -edge, edge)
+            slot.tex:SetTexture(FamilyIcon(entries[idx]))
+            slot.bg:Show()
+            slot.tex:Show()
         else
-            slotIndex.bg:Hide()
-            slotIndex.tex:Hide()
+            slot.bg:Hide()
+            slot.tex:Hide()
         end
     end
     if num == 0 then
         HideOverlay(o)
         return
     end
-    o:SetSize(num * dim + (num - 1) * edge, dim)
-    local hostRegion = mod.RF_AnchorHost(healthBar, s)
+    o:SetSize(num * size + (num - 1) * edge, size)
+    local host = mod.RF_AnchorHost(health, s)
     local place = s.missingBuffsPosition or "top"
     local ox, oy = s.missingBuffsOffsetX or 0, s.missingBuffsOffsetY or 0
     o:ClearAllPoints()
     if place == "topleft" then
-        o:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 2 + ox, -2 + oy)
+        o:SetPoint("TOPLEFT", host, "TOPLEFT", 2 + ox, -2 + oy)
     elseif place == "top" then
-        o:SetPoint("TOP", hostRegion, "TOP", ox, -2 + oy)
+        o:SetPoint("TOP", host, "TOP", ox, -2 + oy)
     elseif place == "topright" then
-        o:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", -2 + ox, -2 + oy)
+        o:SetPoint("TOPRIGHT", host, "TOPRIGHT", -2 + ox, -2 + oy)
     elseif place == "left" then
-        o:SetPoint("LEFT", hostRegion, "LEFT", 2 + ox, oy)
+        o:SetPoint("LEFT", host, "LEFT", 2 + ox, oy)
     elseif place == "right" then
-        o:SetPoint("RIGHT", hostRegion, "RIGHT", -2 + ox, oy)
+        o:SetPoint("RIGHT", host, "RIGHT", -2 + ox, oy)
     elseif place == "bottomleft" then
-        o:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        o:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 2 + ox, 2 + oy)
     elseif place == "bottom" then
-        o:SetPoint("BOTTOM", hostRegion, "BOTTOM", ox, 2 + oy)
+        o:SetPoint("BOTTOM", host, "BOTTOM", ox, 2 + oy)
     elseif place == "bottomright" then
-        o:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        o:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -2 + ox, 2 + oy)
     else
-        o:SetPoint("CENTER", hostRegion, "CENTER", ox, oy)
+        o:SetPoint("CENTER", host, "CENTER", ox, oy)
     end
-    ApplyGlows(o, s, num, dim)
+    ApplyGlows(o, s, num, size)
     o:Show()
 end
 
@@ -1097,8 +1097,8 @@ local function PreviewBlessing(s)
     end
 end
 local previewList = {}
-function mod.RF_FvMissingPreview(f, slotPos, s, indVis)
-    local spread = indVis and s.showMissingBuffs ~= false and f._health and PREVIEW[slotPos]
+function mod.RF_FvMissingPreview(f, index, s, indVis)
+    local spread = indVis and s.showMissingBuffs ~= false and f._health and PREVIEW[index]
     local num = 0
     if spread then
         for k = 1, #spread do

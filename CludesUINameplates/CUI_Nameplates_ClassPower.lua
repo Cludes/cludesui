@@ -89,23 +89,23 @@ function mod.GetPipIconKind(shape)
     return mod.CP_ICON_SHAPE[shape] and shape or nil
 end
 -- Atlas for a pip of the given icon kind, filled (active) or empty (background).
-function mod.GetPipIconAtlas(kindOf, filled, slotPos)
-    if kindOf == "shard" then
+function mod.GetPipIconAtlas(kind, filled, index)
+    if kind == "shard" then
         return filled and "Warlock-ReadyShard" or "Warlock-EmptyShard"
-    elseif kindOf == "rune" then
+    elseif kind == "rune" then
         if not filled then
             return "DK-Rune-CD"
         end
         local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
         local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
         return "DK-" .. (mod.CP_RUNE_SPEC[specID or 0] or "Blood") .. "-Rune-Ready"
-    elseif kindOf == "combo" then
+    elseif kind == "combo" then
         return filled and "uf-roguecp-icon-red" or "uf-roguecp-bg"
-    elseif kindOf == "chi" then
+    elseif kind == "chi" then
         return filled and "uf-chi-icon" or "uf-chi-bg"
-    elseif kindOf == "arcane" then
+    elseif kind == "arcane" then
         return "Mage-ArcaneCharge" -- one atlas for both states; empty is dimmed by the caller
-    elseif kindOf == "essence" then
+    elseif kind == "essence" then
         return filled and "UF-Essence-Icon-Active" or "UF-Essence-BG"
     end
     return nil
@@ -114,7 +114,7 @@ end
 -- Class/power color from the CUI global system. Bar-type keys (_BAR suffix)
 -- return the power color; class resources return resource color > class color.
 local CP_DEFAULT_COLOR = { 1.00, 0.84, 0.30 }
-local function GetClassPipColor(classFile, powerKey)
+local function GetClassPipColor(class, powerKey)
     if CludesUI then
         if powerKey then
             local alias = powerKey:match("^(.+)_BAR$")
@@ -124,11 +124,11 @@ local function GetClassPipColor(classFile, powerKey)
                 return { c.r, c.g, c.b }
             end
         end
-        local rc = CludesUI.GetResourceColor(classFile)
+        local rc = CludesUI.GetResourceColor(class)
         if rc then
             return { rc.r, rc.g, rc.b }
         end
-        local cc = CludesUI.GetClassColor(classFile)
+        local cc = CludesUI.GetClassColor(class)
         if cc then
             return { cc.r, cc.g, cc.b }
         end
@@ -172,22 +172,22 @@ local CLASS_POWER_MAP = {
 -- Apply the configured shape + optional border to one pip (and its bg). rectangle/square: plain
 -- box, no mask, border = one solid box behind the pip. Other shapes: carve fill+bg with a mask,
 -- frame with the matching border texture. Idempotent. bSize is pip-local (pixel-snapped) units.
-function mod.ApplyPipShape(backing, pipTex, shape, borderOn, bc, bSize)
-    local backdrop = pipTex._bg
+function mod.ApplyPipShape(backing, pip, shape, borderOn, bc, bSize)
+    local backdrop = pip._bg
     -- Icon shapes draw real atlas art (set in the render): drop mask, borders, and the dark bg.
     if mod.CP_ICON_SHAPE[shape] then
-        if pipTex._shapeMask then
-            pcall(pipTex.RemoveMaskTexture, pipTex, pipTex._shapeMask)
+        if pip._shapeMask then
+            pcall(pip.RemoveMaskTexture, pip, pip._shapeMask)
             if backdrop then
-                pcall(backdrop.RemoveMaskTexture, backdrop, pipTex._shapeMask)
+                pcall(backdrop.RemoveMaskTexture, backdrop, pip._shapeMask)
             end
-            pipTex._shapeMask:Hide()
+            pip._shapeMask:Hide()
         end
-        if pipTex._border then
-            pipTex._border:Hide()
+        if pip._border then
+            pip._border:Hide()
         end
-        if pipTex._borderBox then
-            pipTex._borderBox:Hide()
+        if pip._borderBox then
+            pip._borderBox:Hide()
         end
         if backdrop then
             backdrop:Hide()
@@ -196,76 +196,76 @@ function mod.ApplyPipShape(backing, pipTex, shape, borderOn, bc, bSize)
     end
     local maskPath = mod.CP_SHAPE.MASKS[shape]
     if maskPath then
-        if not pipTex._shapeMask then
-            pipTex._shapeMask = backing:CreateMaskTexture()
+        if not pip._shapeMask then
+            pip._shapeMask = backing:CreateMaskTexture()
         end
-        local m = pipTex._shapeMask
+        local m = pip._shapeMask
         m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         m:ClearAllPoints()
-        m:SetAllPoints(pipTex)
+        m:SetAllPoints(pip)
         m:Show()
-        pcall(pipTex.RemoveMaskTexture, pipTex, m)
-        pipTex:AddMaskTexture(m)
+        pcall(pip.RemoveMaskTexture, pip, m)
+        pip:AddMaskTexture(m)
         if backdrop then
             pcall(backdrop.RemoveMaskTexture, backdrop, m)
             backdrop:AddMaskTexture(m)
         end
-    elseif pipTex._shapeMask then
-        pcall(pipTex.RemoveMaskTexture, pipTex, pipTex._shapeMask)
+    elseif pip._shapeMask then
+        pcall(pip.RemoveMaskTexture, pip, pip._shapeMask)
         if backdrop then
-            pcall(backdrop.RemoveMaskTexture, backdrop, pipTex._shapeMask)
+            pcall(backdrop.RemoveMaskTexture, backdrop, pip._shapeMask)
         end
-        pipTex._shapeMask:Hide()
+        pip._shapeMask:Hide()
     end
 
     local borderPath = mod.CP_SHAPE.BORDERS[shape]
     if borderOn and borderPath then
         -- Masked shapes: matching outline texture, sized to the pip.
-        if not pipTex._border then
-            pipTex._border = backing:CreateTexture(nil, "OVERLAY", nil, 4)
+        if not pip._border then
+            pip._border = backing:CreateTexture(nil, "OVERLAY", nil, 4)
         end
-        local b = pipTex._border
+        local b = pip._border
         b:SetTexture(borderPath)
         b:SetVertexColor(bc.r, bc.g, bc.b, bc.a or 1)
         b:ClearAllPoints()
-        b:SetAllPoints(pipTex)
+        b:SetAllPoints(pip)
         b:Show()
-        if pipTex._borderBox then
-            pipTex._borderBox:Hide()
+        if pip._borderBox then
+            pip._borderBox:Hide()
         end
     elseif borderOn then
         -- Boxy shapes (rectangle/square): one solid box behind the pip, poking out bSize on
         -- every side as a uniform outline. A single texture rounds as one piece, staying crisp.
-        if pipTex._border then
-            pipTex._border:Hide()
+        if pip._border then
+            pip._border:Hide()
         end
-        if not pipTex._borderBox then
-            pipTex._borderBox = backing:CreateTexture(nil, "OVERLAY", nil, 1)
-            pipTex._borderBox:SetTexture(mod.CP_SHAPE.WHITE)
+        if not pip._borderBox then
+            pip._borderBox = backing:CreateTexture(nil, "OVERLAY", nil, 1)
+            pip._borderBox:SetTexture(mod.CP_SHAPE.WHITE)
         end
-        local boxFrame = pipTex._borderBox
-        boxFrame:SetVertexColor(bc.r, bc.g, bc.b, bc.a or 1)
-        boxFrame:ClearAllPoints()
-        boxFrame:SetPoint("TOPLEFT", pipTex, "TOPLEFT", -bSize, bSize)
-        boxFrame:SetPoint("BOTTOMRIGHT", pipTex, "BOTTOMRIGHT", bSize, -bSize)
-        boxFrame:Show()
+        local box = pip._borderBox
+        box:SetVertexColor(bc.r, bc.g, bc.b, bc.a or 1)
+        box:ClearAllPoints()
+        box:SetPoint("TOPLEFT", pip, "TOPLEFT", -bSize, bSize)
+        box:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", bSize, -bSize)
+        box:Show()
     else
-        if pipTex._border then
-            pipTex._border:Hide()
+        if pip._border then
+            pip._border:Hide()
         end
-        if pipTex._borderBox then
-            pipTex._borderBox:Hide()
+        if pip._borderBox then
+            pip._borderBox:Hide()
         end
     end
 end
 
 -- Hide a pip's shape decorations (textured border + solid border box).
-function mod.HidePipDecor(pipTex)
-    if pipTex._border then
-        pipTex._border:Hide()
+function mod.HidePipDecor(pip)
+    if pip._border then
+        pip._border:Hide()
     end
-    if pipTex._borderBox then
-        pipTex._borderBox:Hide()
+    if pip._borderBox then
+        pip._borderBox:Hide()
     end
 end
 
@@ -281,13 +281,13 @@ local function EnsureClassPowerPips(backing)
         backdrop:SetTexture(mod.CP_SHAPE.WHITE)
         backdrop:SetVertexColor(0.082, 0.082, 0.082, 1)
         backdrop:Hide()
-        local pipTex = backing:CreateTexture(nil, "OVERLAY", nil, 3)
-        pipTex:SetTexture(mod.CP_SHAPE.WHITE)
-        pipTex:SetVertexColor(1, 1, 1, 1)
-        Pix.Size(pipTex, CP_PIP_W, CP_PIP_H)
-        pipTex:Hide()
-        pipTex._bg = backdrop
-        backing._cpPips[i] = pipTex
+        local pip = backing:CreateTexture(nil, "OVERLAY", nil, 3)
+        pip:SetTexture(mod.CP_SHAPE.WHITE)
+        pip:SetVertexColor(1, 1, 1, 1)
+        Pix.Size(pip, CP_PIP_W, CP_PIP_H)
+        pip:Hide()
+        pip._bg = backdrop
+        backing._cpPips[i] = pip
     end
 end
 
@@ -296,16 +296,16 @@ local function EnsureClassPowerBar(backing)
     if backing._cpBar then
         return
     end
-    local barFrame = CreateFrame("StatusBar", nil, backing)
-    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    barFrame:SetFrameLevel(backing:GetFrameLevel() + 5)
-    barFrame:Hide()
+    local bar = CreateFrame("StatusBar", nil, backing)
+    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    bar:SetFrameLevel(backing:GetFrameLevel() + 5)
+    bar:Hide()
     -- Background texture behind the bar
-    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
+    local backdrop = bar:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.082, 0.082, 0.082, 1)
-    barFrame._bg = backdrop
-    backing._cpBar = barFrame
+    bar._bg = backdrop
+    backing._cpBar = bar
 end
 
 -- Update pip display on a plate (or hide if plate is nil)
@@ -336,22 +336,22 @@ local function UpdateClassPowerOnPlate(backing)
     local bgCol = mod.GetClassPowerBgColor()
 
     -- Determine anchor: top or bottom of health bar, with cast bar avoidance
-    local anchorPoint, anchorRelPoint, anchorFrame, yDir
+    local anchorPoint, anchorRelPoint, anchor, yDir
     if cpPos == "top" then
         anchorPoint = "BOTTOM"
         anchorRelPoint = "TOP"
-        anchorFrame = backing.health
+        anchor = backing.health
         yDir = 1
     else
         if backing.isCasting and backing.cast:IsShown() then
             anchorPoint = "TOP"
             anchorRelPoint = "BOTTOM"
-            anchorFrame = backing.cast
+            anchor = backing.cast
             yDir = -1
         else
             anchorPoint = "TOP"
             anchorRelPoint = "BOTTOM"
-            anchorFrame = backing.health
+            anchor = backing.health
             yDir = -1
         end
     end
@@ -369,7 +369,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local barFrame = backing._cpBar
+        local bar = backing._cpBar
         local staggerCur = UnitStagger("player")
         local staggerMax = UnitHealthMax("player")
         local isSecretVal = issecretvalue and (issecretvalue(staggerCur) or issecretvalue(staggerMax))
@@ -382,11 +382,11 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6 -- bar width: ~6 pips wide
         local scaledH = CP_PIP_H * cpScale
-        barFrame:ClearAllPoints()
-        barFrame:SetSize(scaledW, scaledH)
-        barFrame:SetPoint(anchorPoint, anchorFrame, anchorRelPoint, cpXOff, yDir * cpYOff)
-        barFrame:SetMinMaxValues(0, staggerMax)
-        barFrame:SetValue(staggerCur)
+        bar:ClearAllPoints()
+        bar:SetSize(scaledW, scaledH)
+        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        bar:SetMinMaxValues(0, staggerMax)
+        bar:SetValue(staggerCur)
 
         -- Stagger color thresholds: green < 30%, yellow 30-60%, red > 60%
         if isSecretVal then
@@ -396,20 +396,20 @@ local function UpdateClassPowerOnPlate(backing)
                 local cc = GetClassPowerCustomColor()
                 cpColor = { cc.r, cc.g, cc.b }
             end
-            barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+            bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
         else
             local pct = staggerCur / staggerMax
             if pct >= 0.6 then
-                barFrame:SetStatusBarColor(1.0, 0.2, 0.2, 1) -- red (heavy)
+                bar:SetStatusBarColor(1.0, 0.2, 0.2, 1) -- red (heavy)
             elseif pct >= 0.3 then
-                barFrame:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow (moderate)
+                bar:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow (moderate)
             else
-                barFrame:SetStatusBarColor(0.2, 0.8, 0.2, 1) -- green (light)
+                bar:SetStatusBarColor(0.2, 0.8, 0.2, 1) -- green (light)
             end
         end
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        barFrame:Show()
+        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        bar:Show()
         return
     end
 
@@ -425,7 +425,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local barFrame = backing._cpBar
+        local bar = backing._cpBar
         local current = UnitPower("player", 13) or 0 -- Enum.PowerType.Insanity = 13
         local maxI = UnitPowerMax("player", 13) or 100
         if issecretvalue and issecretvalue(maxI) then
@@ -437,21 +437,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        barFrame:ClearAllPoints()
-        barFrame:SetSize(scaledW, scaledH)
-        barFrame:SetPoint(anchorPoint, anchorFrame, anchorRelPoint, cpXOff, yDir * cpYOff)
-        barFrame:SetMinMaxValues(0, maxI)
-        barFrame:SetValue(current)
+        bar:ClearAllPoints()
+        bar:SetSize(scaledW, scaledH)
+        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        bar:SetMinMaxValues(0, maxI)
+        bar:SetValue(current)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS, "INSANITY_BAR")
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        barFrame:Show()
+        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        bar:Show()
         return
     end
 
@@ -467,7 +467,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local barFrame = backing._cpBar
+        local bar = backing._cpBar
         local current = UnitPower("player", 2) or 0 -- Enum.PowerType.Focus = 2
         local maxF = UnitPowerMax("player", 2) or 100
         if issecretvalue and issecretvalue(maxF) then
@@ -479,21 +479,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        barFrame:ClearAllPoints()
-        barFrame:SetSize(scaledW, scaledH)
-        barFrame:SetPoint(anchorPoint, anchorFrame, anchorRelPoint, cpXOff, yDir * cpYOff)
-        barFrame:SetMinMaxValues(0, maxF)
-        barFrame:SetValue(current)
+        bar:ClearAllPoints()
+        bar:SetSize(scaledW, scaledH)
+        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        bar:SetMinMaxValues(0, maxF)
+        bar:SetValue(current)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS, "FOCUS_BAR")
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        barFrame:Show()
+        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        bar:Show()
         return
     end
 
@@ -509,7 +509,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local barFrame = backing._cpBar
+        local bar = backing._cpBar
         local current, maxC = 0, 50
         if CludesUI and CludesUI.GetSoulFragments then
             current, maxC = CludesUI.GetSoulFragments()
@@ -520,21 +520,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        barFrame:ClearAllPoints()
-        barFrame:SetSize(scaledW, scaledH)
-        barFrame:SetPoint(anchorPoint, anchorFrame, anchorRelPoint, cpXOff, yDir * cpYOff)
-        barFrame:SetMinMaxValues(0, maxC)
-        barFrame:SetValue(current or 0)
+        bar:ClearAllPoints()
+        bar:SetSize(scaledW, scaledH)
+        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        bar:SetMinMaxValues(0, maxC)
+        bar:SetValue(current or 0)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS)
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        barFrame:Show()
+        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        bar:Show()
         return
     end
 
@@ -677,7 +677,7 @@ local function UpdateClassPowerOnPlate(backing)
     -- park the legacy pips, and stop before any value work.
     if npEngine and mod._WCNP_Attach then
         mod._WCNP_Attach(
-            anchorFrame,
+            anchor,
             anchorRelPoint,
             leftAnchor,
             cpXOff - halfGroup,
@@ -693,15 +693,15 @@ local function UpdateClassPowerOnPlate(backing)
             classPowerType
         )
         for i = 1, #backing._cpPips do
-            local pipTex = backing._cpPips[i]
-            pipTex:Hide()
-            if pipTex._bg then
-                pipTex._bg:Hide()
+            local pip = backing._cpPips[i]
+            pip:Hide()
+            if pip._bg then
+                pip._bg:Hide()
             end
-            if pipTex._secretBar then
-                pipTex._secretBar:Hide()
+            if pip._secretBar then
+                pip._secretBar:Hide()
             end
-            mod.HidePipDecor(pipTex)
+            mod.HidePipDecor(pip)
         end
         if backing._cpBar then
             backing._cpBar:Hide()
@@ -710,19 +710,19 @@ local function UpdateClassPowerOnPlate(backing)
     end
 
     for i = 1, #backing._cpPips do
-        local pipTex = backing._cpPips[i]
+        local pip = backing._cpPips[i]
         if i <= maxP then
-            pipTex:ClearAllPoints()
-            pipTex:SetSize(scaledW, scaledH)
+            pip:ClearAllPoints()
+            pip:SetSize(scaledW, scaledH)
             -- (i-1)*stride is an exact integer multiple of physical pixels, so every pip lands on the same grid.
             local pipLeftX = (i - 1) * stride - halfGroup + cpXOff
-            pipTex:SetPoint(leftAnchor, anchorFrame, anchorRelPoint, pipLeftX, yDir * cpYOff)
+            pip:SetPoint(leftAnchor, anchor, anchorRelPoint, pipLeftX, yDir * cpYOff)
 
             -- Background texture behind each pip
-            local backdrop = pipTex._bg
+            local backdrop = pip._bg
             if backdrop then
                 backdrop:ClearAllPoints()
-                backdrop:SetAllPoints(pipTex)
+                backdrop:SetAllPoints(pip)
                 -- Reset from any prior icon socket; holy power re-sets these below.
                 backdrop:SetTexture(mod.CP_SHAPE.WHITE)
                 backdrop:SetTexCoord(0, 1, 0, 1)
@@ -735,37 +735,31 @@ local function UpdateClassPowerOnPlate(backing)
             -- untouched default (plain rectangle, no border, no prior shape decor) so users who
             -- never enable a shape pay nothing; a pip that ever had a mask/border keeps those
             -- fields so it still routes through ApplyPipShape to clean up when reverted.
-            if
-                cpShape ~= "rectangle"
-                or cpBorderOn
-                or pipTex._shapeMask
-                or pipTex._border
-                or pipTex._borderBox
-            then
-                mod.ApplyPipShape(backing, pipTex, cpShape, cpBorderOn, cpBorderCol, borderPx)
+            if cpShape ~= "rectangle" or cpBorderOn or pip._shapeMask or pip._border or pip._borderBox then
+                mod.ApplyPipShape(backing, pip, cpShape, cpBorderOn, cpBorderCol, borderPx)
             end
 
             if isSecret then
-                if not pipTex._secretBar then
+                if not pip._secretBar then
                     local scrollBar = CreateFrame("StatusBar", nil, backing)
                     scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
                     scrollBar:SetFrameLevel(backing:GetFrameLevel() + 5)
-                    pipTex._secretBar = scrollBar
+                    pip._secretBar = scrollBar
                 end
-                local scrollBar = pipTex._secretBar
+                local scrollBar = pip._secretBar
                 scrollBar:ClearAllPoints()
-                scrollBar:SetAllPoints(pipTex)
+                scrollBar:SetAllPoints(pip)
                 scrollBar:SetMinMaxValues(i - 1, i)
                 scrollBar:SetValue(current)
                 scrollBar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
                 scrollBar:Show()
-                pipTex:SetTexture(mod.CP_SHAPE.WHITE)
-                pipTex:SetTexCoord(0, 1, 0, 1)
-                pipTex:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
-                pipTex:Show()
+                pip:SetTexture(mod.CP_SHAPE.WHITE)
+                pip:SetTexCoord(0, 1, 0, 1)
+                pip:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
+                pip:Show()
             else
-                if pipTex._secretBar then
-                    pipTex._secretBar:Hide()
+                if pip._secretBar then
+                    pip._secretBar:Hide()
                 end
                 if iconKind == "holypower" then
                     -- Desaturated socket as the background, lit rune on top when filled. Point 5 reuses point 4 mirrored.
@@ -782,44 +776,44 @@ local function UpdateClassPowerOnPlate(backing)
                         backdrop:Show()
                     end
                     if i <= current then
-                        pipTex:SetAtlas("nameplates-holypower" .. position .. "-on")
+                        pip:SetAtlas("nameplates-holypower" .. position .. "-on")
                         if flip then
-                            pipTex:SetTexCoord(1, 0, 0, 1)
+                            pip:SetTexCoord(1, 0, 0, 1)
                         end
-                        pipTex:SetVertexColor(1, 1, 1, 1)
-                        pipTex:Show()
+                        pip:SetVertexColor(1, 1, 1, 1)
+                        pip:Show()
                     else
-                        pipTex:Hide()
+                        pip:Hide()
                     end
                 elseif iconKind then
                     -- Real resource art: the atlas defines the look, no tint.
-                    pipTex:SetAtlas(mod.GetPipIconAtlas(iconKind, i <= current, i))
+                    pip:SetAtlas(mod.GetPipIconAtlas(iconKind, i <= current, i))
                     if (i > current) and mod.CP_ICON_DIM_EMPTY[iconKind] then
-                        pipTex:SetVertexColor(0.35, 0.35, 0.35, 1) -- dim single-atlas empties
+                        pip:SetVertexColor(0.35, 0.35, 0.35, 1) -- dim single-atlas empties
                     else
-                        pipTex:SetVertexColor(1, 1, 1, 1)
+                        pip:SetVertexColor(1, 1, 1, 1)
                     end
-                    pipTex:Show()
+                    pip:Show()
                 else
-                    pipTex:SetTexture(mod.CP_SHAPE.WHITE)
-                    pipTex:SetTexCoord(0, 1, 0, 1)
+                    pip:SetTexture(mod.CP_SHAPE.WHITE)
+                    pip:SetTexCoord(0, 1, 0, 1)
                     if i <= current then
-                        pipTex:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
+                        pip:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
                     else
-                        pipTex:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
+                        pip:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
                     end
-                    pipTex:Show()
+                    pip:Show()
                 end
             end
         else
-            pipTex:Hide()
-            if pipTex._bg then
-                pipTex._bg:Hide()
+            pip:Hide()
+            if pip._bg then
+                pip._bg:Hide()
             end
-            if pipTex._secretBar then
-                pipTex._secretBar:Hide()
+            if pip._secretBar then
+                pip._secretBar:Hide()
             end
-            mod.HidePipDecor(pipTex)
+            mod.HidePipDecor(pip)
         end
     end
 end
@@ -883,7 +877,7 @@ mod._WCNP_Arm = function(powerKey)
 end
 
 mod._WCNP_Attach = function(
-    anchorFrame,
+    anchor,
     anchorRelPoint,
     leftAnchor,
     xOff,
@@ -918,7 +912,7 @@ mod._WCNP_Attach = function(
     -- Geometry gate: reposition only when the layout actually moved (anchor
     -- frame swap on cast-bar avoidance, offsets, scale, cap changes).
     if
-        p._npAF ~= anchorFrame
+        p._npAF ~= anchor
         or p._npLA ~= leftAnchor
         or p._npRP ~= anchorRelPoint
         or p._npX ~= xOff
@@ -926,13 +920,13 @@ mod._WCNP_Attach = function(
         or p._npW ~= wid
         or p._npH ~= hgt
     then
-        p._npAF, p._npLA, p._npRP = anchorFrame, leftAnchor, anchorRelPoint
+        p._npAF, p._npLA, p._npRP = anchor, leftAnchor, anchorRelPoint
         p._npX, p._npY, p._npW, p._npH = xOff, yOff, wid, hgt
         p:SetSize(wid, hgt)
         p:ClearAllPoints()
         -- SetPoint offsets apply in the POSITIONED frame's own scale: convert
         -- the plate-local offsets too.
-        p:SetPoint(leftAnchor, anchorFrame, anchorRelPoint, xOff * k, yOff * k)
+        p:SetPoint(leftAnchor, anchor, anchorRelPoint, xOff * k, yOff * k)
         dirty = true
     end
     -- Style gate: separator/empty/fill colors from the live settings.

@@ -704,7 +704,7 @@ do
     function CludesUI._ShowSyncSeedConfirm(options)
         local fontFile = (CludesUI.GetFontPath and CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local Pix = CludesUI.PanelPP or CludesUI.PP
-        local Widgets, PAD = 360, 18
+        local W, PAD = 360, 18
 
         if not CludesUI._syncConfirmFrame then
             -- Controller cursor: screen-level overlays hang off the overlay
@@ -822,7 +822,7 @@ do
             end
             ui.title = MakeFont(f, 14, 1, 1, 1, 0.9)
             ui.msg = MakeFont(f, 11, 1, 1, 1, 0.6)
-            ui.msg:SetWidth(Widgets - PAD * 2)
+            ui.msg:SetWidth(W - PAD * 2)
             ui.msg:SetJustifyH("CENTER")
             ui.ddLabel = MakeFont(f, 11, 1, 1, 1, 0.5)
 
@@ -854,7 +854,7 @@ do
             ui.ddHolder, ui.ddBtn = ddHolder, ddBtn
 
             ui.warn = MakeFont(f, 10, 0.92, 0.3, 0.3, 1)
-            ui.warn:SetWidth(Widgets - PAD * 2)
+            ui.warn:SetWidth(W - PAD * 2)
             ui.warn:SetJustifyH("CENTER")
             ui.warn:SetText(
                 CludesUI.L("Position and size settings are not synced and keep each profile's own values.")
@@ -877,11 +877,11 @@ do
 
         local cy = -PAD
 
-        local titleText = ui.title
-        titleText:SetFont(fontFile, 14, "")
-        titleText:ClearAllPoints()
-        titleText:SetPoint("TOP", f, "TOP", 0, cy)
-        titleText:SetText(CludesUI.L(options.hadGroup and "Update Sync Group" or "Create Sync Group"))
+        local title = ui.title
+        title:SetFont(fontFile, 14, "")
+        title:ClearAllPoints()
+        title:SetPoint("TOP", f, "TOP", 0, cy)
+        title:SetText(CludesUI.L(options.hadGroup and "Update Sync Group" or "Create Sync Group"))
         cy = cy - 22 - 8
 
         local msg = ui.msg
@@ -927,7 +927,7 @@ do
         confirmBtn:SetPoint("TOPLEFT", f, "TOP", 6, cy)
         cy = cy - 26
 
-        f:SetSize(Widgets, -cy + PAD)
+        f:SetSize(W, -cy + PAD)
 
         confirmBtn:SetScript("OnClick", function()
             f:Hide()
@@ -1131,11 +1131,11 @@ do
             iconTex:SetVertexColor(0.55, 0.55, 0.55, 1)
         end
 
-        local titleText = ui.title
-        titleText:SetFont(fontFile, 14, "")
-        titleText:ClearAllPoints()
-        titleText:SetPoint("TOP", dialog, "TOP", 0, cy - 1)
-        titleText:SetText(CludesUI.Lf("%1$s Sync", CludesUI.L(displayName)))
+        local title = ui.title
+        title:SetFont(fontFile, 14, "")
+        title:ClearAllPoints()
+        title:SetPoint("TOP", dialog, "TOP", 0, cy - 1)
+        title:SetText(CludesUI.Lf("%1$s Sync", CludesUI.L(displayName)))
         cy = cy - HEADER_H - 7
 
         local subtitle = ui.subtitle
@@ -1167,28 +1167,28 @@ do
             toggleState[profName] = isSynced
 
             -- Card-style row: label left, toggle right, whole row clickable
-            local rowFrame = rowList[idx]
-            if not rowFrame then
-                rowFrame = CreateFrame("Button", nil, dialog)
-                rowFrame:SetFrameLevel(dialog:GetFrameLevel() + 1)
-                local rowBg = rowFrame:CreateTexture(nil, "BACKGROUND")
+            local row = rowList[idx]
+            if not row then
+                row = CreateFrame("Button", nil, dialog)
+                row:SetFrameLevel(dialog:GetFrameLevel() + 1)
+                local rowBg = row:CreateTexture(nil, "BACKGROUND")
                 rowBg:SetAllPoints()
                 rowBg:SetColorTexture(1, 1, 1, 0.05)
-                rowFrame._bg = rowBg
-                rowFrame._profName = profName
+                row._bg = rowBg
+                row._profName = profName
 
-                local tg, _, tgSnap = BuildToggleControl(rowFrame, rowFrame:GetFrameLevel() + 1, function()
-                    return dialog._toggleState[rowFrame._profName]
+                local tg, _, tgSnap = BuildToggleControl(row, row:GetFrameLevel() + 1, function()
+                    return dialog._toggleState[row._profName]
                 end, function(val)
-                    dialog._toggleState[rowFrame._profName] = val
+                    dialog._toggleState[row._profName] = val
                     if dialog._refreshLabel then
                         dialog._refreshLabel()
                     end
                 end, { sizeRatio = 0.75 })
-                tg:SetPoint("RIGHT", rowFrame, "RIGHT", -10, 0)
-                rowFrame._tg, rowFrame._tgSnap = tg, tgSnap
+                tg:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+                row._tg, row._tgSnap = tg, tgSnap
 
-                rowFrame:SetScript("OnClick", function(self)
+                row:SetScript("OnClick", function(self)
                     local status = dialog._toggleState
                     status[self._profName] = not status[self._profName]
                     self._tgSnap()
@@ -1196,10 +1196,10 @@ do
                         dialog._refreshLabel()
                     end
                 end)
-                rowFrame:SetScript("OnEnter", function()
+                row:SetScript("OnEnter", function()
                     rowBg:SetColorTexture(1, 1, 1, 0.08)
                 end)
-                rowFrame:SetScript("OnLeave", function()
+                row:SetScript("OnLeave", function()
                     rowBg:SetColorTexture(1, 1, 1, 0.05)
                 end)
                 -- Toggle hover fires the row's OnLeave (child frame); keep the card lit
@@ -1210,22 +1210,22 @@ do
                     rowBg:SetColorTexture(1, 1, 1, 0.05)
                 end)
 
-                local lblText = MakeFont(rowFrame, 12, 1, 1, 1, 0.85)
-                lblText:SetPoint("LEFT", rowFrame, "LEFT", 10, 0)
-                rowFrame._lbl = lblText
-                rowList[idx] = rowFrame
+                local lblText = MakeFont(row, 12, 1, 1, 1, 0.85)
+                lblText:SetPoint("LEFT", row, "LEFT", 10, 0)
+                row._lbl = lblText
+                rowList[idx] = row
             end
-            rowFrame._profName = profName
-            rowFrame:SetSize(POPUP_W - PAD * 2, ROW_H)
-            rowFrame:ClearAllPoints()
-            rowFrame:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, cy)
-            rowFrame:SetFrameLevel(dialog:GetFrameLevel() + 1)
-            rowFrame._tg:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-            rowFrame._bg:SetColorTexture(1, 1, 1, 0.05)
-            rowFrame._tgSnap()
-            rowFrame:Show()
+            row._profName = profName
+            row:SetSize(POPUP_W - PAD * 2, ROW_H)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, cy)
+            row:SetFrameLevel(dialog:GetFrameLevel() + 1)
+            row._tg:SetFrameLevel(row:GetFrameLevel() + 1)
+            row._bg:SetColorTexture(1, 1, 1, 0.05)
+            row._tgSnap()
+            row:Show()
 
-            local lblText = rowFrame._lbl
+            local lblText = row._lbl
             lblText:SetFont(fontFile, 12, "")
             if profName == isActive then
                 lblText:SetText(profName .. " |cff" .. accentHex .. "(active)|r")

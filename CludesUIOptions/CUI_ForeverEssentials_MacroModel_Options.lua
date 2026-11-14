@@ -34,8 +34,8 @@ if not mod then
     return
 end -- module disabled: no options page
 
-local B, Stl, MM = {}, {}, {}
-mod._MacroModel = { B = B, S = Stl, MM = MM }
+local B, S, MM = {}, {}, {}
+mod._MacroModel = { B = B, S = S, MM = MM }
 
 -------------------------------------------------------------------------------
 --  Line kinds, in menu order; a { group = label } row starts each menu group.
@@ -676,11 +676,11 @@ function B.NewVariant(arg)
     return { arg = arg or "", target = "", conds = {}, stance = "", params = {}, extra = "" }
 end
 
-function B.NewLine(kindOf, arg)
-    if kindOf == "targetmarker" and not arg then
+function B.NewLine(kind, arg)
+    if kind == "targetmarker" and not arg then
         arg = "8"
     end -- skull
-    return { kind = kindOf or "cast", variants = { B.NewVariant(arg) }, reset = "", chan = "say" }
+    return { kind = kind or "cast", variants = { B.NewVariant(arg) }, reset = "", chan = "say" }
 end
 
 function B.New()
@@ -740,24 +740,24 @@ local function Bracket(parts)
 end
 
 function B.LineText(l)
-    local Keys = B.KIND[l.kind] or B.KIND.raw
+    local K = B.KIND[l.kind] or B.KIND.raw
     local v1 = l.variants[1] or B.NewVariant()
-    if Keys.key == "raw" then
+    if K.key == "raw" then
         return v1.arg or ""
     end
-    local cmd = Keys.cmd
-    if Keys.key == "chat" then
+    local cmd = K.cmd
+    if K.key == "chat" then
         cmd = "/" .. (l.chan or "say")
     end
 
-    if Keys.arg == "spells" then
+    if K.arg == "spells" then
         local s = cmd
         local b = Bracket(CondParts(v1))
         if b ~= "" then
             s = s .. " " .. b
         end
         local reset = strtrim(l.reset or "")
-        if Keys.reset and reset ~= "" then
+        if K.reset and reset ~= "" then
             s = s .. " reset=" .. reset
         end
         local a = strtrim(v1.arg or "")
@@ -769,11 +769,11 @@ function B.LineText(l)
 
     local segs = {}
     for idx, v in ipairs(l.variants) do
-        if idx > 1 and not Keys.multi then
+        if idx > 1 and not K.multi then
             break
         end
-        local b = Keys.conds and Bracket(CondParts(v)) or ""
-        local a = Keys.arg and strtrim(v.arg or "") or ""
+        local b = K.conds and Bracket(CondParts(v)) or ""
+        local a = K.arg and strtrim(v.arg or "") or ""
         local seg = b
         if a ~= "" then
             seg = (b ~= "" and (b .. " ") or "") .. a
@@ -859,31 +859,31 @@ function B.ParseLine(textValue)
     local cmd, rest = t:match("^(/%S+)%s*(.*)$")
     if cmd then
         cmd = cmd:lower()
-        local Keys = BY_CMD[cmd]
+        local K = BY_CMD[cmd]
         local chan = cmd:sub(2)
-        if not Keys and CHAN_OK[chan] then
-            Keys = B.KIND.chat
+        if not K and CHAN_OK[chan] then
+            K = B.KIND.chat
         end
-        if Keys then
-            l = B.NewLine(Keys.key)
-            if Keys.key == "chat" then
+        if K then
+            l = B.NewLine(K.key)
+            if K.key == "chat" then
                 l.chan = chan
             end
             local v = l.variants[1]
-            if Keys.arg == "spells" then
+            if K.arg == "spells" then
                 local conds, after = rest:match("^%[([^%]]*)%]%s*(.*)$")
                 if conds then
                     ParseConds(conds, v)
                     rest = after
                 end
                 local r, after2 = rest:match("^reset=(%S+)%s*(.*)$")
-                if r and Keys.reset then
+                if r and K.reset then
                     l.reset, rest = r, after2
                 end
                 v.arg = rest
-            elseif not Keys.conds then
+            elseif not K.conds then
                 v.arg = rest
-            elseif Keys.multi then
+            elseif K.multi then
                 l.variants = {}
                 for rawSeg in (rest .. ";"):gmatch("(.-);") do
                     local nv = B.NewVariant()
@@ -913,16 +913,16 @@ function B.Parse(body)
         return m
     end
     local first = true
-    for lineTex in (body .. "\n"):gmatch("(.-)\n") do
-        local tipText = first and lineTex:match("^#showtooltip ?(.*)$")
+    for line in (body .. "\n"):gmatch("(.-)\n") do
+        local tipText = first and line:match("^#showtooltip ?(.*)$")
         if
             tipText
             and tipText == strtrim(tipText)
-            and lineTex == (tipText ~= "" and ("#showtooltip " .. tipText) or "#showtooltip")
+            and line == (tipText ~= "" and ("#showtooltip " .. tipText) or "#showtooltip")
         then
             m.tooltip, m.tooltipSpell = true, tipText
         else
-            m.lines[#m.lines + 1] = B.ParseLine(lineTex)
+            m.lines[#m.lines + 1] = B.ParseLine(line)
         end
         first = false
     end
@@ -948,10 +948,10 @@ local function Scan()
     local bank = Enum.SpellBookSpellBank.Player
     local spellType = Enum.SpellBookItemType.Spell
     for idx = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-        local lineTex = C_SpellBook.GetSpellBookSkillLineInfo(idx)
-        if lineTex and not lineTex.shouldHide then
-            for slotIndex = lineTex.itemIndexOffset + 1, lineTex.itemIndexOffset + lineTex.numSpellBookItems do
-                local details = C_SpellBook.GetSpellBookItemInfo(slotIndex, bank)
+        local line = C_SpellBook.GetSpellBookSkillLineInfo(idx)
+        if line and not line.shouldHide then
+            for slot = line.itemIndexOffset + 1, line.itemIndexOffset + line.numSpellBookItems do
+                local details = C_SpellBook.GetSpellBookItemInfo(slot, bank)
                 local name = details and details.name
                 if name and name ~= "" and not details.isPassive and details.itemType == spellType then
                     local s = seen[name]
@@ -974,19 +974,19 @@ local function Scan()
 end
 
 -- Spellbook order: { { name, lname, icon } }; Sorted: by name.
-function Stl.List()
+function S.List()
     if dirty then
         Scan()
     end
     return entries
 end
-function Stl.Sorted()
+function S.Sorted()
     if dirty then
         Scan()
     end
     return sorted
 end
-function Stl.Invalidate()
+function S.Invalidate()
     dirty = true
 end
 
@@ -1025,9 +1025,9 @@ end
 
 -- The macro at index i as an entry, or nil.
 function MM.Entry(idx)
-    local name, glyph, body = GetMacroInfo(idx)
+    local name, icon, body = GetMacroInfo(idx)
     if name then
-        return { index = idx, name = name, icon = glyph, body = body or "", perChar = idx > MM.MAX_ACCOUNT }
+        return { index = idx, name = name, icon = icon, body = body or "", perChar = idx > MM.MAX_ACCOUNT }
     end
 end
 
@@ -1135,7 +1135,7 @@ end
 -- macro's own. Returns the saved macro's entry as the game keeps it, or nil
 -- and the reason. The editor checks its name and text first (MM.Check); a
 -- move keeps the macro's own, whatever they are.
-function MM.Save(ref, name, glyph, body, perChar)
+function MM.Save(ref, name, icon, body, perChar)
     perChar = perChar and true or false
     local idx, err
     if ref then
@@ -1143,18 +1143,18 @@ function MM.Save(ref, name, glyph, body, perChar)
         if not idx then
             return nil, err
         end
-        glyph = glyph or MM.StoredIcon(idx)
+        icon = icon or MM.StoredIcon(idx)
     elseif InCombatLockdown() then
         return nil, CludesUI.L("Macros can't be changed in combat.")
     end
-    glyph = glyph or MM.QUESTION
+    icon = icon or MM.QUESTION
     local success, new
     if idx and ref.perChar == perChar then
-        success, new = pcall(EditMacro, idx, name, glyph, body)
+        success, new = pcall(EditMacro, idx, name, icon, body)
     elseif MM.Free(perChar) <= 0 then
         return nil, CludesUI.L("No free macro slot")
     else
-        success, new = pcall(CreateMacro, name, glyph, body, perChar)
+        success, new = pcall(CreateMacro, name, icon, body, perChar)
         -- A move: the copy exists, so the original goes, found again first:
         -- the game runs the macro event's handlers inside CreateMacro, and
         -- another addon's handler may change this list (the copy is in the
@@ -1205,12 +1205,12 @@ function MM.Diff(snap, write)
     local first, last = 1, a
     for _ = 1, 2 do
         for k = first, last do
-            local name, glyph, body = GetMacroInfo(k)
-            if N[k] ~= name or Inner[k] ~= glyph or T[k] ~= body then
+            local name, icon, body = GetMacroInfo(k)
+            if N[k] ~= name or Inner[k] ~= icon or T[k] ~= body then
                 if not write then
                     return true
                 end
-                diff, N[k], Inner[k], T[k] = true, name, glyph, body
+                diff, N[k], Inner[k], T[k] = true, name, icon, body
             end
         end
         first, last = MM.MAX_ACCOUNT + 1, MM.MAX_ACCOUNT + c

@@ -47,7 +47,7 @@ initFrame:SetScript("OnEvent", function(self)
         return
     end
 
-    local function SavedDB()
+    local function DB()
         local d = _G._CUDM_DB
         if d and d.profile and d.profile.dm then
             return d.profile.dm
@@ -55,10 +55,10 @@ initFrame:SetScript("OnEvent", function(self)
         return {}
     end
     local function Cfg(k)
-        return SavedDB()[k]
+        return DB()[k]
     end
     local function Set(k, val)
-        SavedDB()[k] = val
+        DB()[k] = val
     end
 
     -- All settings are picked up on the next refresh cycle (0.3s combat,
@@ -181,7 +181,7 @@ initFrame:SetScript("OnEvent", function(self)
             hostFrame,
             posY,
             {
-                getStore = SavedDB,
+                getStore = DB,
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, luaDragonriding = true },
                 onChanged = VisApply,
@@ -1199,8 +1199,8 @@ initFrame:SetScript("OnEvent", function(self)
         if not CludesUI._prebuilding then
             local region = iconRow._rightRegion
             local function ZoomKey()
-                local look = Cfg("iconStyle") or "spec"
-                return (look == "spec" or look == "blizzard") and "classIconZoom" or "spriteIconZoom"
+                local style = Cfg("iconStyle") or "spec"
+                return (style == "spec" or style == "blizzard") and "classIconZoom" or "spriteIconZoom"
             end
             local rowList = {
                 {
@@ -2493,12 +2493,11 @@ initFrame:SetScript("OnEvent", function(self)
                             if alignment then
                                 return alignment
                             end
-                            local anchorFrame = Cfg("standaloneTimerAnchor") or "free"
-                            if anchorFrame == "free" then
+                            local anchor = Cfg("standaloneTimerAnchor") or "free"
+                            if anchor == "free" then
                                 return Cfg("standaloneTimerAlignLeft") and "LEFT" or "RIGHT"
                             end
-                            return (anchorFrame == "topleft" or anchorFrame == "bottomleft") and "LEFT"
-                                or "RIGHT"
+                            return (anchor == "topleft" or anchor == "bottomleft") and "LEFT" or "RIGHT"
                         end,
                         set = function(val)
                             Set("standaloneTimerTextAlign", val)
@@ -2762,7 +2761,7 @@ initFrame:SetScript("OnEvent", function(self)
     local PAGE_SH = "Spell History"
 
     local function SHDB()
-        local d = SavedDB()
+        local d = DB()
         if not d.spellHistory then
             d.spellHistory = {}
         end
@@ -3164,32 +3163,32 @@ initFrame:SetScript("OnEvent", function(self)
             if DMBlizzArt() then
                 CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
             end
-            local blockData = CreateFrame("Frame", nil, colorSwatch)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, colorSwatch)
+            block:SetAllPoints()
+            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local offset = barOff()
-                colorSwatch:SetAlpha(offset and 0.3 or 1)
-                if offset then
-                    blockData:Show()
+                local off = barOff()
+                colorSwatch:SetAlpha(off and 0.3 or 1)
+                if off then
+                    block:Show()
                 else
-                    blockData:Hide()
+                    block:Hide()
                 end
                 swatchRefresh()
             end)
             local initOff = barOff()
             colorSwatch:SetAlpha(initOff and 0.3 or 1)
             if initOff then
-                blockData:Show()
+                block:Show()
             else
-                blockData:Hide()
+                block:Hide()
             end
         end
 
@@ -3441,17 +3440,17 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local function MakeSwatchBlock(colorSwatch)
-                local blockData = CreateFrame("Frame", nil, colorSwatch)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, colorSwatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                return blockData
+                return block
             end
             local customBlock = MakeSwatchBlock(customSwatch)
             local accentBlock = MakeSwatchBlock(accentSwatch)
@@ -3459,11 +3458,11 @@ initFrame:SetScript("OnEvent", function(self)
             local function refreshTextSwatches()
                 updateCustom()
                 updateAccent()
-                local offset = barOff()
+                local off = barOff()
                 local useAccent = SHDB().textColorUseAccent
-                customSwatch:SetAlpha(offset and 0.3 or (useAccent and 0.3 or 1))
-                accentSwatch:SetAlpha(offset and 0.3 or (useAccent and 1 or 0.3))
-                if offset then
+                customSwatch:SetAlpha(off and 0.3 or (useAccent and 0.3 or 1))
+                accentSwatch:SetAlpha(off and 0.3 or (useAccent and 1 or 0.3))
+                if off then
                     customBlock:Show()
                     accentBlock:Show()
                 else

@@ -227,12 +227,12 @@ end
 _tbbWake:SetScript("OnEvent", _tbbWake.OnEvent)
 mod.WakeTBBTick = _tbbWake.Wake
 
-function mod.WakeTBBTickIfParked(itemInfo)
+function mod.WakeTBBTickIfParked(item)
     if
         _tbbWake._enabled
         and tbbTickFrame
         and not tbbTickFrame:IsShown()
-        and (not itemInfo or itemInfo:IsActive())
+        and (not item or item:IsActive())
     then
         _tbbWake.Wake()
     end
@@ -675,8 +675,8 @@ do
     -- anchor frame covers the slot), the option is off, or no spec links the
     -- entry at all; else +1/-1.
     local function TBBShiftDirFor(record, gk)
-        local modeName = record and record.shiftNoBar
-        if modeName ~= "Up" and modeName ~= "Down" then
+        local mode = record and record.shiftNoBar
+        if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
         local gid = mod.TBBLocalGidForGlobal(gk)
@@ -686,7 +686,7 @@ do
         if not TBBGlobalLinkedAnywhere(gk) then
             return 0
         end
-        return (modeName == "Up") and 1 or -1
+        return (mode == "Up") and 1 or -1
     end
     mod.TBBShiftDirFor = TBBShiftDirFor
 
@@ -811,8 +811,8 @@ do
     local GROW_TO_SIDE = { UP = "TOP", DOWN = "BOTTOM", LEFT = "LEFT", RIGHT = "RIGHT" }
 
     -- Resolve an anchor target key to a group id IF the anchored side matches that group's growth direction (nil otherwise).
-    function mod.TBBExtentGidForTarget(targetKey, sideName)
-        if type(targetKey) ~= "string" or not sideName then
+    function mod.TBBExtentGidForTarget(targetKey, side)
+        if type(targetKey) ~= "string" or not side then
             return nil
         end
         local gid
@@ -835,7 +835,7 @@ do
             return nil
         end
         local grow = (mod.TBBGroupGrow(gid) or "DOWN"):upper()
-        if sideName ~= "POINT" and GROW_TO_SIDE[grow] ~= sideName then
+        if side ~= "POINT" and GROW_TO_SIDE[grow] ~= side then
             return nil
         end
         return gid
@@ -843,11 +843,11 @@ do
 
     -- Anchor-system hook: outermost visible member edge in UIParent space, or nil to use
     -- the target frame's own bounds. Inert while unlock mode or the placeholder preview owns positions.
-    function CludesUI._GetAnchorTargetExtent(targetKey, sideName)
+    function CludesUI._GetAnchorTargetExtent(targetKey, side)
         if CludesUI._unlockActive or mod._tbbPlaceholderMode then
             return nil
         end
-        local gid = mod.TBBExtentGidForTarget(targetKey, sideName)
+        local gid = mod.TBBExtentGidForTarget(targetKey, side)
         if not gid then
             return nil
         end
@@ -860,18 +860,18 @@ do
                 if f and f:IsShown() and f:GetLeft() then
                     local fS = f:GetEffectiveScale() / uiS
                     local val
-                    if sideName == "TOP" then
+                    if side == "TOP" then
                         val = (f:GetTop() or 0) * fS
-                    elseif sideName == "BOTTOM" then
+                    elseif side == "BOTTOM" then
                         val = (f:GetBottom() or 0) * fS
-                    elseif sideName == "LEFT" then
+                    elseif side == "LEFT" then
                         val = (f:GetLeft() or 0) * fS
                     else
                         val = (f:GetRight() or 0) * fS
                     end
                     if not best then
                         best = val
-                    elseif sideName == "TOP" or sideName == "RIGHT" then
+                    elseif side == "TOP" or side == "RIGHT" then
                         if val > best then
                             best = val
                         end
@@ -1296,13 +1296,13 @@ function mod.SaveTBBStylePreset(name, srcCfg)
     if not presets then
         return nil
     end
-    local look = {}
-    mod.CopyTBBStyle(srcCfg, look)
+    local style = {}
+    mod.CopyTBBStyle(srcCfg, style)
     local pr = mod.FindTBBStylePreset(name)
     if pr then
-        pr.style = look
+        pr.style = style
     else
-        pr = { name = name, style = look }
+        pr = { name = name, style = style }
         presets[#presets + 1] = pr
     end
     srcCfg.stylePresetName = name
@@ -1497,14 +1497,14 @@ local function ReflowGroup(tbb, gid, barList)
     end
 
     local first = visible[1].frame
-    local anchorFrame = tbbFrames[anchorIdx]
+    local anchor = tbbFrames[anchorIdx]
 
-    if anchorFrame and anchorFrame ~= first then
+    if anchor and anchor ~= first then
         -- Configured anchor buff is inactive/hidden: pin the first VISIBLE member onto the
         -- anchor frame's slot so it takes the group origin. The anchor frame keeps whatever
         -- position BuildTrackedBuffBars/the unlock system gave it (element anchoring included).
         first:ClearAllPoints()
-        first:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 0, 0)
+        first:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
     end
     -- else the first visible bar IS the anchor: NEVER touch its point. BuildTrackedBuffBars
     -- and the unlock system already position it and honor IsUnlockAnchored, so re-deriving
@@ -1559,7 +1559,7 @@ end
 -- resize its frame with its OWN icon math. Used by options sliders, unlock
 -- drag-resize and size-MATCH; re-entrancy guarded so a sibling write cannot recurse.
 local _tbbGroupSizing = false
-function mod.PropagateTBBGroupSize(srcIdx, dim, value)
+function mod.PropagateTBBGroupSize(srcIdx, size, value)
     if _tbbGroupSizing then
         return
     end
@@ -1576,11 +1576,11 @@ function mod.PropagateTBBGroupSize(srcIdx, dim, value)
     _tbbGroupSizing = true
     for i, c in ipairs(barList) do
         if i ~= srcIdx and mod.TBBBarGroupID(c) == srcGid then
-            c[dim] = value
+            c[size] = value
             local f = tbbFrames[i]
             if f then
                 -- width/height are the total footprint (icon included), so the frame takes the value directly.
-                if dim == "width" then
+                if size == "width" then
                     f:SetWidth(value)
                 else
                     f:SetHeight(value)

@@ -87,9 +87,9 @@ local KT_COLS = {
     {
         title = "Bars",
         on = BarsOn,
-        paint = function(hostRegion)
+        paint = function(host)
             if mod.KTB_PaintSample then
-                return mod.KTB_PaintSample(hostRegion, 3)
+                return mod.KTB_PaintSample(host, 3)
             end
         end,
     },
@@ -97,9 +97,9 @@ local KT_COLS = {
         title = "Nameplate Icon",
         on = PlatesOn,
         noFit = true,
-        paint = function(hostRegion)
+        paint = function(host)
             if mod.KT_PaintSampleIcon then
-                return mod.KT_PaintSampleIcon(hostRegion)
+                return mod.KT_PaintSampleIcon(host)
             end
         end,
     },
@@ -299,7 +299,7 @@ end
 mod._KT_BuildPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local posY = yOffset
-    local _, rowFrame, hgt
+    local _, row, hgt
 
     CludesUI:SetContentHeader(mod._KT_HeaderBuilder)
     hostFrame._showRowDivider = true
@@ -326,7 +326,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
     _, hgt = W:SectionHeader(hostFrame, "KICK TRACKER", posY)
     posY = posY - hgt
 
-    rowFrame, hgt = W:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Kick Tracker",
         tooltip = "Who in the group kicked each enemy and when their interrupt comes back, read from Blizzard's own damage meter (which must be on). Others' cooldowns follow their class, spec and talents, read before a key starts; yours follow your own talents.",
@@ -358,7 +358,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
-        local region = rowFrame._rightRegion
+        local region = row._rightRegion
         if region._control then
             region._control:Hide()
         end
@@ -382,7 +382,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         CludesUI.RegisterWidgetRefresh(whereRefresh)
     end
 
-    rowFrame, hgt = W:DualRow(hostFrame, posY, {
+    row, hgt = W:DualRow(hostFrame, posY, {
         type = "dropdown",
         text = "Focus Announce",
         tooltip = "Tells the party your focus marker at ready checks.",
@@ -411,7 +411,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
     -- no marker set (the standard empty-selection warning), with a dismiss
     -- button beside it that waves it off for good, account-wide.
     if not CludesUI._prebuilding then
-        local region = rowFrame._leftRegion
+        local region = row._leftRegion
         if region and region._control then
             CludesUI.AttachEmptyFilterWarn(
                 region,
@@ -465,7 +465,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         })
         posY = posY - hgt
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -494,7 +494,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(rowFrame._rightRegion, {
+            CludesUI.BuildInlineCog(row._rightRegion, {
                 tip = "Position Offsets",
                 title = "Position Offsets",
                 disabled = PlatesOff,
@@ -564,7 +564,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             })
         end
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Cooldown Timer",
             tooltip = "The seconds left on the kicker's interrupt.",
@@ -594,7 +594,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         if not CludesUI._prebuilding then
             -- Icon Effects: the checkbox dropdown over its three keys, in
             -- place of the row's placeholder dropdown.
-            local fxRgn = rowFrame._rightRegion
+            local fxRgn = row._rightRegion
             if fxRgn._control then
                 fxRgn._control:Hide()
             end
@@ -620,7 +620,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             fxRgn._control = fxDD
             fxRgn._lastInline = nil
             CludesUI.RegisterWidgetRefresh(fxRefresh)
-            CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+            CludesUI.BuildInlineCog(row._leftRegion, {
                 tip = "Timer Settings",
                 title = "Cooldown Timer",
                 disabled = function()
@@ -708,7 +708,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             { key = "EMT_KickBars", disabled = BarsOff, disabledTooltip = REQ_BARS }
         )
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Bars",
             tooltip = "A row per group member with an interrupt: the interrupt's icon, their name on a bar in their class color, and the seconds left while it is on cooldown.",
@@ -837,11 +837,11 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     tooltip = "Custom Color",
                     hasAlpha = true,
                     getValue = function()
-                        local column = Get("barBgColor", nil)
-                        return (column and column.r) or 0,
-                            (column and column.g) or 0,
-                            (column and column.b) or 0,
-                            (column and column.a) or 0.45
+                        local col = Get("barBgColor", nil)
+                        return (col and col.r) or 0,
+                            (col and col.g) or 0,
+                            (col and col.b) or 0,
+                            (col and col.a) or 0.45
                     end,
                     setValue = function(r, g, b, a)
                         local c = KT()
@@ -884,7 +884,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         })
         posY = posY - hgt
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Display Elements",
             tooltip = "The interrupt's icon, the member's name, the seconds left on the interrupt and the raid marker of the enemy they interrupted.",
@@ -915,7 +915,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             -- place of the row's placeholder dropdown, and its cog beside it:
             -- the icon's side and one text size for the name and the timer
             -- (the Fonts page sets the two apart).
-            local elRgn = rowFrame._leftRegion
+            local elRgn = row._leftRegion
             if elRgn._control then
                 elRgn._control:Hide()
             end

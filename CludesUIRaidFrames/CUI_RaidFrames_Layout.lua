@@ -93,9 +93,9 @@ mod._BuildHeaderSet = function(merge)
         -----------------------------------------------------------
         --  8 separated group headers (one per raid group)
         -----------------------------------------------------------
-        for group = 1, 8 do
+        for set = 1, 8 do
             local heading =
-                CreateFrame("Frame", "ERFGroupHeader" .. group, containerFrame, "SecureGroupHeaderTemplate")
+                CreateFrame("Frame", "ERFGroupHeader" .. set, containerFrame, "SecureGroupHeaderTemplate")
             -- the header births an AuraContainer per child SECURE-SIDE -- the only
             -- combat-legal container source (covers in-combat /reload and mid-combat
             -- roster growth). The containers file adopts it as the debuff shell.
@@ -106,7 +106,7 @@ mod._BuildHeaderSet = function(merge)
             heading:SetAttribute("point", initPoint)
             heading:SetAttribute("xOffset", initXOff)
             heading:SetAttribute("yOffset", initYOff)
-            heading:SetAttribute("groupFilter", tostring(group))
+            heading:SetAttribute("groupFilter", tostring(set))
             heading:SetAttribute("showRaid", true)
             heading:SetAttribute("showParty", true)
             heading:SetAttribute("showPlayer", true)
@@ -131,7 +131,7 @@ mod._BuildHeaderSet = function(merge)
                 end
             end
 
-            separatedHdrs[group] = heading
+            separatedHdrs[set] = heading
         end
     else
         -----------------------------------------------------------
@@ -261,15 +261,15 @@ function mod._UpdateGroupNumbers()
         unitGrowth = activeOv.unitGrowth
     end
     local vg = mod._VisibleGroups() or { true, true, true, true, true, true, false, false }
-    local dim = s.groupNumberSize or 10
+    local size = s.groupNumberSize or 10
     local gc = s.groupNumberColor or {}
     local ox = s.groupNumberOffsetX or 0
     local oy = s.groupNumberOffsetY or 0
-    for group = 1, 8 do
-        local labelFS = labels[group]
-        local heading = separatedHdrs[group]
+    for set = 1, 8 do
+        local labelFS = labels[set]
+        local heading = separatedHdrs[set]
         local firstBtn
-        if labelFS and heading and vg[group] ~= false then
+        if labelFS and heading and vg[set] ~= false then
             -- First populated unit of this group (empty-but-visible groups -> none)
             for idx = 1, 5 do
                 local button = heading[idx]
@@ -291,8 +291,8 @@ function mod._UpdateGroupNumbers()
                 else -- LEFT
                     labelFS:SetPoint("LEFT", firstBtn, "RIGHT", 3 + ox, oy)
                 end
-                ApplyFont(labelFS, dim) -- must precede SetText (FontString needs a font first)
-                labelFS:SetText(tostring(group))
+                ApplyFont(labelFS, size) -- must precede SetText (FontString needs a font first)
+                labelFS:SetText(tostring(set))
                 labelFS:SetTextColor(gc.r or 1, gc.g or 1, gc.b or 1, gc.a or 0.75)
                 labelFS:Show()
             else
@@ -306,9 +306,9 @@ end
 local function OccupiedGroups()
     local t = {}
     for ri = 1, GetNumGroupMembers() or 0 do
-        local _, _, subFrame = GetRaidRosterInfo(ri)
-        if subFrame then
-            t[subFrame] = true
+        local _, _, sub = GetRaidRosterInfo(ri)
+        if sub then
+            t[sub] = true
         end
     end
     return t
@@ -375,8 +375,8 @@ mod._LayoutGroupsImpl = function()
         --  Merge-groups mode: single flat header, all members in one grid
         ---------------------------------------------------------------
         -- Hide separated headers
-        for group = 1, 8 do
-            local heading = separatedHdrs[group]
+        for set = 1, 8 do
+            local heading = separatedHdrs[set]
             if heading and heading:IsShown() then
                 heading:Hide()
             end
@@ -508,22 +508,22 @@ mod._LayoutGroupsImpl = function()
         if centered then
             local occ = occupied or OccupiedGroups()
             local num, isShown = 0, 0
-            for slotIndex = 1, 8 do
-                local group = groupOrder and groupOrder[slotIndex] or slotIndex
-                if separatedHdrs[group] and vg[group] ~= false and not (occupied and not occupied[group]) then
+            for slot = 1, 8 do
+                local set = groupOrder and groupOrder[slot] or slot
+                if separatedHdrs[set] and vg[set] ~= false and not (occupied and not occupied[set]) then
                     isShown = isShown + 1
-                    if occ[group] then
+                    if occ[set] then
                         num = isShown
                     end
                 end
             end
             shiftX, shiftY = mod._RFCenterShift(slots, num)
         end
-        for slotIndex = 1, 8 do
-            local group = groupOrder and groupOrder[slotIndex] or slotIndex
-            local heading = separatedHdrs[group]
+        for slot = 1, 8 do
+            local set = groupOrder and groupOrder[slot] or slot
+            local heading = separatedHdrs[set]
             if heading then
-                if vg[group] == false or (occupied and not occupied[group]) then
+                if vg[set] == false or (occupied and not occupied[set]) then
                     if heading:IsShown() then
                         heading:Hide()
                     end

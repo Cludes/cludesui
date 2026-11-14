@@ -36,14 +36,14 @@ end
 -------------------------------------------------------------------------------
 --  Apply custom shape to a CDM icon
 -------------------------------------------------------------------------------
-ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
-    if not glyph then
+ApplyShapeToCDMIcon = function(icon, shape, barInfo, ssb)
+    if not icon then
         return
     end
-    local fd = _getFD(glyph)
-    local texture = fd and fd.tex or glyph._tex
-    local cd = fd and fd.cooldown or glyph._cooldown
-    local backdrop = fd and fd.bg or glyph._bg
+    local fd = _getFD(icon)
+    local texture = fd and fd.tex or icon._tex
+    local cd = fd and fd.cooldown or icon._cooldown
+    local backdrop = fd and fd.bg or icon._bg
     local zoom = barInfo.iconZoom or 0.08
     local borderSz = barInfo.borderSize or 1
     local brdR = barInfo.borderR or 0
@@ -74,7 +74,7 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
         end
     end
 
-    local ifc = FC(glyph)
+    local ifc = FC(icon)
     -- Stock styles: the style's ring replaces every CUI shape and the square
     -- border, and the icon shows its full art (no zoom) exactly as the viewer
     -- draws it (rounded by the viewer mask under Blizzard Style, square under
@@ -110,10 +110,10 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
 
         -- Restore square borders (PP or textured via ApplyBorderStyle). The border lives on
         -- fd.borderFrame (child of icon) so Blizzard's secure frames are never tainted; PP.GetBorders(icon) is the fallback for CDM-owned frames that skip DecorateFrame's child wrapper.
-        local bdrTarget = (fd and fd.borderFrame) or glyph
+        local bdrTarget = (fd and fd.borderFrame) or icon
         if blizzArt then
             -- Blizzard Style draws no CUI border (the ring overlay is the frame).
-        elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(glyph) then
+        elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(icon) then
             local texKey = barInfo.borderTexture or "solid"
             -- Exact size (borderSizePx) belongs to the bar's own step: a per-icon
             -- override that differs from it fails the step compare and stays legacy,
@@ -123,8 +123,8 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
             -- textured backdrop inherits it. +13 = in front (+14 for the Pixels styles), level-1 = behind.
             if fd and fd.borderFrame then
                 fd.borderFrame:SetFrameLevel(
-                    barInfo.borderBehind and math.max(0, glyph:GetFrameLevel() - 1)
-                        or (glyph:GetFrameLevel() + (CludesUI._pixelArtBorders[texKey] and 14 or 13))
+                    barInfo.borderBehind and math.max(0, icon:GetFrameLevel() - 1)
+                        or (icon:GetFrameLevel() + (CludesUI._pixelArtBorders[texKey] and 14 or 13))
                 )
             end
             CludesUI.ApplyBorderStyle(
@@ -149,7 +149,7 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
         -- Restore icon texture, filling the entire frame: PP.CreateBorder renders the border on top, so no inset is needed.
         if texture then
             texture:ClearAllPoints()
-            texture:SetAllPoints(glyph)
+            texture:SetAllPoints(icon)
             local extraCrop = 0
             if ifc.matchExpanded then
                 local baseW = barInfo.iconSize or 36
@@ -186,7 +186,7 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
         -- Restore cooldown: full frame so the swipe covers the entire icon
         if cd then
             cd:ClearAllPoints()
-            cd:SetAllPoints(glyph)
+            cd:SetAllPoints(icon)
             pcall(cd.SetSwipeTexture, cd, ns.CdmSwipeFile())
             if cd.SetUseCircularEdge then
                 pcall(cd.SetUseCircularEdge, cd, false)
@@ -208,7 +208,7 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     end
 
     if not ifc.shapeMask then
-        ifc.shapeMask = glyph:CreateMaskTexture()
+        ifc.shapeMask = icon:CreateMaskTexture()
     end
     local mask = ifc.shapeMask
     mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -224,8 +224,8 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     if cd then
         pcall(cd.RemoveMaskTexture, cd, mask)
     end
-    if glyph.OutOfRange then
-        pcall(glyph.OutOfRange.RemoveMaskTexture, glyph.OutOfRange, mask)
+    if icon.OutOfRange then
+        pcall(icon.OutOfRange.RemoveMaskTexture, icon.OutOfRange, mask)
     end
 
     -- Apply mask to icon texture, background, and OutOfRange overlay
@@ -235,8 +235,8 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     if backdrop then
         backdrop:AddMaskTexture(mask)
     end
-    if glyph.OutOfRange then
-        local oor = glyph.OutOfRange
+    if icon.OutOfRange then
+        local oor = icon.OutOfRange
         pcall(oor.RemoveMaskTexture, oor, mask)
         pcall(oor.AddMaskTexture, oor, mask)
     end
@@ -251,17 +251,17 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     local halfIE = iconExp / 2
     if texture then
         texture:ClearAllPoints()
-        CludesUI.PP.Point(texture, "TOPLEFT", glyph, "TOPLEFT", -halfIE, halfIE)
-        CludesUI.PP.Point(texture, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", halfIE, -halfIE)
+        CludesUI.PP.Point(texture, "TOPLEFT", icon, "TOPLEFT", -halfIE, halfIE)
+        CludesUI.PP.Point(texture, "BOTTOMRIGHT", icon, "BOTTOMRIGHT", halfIE, -halfIE)
     end
 
     -- Mask position (inset for border)
     mask:ClearAllPoints()
     if borderSz >= 1 then
-        CludesUI.PP.Point(mask, "TOPLEFT", glyph, "TOPLEFT", 1, -1)
-        CludesUI.PP.Point(mask, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", -1, 1)
+        CludesUI.PP.Point(mask, "TOPLEFT", icon, "TOPLEFT", 1, -1)
+        CludesUI.PP.Point(mask, "BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 1)
     else
-        mask:SetAllPoints(glyph)
+        mask:SetAllPoints(icon)
     end
 
     -- Expand texcoords for shape
@@ -273,8 +273,8 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     end
 
     -- Hide square borders (both PP and textured)
-    local bdrTarget2 = (fd and fd.borderFrame) or glyph
-    if fd and fd.borderFrame or CludesUI.PP.GetBorders(glyph) then
+    local bdrTarget2 = (fd and fd.borderFrame) or icon
+    if fd and fd.borderFrame or CludesUI.PP.GetBorders(icon) then
         CludesUI.PP.HideBorder(bdrTarget2)
         if CludesUI._bdBorderData then
             local bdFrame = CludesUI._bdBorderData[bdrTarget2]
@@ -288,18 +288,18 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     -- On an options preview slot (an options page pool host) the frame is
     -- pooled with the slot; on a live icon this is the plain CreateFrame.
     if not ifc.shapeBorderFrame then
-        local sbf = POOL.CreateFrame("Frame", nil, glyph)
-        sbf:SetAllPoints(glyph)
-        sbf:SetFrameLevel(glyph:GetFrameLevel() + 2)
+        local sbf = POOL.CreateFrame("Frame", nil, icon)
+        sbf:SetAllPoints(icon)
+        sbf:SetFrameLevel(icon:GetFrameLevel() + 2)
         ifc.shapeBorderFrame = sbf
     end
-    ifc.shapeBorderFrame:SetFrameLevel(glyph:GetFrameLevel() + 2)
+    ifc.shapeBorderFrame:SetFrameLevel(icon:GetFrameLevel() + 2)
     if not ifc.shapeBorder then
         ifc.shapeBorder = ifc.shapeBorderFrame:CreateTexture(nil, "OVERLAY", nil, 6)
     end
     local borderTex = ifc.shapeBorder
     borderTex:ClearAllPoints()
-    borderTex:SetAllPoints(glyph)
+    borderTex:SetAllPoints(icon)
     if borderSz > 0 and CDM_SHAPES.borders[shape] then
         borderTex:SetTexture(CDM_SHAPES.borders[shape])
         borderTex:SetVertexColor(brdR, brdG, brdB, brdA)
@@ -313,7 +313,7 @@ ApplyShapeToCDMIcon = function(glyph, shape, barInfo, ssb)
     -- Apply mask to cooldown so swipe follows shape
     if cd then
         cd:ClearAllPoints()
-        cd:SetAllPoints(glyph)
+        cd:SetAllPoints(icon)
         pcall(cd.AddMaskTexture, cd, mask)
         if cd.SetSwipeTexture then
             pcall(cd.SetSwipeTexture, cd, maskTex)
@@ -346,11 +346,11 @@ ns.ApplyShapeToCDMIcon = ApplyShapeToCDMIcon
 -- swipe over a CDM icon during a custom active window. The overlay MUST copy the underlying
 -- icon's custom shape or a square icon/swipe is drawn over the shaped icon and the mask looks
 -- broken. Reuses the underlying shapeMask: masking is screen-space and the overlay covers the same region, so one mask serves both. A none/cropped shape clears any mask we added and restores a plain square swipe.
-function ns.ApplyShapeToOverlay(glyph, oIcon, oCd, barInfo)
-    if not glyph then
+function ns.ApplyShapeToOverlay(icon, oIcon, oCd, barInfo)
+    if not icon then
         return
     end
-    local ifc = FC(glyph)
+    local ifc = FC(icon)
     local mask = ifc.shapeMask
     local shape = ifc.shapeApplied and ifc.shapeName or nil
 
@@ -392,8 +392,8 @@ function ns.ApplyShapeToOverlay(glyph, oIcon, oCd, barInfo)
     local halfIE = iconExp / 2
     if oIcon then
         oIcon:ClearAllPoints()
-        CludesUI.PP.Point(oIcon, "TOPLEFT", glyph, "TOPLEFT", -halfIE, halfIE)
-        CludesUI.PP.Point(oIcon, "BOTTOMRIGHT", glyph, "BOTTOMRIGHT", halfIE, -halfIE)
+        CludesUI.PP.Point(oIcon, "TOPLEFT", icon, "TOPLEFT", -halfIE, halfIE)
+        CludesUI.PP.Point(oIcon, "BOTTOMRIGHT", icon, "BOTTOMRIGHT", halfIE, -halfIE)
         local insetPx = CDM_SHAPES.insets[shape] or 17
         local visRatio = (128 - 2 * insetPx) / 128
         local expand = ((1 / visRatio) - 1) * 0.5
@@ -402,7 +402,7 @@ function ns.ApplyShapeToOverlay(glyph, oIcon, oCd, barInfo)
     end
     if oCd then
         oCd:ClearAllPoints()
-        oCd:SetAllPoints(glyph)
+        oCd:SetAllPoints(icon)
         pcall(oCd.AddMaskTexture, oCd, mask)
         if oCd.SetSwipeTexture then
             pcall(oCd.SetSwipeTexture, oCd, maskTex)
@@ -541,7 +541,7 @@ do
     -- it manages (the all-off case is one weak-table read). Weak keys: pooled frames drop out on their own. State lives HERE, never on the frames (many are Blizzard-owned).
     local attached = setmetatable({}, { __mode = "k" })
 
-    local function BuildFormatter(seconds, dec, column, r, g, b)
+    local function BuildFormatter(seconds, dec, col, r, g, b)
         if
             not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding)
         then
@@ -550,7 +550,7 @@ do
         local Up = Enum.NumericRuleFormatRounding.Up
         local Nearest = Enum.NumericRuleFormatRounding.Nearest
         local function Wrap(fmt)
-            if not column then
+            if not col then
                 return fmt
             end
             return CreateColor(r, g, b, 1):WrapTextInColorCode(fmt)
@@ -609,12 +609,12 @@ do
             seconds = 59
         end
         local dec = ss.thresholdDecimals == true
-        local column = ss.thresholdColorEnabled == true
-        if not (dec or column) then
+        local col = ss.thresholdColorEnabled == true
+        if not (dec or col) then
             return nil
         end
         local r, g, b = 1, 0.2, 0.2
-        if column then
+        if col then
             r = ss.thresholdColorR or 1
             g = ss.thresholdColorG or 0.2
             b = ss.thresholdColorB or 0.2
@@ -623,7 +623,7 @@ do
             "%d|%s|%s",
             seconds,
             dec and "1" or "0",
-            column and string.format("%.3f,%.3f,%.3f", r, g, b) or "0"
+            col and string.format("%.3f,%.3f,%.3f", r, g, b) or "0"
         )
         local f = formatters[sig]
         if f == nil and not unsupported then
@@ -632,7 +632,7 @@ do
                 formatters = {}
                 formatterCount = 0
             end
-            f = BuildFormatter(seconds, dec, column, r, g, b)
+            f = BuildFormatter(seconds, dec, col, r, g, b)
             if f then
                 formatters[sig] = f
                 formatterCount = formatterCount + 1
@@ -686,14 +686,14 @@ end
 -- Styles the custom-spell "Show Charges" count text (created lazily by the CdmHooks ticker) to
 -- match the bar's native stack/charge text: font, size, color, anchor position and X/Y offset.
 -- Called at creation and from every RefreshCDMIconAppearance pass so option changes apply live. With no bar data the defaults resolve to size 11, bottom-right, +2 nudge.
-function ns.StyleCustomChargeText(glyph, barId)
-    local fontStr = glyph and glyph._castCountText
+function ns.StyleCustomChargeText(icon, barId)
+    local fontStr = icon and icon._castCountText
     if not fontStr then
         return
     end
     local barInfo = (barId and barDataByKey[barId]) or {}
     -- Fonts render at the frame's native scale; compensate like the main pass.
-    local iconScale = glyph:GetScale() or 1
+    local iconScale = icon:GetScale() or 1
     if iconScale < 0.01 then
         iconScale = 1
     end
@@ -732,13 +732,13 @@ function ns.StyleCustomChargeText(glyph, barId)
         barInfo.stackCountB or 1
     )
     -- Parent onto the text overlay so it renders above the border.
-    local fd = _getFD(glyph)
-    local txOverlay = (fd and fd.textOverlay) or glyph._textOverlay
+    local fd = _getFD(icon)
+    local txOverlay = (fd and fd.textOverlay) or icon._textOverlay
     if txOverlay then
         fontStr:SetParent(txOverlay)
     end
     fontStr:ClearAllPoints()
-    fontStr:SetPoint(scPoint, txOverlay or glyph, scPoint, scX, scY)
+    fontStr:SetPoint(scPoint, txOverlay or icon, scPoint, scX, scY)
 end
 
 -- Refresh visual properties of existing icons (called when settings change)
@@ -772,22 +772,22 @@ local function RefreshCDMIconAppearance(barId)
         zoom = 0
     end
 
-    for _, glyph in ipairs(icons) do
+    for _, icon in ipairs(icons) do
         -- Empty Slot: pure grid spacer, deliberately never decorated (see
         -- DecorateFrame) -- skip every bar-wide/per-icon style and cd-state pass
         -- so a bar's Glow (CD Ready) or other "apply to bar" effect can never
         -- attach to it (its bogus marker id never carries a real cooldown, so
         -- it would otherwise resolve as permanently ready and glow forever).
-        if not glyph._isEmptySlotFrame then
-            local fd = _getFD(glyph)
-            local texture = fd and fd.tex or glyph._tex
-            local cd = fd and fd.cooldown or glyph._cooldown
-            local backdrop = fd and fd.bg or glyph._bg
-            local glowOv = fd and fd.glowOverlay or glyph._glowOverlay
-            local kbText = fd and fd.keybindText or glyph._keybindText
-            local txOverlay = fd and fd.textOverlay or glyph._textOverlay
+        if not icon._isEmptySlotFrame then
+            local fd = _getFD(icon)
+            local texture = fd and fd.tex or icon._tex
+            local cd = fd and fd.cooldown or icon._cooldown
+            local backdrop = fd and fd.bg or icon._bg
+            local glowOv = fd and fd.glowOverlay or icon._glowOverlay
+            local kbText = fd and fd.keybindText or icon._keybindText
+            local txOverlay = fd and fd.textOverlay or icon._textOverlay
             -- Scale compensation: fonts render at the frame's native scale, so multiply sizes by 1/scale to match the visual icon size.
-            local iconScale = glyph:GetScale() or 1
+            local iconScale = icon:GetScale() or 1
             if iconScale < 0.01 then
                 iconScale = 1
             end
@@ -802,11 +802,11 @@ local function RefreshCDMIconAppearance(barId)
             local isBuffFamilyBar = (barInfo.barType == "buffs" or barId == "buffs")
             -- Login/refresh coverage for Max Stacks Glow: a charge spell at max never fires the swipe hook, so register here too. Gated on the feature flag so non-users skip the call entirely.
             if ns._cdmAnyMaxStacksGlow and not isBuffFamilyBar and ns.WatchMaxStacksIfEnabled then
-                ns.WatchMaxStacksIfEnabled(glyph)
+                ns.WatchMaxStacksIfEnabled(icon)
             end
             -- Same for "Hide CD Text (Charges)": a charge spell at max shows no recharge text and never fires the swipe hook. Same feature-flag gate.
             if ns._cdmAnyChargeHideCdText and not isBuffFamilyBar and ns.WatchChargeCdTextIfEnabled then
-                ns.WatchChargeCdTextIfEnabled(glyph)
+                ns.WatchChargeCdTextIfEnabled(icon)
             end
             -- "Hide Text at 0 Stacks" (bar-level): enroll/refresh on the same login + settings-change
             -- pass. Gated on the bar's key plus a next() probe so turning it OFF still reaches the unwatch/restore path; both empty = skipped entirely.
@@ -819,38 +819,38 @@ local function RefreshCDMIconAppearance(barId)
                     or next(ns._zeroChargeTextWatch or {}) ~= nil
                 )
             then
-                ns.WatchZeroChargeTextIfEnabled(glyph)
+                ns.WatchZeroChargeTextIfEnabled(icon)
             end
             -- Re-assert Hide Recharge Edge/Hide Swipe on charge icons so a toggle updates a
             -- currently-recharging spell immediately instead of waiting for the next recharge to fire the reactive SetDrawEdge/SetDrawSwipe hooks. Gated + self-skips non-charge frames = 0 cost unless in use.
             if ns._cdmAnyChargeStyle and not isBuffFamilyBar and ns.ReapplyChargeStyle then
-                ns.ReapplyChargeStyle(glyph)
+                ns.ReapplyChargeStyle(icon)
             end
             -- "Audio Effect on CD Ready": register cd/utility icons with the sound onto the event-driven
             -- watcher (SPELL_UPDATE_COOLDOWN + SPELL_UPDATE_CHARGES; charge and non-charge both handled there). Icons without the sound self-skip inside.
             if ns._cdmAnyCdReadySound and not isBuffFamilyBar and ns.WatchCdReadySoundIfEnabled then
-                ns.WatchCdReadySoundIfEnabled(glyph)
+                ns.WatchCdReadySoundIfEnabled(icon)
             end
             -- Buff per-spell settings resolve for any BUFF FRAME, not just buff-family bars: a hosted
             -- buff (real Blizzard buff frame reparented onto a CD/util bar, flagged fd._isBuffViewerFrame)
             -- and its inactive placeholder need the same resolution so their Buff Glow/Duration Text/Charge-Stack/Border/Desaturate match the active frame.
-            if isBuffFamilyBar or (fd and fd._isBuffViewerFrame) or glyph._isPlaceholderFrame then
+            if isBuffFamilyBar or (fd and fd._isBuffViewerFrame) or icon._isPlaceholderFrame then
                 -- Per-icon Audio on Buff Gain/Loss: attach the gain+loss hooks once, only when the feature is in use anywhere.
                 if ns._cdmAnyBuffSound and ns.EnsureBuffSoundHook then
-                    ns.EnsureBuffSoundHook(glyph)
+                    ns.EnsureBuffSoundHook(icon)
                 end
-                local fcb = _ecmeFC[glyph]
+                local fcb = _ecmeFC[icon]
                 -- Resolve by the DISPLAYED spell first (GetCanonicalSpellIDForFrame, the id the options
                 -- menu writes settings under) rather than fc.spellID (the cooldownInfo base). For buffs
                 -- whose base is a generic spec spell shared across icons (Consecration's standing-in
                 -- aura -> Prot Paladin 137028), keying off the base misses the real buff AND lets one
                 -- icon's setting shadow another's. canon as primary makes settings[canon] the fast path. Own placeholder/custom frames have no live spell -> fc.spellID.
-                sidb = (ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(glyph))
+                sidb = (ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(icon))
                     or (fcb and fcb.spellID)
                 if sidb then
                     local sdb = ns.GetBarSpellData(barId)
                     -- Shared resolver: matches the key against the frame's full identity set (canon first, then resolvedSid/baseSpellID).
-                    ssb = ns.ResolveSpellSettings and ns.ResolveSpellSettings(glyph, sidb, sdb, barId)
+                    ssb = ns.ResolveSpellSettings and ns.ResolveSpellSettings(icon, sidb, sdb, barId)
                 end
                 -- Stash the effective Buff Glow on fd so the BuffTicker hot path reads it without a
                 -- per-tick lookup. Only restart the live glow when the effective value actually changed (no flicker on no-op rebuilds).
@@ -879,7 +879,7 @@ local function RefreshCDMIconAppearance(barId)
                     end
                     nOperator = ssb.buffGlowStackOperator or "gte"
                 end
-                if glyph._isCustomBuffFrame or not ns.StackGlow_Configure then
+                if icon._isCustomBuffFrame or not ns.StackGlow_Configure then
                     nThreshold, nOperator = nil, nil
                 end
                 -- Glow When Visible: the BuffTicker lights the glow whenever the icon is shown
@@ -937,20 +937,20 @@ local function RefreshCDMIconAppearance(barId)
                         elseif sgMode == "custom" then
                             sgR, sgG, sgB = barInfo.buffGlowR, barInfo.buffGlowG, barInfo.buffGlowB
                         end
-                        ns.StackGlow_Configure(glyph, nThreshold, nOperator, sgStyle, sgR, sgG, sgB, barInfo)
+                        ns.StackGlow_Configure(icon, nThreshold, nOperator, sgStyle, sgR, sgG, sgB, barInfo)
                     elseif fd.stackGlow then
-                        ns.StackGlow_Configure(glyph)
+                        ns.StackGlow_Configure(icon)
                     end
                 end
             elseif fd and fd.stackGlow and ns.StackGlow_Configure then
                 -- Blizzard viewer frames are pooled across cooldown and buff
                 -- families: retire a controller when its frame goes non-buff.
-                ns.StackGlow_Configure(glyph)
+                ns.StackGlow_Configure(icon)
             end
             -- Update texture -- fill the entire frame. The border renders on top via PP.CreateBorder so no inset is needed.
             if texture then
                 texture:ClearAllPoints()
-                texture:SetAllPoints(glyph)
+                texture:SetAllPoints(icon)
                 texture:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
             end
             -- Update cooldown (full frame so swipe covers the entire icon). The swipe and the countdown
@@ -960,12 +960,12 @@ local function RefreshCDMIconAppearance(barId)
             -- The Pixels styles swap the two (cd +13, border +14): a square swipe over their line squares off its rounded corners.
             if cd then
                 cd:ClearAllPoints()
-                cd:SetAllPoints(glyph)
+                cd:SetAllPoints(icon)
                 -- Above the border (icon+13; below it at +13 under Pixels); still below glow (icon+16) / text (icon+23).
                 pcall(
                     cd.SetFrameLevel,
                     cd,
-                    glyph:GetFrameLevel() + (CludesUI._pixelArtBorders[barInfo.borderTexture] and 13 or 14)
+                    icon:GetFrameLevel() + (CludesUI._pixelArtBorders[barInfo.borderTexture] and 13 or 14)
                 )
                 -- Per-icon Duration Text override (ssb) falls back to the bar's values. Only Show
                 -- Numbers no longer forces this on: hiding the duration (bar toggle or per-icon) under it leaves just the stack count.
@@ -981,7 +981,7 @@ local function RefreshCDMIconAppearance(barId)
                 -- pass (so pool reuse + talent overrides stay correct) and re-asserts on every refresh, so toggling off restores the default. Not a per-tick path.
                 if ns._cdmAnyReverseSwipe then
                     -- A hosted buff (buff frame on a CD/util bar) uses the BUFF baseline (fill-up), not the cd baseline, so "Reverse" flips the same way it would on a real buffs bar.
-                    local rfFc = _ecmeFC[glyph]
+                    local rfFc = _ecmeFC[icon]
                     -- "Fills like a buff" must agree with the claim loops in
                     -- CludesUICdmHooks (DecorateFrame's isBuff, the CD claim
                     -- pass's wantRev): a hosted buff and its placeholder fill UP
@@ -994,7 +994,7 @@ local function RefreshCDMIconAppearance(barId)
                         or barInfo.barType == "custom_buff"
                         or (rfFc and rfFc.isHostedBuff)
                         or (fd and fd._isBuffViewerFrame)
-                        or glyph._isPlaceholderFrame
+                        or icon._isPlaceholderFrame
                     )
                             and true
                         or false
@@ -1002,7 +1002,7 @@ local function RefreshCDMIconAppearance(barId)
                     -- so every writer of this widget pushes the same value.
                     local rfReverse = rfBuff
                     if ns.EffectiveReverseSwipe then
-                        rfReverse = ns.EffectiveReverseSwipe(glyph, barId, rfBuff)
+                        rfReverse = ns.EffectiveReverseSwipe(icon, barId, rfBuff)
                     end
                     cd:SetReverse(rfReverse)
                     -- Keep the kind memo equal to what is RENDERED, so the
@@ -1016,15 +1016,15 @@ local function RefreshCDMIconAppearance(barId)
                 -- so zero cost unless someone enables it. Applied here for immediate feedback; the
                 -- SetDrawSwipe hook keeps it off against Blizzard's re-pushes. Re-asserts (not hide) each pass so toggling off restores the default swipe -- matching the hook's non-charge force-true.
                 if ns._cdmAnyHideCDSwipe and cd.SetDrawSwipe then
-                    local isCharge = type(glyph.HasVisualDataSource_Charges) == "function"
-                        and glyph:HasVisualDataSource_Charges()
+                    local isCharge = type(icon.HasVisualDataSource_Charges) == "function"
+                        and icon:HasVisualDataSource_Charges()
                     if not isCharge then
-                        local hsFc = _ecmeFC[glyph]
+                        local hsFc = _ecmeFC[icon]
                         local hsSid = hsFc and hsFc.spellID
                         local hideSw
                         if hsSid then
                             if ns.ResolveSpellSettings then
-                                local hsSs = ns.ResolveSpellSettings(glyph, hsSid, ns.GetBarSpellData(barId))
+                                local hsSs = ns.ResolveSpellSettings(icon, hsSid, ns.GetBarSpellData(barId))
                                 hideSw = hsSs and hsSs.hideCDSwipe
                             end
                             if not hideSw and ns.GetEffectiveCustomActiveState then
@@ -1032,7 +1032,7 @@ local function RefreshCDMIconAppearance(barId)
                                 hideSw = casH and casH.hideCDSwipe
                             end
                         end
-                        local fd = ns._hookFrameData and ns._hookFrameData[glyph]
+                        local fd = ns._hookFrameData and ns._hookFrameData[icon]
                         if fd then
                             fd._isProcessingOverride = true
                         end
@@ -1051,13 +1051,13 @@ local function RefreshCDMIconAppearance(barId)
                 -- simply not the id the options menu wrote the entry under), so it misses the armed
                 -- per-spell entry entirely. Reuse sidb when the buff block above already computed it.
                 if ns._cdmAnyThresholdText and ns.ApplyThresholdFormatter then
-                    local ttFc = _ecmeFC[glyph]
+                    local ttFc = _ecmeFC[icon]
                     local ttSid = sidb
-                        or (ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(glyph))
+                        or (ns.GetCanonicalSpellIDForFrame and ns.GetCanonicalSpellIDForFrame(icon))
                         or (ttFc and ttFc.spellID)
                     local tt
                     if ttSid and ns.ResolveThresholdTextSettings then
-                        tt = ns.ResolveThresholdTextSettings(glyph, ttSid, ns.GetBarSpellData(barId), barId)
+                        tt = ns.ResolveThresholdTextSettings(icon, ttSid, ns.GetBarSpellData(barId), barId)
                     end
                     ns.ApplyThresholdFormatter(cd, tt)
                 end
@@ -1065,7 +1065,7 @@ local function RefreshCDMIconAppearance(barId)
                 -- a charge is in hand; the font block below still styles the text (using the bar's showCD) so it is ready when numbers return.
                 local hideCD = not showCD
                 if ns.CdmShouldHideCountdown then
-                    hideCD = ns.CdmShouldHideCountdown(glyph, hideCD)
+                    hideCD = ns.CdmShouldHideCountdown(icon, hideCD)
                 end
                 cd:SetHideCountdownNumbers(hideCD)
                 -- Apply cooldown text font directly.
@@ -1095,10 +1095,10 @@ local function RefreshCDMIconAppearance(barId)
                 end
             end
             -- Update border (PP or textured via ApplyBorderStyle)
-            local bdrTgt = (fd and fd.borderFrame) or glyph
+            local bdrTgt = (fd and fd.borderFrame) or icon
             if blizzArt then
             -- Blizzard Style: no CUI border or background (ring + mask instead).
-            elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(glyph) then
+            elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(icon) then
                 local textureKey = barInfo.borderTexture or "solid"
                 CludesUI.ApplyBorderStyle(
                     bdrTgt,
@@ -1174,50 +1174,50 @@ local function RefreshCDMIconAppearance(barId)
                 end
             end
             -- Text must render above borders. Levels are relative to the icon's own frame level (CdmHooks: border +13, text +23).
-            local textLvl = glyph:GetFrameLevel() + 23
+            local textLvl = icon:GetFrameLevel() + 23
             -- Applications (buff stacks/aura applications) -- not an item count. Blizzard manages show/hide based on whether stacks exist; we only restyle position/font and never gate visibility on showItemCount.
-            if glyph.Applications then
-                pcall(glyph.Applications.SetFrameLevel, glyph.Applications, textLvl)
-                if glyph.Applications.Applications then
-                    local appsFS = glyph.Applications.Applications
+            if icon.Applications then
+                pcall(icon.Applications.SetFrameLevel, icon.Applications, textLvl)
+                if icon.Applications.Applications then
+                    local appsFS = icon.Applications.Applications
                     SetBlizzCDMFont(appsFS, scFont, scSize, scR, scG, scB)
                     appsFS:ClearAllPoints()
-                    appsFS:SetPoint(scPoint, glyph, scPoint, scX, scY)
+                    appsFS:SetPoint(scPoint, icon, scPoint, scX, scY)
                     if appsAlpha then
                         appsFS:SetAlpha(appsAlpha)
                     end
                 end
             end
             -- ChargeCount (spell charges like Sigil/Roll) -- not an item count. Blizzard manages show/hide based on charge state.
-            if glyph.ChargeCount then
-                pcall(glyph.ChargeCount.SetFrameLevel, glyph.ChargeCount, textLvl)
-                if glyph.ChargeCount.Current then
-                    local chargeFS = glyph.ChargeCount.Current
+            if icon.ChargeCount then
+                pcall(icon.ChargeCount.SetFrameLevel, icon.ChargeCount, textLvl)
+                if icon.ChargeCount.Current then
+                    local chargeFS = icon.ChargeCount.Current
                     SetBlizzCDMFont(chargeFS, scFont, scSize, scR, scG, scB)
                     chargeFS:ClearAllPoints()
-                    chargeFS:SetPoint(scPoint, glyph, scPoint, scX, scY)
+                    chargeFS:SetPoint(scPoint, icon, scPoint, scX, scY)
                     if csAlpha then
                         chargeFS:SetAlpha(csAlpha)
                     end
                 end
             end
             -- Item count text (potions/healthstones) -- our own frame, safe to reparent
-            if glyph._itemCountText then
+            if icon._itemCountText then
                 if txOverlay then
-                    glyph._itemCountText:SetParent(txOverlay)
+                    icon._itemCountText:SetParent(txOverlay)
                 end
-                SetBlizzCDMFont(glyph._itemCountText, scFont, scSize, scR, scG, scB)
-                glyph._itemCountText:ClearAllPoints()
-                glyph._itemCountText:SetPoint(scPoint, txOverlay or glyph, scPoint, scX, scY)
+                SetBlizzCDMFont(icon._itemCountText, scFont, scSize, scR, scG, scB)
+                icon._itemCountText:ClearAllPoints()
+                icon._itemCountText:SetPoint(scPoint, txOverlay or icon, scPoint, scX, scY)
                 if showItemCount then
-                    glyph._itemCountText:Show()
+                    icon._itemCountText:Show()
                 else
-                    glyph._itemCountText:Hide()
+                    icon._itemCountText:Hide()
                 end
             end
             -- Custom-spell "Show Charges" count text (our own lazy fontstring from the CdmHooks ticker) follows the same stack/charge text settings.
-            if glyph._castCountText then
-                ns.StyleCustomChargeText(glyph, barId)
+            if icon._castCountText then
+                ns.StyleCustomChargeText(icon, barId)
             end
 
             -- Update keybind text style
@@ -1228,20 +1228,20 @@ local function RefreshCDMIconAppearance(barId)
             -- Apply custom shape (overrides border/zoom set above). Pass the resolved per-icon
             -- settings so the buff-family Border override (size + color) applies on the authoritative border render, square or shaped.
             local shape = barInfo.iconShape or "none"
-            ApplyShapeToCDMIcon(glyph, shape, barInfo, ssb)
+            ApplyShapeToCDMIcon(icon, shape, barInfo, ssb)
             if blizzArt then
-                ns.CdmApplyBlizzIconArt(glyph)
+                ns.CdmApplyBlizzIconArt(icon)
             end
             -- A restyle just reset this icon's mask + border level out from under any live fake-active
             -- overlay (border size/shape change while the active window is open). Re-sync the overlay so it re-shapes and re-lifts the border above itself instead of waiting for the next trigger.
             if ns.FakeActive_OnIconRestyled then
-                ns.FakeActive_OnIconRestyled(glyph)
+                ns.FakeActive_OnIconRestyled(icon)
             end
 
             -- Reset glow so glow type change takes effect on next tick. Do NOT reset isActive -- that
             -- causes a 1-frame flash where the ticker sees the transition as "inactive" and un-desaturates
             -- the icon before re-detecting active on the next frame. Preserve proc glow and active state glow across rebuilds.
-            local ifd = _getFD(glyph)
+            local ifd = _getFD(icon)
             local hadProcGlow = ifd and ifd.procGlowActive
             local hadActiveGlow = ifd and ifd._activeGlowOn
             if hadProcGlow and glowOv then
@@ -1250,7 +1250,7 @@ local function RefreshCDMIconAppearance(barId)
                 if ifd then
                     ifd.procGlowActive = false
                 end
-                ShowProcGlow(glyph)
+                ShowProcGlow(icon)
                 -- A Blackout CD-state glow stays lit beside the proc on its own
                 -- overlay: take it down so the pass below restarts it with the
                 -- updated settings (or leaves it off when the effect is gone).
@@ -1273,15 +1273,15 @@ local function RefreshCDMIconAppearance(barId)
                 -- cdState glow active: stop it so the desat hook restarts with the updated style. Also re-evaluate immediately for off-CD spells (desat hook won't fire for those).
                 ns.StopCdGlow(ifd)
                 ifd._cdStateGlowOn = false
-                local fc = _ecmeFC[glyph]
+                local fc = _ecmeFC[icon]
                 local spellRef = fc and fc.spellID
                 local bk = fc and fc.barKey
                 if spellRef and bk then
                     local sd = ns.GetBarSpellData(bk)
                     -- Shared resolver: direct hit + full identity/override matching against the family store, with bar-tier fallback.
-                    local ss = ns.ResolveSpellSettings and ns.ResolveSpellSettings(glyph, spellRef, sd, bk)
+                    local ss = ns.ResolveSpellSettings and ns.ResolveSpellSettings(icon, spellRef, sd, bk)
                     -- The glow half of the effect (any hide beside it runs below).
-                    local glow = ns.CdStateGlowOf(ss, glyph)
+                    local glow = ns.CdStateGlowOf(ss, icon)
                     local isReadyGlow = (
                         glow == "pixelGlowReady"
                         or glow == "buttonGlowReady"
@@ -1299,7 +1299,7 @@ local function RefreshCDMIconAppearance(barId)
                         -- Glow (On CD) wants the opposite cooldown state of the ready variants.
                         local wantsGlow
                         if cseInfo then
-                            local realCD = ns.CdmOnRealCD(glyph, cseInfo)
+                            local realCD = ns.CdmOnRealCD(icon, cseInfo)
                             if isOnCdGlow then
                                 wantsGlow = realCD
                             else
@@ -1318,11 +1318,11 @@ local function RefreshCDMIconAppearance(barId)
                                 end
                             end
                             if isUsable == true then
-                                local look = ns.CdReadyGlowStyle(glow, ss)
-                                local cr, cg, cb = ns.CdReadyGlowColor(look, ss)
+                                local style = ns.CdReadyGlowStyle(glow, ss)
+                                local cr, cg, cb = ns.CdReadyGlowColor(style, ss)
                                 ifd._cdStateGlowOn = ns.StartCdGlow(
                                     ifd,
-                                    look,
+                                    style,
                                     cr,
                                     cg,
                                     cb,
@@ -1337,13 +1337,13 @@ local function RefreshCDMIconAppearance(barId)
                         local watchGlow = glowUsable
                         if
                             not watchGlow
-                            and (glyph._isRacialFrame or glyph._isTrinketFrame or glyph._isPresetFrame or glyph._isItemPresetFrame or glyph._isCustomSpellFrame)
-                            and not (ns.PresetHasCdState and ns.PresetHasCdState(glyph))
+                            and (icon._isRacialFrame or icon._isTrinketFrame or icon._isPresetFrame or icon._isItemPresetFrame or icon._isCustomSpellFrame)
+                            and not (ns.PresetHasCdState and ns.PresetHasCdState(icon))
                         then
                             watchGlow = true
                         end
                         if watchGlow and ns.CDGlowWatch then
-                            ns.CDGlowWatch(glyph)
+                            ns.CDGlowWatch(icon)
                         end
                     end
                 end
@@ -1355,16 +1355,16 @@ local function RefreshCDMIconAppearance(barId)
             end
 
             -- Apply initial cdState effect (hidden/glow) so the state is correct before the first desat tick and before the visibility system runs. Idempotent: re-evaluates current CD state.
-            local fc = _ecmeFC[glyph]
+            local fc = _ecmeFC[icon]
             local csSid = fc and fc.spellID
             local csBk = fc and fc.barKey
             if csSid and csBk and csBk:sub(1, 7) ~= "__ghost" then
                 local csSd = ns.GetBarSpellData(csBk)
                 -- Shared resolver: direct hit + full identity/override matching
                 -- against the family store, with bar-tier fallback.
-                local csSs = ns.ResolveSpellSettings and ns.ResolveSpellSettings(glyph, csSid, csSd, csBk)
+                local csSs = ns.ResolveSpellSettings and ns.ResolveSpellSettings(icon, csSid, csSd, csBk)
                 -- The effect is a hide and a glow, each run on its own below.
-                local cse, csGlow = ns.CdStateOf(csSs, glyph)
+                local cse, csGlow = ns.CdStateOf(csSs, icon)
                 -- The hide effects run as their base mode plus flags (ns.CD_STATE_HIDE: Shift Icons, Hidden Until Usable, Hidden Outside Form/Stance), so the branches below stay as-is.
                 local m = cse and ns.CD_STATE_HIDE[cse]
                 local cseShift, cseUsable, cseForm
@@ -1373,7 +1373,7 @@ local function RefreshCDMIconAppearance(barId)
                 end
                 -- Stance Bar (CludesUICdmStanceBar.lua): one more hide reason. Alone,
                 -- it runs as Hidden (On CD) with the cooldown never read.
-                local stance = ns.CdmStanceBarOf(csSs, glyph)
+                local stance = ns.CdmStanceBarOf(csSs, icon)
                 local stanceOnly = false
                 if stance and cse ~= "hiddenOnCD" and cse ~= "hiddenReady" and cse ~= "lowerAlphaOnCD" then
                     cse, stanceOnly = "hiddenOnCD", true
@@ -1391,9 +1391,9 @@ local function RefreshCDMIconAppearance(barId)
                     elseif cseForm then
                         -- Only the form decides; form changes re-arm through the form watch.
                         onCD = ns.CdmSpellOutsideForm(csLive)
-                        ns.WatchCdUsable(glyph, true)
+                        ns.WatchCdUsable(icon, true)
                     else
-                        realCD = ns.CdmOnRealCD(glyph, C_Spell.GetSpellCooldown(csLive))
+                        realCD = ns.CdmOnRealCD(icon, C_Spell.GetSpellCooldown(csLive))
                         onCD = realCD
                     end
                     if cseUsable then
@@ -1401,16 +1401,16 @@ local function RefreshCDMIconAppearance(barId)
                             onCD = ns.CdmSpellNotUsable(csLive)
                         end
                         -- Proc edges change only usability: SPELL_UPDATE_USABLE watch.
-                        ns.WatchCdUsable(glyph)
+                        ns.WatchCdUsable(icon)
                     end
                     local sHide, sShift = false, false
                     if stance then
                         sHide, sShift = ns.CdmStanceBarHidden(stance)
                         -- Page changes re-arm through the stance bar watch.
-                        ns.WatchCdUsable(glyph, cseForm, true, cseUsable)
+                        ns.WatchCdUsable(icon, cseForm, true, cseUsable)
                     end
                     if sHide then
-                        glyph:SetAlpha(0)
+                        icon:SetAlpha(0)
                         if fc then
                             fc._cdStateHidden = true
                             if ns.SetCdStateShiftHidden then
@@ -1425,9 +1425,9 @@ local function RefreshCDMIconAppearance(barId)
                             -- Hidden (CD Ready): on a charge spell "ready" means AT MAX charges, so the icon keeps tracking the recharge instead of vanishing with a charge still down (ns.CdmCdStateReady).
                             hide = ns.CdmCdStateReady(csLive, onCD, csSs.chargeHideUntilSpent)
                             -- The refill-to-max edge fires no visual hook, so register the SPELL_UPDATE_CHARGES watch that re-hides the icon when it tops off. Self-skips non-charge spells.
-                            ns.WatchCdStateChargeIfEnabled(glyph)
+                            ns.WatchCdStateChargeIfEnabled(icon)
                         end
-                        glyph:SetAlpha(hide and 0 or IconShownAlpha(fc, barInfo))
+                        icon:SetAlpha(hide and 0 or IconShownAlpha(fc, barInfo))
                         if fc then
                             fc._cdStateHidden = hide or false
                             if ns.SetCdStateShiftHidden then
@@ -1438,7 +1438,7 @@ local function RefreshCDMIconAppearance(barId)
                         -- Identical to hiddenOnCD but with a customizable opacity instead of 0. Reuse
                         -- the _cdStateHidden flag as "cd-state owns this alpha" so the opacity appliers leave the lowered value alone. A visibility-hidden bar stays at 0 in both states.
                         local csBase = IconShownAlpha(fc, barInfo)
-                        glyph:SetAlpha(
+                        icon:SetAlpha(
                             csBase == 0 and 0 or (onCD and (csSs.cdStateLowerAlpha or 0.5) or csBase)
                         )
                         if fc then
@@ -1451,7 +1451,7 @@ local function RefreshCDMIconAppearance(barId)
                         -- No hide effect: clear stale hidden state
                         if fc and fc._cdStateHidden then
                             fc._cdStateHidden = false
-                            glyph:SetAlpha(IconShownAlpha(fc, barInfo))
+                            icon:SetAlpha(IconShownAlpha(fc, barInfo))
                         end
                         if fc and ns.SetCdStateShiftHidden then
                             ns.SetCdStateShiftHidden(fc, false)
@@ -1459,7 +1459,7 @@ local function RefreshCDMIconAppearance(barId)
                     end
                     if csGlow then
                         if realCD == nil then
-                            realCD = ns.CdmOnRealCD(glyph, C_Spell.GetSpellCooldown(csLive))
+                            realCD = ns.CdmOnRealCD(icon, C_Spell.GetSpellCooldown(csLive))
                         end
                         -- A live proc or active-state glow keeps the shared overlay:
                         -- ns.StartCdGlow lights only a Blackout beside it.
@@ -1483,11 +1483,11 @@ local function RefreshCDMIconAppearance(barId)
                                     end
                                 end
                                 if isUsable == true and ifd then
-                                    local look = ns.CdReadyGlowStyle(csGlow, csSs)
-                                    local cr, cg, cb = ns.CdReadyGlowColor(look, csSs)
+                                    local style = ns.CdReadyGlowStyle(csGlow, csSs)
+                                    local cr, cg, cb = ns.CdReadyGlowColor(style, csSs)
                                     ifd._cdStateGlowOn = ns.StartCdGlow(
                                         ifd,
-                                        look,
+                                        style,
                                         cr,
                                         cg,
                                         cb,
@@ -1506,20 +1506,20 @@ local function RefreshCDMIconAppearance(barId)
                         if
                             not watchGlow
                             and (csGlow == "pixelGlowReady" or csGlow == "buttonGlowReady" or csGlow == "glowOnCD")
-                            and (glyph._isRacialFrame or glyph._isTrinketFrame or glyph._isPresetFrame or glyph._isItemPresetFrame or glyph._isCustomSpellFrame)
-                            and not (ns.PresetHasCdState and ns.PresetHasCdState(glyph))
+                            and (icon._isRacialFrame or icon._isTrinketFrame or icon._isPresetFrame or icon._isItemPresetFrame or icon._isCustomSpellFrame)
+                            and not (ns.PresetHasCdState and ns.PresetHasCdState(icon))
                         then
                             watchGlow = true
                         end
                         if watchGlow and glowOv and ns.CDGlowWatch then
-                            ns.CDGlowWatch(glyph)
+                            ns.CDGlowWatch(icon)
                         end
                     end
                 elseif fc and (fc._cdStateHidden or fc._cdStateShiftHidden) then
                     -- A preset keeps its hidden state from the Fake-Active engine (its cdState lives in customActiveStates, not per-bar spellSettings), so don't clear it here or the icon flashes visible.
-                    if not (ns.PresetHasCdState and ns.PresetHasCdState(glyph)) then
+                    if not (ns.PresetHasCdState and ns.PresetHasCdState(icon)) then
                         fc._cdStateHidden = false
-                        glyph:SetAlpha(IconShownAlpha(fc, barInfo))
+                        icon:SetAlpha(IconShownAlpha(fc, barInfo))
                         if ns.SetCdStateShiftHidden then
                             ns.SetCdStateShiftHidden(fc, false)
                         end
@@ -1529,7 +1529,7 @@ local function RefreshCDMIconAppearance(barId)
             -- Ignore Resource Cost: repaint now, as a settings change brings no
             -- Blizzard tint write for the hook to follow (one flag read when unused).
             if ns._cdmAnyNoResourceTint and ns.CdmApplyResourceTint then
-                ns.CdmApplyResourceTint(glyph, fd)
+                ns.CdmApplyResourceTint(icon, fd)
             end
         end -- not icon._isEmptySlotFrame
         -- Only Show Numbers (bar setting): re-hide the icon art AFTER the passes above re-applied
@@ -1537,7 +1537,7 @@ local function RefreshCDMIconAppearance(barId)
         -- Re-fetched (never the wrapped block's `fd`): always nil for an Empty Slot, and cheap
         -- either way, so both kinds share this one line without widening the skip above.
         if ns.ApplyOnlyNumbers then
-            ns.ApplyOnlyNumbers(glyph, _getFD(glyph), barInfo)
+            ns.ApplyOnlyNumbers(icon, _getFD(icon), barInfo)
         end
     end
 end

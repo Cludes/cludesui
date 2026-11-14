@@ -399,21 +399,21 @@ end
 -- spells, and ApplyGroupConfig leaves them un-excluded when no link renders
 -- them. Only Tracked Auras with an empty list = an empty chain = nothing.
 local function NonPlayerDebuffChain(s, unitToken)
-    local modeName = DebuffFilterMode(s)
+    local mode = DebuffFilterMode(s)
     local chain = {}
-    if modeName == "all" then
+    if mode == "all" then
         chain[1] = { key = "all", tokens = { "HARMFUL" } }
         return chain
     end
-    if modeName == "own" then
+    if mode == "own" then
         chain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
-    elseif modeName == "important" then
+    elseif mode == "important" then
         chain[1] = { key = "priority", tokens = { "HARMFUL" }, cand = PRIORITY_CAND }
         chain[2] = { key = "prioritynp", tokens = { "HARMFUL" }, cand = PRIORITY_NONPLAYER_CAND }
-    elseif modeName == "importantOwn" then
+    elseif mode == "importantOwn" then
         chain[1] = { key = "priorityown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_CAND }
         chain[2] = { key = "prioritynpown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_NONPLAYER_CAND }
-    elseif modeName == "importantOrOwn" then
+    elseif mode == "importantOrOwn" then
         chain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
         chain[2] = {
             key = "priorityoth",
@@ -432,16 +432,16 @@ local function NonPlayerDebuffChain(s, unitToken)
     return chain
 end
 
-local function ClassEnabled(classFile, isBuff, s, unitToken)
-    if classFile.buffOnly and not isBuff then
+local function ClassEnabled(class, isBuff, s, unitToken)
+    if class.buffOnly and not isBuff then
         return false
     end
-    if classFile.debuffOnly and isBuff then
+    if class.debuffOnly and isBuff then
         return false
     end
     -- Player-frame-only classes: offered nowhere else in the UI, and a
     -- stale key on another unit's settings must have no effect.
-    if classFile.playerUnitOnly and unitToken ~= "player" then
+    if class.playerUnitOnly and unitToken ~= "player" then
         return false
     end
     -- Non-player BUFF vocabulary is Stealable / Big Defensive / Dispellable only
@@ -450,9 +450,9 @@ local function ClassEnabled(classFile, isBuff, s, unitToken)
     if
         isBuff
         and unitToken ~= "player"
-        and classFile.key ~= "steal"
-        and classFile.key ~= "bigdef"
-        and classFile.key ~= "dispellable"
+        and class.key ~= "steal"
+        and class.key ~= "bigdef"
+        and class.key ~= "dispellable"
     then
         return false
     end
@@ -460,7 +460,7 @@ local function ClassEnabled(classFile, isBuff, s, unitToken)
     if isBuff then
         prefixText = "buff"
     end
-    return s[prefixText .. classFile.skey] == true
+    return s[prefixText .. class.skey] == true
 end
 
 -- Hide-lane test (two-lane filter dropdowns): mirrors ClassEnabled's per-unit
@@ -468,22 +468,22 @@ end
 -- s.debuffNegClasses, keyed by class.skey). The options setters keep the two
 -- lanes mutually exclusive; if stale data ever disagrees, show wins (the hidden
 -- pass skips enabled classes).
-local function ClassNegated(classFile, isBuff, s, unitToken)
-    if classFile.buffOnly and not isBuff then
+local function ClassNegated(class, isBuff, s, unitToken)
+    if class.buffOnly and not isBuff then
         return false
     end
-    if classFile.debuffOnly and isBuff then
+    if class.debuffOnly and isBuff then
         return false
     end
-    if classFile.playerUnitOnly and unitToken ~= "player" then
+    if class.playerUnitOnly and unitToken ~= "player" then
         return false
     end
     if
         isBuff
         and unitToken ~= "player"
-        and classFile.key ~= "steal"
-        and classFile.key ~= "bigdef"
-        and classFile.key ~= "dispellable"
+        and class.key ~= "steal"
+        and class.key ~= "bigdef"
+        and class.key ~= "dispellable"
     then
         return false
     end
@@ -493,7 +493,7 @@ local function ClassNegated(classFile, isBuff, s, unitToken)
     else
         negs = s.debuffNegClasses
     end
-    return negs ~= nil and negs[classFile.skey] == true
+    return negs ~= nil and negs[class.skey] == true
 end
 
 -- Union of two dispel-type sets as a NEW table (vocabulary tables are shared
@@ -512,7 +512,7 @@ local function MergeDispelTypes(acc, add)
 end
 mod.UF_MergeDispelTypes = MergeDispelTypes
 
-local function BuildChain(baseValue, isBuff, s, unitToken)
+local function BuildChain(base, isBuff, s, unitToken)
     -- Non-player DEBUFFS run the mode model (one dropdown value, see
     -- NonPlayerDebuffChain). The class chain below serves the non-player BUFF
     -- elements and the player frame's debuff legacy path (PlayerDebuffChain
@@ -531,30 +531,27 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
     -- their shapes change with the lane selection; with an empty hide lane this
     -- pass emits nothing and every legacy key below stays byte-identical.
     for idx = 1, #TOKEN_CLASSES do
-        local classFile = TOKEN_CLASSES[idx]
-        if
-            ClassNegated(classFile, isBuff, s, unitToken)
-            and not ClassEnabled(classFile, isBuff, s, unitToken)
-        then
-            local tokens = { baseValue, classFile.token }
+        local class = TOKEN_CLASSES[idx]
+        if ClassNegated(class, isBuff, s, unitToken) and not ClassEnabled(class, isBuff, s, unitToken) then
+            local tokens = { base, class.token }
             for n = 1, #negations do
                 tokens[#tokens + 1] = negations[n]
             end
             chain[#chain + 1] = {
-                key = classFile.key .. "|" .. table.concat(tokens, ""),
+                key = class.key .. "|" .. table.concat(tokens, ""),
                 tokens = tokens,
                 hidden = true,
             }
-            negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
+            negations[#negations + 1] = class.neg or ("!" .. class.token)
         end
     end
     for idx = 1, #CANDIDATE_CLASSES do
-        local classFile = CANDIDATE_CLASSES[idx]
-        local cc = classFile.cand
+        local class = CANDIDATE_CLASSES[idx]
+        local cc = class.cand
         if
             cc
-            and ClassNegated(classFile, isBuff, s, unitToken)
-            and not ClassEnabled(classFile, isBuff, s, unitToken)
+            and ClassNegated(class, isBuff, s, unitToken)
+            and not ClassEnabled(class, isBuff, s, unitToken)
         then
             -- Forward-capable candidate classes (dispeltyped's include map,
             -- nonplayer's complementary boolean) subtract through the hidden-link
@@ -562,12 +559,12 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
             -- (false-valued candidate booleans, field-proven).
             local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
             if forward then
-                local tokens = { baseValue }
+                local tokens = { base }
                 for n = 1, #negations do
                     tokens[#tokens + 1] = negations[n]
                 end
                 chain[#chain + 1] = {
-                    key = classFile.key .. "|" .. table.concat(tokens, ""),
+                    key = class.key .. "|" .. table.concat(tokens, ""),
                     tokens = tokens,
                     cand = cc,
                     hidden = true,
@@ -589,7 +586,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                 end
                 -- Non-player "Important" renders through TWO groups (priority +
                 -- prioritynp below); hiding it must exclude both faces.
-                if classFile.key == "priority" and unitToken ~= "player" then
+                if class.key == "priority" and unitToken ~= "player" then
                     subCand.nameplateShowPersonal = false
                 end
             end
@@ -670,14 +667,14 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
     -- POSITIVE PASS -- the legacy chain verbatim when the hide lane is empty
     -- (negations arrive pre-seeded with the hidden pass).
     for idx = 1, #TOKEN_CLASSES do
-        local classFile = TOKEN_CLASSES[idx]
-        if ClassEnabled(classFile, isBuff, s, unitToken) then
-            local tokens = { baseValue, classFile.token }
+        local class = TOKEN_CLASSES[idx]
+        if ClassEnabled(class, isBuff, s, unitToken) then
+            local tokens = { base, class.token }
             for n = 1, #negations do
                 tokens[#tokens + 1] = negations[n]
             end
             local cand = NegCand(nil)
-            local key = LaneKey(classFile.key, tokens, cand)
+            local key = LaneKey(class.key, tokens, cand)
             -- Purgeable Buff Glow (own keys: a group's style is fixed). The
             -- Dispellable class IS the purgeable set, so its link wears the glow;
             -- any other shown token class (Big Defensive) splits into its
@@ -685,7 +682,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
             -- shown before it or hidden, already took the purgeable buffs.
             local notPurge = "!" .. PurgeGlow.TOKEN
             local purgeTaken = false
-            if glowOn and classFile.key ~= "dispellable" then
+            if glowOn and class.key ~= "dispellable" then
                 for n = 1, #negations do
                     if negations[n] == notPurge then
                         purgeTaken = true
@@ -693,27 +690,27 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                     end
                 end
             end
-            if glowOn and classFile.key == "dispellable" then
+            if glowOn and class.key == "dispellable" then
                 chain[#chain + 1] = { key = key .. ":glow", tokens = tokens, cand = cand, glow = true }
             elseif glowOn and not purgeTaken then
-                local gT = { baseValue, classFile.token, PurgeGlow.TOKEN }
-                local rT = { baseValue, classFile.token, notPurge }
+                local gT = { base, class.token, PurgeGlow.TOKEN }
+                local rT = { base, class.token, notPurge }
                 for n = 1, #negations do
                     gT[#gT + 1] = negations[n]
                     rT[#rT + 1] = negations[n]
                 end
                 chain[#chain + 1] = {
-                    key = LaneKey(classFile.key .. ":glow", gT, cand),
+                    key = LaneKey(class.key .. ":glow", gT, cand),
                     tokens = gT,
                     cand = cand,
                     glow = true,
                 }
                 chain[#chain + 1] =
-                    { key = LaneKey(classFile.key .. ":rest", rT, cand), tokens = rT, cand = cand }
+                    { key = LaneKey(class.key .. ":rest", rT, cand), tokens = rT, cand = cand }
             else
                 chain[#chain + 1] = { key = key, tokens = tokens, cand = cand }
             end
-            negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
+            negations[#negations + 1] = class.neg or ("!" .. class.token)
         end
     end
     -- Non-Player exclusivity handoff: once the nonplayer class (boolean
@@ -756,22 +753,18 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
     if prioShown then
         local npShown
         for idx = 1, #CANDIDATE_CLASSES do
-            local classFile = CANDIDATE_CLASSES[idx]
-            if classFile == PRIORITY_CLASS then
+            local class = CANDIDATE_CLASSES[idx]
+            if class == PRIORITY_CLASS then
                 break
             end
-            if ClassEnabled(classFile, isBuff, s, unitToken) then
-                if classFile.key == "nonplayer" then
+            if ClassEnabled(class, isBuff, s, unitToken) then
+                if class.key == "nonplayer" then
                     npShown = true
-                elseif classFile.cand.includeDispelTypes then
-                    flipTypes = MergeDispelTypes(flipTypes, classFile.cand.includeDispelTypes)
-                elseif
-                    classFile.cand.isBossAura
-                    or classFile.cand.isRoleAura
-                    or classFile.cand.canApplyAura
-                then
+                elseif class.cand.includeDispelTypes then
+                    flipTypes = MergeDispelTypes(flipTypes, class.cand.includeDispelTypes)
+                elseif class.cand.isBossAura or class.cand.isRoleAura or class.cand.canApplyAura then
                     flipBools = flipBools or {}
-                    for k, val in pairs(classFile.cand) do
+                    for k, val in pairs(class.cand) do
                         flipBools[k] = not val
                     end
                 end
@@ -784,29 +777,27 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
         end
     end
     for idx = 1, #CANDIDATE_CLASSES do
-        local classFile = CANDIDATE_CLASSES[idx]
-        if ClassEnabled(classFile, isBuff, s, unitToken) then
-            local tokens = { baseValue }
+        local class = CANDIDATE_CLASSES[idx]
+        if ClassEnabled(class, isBuff, s, unitToken) then
+            local tokens = { base }
             for n = 1, #negations do
                 tokens[#tokens + 1] = negations[n]
             end
-            local cand = classFile.cand
+            local cand = class.cand
             -- Set when one of the partitions below lands on this link: its
             -- payload then joins the key (see LaneKey), so a setup none of
             -- them touches keeps its legacy plain keys.
             local carried = false
             local owned = false -- cand is already this link's own copy
-            local boolOwner = classFile.cand.isBossAura
-                or classFile.cand.isRoleAura
-                or classFile.cand.canApplyAura
+            local boolOwner = class.cand.isBossAura or class.cand.isRoleAura or class.cand.canApplyAura
             local skipNp = npOwned
                 and (
-                    classFile.key == "priority"
+                    class.key == "priority"
                     or (npFlip and boolOwner)
                     or (
                         flipTypes ~= nil
-                        and classFile.cand.includeDispelTypes ~= nil
-                        and classFile.key ~= "dispeltyped"
+                        and class.cand.includeDispelTypes ~= nil
+                        and class.key ~= "dispeltyped"
                     )
                 )
             if (npOwned or anyOwned) and not skipNp then
@@ -820,7 +811,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                     cand.isFromPlayerOrPlayerPet = npOwned
                 end
             end
-            if (prioOwned or (prioShown and classFile.key == "nonplayer")) and cand.isPriorityAura == nil then
+            if (prioOwned or (prioShown and class.key == "nonplayer")) and cand.isPriorityAura == nil then
                 if not owned then
                     local src = cand
                     cand = {}
@@ -836,7 +827,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
             -- rows before this link, or on the Non-Player link (always first, so
             -- nothing reaches it that way) the flip set pre-scanned above.
             local bools = boolCarry
-            if classFile.key == "nonplayer" then
+            if class.key == "nonplayer" then
                 bools = flipBools
             end
             -- A dispel-type link the Hide lane empties matches nothing, so it
@@ -869,7 +860,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                     end
                 end
             end
-            if classFile.key == "nonplayer" and flipTypes then
+            if class.key == "nonplayer" and flipTypes then
                 if not owned then
                     local src = cand
                     cand = {}
@@ -914,10 +905,9 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                 end
             end
             cand = NegCand(cand)
-            local itemLink =
-                { key = LaneKey(classFile.key, tokens, cand, carried), tokens = tokens, cand = cand }
+            local itemLink = { key = LaneKey(class.key, tokens, cand, carried), tokens = tokens, cand = cand }
             -- Stealable buffs are the player's own steal/purge targets: glow too.
-            if glowOn and classFile.key == "steal" then
+            if glowOn and class.key == "steal" then
                 itemLink.key = itemLink.key .. ":glow"
                 itemLink.glow = true
             end
@@ -928,27 +918,27 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
             -- primary isPriorityAura group (see PRIORITY_NONPLAYER_CAND). The nonplayer
             -- handoff never applies here (that class is player-frame only, so npOwned
             -- is always false off-player).
-            if classFile.key == "priority" and unitToken ~= "player" then
+            if class.key == "priority" and unitToken ~= "player" then
                 local pnp = NegCand(PRIORITY_NONPLAYER_CAND)
                 chain[#chain + 1] = { key = LaneKey("prioritynp", tokens, pnp), tokens = tokens, cand = pnp }
             end
-            if classFile.key == "nonplayer" then
+            if class.key == "nonplayer" then
                 npOwned = true
             end
-            if classFile.key == "anyplayer" then
+            if class.key == "anyplayer" then
                 anyOwned = true
             end
-            if classFile.key == "priority" then
+            if class.key == "priority" then
                 prioOwned = true
             end
             if boolOwner then
                 boolCarry = boolCarry or {}
-                for k, val in pairs(classFile.cand) do
+                for k, val in pairs(class.cand) do
                     boolCarry[k] = not val
                 end
             end
-            if classFile.cand.includeDispelTypes and classFile.key ~= "dispeltyped" then
-                shownTypes = MergeDispelTypes(shownTypes, classFile.cand.includeDispelTypes)
+            if class.cand.includeDispelTypes and class.key ~= "dispeltyped" then
+                shownTypes = MergeDispelTypes(shownTypes, class.cand.includeDispelTypes)
             end
         end
     end
@@ -978,7 +968,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
             end
             local cand = NegCand(nil)
             if split then
-                local gT, rT = { baseValue, PurgeGlow.TOKEN }, { baseValue, notPurge }
+                local gT, rT = { base, PurgeGlow.TOKEN }, { base, notPurge }
                 for n = 1, #negations do
                     gT[#gT + 1] = negations[n]
                     rT[#rT + 1] = negations[n]
@@ -987,7 +977,7 @@ local function BuildChain(baseValue, isBuff, s, unitToken)
                     { key = LaneKey("pglow", gT, cand), tokens = gT, cand = cand, glow = true }
                 chain[#chain + 1] = { key = LaneKey("prest", rT, cand), tokens = rT, cand = cand }
             elseif lanesActive then
-                local allTokens = { baseValue }
+                local allTokens = { base }
                 for n = 1, #negations do
                     allTokens[#allTokens + 1] = negations[n]
                 end
@@ -1017,11 +1007,11 @@ local function EnsurePlayerAuraLanes(s)
         local neg
         local function Move(entries)
             for idx = 1, #entries do
-                local classFile = entries[idx]
-                if not classFile.buffOnly and s["debuff" .. classFile.skey] == true then
+                local class = entries[idx]
+                if not class.buffOnly and s["debuff" .. class.skey] == true then
                     neg = neg or {}
-                    neg[classFile.skey] = true
-                    s["debuff" .. classFile.skey] = nil
+                    neg[class.skey] = true
+                    s["debuff" .. class.skey] = nil
                 end
             end
         end
@@ -1072,7 +1062,7 @@ local function PlayerBuffChain(s)
     -- resolution, exactly as PAB_ResolveSpells does for this same shared filter
     -- registry, so the player frame and Player Aura Bars agree on what a filter
     -- tracks. An explicit false in the owning filter wins.
-    local function ExpandBuffFamily(group, ident, blocked)
+    local function ExpandBuffFamily(set, ident, blocked)
         local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[ident]
         if not fam then
             return
@@ -1080,7 +1070,7 @@ local function PlayerBuffChain(s)
         for idx = 1, #fam do
             local m = fam[idx]
             if not (blocked and blocked[m] == false) then
-                group[m] = true
+                set[m] = true
             end
         end
     end
@@ -1261,29 +1251,29 @@ local function PlayerDebuffMatch(s)
     local cand, hideBool = {}, nil
     local inc, exc, typedShown, playerTok, clash, dispTok
     for idx = 1, #TOKEN_CLASSES do
-        local classFile = TOKEN_CLASSES[idx]
-        if not classFile.buffOnly then
-            if vocab[classFile.skey] and s["debuff" .. classFile.skey] == true then
+        local class = TOKEN_CLASSES[idx]
+        if not class.buffOnly then
+            if vocab[class.skey] and s["debuff" .. class.skey] == true then
                 picks = picks + 1
-                tokens[#tokens + 1] = classFile.token
-                if classFile.key == "castbyme" then
+                tokens[#tokens + 1] = class.token
+                if class.key == "castbyme" then
                     playerTok = true
                 end
-                if classFile.key == "dispellable" then
+                if class.key == "dispellable" then
                     dispTok = true
                 end
-            elseif neg and neg[classFile.skey] == true then
-                tokens[#tokens + 1] = classFile.neg or ("!" .. classFile.token)
+            elseif neg and neg[class.skey] == true then
+                tokens[#tokens + 1] = class.neg or ("!" .. class.token)
             end
         end
     end
     for idx = 1, #CANDIDATE_CLASSES do
-        local classFile = CANDIDATE_CLASSES[idx]
-        local cc = classFile.cand
-        if cc and not classFile.buffOnly then
-            if vocab[classFile.skey] and s["debuff" .. classFile.skey] == true then
+        local class = CANDIDATE_CLASSES[idx]
+        local cc = class.cand
+        if cc and not class.buffOnly then
+            if vocab[class.skey] and s["debuff" .. class.skey] == true then
                 picks = picks + 1
-                if classFile.key == "dispeltyped" then
+                if class.key == "dispeltyped" then
                     typedShown = cc.includeDispelTypes
                 elseif cc.includeDispelTypes then
                     inc = MergeDispelTypes(inc, cc.includeDispelTypes)
@@ -1297,7 +1287,7 @@ local function PlayerDebuffMatch(s)
                         cand[k] = val
                     end
                 end
-            elseif neg and neg[classFile.skey] == true then
+            elseif neg and neg[class.skey] == true then
                 if cc.includeDispelTypes then
                     exc = MergeDispelTypes(exc, cc.includeDispelTypes)
                 else
@@ -1419,32 +1409,32 @@ local function PlayerDebuffChain(s)
     end
     local chain, negations = {}, {}
     local subCand, excludeDispelTypes, npOwned
-    local function Checked(classFile)
-        if classFile.buffOnly then
+    local function Checked(class)
+        if class.buffOnly then
             return false
         end
         local neg = s.debuffNegClasses
-        return neg ~= nil and neg[classFile.skey] == true
+        return neg ~= nil and neg[class.skey] == true
     end
     for idx = 1, #TOKEN_CLASSES do
-        local classFile = TOKEN_CLASSES[idx]
-        if Checked(classFile) then
-            local tokens = { "HARMFUL", classFile.token }
+        local class = TOKEN_CLASSES[idx]
+        if Checked(class) then
+            local tokens = { "HARMFUL", class.token }
             for n = 1, #negations do
                 tokens[#tokens + 1] = negations[n]
             end
             chain[#chain + 1] = {
-                key = classFile.key .. "|" .. table.concat(tokens, ""),
+                key = class.key .. "|" .. table.concat(tokens, ""),
                 tokens = tokens,
                 hidden = true,
             }
-            negations[#negations + 1] = classFile.neg or ("!" .. classFile.token)
+            negations[#negations + 1] = class.neg or ("!" .. class.token)
         end
     end
     for idx = 1, #CANDIDATE_CLASSES do
-        local classFile = CANDIDATE_CLASSES[idx]
-        local cc = classFile.cand
-        if Checked(classFile) and cc then
+        local class = CANDIDATE_CLASSES[idx]
+        local cc = class.cand
+        if Checked(class) and cc then
             local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
             if forward then
                 local tokens = { "HARMFUL" }
@@ -1452,7 +1442,7 @@ local function PlayerDebuffChain(s)
                     tokens[#tokens + 1] = negations[n]
                 end
                 chain[#chain + 1] = {
-                    key = classFile.key .. "|" .. table.concat(tokens, ""),
+                    key = class.key .. "|" .. table.concat(tokens, ""),
                     tokens = tokens,
                     cand = cc,
                     hidden = true,
@@ -1517,15 +1507,15 @@ end
 -- (they render nothing) and Tracked Auras include links (explicit always-show
 -- spells) keep their payload. A narrowed link's key gains "|dur", so the
 -- variant declares fresh and the plain one parks at 0.
-local function ChainFor(unitToken, baseValue, s)
-    local isBuff = baseValue == "HELPFUL"
+local function ChainFor(unitToken, base, s)
+    local isBuff = base == "HELPFUL"
     local chain
     if unitToken == "player" and isBuff then
         return PlayerBuffChain(s)
     elseif unitToken == "player" then
         chain = PlayerDebuffChain(s)
     else
-        chain = BuildChain(baseValue, isBuff, s, unitToken)
+        chain = BuildChain(base, isBuff, s, unitToken)
     end
     local dur
     if isBuff then
@@ -1539,7 +1529,7 @@ local function ChainFor(unitToken, baseValue, s)
     -- Non-player buffs with nothing shown or hidden run the plain show-all
     -- group (ApplyGroupConfig); narrowed, it becomes an explicit link.
     if isBuff and #chain == 0 then
-        chain[1] = { key = "all", tokens = { baseValue } }
+        chain[1] = { key = "all", tokens = { base } }
     end
     -- Show All's catch-all is what shows the Tracked Auras there (no include
     -- links); narrowed, they get one include link of their own, from any
@@ -1767,15 +1757,15 @@ local EXPLICIT_GROWTH = {
     down = { "RIGHT", "DOWN" },
 }
 
-local function ResolveLayout(anchorFrame, growth)
-    anchorFrame = anchorFrame or "topleft"
-    local ia = ANCHOR_IA[anchorFrame] or "BOTTOMLEFT"
-    local fp = ANCHOR_FP[anchorFrame] or ANCHOR_FP.topleft
+local function ResolveLayout(anchor, growth)
+    anchor = anchor or "topleft"
+    local ia = ANCHOR_IA[anchor] or "BOTTOMLEFT"
+    local fp = ANCHOR_FP[anchor] or ANCHOR_FP.topleft
     local g
     if growth and growth ~= "auto" then
         g = EXPLICIT_GROWTH[growth]
     end
-    g = g or AUTO_GROWTH[anchorFrame] or AUTO_GROWTH.topleft
+    g = g or AUTO_GROWTH[anchor] or AUTO_GROWTH.topleft
     return ia, fp[1], fp[2], fp[3], g[1], g[2]
 end
 
@@ -1850,17 +1840,17 @@ end
 -- (visibility is handled by AuraKit via SetShown). Text color is likewise
 -- change-guarded via CK() fingerprints (d.ufDurColor/d.ufStackColor) --
 -- SetTextColor costs real time too, same reasoning as the font guard above.
-local function ApplyUFText(btnFrame, d, look)
-    if look.auraBorderAboveEffects or d.ufBorderAboveEffects then
+local function ApplyUFText(btnFrame, d, style)
+    if style.auraBorderAboveEffects or d.ufBorderAboveEffects then
         -- Only owned art/text hosts move; the restricted button is untouched.
         -- Stock styles hide the border instead of restoring its level.
         local level = d.borderHost:GetFrameLevel()
-        if look.auraBorderAboveEffects then
+        if style.auraBorderAboveEffects then
             d.ufBorderBaseLevel = level
             level = math.max(level, (d.buttonFrameLevel or 1) + 20)
             d.borderHost:SetFrameLevel(level)
         else
-            if not look.border and d.ufBorderBaseLevel then
+            if not style.border and d.ufBorderBaseLevel then
                 level = d.ufBorderBaseLevel
                 d.borderHost:SetFrameLevel(level)
             end
@@ -1869,16 +1859,16 @@ local function ApplyUFText(btnFrame, d, look)
         d.dispelHolder:SetFrameLevel(level + 4)
         d.stackCarrier:SetFrameLevel(level + 5)
         d.akDispelLvl = level
-        d.ufBorderAboveEffects = look.auraBorderAboveEffects or nil
+        d.ufBorderAboveEffects = style.auraBorderAboveEffects or nil
     end
-    local filePath = look.fontPath or FALLBACK_FONT
+    local filePath = style.fontPath or FALLBACK_FONT
     if d.duration then
-        local fontKey = filePath .. "|" .. (look.cdTextSize or 10)
+        local fontKey = filePath .. "|" .. (style.cdTextSize or 10)
         if d.ufDurFont ~= fontKey then
             d.ufDurFont = fontKey
-            CludesUI.ApplyIconTextFont(d.duration, filePath, look.cdTextSize or 10, "unitFrames")
+            CludesUI.ApplyIconTextFont(d.duration, filePath, style.cdTextSize or 10, "unitFrames")
         end
-        local c = look.cdTextColor
+        local c = style.cdTextColor
         local cKey = CK(c)
         if d.ufDurColor ~= cKey then
             d.ufDurColor = cKey
@@ -1888,10 +1878,10 @@ local function ApplyUFText(btnFrame, d, look)
         -- button as the relative frame is policed by the 12.1 button access
         -- restriction while auras are secret; unchanged offsets must make
         -- zero button-involving calls so restyles stay live in-instance.
-        local aKey = (look.cdOffX or 0) .. "|" .. (look.cdOffY or 0)
+        local aKey = (style.cdOffX or 0) .. "|" .. (style.cdOffY or 0)
         if d.ufDurAnchor ~= aKey then
             d.duration:ClearAllPoints()
-            d.duration:SetPoint("CENTER", btnFrame, "CENTER", look.cdOffX or 0, look.cdOffY or 0)
+            d.duration:SetPoint("CENTER", btnFrame, "CENTER", style.cdOffX or 0, style.cdOffY or 0)
             d.ufDurAnchor = aKey
         end
         -- Duration formatter options are registered once when an AuraKit button
@@ -1901,11 +1891,11 @@ local function ApplyUFText(btnFrame, d, look)
         -- UF styles never set durationShowSeconds -- plus the threshold), so
         -- untouched configs compare equal to the creation stamp and never
         -- rebind: zero cost while the feature is off.
-        local wantFmt = "b" .. tostring(look.durationPrecisionThreshold or 0)
+        local wantFmt = "b" .. tostring(style.durationPrecisionThreshold or 0)
         if d.durationFmtS ~= wantFmt then
             local AK = CludesUI.AuraKit
             local options =
-                AK.BuildDurationTextOpts(AK.GetDurationFormatter(nil, look.durationPrecisionThreshold))
+                AK.BuildDurationTextOpts(AK.GetDurationFormatter(nil, style.durationPrecisionThreshold))
             local success = AK.SetDurationTextSafe(btnFrame, d.duration, options)
             if success then
                 d.durationFmtS = wantFmt
@@ -1913,29 +1903,29 @@ local function ApplyUFText(btnFrame, d, look)
         end
     end
     if d.stack then
-        local fontKey = filePath .. "|" .. (look.stackSize or 14)
+        local fontKey = filePath .. "|" .. (style.stackSize or 14)
         if d.ufStackFont ~= fontKey then
             d.ufStackFont = fontKey
-            CludesUI.ApplyIconTextFont(d.stack, filePath, look.stackSize or 14, "unitFrames")
+            CludesUI.ApplyIconTextFont(d.stack, filePath, style.stackSize or 14, "unitFrames")
         end
-        local c = look.stackColor
+        local c = style.stackColor
         local cKey = CK(c)
         if d.ufStackColor ~= cKey then
             d.ufStackColor = cKey
             d.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         end
-        local sp = STACK_POINTS[look.stackPos or "bottomright"] or STACK_POINTS.bottomright
-        local sKey = sp[1] .. "|" .. (sp[2] + (look.stackOffX or 0)) .. "|" .. (look.stackOffY or 0)
+        local sp = STACK_POINTS[style.stackPos or "bottomright"] or STACK_POINTS.bottomright
+        local sKey = sp[1] .. "|" .. (sp[2] + (style.stackOffX or 0)) .. "|" .. (style.stackOffY or 0)
         if d.ufStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
-            d.stack:SetPoint(sp[1], btnFrame, sp[1], sp[2] + (look.stackOffX or 0), look.stackOffY or 0)
+            d.stack:SetPoint(sp[1], btnFrame, sp[1], sp[2] + (style.stackOffX or 0), style.stackOffY or 0)
             d.ufStackAnchor = sKey
         end
     end
 end
 
-local function StyleKey(unitToken, baseValue)
-    return "uf:" .. unitToken .. ":" .. baseValue
+local function StyleKey(unitToken, base)
+    return "uf:" .. unitToken .. ":" .. base
 end
 
 -- Settings fingerprints (same discipline as the RF containers file): every
@@ -2049,17 +2039,17 @@ local function Pick(isBuff, a, b)
 end
 
 -- Boss "simple" side display: returns whether it is on and which side.
-local function BossSimple(unitToken, baseValue, s)
+local function BossSimple(unitToken, base, s)
     if not unitToken:match("^boss") then
         return false, "none"
     end
-    local modeName
-    if baseValue == "HELPFUL" then
-        modeName = mod.GetBossSimpleBuffMode and mod.GetBossSimpleBuffMode(s) or "none"
+    local mode
+    if base == "HELPFUL" then
+        mode = mod.GetBossSimpleBuffMode and mod.GetBossSimpleBuffMode(s) or "none"
     else
-        modeName = mod.GetBossSimpleDebuffMode and mod.GetBossSimpleDebuffMode(s) or "none"
+        mode = mod.GetBossSimpleDebuffMode and mod.GetBossSimpleDebuffMode(s) or "none"
     end
-    return modeName ~= "none", modeName
+    return mode ~= "none", mode
 end
 
 -- Whether one element of a unit shows: buffs unless Buff Display is None,
@@ -2068,16 +2058,16 @@ end
 -- Display renders them. The one test the build stepper, the reload's group
 -- declaration and the config pass share: an element that is off declares no
 -- groups (each is an eager engine batch) until a reload sees it on.
-local function SideOn(unitToken, baseValue, s)
-    if baseValue == "HELPFUL" then
-        if s.showBuffs ~= false or BossSimple(unitToken, baseValue, s) then
+local function SideOn(unitToken, base, s)
+    if base == "HELPFUL" then
+        if s.showBuffs ~= false or BossSimple(unitToken, base, s) then
             return true
         end
         return s.debuffAnchorBuffs == true
             and not unitToken:match("^boss")
             and (s.debuffAnchor or "none") ~= "none"
     end
-    return (s.debuffAnchor or "none") ~= "none" or (BossSimple(unitToken, baseValue, s))
+    return (s.debuffAnchor or "none") ~= "none" or (BossSimple(unitToken, base, s))
 end
 mod.UF_AuraSideOn = SideOn
 
@@ -2088,27 +2078,27 @@ mod.UF_AuraSideOn = SideOn
 local WeaponCells = {}
 
 -- On = the buff row is in a broad mode, which declares the cells.
-function WeaponCells.On(unitToken, baseValue, s)
+function WeaponCells.On(unitToken, base, s)
     return unitToken == "player"
-        and baseValue == "HELPFUL"
-        and SideOn(unitToken, baseValue, s)
+        and base == "HELPFUL"
+        and SideOn(unitToken, base, s)
         and (s.buffShowAll ~= false or s.buffHasDuration == true)
 end
 
 -- Shown = the cells render on the player buff row: the engine cannot
 -- undeclare them, so once declared (AnchorContainer stamps the container)
 -- they stay after a switch out of the broad modes until the next /reload.
-function WeaponCells.Shown(unitToken, baseValue, s)
-    if WeaponCells.On(unitToken, baseValue, s) then
+function WeaponCells.Shown(unitToken, base, s)
+    if WeaponCells.On(unitToken, base, s) then
         return true
     end
     local record = registry.player
     return unitToken == "player"
-        and baseValue == "HELPFUL"
+        and base == "HELPFUL"
         and WeaponCells.declared ~= nil
         and record ~= nil
         and record.buffs == WeaponCells.declared
-        and SideOn(unitToken, baseValue, s)
+        and SideOn(unitToken, base, s)
 end
 
 -- Player Aura Bars' count (all three slots: AK declares them all here).
@@ -2157,10 +2147,10 @@ function WeaponCells.Sync(wanted, n)
 end
 
 -- Element pixel size; boss simple mode matches the frame's bar-stack height.
-local function ElementSize(unitToken, baseValue, s)
-    local isBuff = (baseValue == "HELPFUL")
-    local dim = Pick(isBuff, s.buffSize, s.debuffSize) or 22
-    local simpleOn = BossSimple(unitToken, baseValue, s)
+local function ElementSize(unitToken, base, s)
+    local isBuff = (base == "HELPFUL")
+    local size = Pick(isBuff, s.buffSize, s.debuffSize) or 22
+    local simpleOn = BossSimple(unitToken, base, s)
     local Pix = CludesUI.PP
     local m = Pix.mult or 1
     if simpleOn then
@@ -2169,20 +2159,20 @@ local function ElementSize(unitToken, baseValue, s)
         if powerPos == "below" or powerPos == "above" then
             powerH = s.powerHeight or 0
         end
-        dim = Pix.Scale((s.healthHeight or 0) + powerH)
+        size = Pix.Scale((s.healthHeight or 0) + powerH)
     elseif m ~= 1 then
         -- Whole physical pixels (nearest, as Player Aura Bars): AuraKit's border
         -- strips skip pixel snapping while the icon texture snaps, so a
         -- fractional far edge leaves the border off the icon at a
         -- non-pixel-perfect scale.
-        dim = Pix.FromPixels(Pix.ToPixels(dim))
+        size = Pix.FromPixels(Pix.ToPixels(size))
     end
     local cropped = Pick(isBuff, s.buffCropIcons, s.debuffCropIcons)
-    local hgt = dim
+    local hgt = size
     if cropped then
-        hgt = math.floor(dim / m * AURA_CROP_HEIGHT + 0.5) * m
+        hgt = math.floor(size / m * AURA_CROP_HEIGHT + 0.5) * m
     end
-    return dim, hgt, cropped
+    return size, hgt, cropped
 end
 
 -- Use Dispel Colors (player debuffs): the Dispel Colors palette as the engine's
@@ -2190,13 +2180,13 @@ end
 -- it reads.
 local PlayerDispelPalette
 
-local function BuildStyle(unitToken, baseValue, s, unitFrame)
-    local isBuff = (baseValue == "HELPFUL")
-    local dim, hgt, cropped = ElementSize(unitToken, baseValue, s)
+local function BuildStyle(unitToken, base, s, unitFrame)
+    local isBuff = (base == "HELPFUL")
+    local size, hgt, cropped = ElementSize(unitToken, base, s)
     local p = Pick(isBuff, "buff", "debuff")
 
     -- Boss simple side displays read their own cooldown-text keys.
-    local simpleOn = BossSimple(unitToken, baseValue, s)
+    local simpleOn = BossSimple(unitToken, base, s)
     local showCdKey, cdSizeKey = p .. "ShowCooldownText", p .. "CooldownTextSize"
     local cdSizeDefault = 10
     if simpleOn then
@@ -2272,13 +2262,13 @@ local function BuildStyle(unitToken, baseValue, s, unitFrame)
     end
 
     return {
-        width = dim,
+        width = size,
         height = hgt,
         -- Blizzard Style: zoom 0 -- the stock frames draw the whole icon, and
         -- the icon art's own dark edge is the border a stock buff shows.
         texCoord = CropCoords(
             cropped,
-            dim,
+            size,
             hgt,
             blizz and 0 or Pick(isBuff, s.buffIconZoom, s.debuffIconZoom)
         ),
@@ -2332,50 +2322,50 @@ end
 -- The glow families the menu offers: Pixel, the flipbooks and Blizzard Border.
 PurgeGlow.NEED = { ants = true, flip = true, stealable = true }
 
-function PurgeGlow.Extra(btnFrame, d, look)
-    ApplyUFText(btnFrame, d, look)
-    if not look.purgeSpec then
+function PurgeGlow.Extra(btnFrame, d, style)
+    ApplyUFText(btnFrame, d, style)
+    if not style.purgeSpec then
         return
     end
     local Glows = CludesUI.Glows
-    local hostRegion = d.ufPurgeGlow
-    if not hostRegion then
+    local host = d.ufPurgeGlow
+    if not host then
         -- The first call runs inside initializeFrame, the button's one legal
         -- window for parenting a new frame to it. Just below the text carrier.
-        hostRegion = CreateFrame("Frame", nil, btnFrame)
-        hostRegion:SetAllPoints(btnFrame)
-        if look.auraBorderAboveEffects then
-            hostRegion:SetFrameLevel(d.cooldown:GetFrameLevel() + 5)
+        host = CreateFrame("Frame", nil, btnFrame)
+        host:SetAllPoints(btnFrame)
+        if style.auraBorderAboveEffects then
+            host:SetFrameLevel(d.cooldown:GetFrameLevel() + 5)
         elseif d.stackCarrier then
-            hostRegion:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
+            host:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
         else
-            hostRegion:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
+            host:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
         end
-        hostRegion:EnableMouse(false)
-        d.ufPurgeGlow = hostRegion
-        Glows.PrewarmEngineHost(hostRegion, look.width, look.height, PurgeGlow.NEED)
+        host:EnableMouse(false)
+        d.ufPurgeGlow = host
+        Glows.PrewarmEngineHost(host, style.width, style.height, PurgeGlow.NEED)
     end
     -- Bound once: the button runs the glow's animations itself (12.1.5),
     -- Blizzard playing them while it shows a buff and stopping them when it
     -- has none. false where the button cannot (no API).
     if d.ufPurgeBound == nil then
-        d.ufPurgeBound = Glows.BindEngineHost(hostRegion, btnFrame, d)
+        d.ufPurgeBound = Glows.BindEngineHost(host, btnFrame, d)
     end
     -- C-side animations only (engine-button subtree); Blizzard Border
     -- (static stealable art) renders through the same call. Bound, every
     -- button carries the glow. Unbound (no API), the animations play while
     -- hidden too, so only buttons the group can ever show run one.
     if d.ufPurgeBound or CludesUI.AuraKit.ButtonCanShow(btnFrame) then
-        Glows.StartSpecGlow(hostRegion, look.purgeSpec, look.width, look.height, "engine")
-    elseif hostRegion._cuiGlowActive then
-        Glows.StopGlow(hostRegion)
+        Glows.StartSpecGlow(host, style.purgeSpec, style.width, style.height, "engine")
+    elseif host._cuiGlowActive then
+        Glows.StopGlow(host)
     end
 end
 
 -- Unset color = "default" mode: the suite's default look (gold).
 function PurgeGlow.Spec(s)
     local c = s.buffPurgeGlowColor
-    local modeName = s.buffPurgeGlowColorMode or (c and "custom" or "default")
+    local mode = s.buffPurgeGlowColorMode or (c and "custom" or "default")
     local bgc = s.buffPurgeGlowBackgroundColor
     local specInfo = {
         style = s.buffPurgeGlow,
@@ -2387,11 +2377,10 @@ function PurgeGlow.Spec(s)
         bgG = bgc and bgc.g,
         bgB = bgc and bgc.b,
     }
-    specInfo.r, specInfo.g, specInfo.b =
-        CludesUI.Glows.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
+    specInfo.r, specInfo.g, specInfo.b = CludesUI.Glows.ResolveColor(mode, c and c.r, c and c.g, c and c.b)
     -- Class mode: the palette colour this spec (and Register's print) holds,
     -- for the colours-changed hook below the reload.
-    if modeName == "class" then
+    if mode == "class" then
         PurgeGlow.ccR, PurgeGlow.ccG, PurgeGlow.ccB = specInfo.r, specInfo.g, specInfo.b
     end
     return specInfo
@@ -2406,11 +2395,11 @@ function PurgeGlow.Register(unitToken, s, widget, font)
         return
     end
     local key = PurgeGlow.StyleKey(unitToken)
-    local look = BuildStyle(unitToken, "HELPFUL", s, widget)
+    local style = BuildStyle(unitToken, "HELPFUL", s, widget)
     local sp = PurgeGlow.Spec(s)
-    look.purgeSpec = sp
-    look.applyExtra = PurgeGlow.Extra
-    local val = StyleTableFP(look, font)
+    style.purgeSpec = sp
+    style.applyExtra = PurgeGlow.Extra
+    local val = StyleTableFP(style, font)
         .. "|"
         .. FP(sp.style, sp.r, sp.g, sp.b, sp.lines, sp.thickness, sp.speed, sp.bg, sp.bgR, sp.bgG, sp.bgB)
     local st = ufFP[key]
@@ -2420,7 +2409,7 @@ function PurgeGlow.Register(unitToken, s, widget, font)
     end
     if st.style ~= val then
         st.style = val
-        AK.styles[key] = look
+        AK.styles[key] = style
         AK.RestyleSoon(key)
     end
 end
@@ -2639,12 +2628,12 @@ end
 -- reanchorOnly (the footprint-watcher re-anchor path): re-run ONLY the geometry --
 -- SetPoint + aura-block point -- and skip the one-time weapon-enchant declaration
 -- below, which must not be re-issued every settle frame (the engine has no unregister).
-local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffContainer, reanchorOnly)
-    local isBuff = (baseValue == "HELPFUL")
+local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContainer, reanchorOnly)
+    local isBuff = (base == "HELPFUL")
 
     -- Boss simple side display: forced side anchoring flush with the frame
     -- top, growing away from the chosen edge, own offsets, no castbar push.
-    local simpleOn, simpleMode = BossSimple(unitToken, baseValue, s)
+    local simpleOn, simpleMode = BossSimple(unitToken, base, s)
     if simpleOn then
         local ia, fp
         if simpleMode == "right" then
@@ -2669,9 +2658,9 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
         return simpleMode
     end
 
-    local anchorFrame = Pick(isBuff, s.buffAnchor, s.debuffAnchor)
-    if anchorFrame == nil then
-        anchorFrame = Pick(isBuff, "topleft", "none")
+    local anchor = Pick(isBuff, s.buffAnchor, s.debuffAnchor)
+    if anchor == nil then
+        anchor = Pick(isBuff, "topleft", "none")
     end
 
     -- Anchor Buffs with Debuffs (per-unit debuffAnchorBuffs, non-boss):
@@ -2686,21 +2675,21 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
         and (s.debuffAnchor or "none") ~= "none"
     local mergedBuff = merged and isBuff
     if mergedBuff then
-        anchorFrame = s.debuffAnchor
+        anchor = s.debuffAnchor
     end
-    if anchorFrame == "none" then
+    if anchor == "none" then
         -- Player buffs hidden: the weapon enchants ride this container (see
         -- the declaration below), so ApplyGroupConfig's SetShown(false) takes
         -- them down with it -- nothing to retire here.
         PointBlizzAuraBlock(widget, unitToken, s, isBuff, nil, nil, nil, merged, nil)
-        return anchorFrame
+        return anchor
     end
 
     local growth = Pick(isBuff, s.buffGrowth, s.debuffGrowth)
     if mergedBuff then
         growth = s.debuffGrowth
     end
-    local ia, fp, ox, oy, gX, gY = ResolveLayout(anchorFrame, growth)
+    local ia, fp, ox, oy, gX, gY = ResolveLayout(anchor, growth)
 
     -- Blizzard Style: the frame is the stock box with transparent padding round
     -- the art, so the anchors move in to the visible art's edges; and on the
@@ -2712,14 +2701,14 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
         vl, vr, vt, vb = mod.UF_BlizzVis(widget)
     end
     if vl then
-        if anchorFrame == "topleft" or anchorFrame == "bottomleft" or anchorFrame == "left" then
+        if anchor == "topleft" or anchor == "bottomleft" or anchor == "left" then
             ox = ox + vl
-        elseif anchorFrame == "topright" or anchorFrame == "bottomright" or anchorFrame == "right" then
+        elseif anchor == "topright" or anchor == "bottomright" or anchor == "right" then
             ox = ox - vr
         end
-        if anchorFrame == "topleft" or anchorFrame == "topright" then
+        if anchor == "topleft" or anchor == "topright" then
             oy = oy - vt
-        elseif anchorFrame == "bottomleft" or anchorFrame == "bottomright" then
+        elseif anchor == "bottomleft" or anchor == "bottomright" then
             oy = oy + vb
         end
     end
@@ -2739,7 +2728,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
     -- oUF-element anchor path has always been bottom-only; this matches it.
     if
         showCb
-        and (anchorFrame == "bottomleft" or anchorFrame == "bottomright")
+        and (anchor == "bottomleft" or anchor == "bottomright")
         and not (vl and CB_FRAME_NAMES[unitToken] and mod.UF_LayoutAspectOK and mod.UF_LayoutAspectOK())
         and CastbarBelowFrame(unitToken, widget)
     then
@@ -2756,7 +2745,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
     -- ResourceStackBelowFrame. CfgFP leaves this value out: a stack footprint change
     -- re-runs this anchor through the re-anchor Resource Bars arms (further down).
     if
-        (anchorFrame == "bottomleft" or anchorFrame == "bottomright")
+        (anchor == "bottomleft" or anchor == "bottomright")
         and not (vl and CB_FRAME_NAMES[unitToken] and mod.UF_LayoutAspectOK and mod.UF_LayoutAspectOK())
     then
         local resReserve = ResourceStackBelowFrame(unitToken, widget)
@@ -2808,13 +2797,13 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
         -- Reading our own frame's live geometry is legal under aura
         -- restriction; nil (pre-layout window) keeps the raw offset and a
         -- later anchor pass corrects it.
-        if anchorFrame == "left" or anchorFrame == "right" then
+        if anchor == "left" or anchor == "right" then
             local Pix = CludesUI.PP
             if Pix and Pix.SnapCenterForDim and Pix.SnapForES then
                 local es = boxHolder:GetEffectiveScale()
                 local _, fcY = widget:GetCenter()
                 if fcY then
-                    local _, iconH = ElementSize(unitToken, baseValue, s)
+                    local _, iconH = ElementSize(unitToken, base, s)
                     local rawY = fcY + oy + cbOff + offY
                     offY = offY + (Pix.SnapCenterForDim(rawY, iconH, es) - rawY)
                 end
@@ -2824,7 +2813,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
                 -- lands every icon's vertical edges on partial pixels -- same
                 -- bleed as the parity case, on the left/right borders. Integer
                 -- icon widths keep the far edge whole once this edge is.
-                local fx = (anchorFrame == "left") and widget:GetLeft() or widget:GetRight()
+                local fx = (anchor == "left") and widget:GetLeft() or widget:GetRight()
                 if fx then
                     local rawX = fx + ox + offX
                     offX = offX + (Pix.SnapForES(rawX, es) - rawX)
@@ -2843,9 +2832,9 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
         -- mode (this pass re-runs on a chain change and when the row turns
         -- on), and -- the engine has no addon-facing unregister -- kept until
         -- the next /reload should the row or the mode turn off again.
-        if not reanchorOnly and WeaponCells.On(unitToken, baseValue, s) then
+        if not reanchorOnly and WeaponCells.On(unitToken, base, s) then
             local Pix = CludesUI.PP
-            local wid, hgt = ElementSize(unitToken, baseValue, s)
+            local wid, hgt = ElementSize(unitToken, base, s)
             local gap = Pix.FromPixels(s.buffSpacingX or 1)
             local lineGap = Pix.FromPixels(s.buffSpacingY or 1)
             local placement = CustomAuraContainerItemEnchantmentPlacement
@@ -2880,7 +2869,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, baseValue, s, buffC
     end
     AK.SetContainerGrowth(boxHolder, FlowDir(gX), FlowDir(gY))
 
-    return anchorFrame
+    return anchor
 end
 
 ------------------------------------------------------------------------------
@@ -3111,12 +3100,12 @@ function PurgeGlow.SetWatch(unitToken, enabled)
     IncGate.Sync()
 end
 
-local function ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, declared)
+local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     local Pix = CludesUI.PP
-    local isBuff = (baseValue == "HELPFUL")
+    local isBuff = (base == "HELPFUL")
     local anyClass = #chain > 0
 
-    local simpleOn = BossSimple(unitToken, baseValue, s)
+    local simpleOn = BossSimple(unitToken, base, s)
 
     -- Anchor Buffs with Debuffs: the merge owns buff visibility (Buff
     -- Display reads None while the stack renders the buffs), and the buff
@@ -3125,14 +3114,14 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, decla
         and not unitToken:match("^boss")
         and (s.debuffAnchor or "none") ~= "none"
 
-    local isShown = SideOn(unitToken, baseValue, s)
+    local isShown = SideOn(unitToken, base, s)
 
     local num = 0
     if isShown then
         num = Pick(isBuff, s.maxBuffs or 4, s.maxDebuffs or 28)
     end
 
-    local dim, hgt = ElementSize(unitToken, baseValue, s)
+    local size, hgt = ElementSize(unitToken, base, s)
     local spX, spY
     if unitToken:match("^boss") then
         -- Boss uses a single spacing value (its simple-display key when the
@@ -3177,7 +3166,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, decla
     -- size to every row, so only a single-row cap over at most one shown
     -- group (which never overflows it) widens by the cells showing; a grid
     -- or several groups keep the cells in their rows.
-    local cellsOn = WeaponCells.Shown(unitToken, baseValue, s)
+    local cellsOn = WeaponCells.Shown(unitToken, base, s)
     local cellN = cellsOn and WeaponCells.Count() or 0
     if unitToken == "player" and isBuff then
         WeaponCells.Sync(cellsOn, cellN)
@@ -3193,7 +3182,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, decla
             cols = cols + cellN
         end
     end
-    AK.SetContainerRowWidth(boxHolder, cols * dim + (cols - 1) * spX + 0.4)
+    AK.SetContainerRowWidth(boxHolder, cols * size + (cols - 1) * spX + 0.4)
 
     -- Candidate filters: (debuffs) the always-hide and Hide Exhaustion
     -- excludes. Caster scope rides the chain links' own PLAYER tokens, never
@@ -3252,7 +3241,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, decla
     -- the last one of a group included, so a group boundary -- the seam
     -- between the weapon-enchant cells and the first aura -- already sits one
     -- spX away, and groupSpacing would double it.
-    local layout = { elementWidth = dim, elementHeight = hgt, elementSpacing = spX, lineSpacing = spY }
+    local layout = { elementWidth = size, elementHeight = hgt, elementSpacing = spX, lineSpacing = spY }
 
     -- Active set = "all" (a non-player BUFF element with no classes enabled)
     -- or each chain link. Every other declared group -- disabled classes and
@@ -3422,11 +3411,11 @@ end
 -- (computed values like ElementSize and the pixel-scaled spacings capture
 -- scale changes implicitly). The chain composition is covered separately by
 -- entry.sig; a sig change swaps the container and forces this pass anyway.
-local function CfgFP(unitToken, baseValue, s, widget)
+local function CfgFP(unitToken, base, s, widget)
     local Pix = CludesUI.PP
-    local isBuff = (baseValue == "HELPFUL")
-    local dim, hgt = ElementSize(unitToken, baseValue, s)
-    local simpleOn, simpleMode = BossSimple(unitToken, baseValue, s)
+    local isBuff = (base == "HELPFUL")
+    local size, hgt = ElementSize(unitToken, base, s)
+    local simpleOn, simpleMode = BossSimple(unitToken, base, s)
     local spX, spY
     if unitToken:match("^boss") then
         local sp
@@ -3462,7 +3451,7 @@ local function CfgFP(unitToken, baseValue, s, widget)
     -- slots are constant nils so no existing fingerprint ever moves.
     local mAB = s.debuffAnchorBuffs == true
     local fp = FP(
-        dim,
+        size,
         hgt,
         spX,
         spY,
@@ -3512,7 +3501,7 @@ local function CfgFP(unitToken, baseValue, s, widget)
     end
     -- Weapon enchant cells widen the player buff row (ApplyGroupConfig).
     -- Marked only while some show, so a default fingerprint stays.
-    if WeaponCells.Shown(unitToken, baseValue, s) then
+    if WeaponCells.Shown(unitToken, base, s) then
         local n = WeaponCells.Count()
         if n > 0 then
             fp = fp .. "|we" .. n
@@ -3601,25 +3590,25 @@ do
         end
         local fp = ""
         for idx = 1, #DISPEL_SLOTS do
-            local slotIndex = DISPEL_SLOTS[idx]
-            local c = p[slotIndex.colorKey]
+            local slot = DISPEL_SLOTS[idx]
+            local c = p[slot.colorKey]
             fp = fp
                 .. string.format(
                     "%.3f,%.3f,%.3f;",
-                    (c and c.r) or slotIndex.fallback[1],
-                    (c and c.g) or slotIndex.fallback[2],
-                    (c and c.b) or slotIndex.fallback[3]
+                    (c and c.r) or slot.fallback[1],
+                    (c and c.g) or slot.fallback[2],
+                    (c and c.b) or slot.fallback[3]
                 )
         end
         if memoFP ~= fp then
             local map = {}
             for idx = 1, #DISPEL_SLOTS do
-                local slotIndex = DISPEL_SLOTS[idx]
-                local c = p[slotIndex.colorKey]
-                map[DISPEL_TYPE_TOKENS[slotIndex.key]] = CreateColor(
-                    (c and c.r) or slotIndex.fallback[1],
-                    (c and c.g) or slotIndex.fallback[2],
-                    (c and c.b) or slotIndex.fallback[3],
+                local slot = DISPEL_SLOTS[idx]
+                local c = p[slot.colorKey]
+                map[DISPEL_TYPE_TOKENS[slot.key]] = CreateColor(
+                    (c and c.r) or slot.fallback[1],
+                    (c and c.g) or slot.fallback[2],
+                    (c and c.b) or slot.fallback[3],
                     1
                 )
             end
@@ -3657,11 +3646,11 @@ local function ApplyDispelSeparatorCopy(hostFrame, status, key, seam, color)
         return
     end
     if not copy then
-        local hostRegion = CreateFrame("Frame", nil, hostFrame)
-        local tex = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
-        tex:SetAllPoints(hostRegion)
-        hostRegion:SetAllPoints(source)
-        copy = { host = hostRegion, tex = tex, source = source }
+        local host = CreateFrame("Frame", nil, hostFrame)
+        local tex = host:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetAllPoints(host)
+        host:SetAllPoints(source)
+        copy = { host = host, tex = tex, source = source }
         status[key] = copy
     end
     if copy.source ~= source then
@@ -3679,22 +3668,22 @@ end
 
 -- applyExtra for dispel slots: builds/updates the overlay texture from the
 -- style (mode, color, opacity, health refs). Runs at init and every Restyle.
-local function ApplyDispelSlotStyle(btnFrame, d, look)
-    local healthBar = look.healthFrame
-    if not healthBar then
+local function ApplyDispelSlotStyle(btnFrame, d, style)
+    local health = style.healthFrame
+    if not health then
         return
     end
 
     -- Overlay set only: the decoration set never draws one. Still created on
     -- the first run (the creation window) even under Overlay None.
-    if not d.overlay and look.fillSet then
+    if not d.overlay and style.fillSet then
         -- Sublevel 2+level (3..7): higher-priority types get the higher
         -- sublevel, since every slot shares one frame level (see below).
-        d.overlay = btnFrame:CreateTexture(nil, "ARTWORK", nil, 2 + (look.level or 1))
+        d.overlay = btnFrame:CreateTexture(nil, "ARTWORK", nil, 2 + (style.level or 1))
     end
     local tex = d.overlay
-    local c = look.color
-    local alpha = (look.opacity or 100) / 100
+    local c = style.color
+    local alpha = (style.opacity or 100) / 100
 
     -- Change-guarded, stamped AFTER the call: SetFrameLevel on the slot
     -- button is denied while auras are secret (12.1 access restriction).
@@ -3707,7 +3696,7 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
     -- for the overlay set, which shares the bar clip with them (see the section
     -- header). All slots share this level; the Magic > Curse > ... priority is
     -- encoded in the overlay's ARTWORK sublevel above.
-    local lvl = healthBar:GetFrameLevel()
+    local lvl = health:GetFrameLevel()
     if d.lvl ~= lvl then
         btnFrame:SetFrameLevel(lvl)
         d.lvl = lvl
@@ -3715,32 +3704,32 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
 
     if not tex then
         -- Decoration set: no overlay texture.
-    elseif look.mode == "none" then
+    elseif style.mode == "none" then
         -- Overlay None; the overlay set's container is hidden then anyway.
         tex:ClearAllPoints()
         tex:Hide()
-    elseif look.mode == "gradient" or look.mode == "gradient_sharp" or look.mode == "gradient_reverse" then
+    elseif style.mode == "gradient" or style.mode == "gradient_sharp" or style.mode == "gradient_reverse" then
         tex:ClearAllPoints()
         tex:Show()
-        tex:SetAllPoints(healthBar)
-        tex:SetTexture(look.mode == "gradient" and GRADIENT_TEXTURE or GRADIENT_SHARP_TEXTURE)
+        tex:SetAllPoints(health)
+        tex:SetTexture(style.mode == "gradient" and GRADIENT_TEXTURE or GRADIENT_SHARP_TEXTURE)
         -- Gradient Sharp Reverse: the sharp texture flipped vertically (bottom-up).
-        if look.mode == "gradient_reverse" then
+        if style.mode == "gradient_reverse" then
             tex:SetTexCoord(0, 1, 1, 0)
         else
             tex:SetTexCoord(0, 1, 0, 1)
         end
         tex:SetVertexColor(c.r, c.g, c.b, alpha)
-    elseif look.mode == "fill" then
+    elseif style.mode == "fill" then
         tex:ClearAllPoints()
         tex:Show()
-        local fillTex = healthBar.GetStatusBarTexture and healthBar:GetStatusBarTexture()
+        local fillTex = health.GetStatusBarTexture and health:GetStatusBarTexture()
         -- Both corners come off the fill texture so the overlay follows vertical and
         -- reverse fills; anchoring TOPLEFT to the bar only tracks left-to-right.
         if fillTex then
             tex:SetAllPoints(fillTex)
         else
-            tex:SetAllPoints(healthBar)
+            tex:SetAllPoints(health)
         end
         tex:SetTexCoord(0, 1, 0, 1)
         tex:SetColorTexture(c.r, c.g, c.b, alpha)
@@ -3748,7 +3737,7 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
     else -- "full"
         tex:ClearAllPoints()
         tex:Show()
-        tex:SetAllPoints(healthBar)
+        tex:SetAllPoints(health)
         tex:SetTexCoord(0, 1, 0, 1)
         tex:SetColorTexture(c.r, c.g, c.b, alpha)
         tex:SetVertexColor(1, 1, 1, 1)
@@ -3764,17 +3753,17 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
     -- no fixed order, as on Raid Frames. The secret-safe renderer needs no size
     -- reads and no scripts (scripts never run under a slot button). State lives
     -- in d, never on the button.
-    local cb = look.customBorder
-    local uf = look.unitFrame
+    local cb = style.customBorder
+    local uf = style.unitFrame
     local ub = cb and uf and uf.unifiedBorder
     if ub then
         if not d.ufCbHost then
             -- Published only once anchored: a denied write leaves no half-built
             -- host, and the next restyle simply tries again.
-            local hostRegion = CreateFrame("Frame", nil, btnFrame)
-            hostRegion:SetAllPoints(ub)
+            local host = CreateFrame("Frame", nil, btnFrame)
+            host:SetAllPoints(ub)
             d.ufCbState = {}
-            d.ufCbHost = hostRegion
+            d.ufCbHost = host
         end
         -- Armed before the first write on the host: a draw that throws partway
         -- still leaves the off branch able to clear whatever it drew.
@@ -3819,27 +3808,27 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
     local ring = edge and edge._outerRing
     if ring and ring:IsShown() and edge:IsShown() then
         if not d.ufRingHost then
-            local hostRegion = CreateFrame("Frame", nil, btnFrame)
-            local rt = hostRegion:CreateTexture(nil, "OVERLAY", nil, 7)
-            rt:SetAllPoints(hostRegion)
+            local host = CreateFrame("Frame", nil, btnFrame)
+            local rt = host:CreateTexture(nil, "OVERLAY", nil, 7)
+            rt:SetAllPoints(host)
             d.ufRingTex = rt
-            d.ufRingHost = hostRegion
+            d.ufRingHost = host
         end
-        local hostRegion = d.ufRingHost
+        local host = d.ufRingHost
         if d.ufRingAnchor ~= ring then
-            hostRegion:ClearAllPoints()
-            hostRegion:SetAllPoints(ring)
+            host:ClearAllPoints()
+            host:SetAllPoints(ring)
             d.ufRingAnchor = ring
         end
         d.ufRingOn = true
-        hostRegion:SetFrameLevel(edge:GetFrameLevel() + (look.ringLift or 1))
+        host:SetFrameLevel(edge:GetFrameLevel() + (style.ringLift or 1))
         local art = ring:GetTexture()
         if d.ufRingArt ~= art then
             d.ufRingTex:SetTexture(art)
             d.ufRingArt = art
         end
         d.ufRingTex:SetVertexColor(c.r, c.g, c.b, 1)
-        hostRegion:Show()
+        host:Show()
     elseif d.ufRingOn then
         d.ufRingHost:Hide()
         d.ufRingOn = nil
@@ -3856,22 +3845,22 @@ local function ApplyDispelSlotStyle(btnFrame, d, look)
     -- Frames parity). Only the live twin carries style.icon. health+LIFT+level
     -- (frame+21..+25) draws it over the border and the texts (frame+20), in
     -- the Magic > ... > Bleed order, at most level with the raid marker.
-    local ic = look.icon
+    local ic = style.icon
     if ic then
         if not d.ufIconHost then
-            local hostRegion = CreateFrame("Frame", nil, btnFrame)
-            local tex = hostRegion:CreateTexture(nil, "ARTWORK")
-            tex:SetAllPoints(hostRegion)
+            local host = CreateFrame("Frame", nil, btnFrame)
+            local tex = host:CreateTexture(nil, "ARTWORK")
+            tex:SetAllPoints(host)
             d.ufIconTex = tex
-            d.ufIconHost = hostRegion
+            d.ufIconHost = host
         end
-        local hostRegion = d.ufIconHost
-        hostRegion:SetFrameLevel(healthBar:GetFrameLevel() + TypeIcons.LIFT + (look.level or 1))
+        local host = d.ufIconHost
+        host:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (style.level or 1))
         d.ufIconTex:SetAtlas(ic.atlas)
-        hostRegion:SetSize(ic.size, ic.size)
-        hostRegion:ClearAllPoints()
-        hostRegion:SetPoint(ic.corner, healthBar, ic.corner, ic.offX, ic.offY)
-        hostRegion:Show()
+        host:SetSize(ic.size, ic.size)
+        host:ClearAllPoints()
+        host:SetPoint(ic.corner, health, ic.corner, ic.offX, ic.offY)
+        host:Show()
     elseif d.ufIconHost then
         d.ufIconHost:Hide()
     end
@@ -3890,20 +3879,20 @@ end
 -- applyExtra: the cell's icon host, made on the first run (the creation window,
 -- the only one that may anchor to the cell), with its type's art at the stacked
 -- icons' level.
-function TypeIcons.ApplyCell(btnFrame, d, look)
-    local hostRegion = d.ufRowIconHost
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, btnFrame)
-        hostRegion:SetAllPoints(btnFrame)
-        hostRegion:EnableMouse(false)
-        d.ufRowIconTex = hostRegion:CreateTexture(nil, "ARTWORK")
-        d.ufRowIconTex:SetAllPoints(hostRegion)
-        d.ufRowIconHost = hostRegion
+function TypeIcons.ApplyCell(btnFrame, d, style)
+    local host = d.ufRowIconHost
+    if not host then
+        host = CreateFrame("Frame", nil, btnFrame)
+        host:SetAllPoints(btnFrame)
+        host:EnableMouse(false)
+        d.ufRowIconTex = host:CreateTexture(nil, "ARTWORK")
+        d.ufRowIconTex:SetAllPoints(host)
+        d.ufRowIconHost = host
     end
-    d.ufRowIconTex:SetAtlas(look.atlas)
-    local healthBar = look.healthFrame
-    if healthBar then
-        hostRegion:SetFrameLevel(healthBar:GetFrameLevel() + TypeIcons.LIFT + (look.level or 1))
+    d.ufRowIconTex:SetAtlas(style.atlas)
+    local health = style.healthFrame
+    if health then
+        host:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (style.level or 1))
     end
 end
 
@@ -3918,17 +3907,17 @@ function TypeIcons.CreateRow(widget, record)
         record.dispelIcons = boxHolder
     end
     for idx = 1, #DISPEL_SLOTS do
-        local slotIndex = DISPEL_SLOTS[idx]
-        local cand = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } }
+        local slot = DISPEL_SLOTS[idx]
+        local cand = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } }
         for t = 1, 2 do
-            local key = (t == 1) and slotIndex.key or (slotIndex.key .. "_byme")
+            local key = (t == 1) and slot.key or (slot.key .. "_byme")
             if not boxHolder:HasAuraGroup(key) then
                 AK.AddGroupToContainer(boxHolder, {
                     key = key,
                     maxFrameCount = 0,
                     candidateFilters = cand,
                     filter = (t == 1) and { "HARMFUL" } or { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
-                    style = TypeIcons.StyleKey(slotIndex.key),
+                    style = TypeIcons.StyleKey(slot.key),
                 })
             end
         end
@@ -3940,29 +3929,23 @@ end
 -- Anchors the row on the Type Icon Position point, grows it, and lights each
 -- type's live group at one icon.
 function TypeIcons.LayoutRow(widget, record, p)
-    local boxHolder, healthBar = record.dispelIcons, widget.Health
-    if not (boxHolder and healthBar) then
+    local boxHolder, health = record.dispelIcons, widget.Health
+    if not (boxHolder and health) then
         return
     end
     local anchorPoint = (p.dispelIconPosition or "right"):upper()
     local grow = TypeIcons.GROW[p.dispelIconGrowth or "none"] or "LEFT"
-    local dim = p.dispelIconSize or 16
+    local size = p.dispelIconSize or 16
     local gap = CludesUI.PP.FromPixels(1)
     boxHolder:ClearAllPoints()
-    boxHolder:SetPoint(
-        anchorPoint,
-        healthBar,
-        anchorPoint,
-        p.dispelIconOffsetX or 0,
-        p.dispelIconOffsetY or 0
-    )
+    boxHolder:SetPoint(anchorPoint, health, anchorPoint, p.dispelIconOffsetX or 0, p.dispelIconOffsetY or 0)
     AK.SetContainerAnchor(boxHolder, anchorPoint)
     local vertical = grow == "UP" or grow == "DOWN"
     local gX = vertical and (anchorPoint:find("LEFT") and "RIGHT" or "LEFT") or grow
     local gY = vertical and grow or (anchorPoint:find("BOTTOM") and "UP" or "DOWN")
-    AK.SetContainerRowWidth(boxHolder, vertical and (dim + 0.4) or nil)
+    AK.SetContainerRowWidth(boxHolder, vertical and (size + 0.4) or nil)
     AK.SetContainerGrowth(boxHolder, FlowDir(gX), FlowDir(gY))
-    local layout = { elementWidth = dim, elementHeight = dim, elementSpacing = gap, lineSpacing = gap }
+    local layout = { elementWidth = size, elementHeight = size, elementSpacing = gap, lineSpacing = gap }
     local byMe = p.dispelOverlayByMe == true
     for idx = 1, #DISPEL_SLOTS do
         local key = DISPEL_SLOTS[idx].key
@@ -4001,7 +3984,7 @@ local function BuildDispelStyles(widget)
     if not p then
         return false
     end
-    local modeName = p.dispelOverlay or "none"
+    local mode = p.dispelOverlay or "none"
     -- "Only Dispellable by You": slot filters are fixed at declaration and
     -- containers are never swapped (engine buttons leak), so BOTH filter
     -- variants exist as slots from creation and the INACTIVE variant is
@@ -4035,21 +4018,21 @@ local function BuildDispelStyles(widget)
         or nil
     local rowSize = p.dispelIconSize or 16
     for idx = 1, #DISPEL_SLOTS do
-        local slotIndex = DISPEL_SLOTS[idx]
+        local slot = DISPEL_SLOTS[idx]
         -- A type the engine token can never match keeps using the PLAIN slot in
         -- "by me" mode: its by-me twin stays dark and would swallow the setting
         -- entirely.
-        local tokenBlind = TokenBlindDispelSlot(slotIndex.key)
+        local tokenBlind = TokenBlindDispelSlot(slot.key)
         local byMeLive = byMe and not tokenBlind
-        local column = p[slotIndex.colorKey]
+        local col = p[slot.colorKey]
         local color = {
-            r = column and column.r or slotIndex.fallback[1],
-            g = column and column.g or slotIndex.fallback[2],
-            b = column and column.b or slotIndex.fallback[3],
+            r = col and col.r or slot.fallback[1],
+            g = col and col.g or slot.fallback[2],
+            b = col and col.b or slot.fallback[3],
         }
-        local glyph = iconCorner
+        local icon = iconCorner
                 and {
-                    atlas = slotIndex.atlas,
+                    atlas = slot.atlas,
                     corner = iconCorner,
                     size = p.dispelIconSize or 16,
                     offX = p.dispelIconOffsetX or 0,
@@ -4059,7 +4042,7 @@ local function BuildDispelStyles(widget)
         -- Plain twin, then the by-me twin. The overlay, the border copy and the
         -- type icon ride the live twin only; the inactive one draws nothing.
         for t = 1, 2 do
-            local key = (t == 1) and slotIndex.key or (slotIndex.key .. "_byme")
+            local key = (t == 1) and slot.key or (slot.key .. "_byme")
             local live = (t == 2) == byMeLive
             AK.styles[DispelStyleKey(key)] = {
                 width = 1,
@@ -4067,12 +4050,12 @@ local function BuildDispelStyles(widget)
                 noRegions = true,
                 mode = "none",
                 color = color,
-                level = slotIndex.level,
+                level = slot.level,
                 healthFrame = widget.Health,
                 unitFrame = widget,
                 customBorder = live and customBorder or nil,
                 ringLift = ringLift,
-                icon = live and glyph or nil,
+                icon = live and icon or nil,
                 applyExtra = ApplyDispelSlotStyle,
             }
             AK.styles[DispelStyleKey(key, true)] = {
@@ -4080,22 +4063,22 @@ local function BuildDispelStyles(widget)
                 height = 1,
                 noRegions = true,
                 fillSet = true,
-                mode = modeName,
+                mode = mode,
                 color = color,
                 opacity = live and op or 0,
-                level = slotIndex.level,
+                level = slot.level,
                 healthFrame = widget.Health,
                 applyExtra = ApplyDispelSlotStyle,
             }
         end
         -- The Growth Direction row's cells for this type (both twins).
-        AK.styles[TypeIcons.StyleKey(slotIndex.key)] = {
+        AK.styles[TypeIcons.StyleKey(slot.key)] = {
             width = rowSize,
             height = rowSize,
             noRegions = true,
             noTooltips = true,
-            atlas = slotIndex.atlas,
-            level = slotIndex.level,
+            atlas = slot.atlas,
+            level = slot.level,
             healthFrame = widget.Health,
             applyExtra = TypeIcons.ApplyCell,
         }
@@ -4126,7 +4109,7 @@ local function CreateDispelSet(widget, record, fill)
 
     local n = 0
     for idx = 1, #DISPEL_SLOTS do
-        local slotIndex = DISPEL_SLOTS[idx]
+        local slot = DISPEL_SLOTS[idx]
         local function ParkSlot(slotButton)
             -- Park the slot button on the health bar center (the overlay textures
             -- anchor to the health bar independently). Anchored HERE, inside the
@@ -4138,10 +4121,10 @@ local function CreateDispelSet(widget, record, fill)
         n = n + 1
         if n > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
-                key = slotIndex.key,
+                key = slot.key,
                 filter = { "HARMFUL" },
-                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
-                style = DispelStyleKey(slotIndex.key, fill),
+                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } },
+                style = DispelStyleKey(slot.key, fill),
                 extraInit = ParkSlot,
             })
             record[addsField] = n
@@ -4153,10 +4136,10 @@ local function CreateDispelSet(widget, record, fill)
         n = n + 1
         if n > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
-                key = slotIndex.key .. "_byme",
+                key = slot.key .. "_byme",
                 filter = { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
-                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
-                style = DispelStyleKey(slotIndex.key .. "_byme", fill),
+                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } },
+                style = DispelStyleKey(slot.key .. "_byme", fill),
                 extraInit = ParkSlot,
             })
             record[addsField] = n
@@ -4262,9 +4245,9 @@ local function DispelFP(p, widget)
     end
     -- The health bar's level: the slot buttons copy it only on a restyle, and
     -- the overlay must stay under the absorbs at hpBar+1.
-    local healthBar = widget and widget.Health
-    if healthBar then
-        fp = fp .. "|hl|" .. healthBar:GetFrameLevel()
+    local health = widget and widget.Health
+    if health then
+        fp = fp .. "|hl|" .. health:GetFrameLevel()
     end
     return fp
 end
@@ -4316,8 +4299,8 @@ end
 -- actually flips. No combat gate: the restyle routes through AK.RestyleSoon,
 -- whose worker defers secrecy-denied writes to the restriction-lift re-queue.
 do
-    local _, classFile = UnitClass("player")
-    if classFile == "SHAMAN" then
+    local _, class = UnitClass("player")
+    if class == "SHAMAN" then
         local ev = CreateFrame("Frame")
         ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
         ev:RegisterEvent("SPELLS_CHANGED")
@@ -4383,8 +4366,8 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
     record.cfgDirty = nil
 
     local anyOn = false
-    for baseValue, field in pairs({ HELPFUL = "buffs", HARMFUL = "debuffs" }) do
-        local key = StyleKey(unitToken, baseValue)
+    for base, field in pairs({ HELPFUL = "buffs", HARMFUL = "debuffs" }) do
+        local key = StyleKey(unitToken, base)
         local st = ufFP[key]
         if not st then
             st = {}
@@ -4393,14 +4376,14 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
 
         -- Restyle only when the built style actually differs; the deferred
         -- time-sliced restyler spreads the button decoration work out.
-        local look = BuildStyle(unitToken, baseValue, s, record.frame)
-        local styleV = StyleTableFP(look, font)
+        local style = BuildStyle(unitToken, base, s, record.frame)
+        local styleV = StyleTableFP(style, font)
         if st.style ~= styleV then
             st.style = styleV
-            AK.styles[key] = look
+            AK.styles[key] = style
             AK.RestyleSoon(key)
         end
-        if baseValue == "HELPFUL" and unitToken ~= "player" then
+        if base == "HELPFUL" and unitToken ~= "player" then
             PurgeGlow.Register(unitToken, s, record.frame, font)
             PurgeGlow.SetWatch(unitToken, PurgeGlow.On(unitToken, s))
         end
@@ -4410,7 +4393,7 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         -- probe T1/T1b), and the config pass zeroes whatever fell out of the active
         -- set. The old swap path permanently leaked a 10-button batch per group per
         -- toggle (engine frames are never freed).
-        local chain = ChainFor(unitToken, baseValue, s)
+        local chain = ChainFor(unitToken, base, s)
         local sig = ChainSignature(chain)
         local force = forceCfg
         local boxHolder = record[field]
@@ -4421,7 +4404,7 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         -- UNIT_AURA). Additive declaration requires the REAL registry:
         -- declaring into a fallback table would lose track and double-declare
         -- next change.
-        local enabled = SideOn(unitToken, baseValue, s)
+        local enabled = SideOn(unitToken, base, s)
         if enabled then
             anyOn = true
         end
@@ -4436,7 +4419,7 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
             -- splits a hostile unit's buffs into links, so that row declares
             -- its catch-all on the first friendly unit (once per session).
             if not declared.all and #chain == 0 then
-                DeclareElementGroup(boxHolder, declared, key, "all", { baseValue }, nil)
+                DeclareElementGroup(boxHolder, declared, key, "all", { base }, nil)
             end
             for idx = 1, #chain do
                 local c = chain[idx]
@@ -4455,11 +4438,11 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         end
 
         if boxHolder then
-            local cfgV = CfgFP(unitToken, baseValue, s, widget)
+            local cfgV = CfgFP(unitToken, base, s, widget)
             if force or st.cfg ~= cfgV then
                 st.cfg = cfgV
-                AnchorContainer(boxHolder, widget, unitToken, baseValue, s, record.buffs) -- self-skips on anchor "none"
-                ApplyGroupConfig(boxHolder, unitToken, baseValue, s, chain, declared)
+                AnchorContainer(boxHolder, widget, unitToken, base, s, record.buffs) -- self-skips on anchor "none"
+                ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
             end
         end
     end
@@ -4787,12 +4770,12 @@ local function BuildUnitContainers(widget, unitToken)
         -- fingerprints too: the final-stage reload would otherwise queue a
         -- restyle of buttons that were decorated from these exact tables.
         local font = (CludesUI.GetFontPath("unitFrames")) or ""
-        for _, baseValue in ipairs({ "HELPFUL", "HARMFUL" }) do
-            local key = StyleKey(unitToken, baseValue)
-            local look = BuildStyle(unitToken, baseValue, s, widget)
-            AK.styles[key] = look
-            ufFP[key] = { style = StyleTableFP(look, font) }
-            if baseValue == "HELPFUL" and unitToken ~= "player" then
+        for _, base in ipairs({ "HELPFUL", "HARMFUL" }) do
+            local key = StyleKey(unitToken, base)
+            local style = BuildStyle(unitToken, base, s, widget)
+            AK.styles[key] = style
+            ufFP[key] = { style = StyleTableFP(style, font) }
+            if base == "HELPFUL" and unitToken ~= "player" then
                 PurgeGlow.Register(unitToken, s, widget, font)
             end
         end
@@ -4819,16 +4802,16 @@ local function BuildUnitContainers(widget, unitToken)
     -- atom), for the elements that are on (SideOn, re-read every atom): an
     -- element that is off declares nothing until a reload sees it on.
     for e = 1, 2 do
-        local baseValue, field = ELEMENT_ORDER[e][1], ELEMENT_ORDER[e][2]
-        if SideOn(unitToken, baseValue, s) then
-            local chain = ChainFor(unitToken, baseValue, s)
+        local base, field = ELEMENT_ORDER[e][1], ELEMENT_ORDER[e][2]
+        if SideOn(unitToken, base, s) then
+            local chain = ChainFor(unitToken, base, s)
             local declared = record.groups[field]
-            local styleKey = StyleKey(unitToken, baseValue)
+            local styleKey = StyleKey(unitToken, base)
             -- The plain catch-all only for an empty chain, where it is the
             -- group that shows or, showing nothing, still gives the container
             -- its layout aspect (see the reload's declaration).
             if not declared.all and #chain == 0 then
-                DeclareElementGroup(record[field], declared, styleKey, "all", { baseValue }, nil)
+                DeclareElementGroup(record[field], declared, styleKey, "all", { base }, nil)
                 return "again"
             end
             for idx = 1, #chain do

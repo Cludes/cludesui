@@ -121,8 +121,8 @@ local function TexBgCog(region, rowFn, styleKey)
     if CludesUI._prebuilding then
         return
     end
-    local rowFrame = rowFn()
-    if not rowFrame then
+    local row = rowFn()
+    if not row then
         return
     end
     local blizzOn = styleKey and CludesUI.BlizzStyle.Active(styleKey) == "blizzard"
@@ -133,7 +133,7 @@ local function TexBgCog(region, rowFn, styleKey)
         disabledTooltip = blizzOn and CludesUI.BlizzStyle.Label(styleKey) or nil,
         requireState = blizzOn and "disabled" or nil,
         title = "Texture Settings",
-        rows = { rowFrame },
+        rows = { row },
     })
 end
 
@@ -412,10 +412,10 @@ local function TileNameplates(hostFrame, posY, W, tile)
     )
     posY = posY - hgt
     -- Textured Background cogs.
-    local function Row(kindOf)
+    local function Row(kind)
         return function()
             local environ = mod._NPO_OptEnv
-            return environ and environ.TexBgRowCfg(kindOf, NPTexApply)
+            return environ and environ.TexBgRowCfg(kind, NPTexApply)
         end
     end
     TexBgCog(texRow._leftRegion, Row("health"), "nameplates")
@@ -1008,9 +1008,9 @@ local function TileResourceBars(hostFrame, posY, W, tile)
     posY = posY - hgt
     -- Textured Background cogs.
     local environ = mod._CURB_OptEnv
-    local function Row(kindOf)
+    local function Row(kind)
         return function()
-            return environ and environ.TexBgRowCfg(kindOf, RBApply)
+            return environ and environ.TexBgRowCfg(kind, RBApply)
         end
     end
     TexBgCog(barTexRow._leftRegion, Row("bars"))
@@ -1611,14 +1611,14 @@ local function BuildTileList()
     local tiles = {}
     local roster = CludesUI.ADDON_ROSTER or {}
     for _, record in ipairs(roster) do
-        local spec_def = not record.comingSoon and TILE_BUILDERS[record.folder]
-        if spec_def then
+        local def = not record.comingSoon and TILE_BUILDERS[record.folder]
+        if def then
             tiles[#tiles + 1] = {
                 key = record.folder,
                 folder = record.folder,
                 display = record.display,
-                desc = spec_def[2],
-                buildContent = spec_def[1],
+                desc = def[2],
+                buildContent = def[1],
             }
         end
     end
@@ -1642,13 +1642,13 @@ local function BuildTexCard(hostFrame, posY, W, tile)
         glyph = function(heading, enabled)
             local Pix = CludesUI.PanelPP
             local ACC = CludesUI.CLUDES_GREEN
-            local glyph = CreateFrame("Frame", nil, heading)
-            Pix.Size(glyph, 26, 12)
-            Pix.Point(glyph, "LEFT", heading, "LEFT", 14, 0)
-            CludesUI.MakeBorder(glyph, 1, 1, 1, 0.3, Pix)
-            local glyphTex = glyph:CreateTexture(nil, "ARTWORK")
-            glyphTex:SetPoint("TOPLEFT", glyph, "TOPLEFT", 1, -1)
-            glyphTex:SetPoint("BOTTOMRIGHT", glyph, "BOTTOMRIGHT", -1, 1)
+            local icon = CreateFrame("Frame", nil, heading)
+            Pix.Size(icon, 26, 12)
+            Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
+            CludesUI.MakeBorder(icon, 1, 1, 1, 0.3, Pix)
+            local glyphTex = icon:CreateTexture(nil, "ARTWORK")
+            glyphTex:SetPoint("TOPLEFT", icon, "TOPLEFT", 1, -1)
+            glyphTex:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 1)
             glyphTex:SetTexture(TX_GLYPH_TEX)
             if enabled then
                 glyphTex:SetVertexColor(ACC.r, ACC.g, ACC.b, 0.8)

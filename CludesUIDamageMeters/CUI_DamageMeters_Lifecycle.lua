@@ -19,7 +19,7 @@ Inner.broken = true
 
 local CUI = CludesUI
 
-local SavedDB, EnsureDB, MAX_WINDOWS = Inner.DB, Inner.EnsureDB, Inner.MAX_WINDOWS
+local DB, EnsureDB, MAX_WINDOWS = Inner.DB, Inner.EnsureDB, Inner.MAX_WINDOWS
 local REFRESH_RATE_FLOOR = Inner.REFRESH_RATE_FLOOR
 local REFRESH_RATE_HARD_FLOOR, TICK_COMBAT = Inner.REFRESH_RATE_HARD_FLOOR, Inner.TICK_COMBAT
 local _deathStamps, _feignDeathGUIDs = Inner._deathStamps, Inner._feignDeathGUIDs
@@ -119,7 +119,7 @@ end
 -- on the live Current Deaths view needs them (ns._DMHiddenDeathsPass, no clock); false
 -- otherwise. A hidden window's refresh only marks it stale for its OnShow catch-up.
 local function AnyTickViewer()
-    if SavedDB().standaloneTimer then
+    if DB().standaloneTimer then
         return true
     end
     local stamp = false
@@ -217,12 +217,12 @@ StartSharedTicker = function()
         end
         return
     end
-    local rate = SavedDB().refreshRate or TICK_COMBAT
+    local rate = DB().refreshRate or TICK_COMBAT
     -- Belt for values the login clamp has not seen yet (a profile imported
     -- mid-session from an old export can carry a sub-floor rate). Respects
     -- unsafeRefreshRate the same way the login clamp does; the hard floor
     -- applies either way so 0 or negative can never reach the ticker.
-    local floor = SavedDB().unsafeRefreshRate and REFRESH_RATE_HARD_FLOOR or REFRESH_RATE_FLOOR
+    local floor = DB().unsafeRefreshRate and REFRESH_RATE_HARD_FLOOR or REFRESH_RATE_FLOOR
     if rate < floor then
         rate = floor
     end
@@ -233,7 +233,7 @@ StartSharedTicker = function()
     end
     _timerTicker = C_Timer.NewTicker(0.5, TimerTick)
     -- Tenths display needs a faster brush than the 0.5s timer tick; combat-only, opt-in only, standalone timer only
-    local conf = SavedDB()
+    local conf = DB()
     if conf.standaloneTimer and conf.standaloneTimerDecimal then
         _saDecimalTicker = C_Timer.NewTicker(0.1, UpdateSATimerText)
     end
@@ -474,7 +474,7 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
                 wid.Refresh()
             end
             -- One final tick then stop (guarded so it can't cancel a new segment).
-            ScheduleStopTicker(SavedDB().refreshRate or TICK_COMBAT)
+            ScheduleStopTicker(DB().refreshRate or TICK_COMBAT)
         end
         -- Delayed refresh after exiting combat: API needs a moment to declassify secret source GUIDs so breakdowns work post-combat
         C_Timer.After(0.5, function()
@@ -583,7 +583,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- A profile already on Classic WoW UI gets its one-time seed here (the
     -- Style page seeds on the switch; flags make both idempotent).
     if mod.DMClassic() then
-        mod.DMSeedClassic(SavedDB())
+        mod.DMSeedClassic(DB())
     end
     -- Disable Blizzard's built-in damage meter UI; C_DamageMeter API still works
     CludesUI.SetCVar("damageMeterEnabled", 0, "CludesUIDamageMeters")
@@ -595,7 +595,7 @@ initFrame:SetScript("OnEvent", function(self)
     mod.ApplyDMKeybinds()
 
     -- Defer window creation off the login frame to avoid blocking
-    local conf = SavedDB()
+    local conf = DB()
     if not conf.windows then
         conf.windows = {}
     end
@@ -650,7 +650,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
         SetActiveRow(nil)
         _hoverPollFrame:Hide()
-        local c = SavedDB()
+        local c = DB()
         -- Clear the hotkey toggle so a profile swap never lands in a hidden state whose
         -- cause is no longer visible, then re-apply both keybinds from the new profile
         mod._toggleHidden = false

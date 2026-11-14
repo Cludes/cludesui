@@ -153,13 +153,13 @@ end
 
 local SPELL_ALIAS_MAP = {}
 do
-    for _, group in ipairs(SPELL_ALIAS_GROUPS) do
-        for _, ident in ipairs(group) do
-            SPELL_ALIAS_MAP[ident] = group
+    for _, set in ipairs(SPELL_ALIAS_GROUPS) do
+        for _, ident in ipairs(set) do
+            SPELL_ALIAS_MAP[ident] = set
         end
-        for _, ident in ipairs(group) do
+        for _, ident in ipairs(set) do
             if not SPELL_CATEGORY_DURATION[ident] then
-                for _, other in ipairs(group) do
+                for _, other in ipairs(set) do
                     if SPELL_CATEGORY_DURATION[other] then
                         SPELL_CATEGORY_DURATION[ident] = SPELL_CATEGORY_DURATION[other]
                         break
@@ -174,9 +174,9 @@ local function GetKnownCategoryDuration(spellId)
     if SPELL_CATEGORY_DURATION[spellId] then
         return SPELL_CATEGORY_DURATION[spellId]
     end
-    local group = SPELL_ALIAS_MAP[spellId]
-    if group then
-        for _, ident in ipairs(group) do
+    local set = SPELL_ALIAS_MAP[spellId]
+    if set then
+        for _, ident in ipairs(set) do
             if SPELL_CATEGORY_DURATION[ident] then
                 return SPELL_CATEGORY_DURATION[ident]
             end
@@ -205,9 +205,9 @@ local MIN_REAL_COOLDOWN = 3
 -- fall back to it rather than treating an unknown base as "cannot classify".
 -- GetSpellBaseCooldown is the GLOBAL (client-verified: no C_Spell form exists).
 local function ResolveBaseDuration(record)
-    local baseValue = record and record.baseDuration
-    if type(baseValue) == "number" and not IsSecret(baseValue) then
-        return baseValue
+    local base = record and record.baseDuration
+    if type(base) == "number" and not IsSecret(base) then
+        return base
     end
     local ident = record and (record.baseSpellId or record.spellId)
     if not ident then
@@ -229,8 +229,8 @@ local function IsLockoutWindow(record, seconds)
     if type(seconds) ~= "number" or IsSecret(seconds) then
         return false
     end
-    local baseValue = ResolveBaseDuration(record)
-    if type(baseValue) ~= "number" or baseValue <= MIN_REAL_COOLDOWN then
+    local base = ResolveBaseDuration(record)
+    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then
         return false
     end
     return seconds < MIN_REAL_COOLDOWN
@@ -265,8 +265,8 @@ local function LockoutAlpha(record, duration)
     if not duration or not duration.EvaluateTotalDuration then
         return 1
     end
-    local baseValue = ResolveBaseDuration(record)
-    if type(baseValue) ~= "number" or baseValue <= MIN_REAL_COOLDOWN then
+    local base = ResolveBaseDuration(record)
+    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then
         return 1
     end
     local curve = GetLockoutAlphaCurve()
@@ -547,109 +547,109 @@ local function OnSlotCooldownDone(cd)
 end
 
 local function CreateDisplaySlot()
-    local slotIndex = CreateFrame("Frame", nil, movementFrame)
-    slotIndex:SetSize(200, 40)
+    local slot = CreateFrame("Frame", nil, movementFrame)
+    slot:SetSize(200, 40)
 
-    slotIndex.text = slotIndex:CreateFontString(nil, "OVERLAY")
-    slotIndex.text:SetPoint("CENTER")
+    slot.text = slot:CreateFontString(nil, "OVERLAY")
+    slot.text:SetPoint("CENTER")
 
-    slotIndex.icon = CreateFrame("Frame", nil, slotIndex)
-    slotIndex.icon:SetSize(40, 40)
-    slotIndex.icon:SetPoint("CENTER")
-    slotIndex.icon.border = slotIndex.icon:CreateTexture(nil, "BACKGROUND")
-    slotIndex.icon.border:SetAllPoints()
-    slotIndex.icon.border:SetColorTexture(0, 0, 0, 1)
-    slotIndex.icon.tex = slotIndex.icon:CreateTexture(nil, "ARTWORK")
-    slotIndex.icon.tex:SetPoint("TOPLEFT", 2, -2)
-    slotIndex.icon.tex:SetPoint("BOTTOMRIGHT", -2, 2)
-    slotIndex.icon.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    slotIndex.icon.cooldown = CreateFrame("Cooldown", nil, slotIndex.icon, "CooldownFrameTemplate")
-    slotIndex.icon.cooldown:SetAllPoints(slotIndex.icon.tex)
-    slotIndex.icon.cooldown:SetDrawEdge(false)
-    slotIndex.icon.cooldown:SetScript("OnCooldownDone", OnSlotCooldownDone)
-    if slotIndex.icon.cooldown.SetCountdownFont then
-        slotIndex.icon.cooldown:SetCountdownFont("CUI_MovementAlertCdFont")
+    slot.icon = CreateFrame("Frame", nil, slot)
+    slot.icon:SetSize(40, 40)
+    slot.icon:SetPoint("CENTER")
+    slot.icon.border = slot.icon:CreateTexture(nil, "BACKGROUND")
+    slot.icon.border:SetAllPoints()
+    slot.icon.border:SetColorTexture(0, 0, 0, 1)
+    slot.icon.tex = slot.icon:CreateTexture(nil, "ARTWORK")
+    slot.icon.tex:SetPoint("TOPLEFT", 2, -2)
+    slot.icon.tex:SetPoint("BOTTOMRIGHT", -2, 2)
+    slot.icon.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    slot.icon.cooldown = CreateFrame("Cooldown", nil, slot.icon, "CooldownFrameTemplate")
+    slot.icon.cooldown:SetAllPoints(slot.icon.tex)
+    slot.icon.cooldown:SetDrawEdge(false)
+    slot.icon.cooldown:SetScript("OnCooldownDone", OnSlotCooldownDone)
+    if slot.icon.cooldown.SetCountdownFont then
+        slot.icon.cooldown:SetCountdownFont("CUI_MovementAlertCdFont")
     end
     -- Own countdown text for icon mode: the poll drives this FontString for
     -- readable durations (our precision/decimal control); the engine numbers
     -- take over only for secret durations, which Lua cannot format (see the
     -- engine-countdown block below for the CVar posture).
-    slotIndex.icon.timeText = slotIndex.icon.cooldown:CreateFontString(nil, "OVERLAY")
-    slotIndex.icon.timeText:SetFontObject(movementCdFont)
-    slotIndex.icon.timeText:SetPoint("CENTER")
-    slotIndex.icon.timeText:SetText("")
-    slotIndex.icon:Hide()
+    slot.icon.timeText = slot.icon.cooldown:CreateFontString(nil, "OVERLAY")
+    slot.icon.timeText:SetFontObject(movementCdFont)
+    slot.icon.timeText:SetPoint("CENTER")
+    slot.icon.timeText:SetText("")
+    slot.icon:Hide()
 
     -- Engine-drawn countdown for text modes. See ShowEngineCountdown.
-    slotIndex.cdNum = CreateFrame("Cooldown", nil, slotIndex, "CooldownFrameTemplate")
-    slotIndex.cdNum:SetDrawSwipe(false)
-    slotIndex.cdNum:SetDrawEdge(false)
-    slotIndex.cdNum:SetScript("OnCooldownDone", OnSlotCooldownDone)
-    if slotIndex.cdNum.SetDrawBling then
-        slotIndex.cdNum:SetDrawBling(false)
+    slot.cdNum = CreateFrame("Cooldown", nil, slot, "CooldownFrameTemplate")
+    slot.cdNum:SetDrawSwipe(false)
+    slot.cdNum:SetDrawEdge(false)
+    slot.cdNum:SetScript("OnCooldownDone", OnSlotCooldownDone)
+    if slot.cdNum.SetDrawBling then
+        slot.cdNum:SetDrawBling(false)
     end
-    slotIndex.cdNum:SetHideCountdownNumbers(false)
-    if slotIndex.cdNum.SetCountdownFont then
-        slotIndex.cdNum:SetCountdownFont("CUI_MovementAlertCdFont")
+    slot.cdNum:SetHideCountdownNumbers(false)
+    if slot.cdNum.SetCountdownFont then
+        slot.cdNum:SetCountdownFont("CUI_MovementAlertCdFont")
     end
     -- Blizzard suppresses countdown text on short cooldowns by default, which
     -- would silently drop the number on exactly the short mobility cooldowns
     -- this feature exists for.
-    if slotIndex.cdNum.SetMinimumCountdownDuration then
-        slotIndex.cdNum:SetMinimumCountdownDuration(0)
+    if slot.cdNum.SetMinimumCountdownDuration then
+        slot.cdNum:SetMinimumCountdownDuration(0)
     end
     -- The engine exposes the FontString it draws into, so the number can be
     -- placed and sized against our own text instead of being inferred from the
     -- host frame's geometry (which is what made it render at a different size).
-    if slotIndex.cdNum.GetCountdownFontString then
-        slotIndex.cdNumText = slotIndex.cdNum:GetCountdownFontString()
+    if slot.cdNum.GetCountdownFontString then
+        slot.cdNumText = slot.cdNum:GetCountdownFontString()
     end
-    slotIndex.cdNum:Hide()
+    slot.cdNum:Hide()
 
-    slotIndex.bar = CreateFrame("StatusBar", nil, slotIndex)
-    slotIndex.bar:SetSize(150, 20)
-    slotIndex.bar:SetPoint("CENTER")
-    slotIndex.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    slotIndex.bar:SetMinMaxValues(0, 1)
-    slotIndex.bar:SetValue(0)
-    slotIndex.bar.bg = slotIndex.bar:CreateTexture(nil, "BACKGROUND")
-    slotIndex.bar.bg:SetAllPoints()
-    slotIndex.bar.bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
-    slotIndex.bar.text = slotIndex.bar:CreateFontString(nil, "OVERLAY")
-    slotIndex.bar.text:SetPoint("CENTER")
-    slotIndex.bar.icon = slotIndex.bar:CreateTexture(nil, "OVERLAY")
-    slotIndex.bar.icon:SetSize(20, 20)
-    slotIndex.bar.icon:SetPoint("RIGHT", slotIndex.bar, "LEFT", -4, 0)
-    slotIndex.bar.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    slotIndex.bar:Hide()
+    slot.bar = CreateFrame("StatusBar", nil, slot)
+    slot.bar:SetSize(150, 20)
+    slot.bar:SetPoint("CENTER")
+    slot.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    slot.bar:SetMinMaxValues(0, 1)
+    slot.bar:SetValue(0)
+    slot.bar.bg = slot.bar:CreateTexture(nil, "BACKGROUND")
+    slot.bar.bg:SetAllPoints()
+    slot.bar.bg:SetColorTexture(0.1, 0.1, 0.1, 0.8)
+    slot.bar.text = slot.bar:CreateFontString(nil, "OVERLAY")
+    slot.bar.text:SetPoint("CENTER")
+    slot.bar.icon = slot.bar:CreateTexture(nil, "OVERLAY")
+    slot.bar.icon:SetSize(20, 20)
+    slot.bar.icon:SetPoint("RIGHT", slot.bar, "LEFT", -4, 0)
+    slot.bar.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    slot.bar:Hide()
 
-    return slotIndex
+    return slot
 end
 
-local function GetDisplaySlot(slotPos)
-    if not displayPool[slotPos] then
-        displayPool[slotPos] = CreateDisplaySlot()
+local function GetDisplaySlot(index)
+    if not displayPool[index] then
+        displayPool[index] = CreateDisplaySlot()
     end
-    return displayPool[slotPos]
+    return displayPool[index]
 end
 
 local function LayoutDisplaySlots(count)
     local frameW, frameH = movementFrame:GetWidth(), movementFrame:GetHeight()
     for idx = 1, count do
-        local slotIndex = displayPool[idx]
-        if slotIndex then
-            slotIndex:ClearAllPoints()
-            slotIndex:SetSize(frameW, frameH)
+        local slot = displayPool[idx]
+        if slot then
+            slot:ClearAllPoints()
+            slot:SetSize(frameW, frameH)
             if idx == 1 then
-                slotIndex:SetPoint("BOTTOM", movementFrame, "BOTTOM", 0, 0)
+                slot:SetPoint("BOTTOM", movementFrame, "BOTTOM", 0, 0)
             else
-                slotIndex:SetPoint("BOTTOM", displayPool[idx - 1], "TOP", 0, 2)
+                slot:SetPoint("BOTTOM", displayPool[idx - 1], "TOP", 0, 2)
             end
         end
     end
 end
 
-local function StyleSlot(slotIndex)
+local function StyleSlot(slot)
     local ma = MA()
     local fontFile, outline = AlertFontPath(), AlertFontOutline()
     local frameH, frameW = movementFrame:GetHeight(), movementFrame:GetWidth()
@@ -664,17 +664,17 @@ local function StyleSlot(slotIndex)
     -- Pin the engine's countdown FontString to the same font object and colour
     -- every pass: left alone it sizes itself against its host frame rather than
     -- the user's Text Size.
-    if slotIndex.cdNumText then
-        slotIndex.cdNumText:SetFontObject(movementCdFont)
-        slotIndex.cdNumText:SetTextColor(tR, tG, tB)
+    if slot.cdNumText then
+        slot.cdNumText:SetFontObject(movementCdFont)
+        slot.cdNumText:SetTextColor(tR, tG, tB)
     end
 
     -- The rest only when one of its inputs moved: every poll tick (10 per second
     -- while an alert shows) re-shows each slot.
-    local st = slotIndex._style
+    local st = slot._style
     if not st then
         st = {}
-        slotIndex._style = st
+        slot._style = st
     end
     if
         st.font == fontFile
@@ -694,22 +694,22 @@ local function StyleSlot(slotIndex)
     st.font, st.outline, st.size, st.r, st.g, st.b = fontFile, outline, fontSize, tR, tG, tB
     st.w, st.h, st.icon, st.tex, st.iconSz = frameW, frameH, showIcon, texPath, iconSz
 
-    if not slotIndex.text:SetFont(fontFile, fontSize, outline) then
-        slotIndex.text:SetFont(FALLBACK_FONT, fontSize, outline)
+    if not slot.text:SetFont(fontFile, fontSize, outline) then
+        slot.text:SetFont(FALLBACK_FONT, fontSize, outline)
     end
-    slotIndex.text:SetTextColor(tR, tG, tB)
-    slotIndex.icon.timeText:SetTextColor(tR, tG, tB)
+    slot.text:SetTextColor(tR, tG, tB)
+    slot.icon.timeText:SetTextColor(tR, tG, tB)
 
     local barH = math.max(12, math.floor(frameH * 0.5))
     local barW = frameW - (showIcon and (barH + 8) or 0) - 10
-    slotIndex.bar:SetSize(math.max(50, barW), barH)
-    slotIndex.bar.icon:SetSize(barH, barH)
+    slot.bar:SetSize(math.max(50, barW), barH)
+    slot.bar.icon:SetSize(barH, barH)
     -- Text Size drives every mode's text: the free text, the bar's number,
     -- and (via the named countdown font) the icon's countdown numbers.
     -- Font-object SetFont has no success return; reuse the fontstring's
     -- validation to pick the path that actually loaded.
-    if not slotIndex.bar.text:SetFont(fontFile, fontSize, outline) then
-        slotIndex.bar.text:SetFont(FALLBACK_FONT, fontSize, outline)
+    if not slot.bar.text:SetFont(fontFile, fontSize, outline) then
+        slot.bar.text:SetFont(FALLBACK_FONT, fontSize, outline)
         movementCdFont:SetFont(FALLBACK_FONT, fontSize, outline)
     else
         movementCdFont:SetFont(fontFile, fontSize, outline)
@@ -719,12 +719,12 @@ local function StyleSlot(slotIndex)
     -- user's Text Colour.
     movementCdFont:SetTextColor(tR, tG, tB)
 
-    if slotIndex.bar._lastTexPath ~= texPath then
-        slotIndex.bar:SetStatusBarTexture(texPath)
-        slotIndex.bar._lastTexPath = texPath
+    if slot.bar._lastTexPath ~= texPath then
+        slot.bar:SetStatusBarTexture(texPath)
+        slot.bar._lastTexPath = texPath
     end
 
-    slotIndex.icon:SetSize(iconSz, iconSz)
+    slot.icon:SetSize(iconSz, iconSz)
 end
 
 -------------------------------------------------------------------------------
@@ -757,21 +757,21 @@ local function BindEngineCountdown(cd, duration)
     return false
 end
 
-local function HideEngineCountdown(slotIndex)
-    if slotIndex.cdNum then
-        slotIndex.cdNum:Hide()
+local function HideEngineCountdown(slot)
+    if slot.cdNum then
+        slot.cdNum:Hide()
     end
     -- ShowEngineCountdown slides the name off centre to make room for the
     -- number, so every render has to start from the plain centred layout or
     -- the offset accumulates across modes.
-    if slotIndex.text then
-        slotIndex.text:ClearAllPoints()
-        slotIndex.text:SetPoint("CENTER")
+    if slot.text then
+        slot.text:ClearAllPoints()
+        slot.text:SetPoint("CENTER")
     end
 end
 
-local function ShowEngineCountdown(slotIndex, displayMode, duration)
-    local cd = slotIndex.cdNum
+local function ShowEngineCountdown(slot, displayMode, duration)
+    local cd = slot.cdNum
     if not cd then
         return false
     end
@@ -805,45 +805,45 @@ local function ShowEngineCountdown(slotIndex, displayMode, duration)
         shift = 0
     end
 
-    slotIndex.text:ClearAllPoints()
-    slotIndex.text:SetPoint("CENTER", slotIndex, "CENTER", numberFirst and shift or -shift, 0)
+    slot.text:ClearAllPoints()
+    slot.text:SetPoint("CENTER", slot, "CENTER", numberFirst and shift or -shift, 0)
 
     -- Position the FontString itself when the engine hands it over, so the
     -- number matches our own text exactly; fall back to moving the host frame
     -- (whose centred number only approximates the same place) when it does not.
     cd:ClearAllPoints()
-    local fontStr = slotIndex.cdNumText
+    local fontStr = slot.cdNumText
     if fontStr then
         cd:SetSize(1, 1)
-        cd:SetPoint("CENTER", slotIndex.text, "CENTER", 0, 0)
+        cd:SetPoint("CENTER", slot.text, "CENTER", 0, 0)
         fontStr:ClearAllPoints()
         -- No SetWidth: the anchor below already grows the digits outward, and a
         -- hard width clips five-glyph values like "120.0" (Stampeding Roar).
         -- reserved is only an estimate for the centring shift above.
         if numberOnly then
             fontStr:SetJustifyH("CENTER")
-            fontStr:SetPoint("CENTER", slotIndex.text, "CENTER", 0, 0)
+            fontStr:SetPoint("CENTER", slot.text, "CENTER", 0, 0)
         elseif numberFirst then
             fontStr:SetJustifyH("RIGHT")
-            fontStr:SetPoint("RIGHT", slotIndex.text, "LEFT", -gap, 0)
+            fontStr:SetPoint("RIGHT", slot.text, "LEFT", -gap, 0)
         else
             fontStr:SetJustifyH("LEFT")
-            fontStr:SetPoint("LEFT", slotIndex.text, "RIGHT", gap, 0)
+            fontStr:SetPoint("LEFT", slot.text, "RIGHT", gap, 0)
         end
     else
         cd:SetSize(reserved, fontSize * 1.4)
         if numberOnly then
-            cd:SetPoint("CENTER", slotIndex.text, "CENTER", 0, 0)
+            cd:SetPoint("CENTER", slot.text, "CENTER", 0, 0)
         elseif numberFirst then
-            cd:SetPoint("RIGHT", slotIndex.text, "LEFT", -gap, 0)
+            cd:SetPoint("RIGHT", slot.text, "LEFT", -gap, 0)
         else
-            cd:SetPoint("LEFT", slotIndex.text, "RIGHT", gap, 0)
+            cd:SetPoint("LEFT", slot.text, "RIGHT", gap, 0)
         end
     end
     if not BindEngineCountdown(cd, duration) then
         -- Nothing to drive the number with: undo the room made for it, or the
         -- name is left sitting off centre with an empty gap beside it.
-        HideEngineCountdown(slotIndex)
+        HideEngineCountdown(slot)
         return false
     end
     cd:Show()
@@ -852,8 +852,8 @@ end
 
 -- Bar mode's number lives centred in the bar with no name beside it, so it
 -- needs the binding but none of the two-object layout above.
-local function ShowEngineCountdownCentred(slotIndex, anchorFrame, duration)
-    local cd = slotIndex.cdNum
+local function ShowEngineCountdownCentred(slot, anchor, duration)
+    local cd = slot.cdNum
     if not cd then
         return false
     end
@@ -871,20 +871,20 @@ local function ShowEngineCountdownCentred(slotIndex, anchorFrame, duration)
     cd:ClearAllPoints()
     -- The host frame is created before slot.bar, so without this the number is
     -- painted under the bar's background and fill and never appears.
-    if anchorFrame.GetFrameLevel then
-        cd:SetFrameLevel(anchorFrame:GetFrameLevel() + 5)
+    if anchor.GetFrameLevel then
+        cd:SetFrameLevel(anchor:GetFrameLevel() + 5)
     end
-    local fontStr = slotIndex.cdNumText
+    local fontStr = slot.cdNumText
     if fontStr then
         cd:SetSize(1, 1)
-        cd:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+        cd:SetPoint("CENTER", anchor, "CENTER", 0, 0)
         fontStr:ClearAllPoints()
         fontStr:SetWidth(0)
         fontStr:SetJustifyH("CENTER")
-        fontStr:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+        fontStr:SetPoint("CENTER", anchor, "CENTER", 0, 0)
     else
         cd:SetSize(fontSize * 3, fontSize * 1.4)
-        cd:SetPoint("CENTER", anchorFrame, "CENTER", 0, 0)
+        cd:SetPoint("CENTER", anchor, "CENTER", 0, 0)
     end
     if not BindEngineCountdown(cd, duration) then
         cd:Hide()
@@ -1028,14 +1028,14 @@ do
 end
 
 local function GetPlayerMovementSpells()
-    local classFile = select(2, UnitClass("player"))
+    local class = select(2, UnitClass("player"))
     local specId = ResolvePlayerSpecId()
     if not specId then
         return {}
     end
 
     local overrides = MA().spellOverrides or {}
-    local classAbilities = MOVEMENT_ABILITIES[classFile]
+    local classAbilities = MOVEMENT_ABILITIES[class]
     if not classAbilities then
         return {}
     end
@@ -1124,7 +1124,7 @@ local function GetPlayerMovementSpells()
 
     -- User-added custom overrides for this class not already covered above
     for spellId, override in pairs(overrides) do
-        if not seen[spellId] and override.class == classFile and override.enabled ~= false then
+        if not seen[spellId] and override.class == class and override.enabled ~= false then
             if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(spellId) then
                 local displayId = spellId
                 if C_Spell.GetOverrideSpell then
@@ -1221,7 +1221,7 @@ local function UpdateCachedCharges()
 end
 
 local function CacheMovementSpells(fullReset)
-    local classFile = select(2, UnitClass("player"))
+    local class = select(2, UnitClass("player"))
     local specId = ResolvePlayerSpecId()
 
     if fullReset then
@@ -1309,7 +1309,7 @@ local function CacheMovementSpells(fullReset)
     end
 
     local overrides = MA().spellOverrides or {}
-    local classAbilities = MOVEMENT_ABILITIES[classFile]
+    local classAbilities = MOVEMENT_ABILITIES[class]
     local specAbilities = classAbilities and specId and classAbilities[specId]
     if CludesUI.IS_FOREVER and specId then
         specAbilities = ForeverMovementList()
@@ -1318,9 +1318,9 @@ local function CacheMovementSpells(fullReset)
         for _, spellId in ipairs(specAbilities) do
             local spellOverride = overrides[spellId]
             if SpellEffectivelyEnabled(spellOverride, spellId) and not trackedSpellSet[spellId] then
-                local group = SPELL_ALIAS_MAP[spellId]
-                if group then
-                    for _, aliasId in ipairs(group) do
+                local set = SPELL_ALIAS_MAP[spellId]
+                if set then
+                    for _, aliasId in ipairs(set) do
                         if trackedSpellSet[aliasId] and not trackedSpellSet[spellId] then
                             trackedSpellSet[spellId] = trackedSpellSet[aliasId]
                         end
@@ -1352,10 +1352,10 @@ local function StartRechargeTimer(record, delay)
     rechargeTimers[record.spellId] = C_Timer.NewTimer(duration, function()
         rechargeTimers[record.spellId] = nil
         local current = cachedChargeCount[record.spellId] or 0
-        local upper = record.maxCharges or 1
-        local newVal = math.min(current + 1, upper)
+        local max = record.maxCharges or 1
+        local newVal = math.min(current + 1, max)
         cachedChargeCount[record.spellId] = newVal
-        if newVal < upper then
+        if newVal < max then
             chargeRechargeStart[record.spellId] = GetTime()
             StartRechargeTimer(record)
         else
@@ -1450,13 +1450,13 @@ local function HideMovementDisplay(keepBuffLane)
         readyAlertFresh = true
     end
     movementFrame:Hide()
-    for _, slotIndex in ipairs(displayPool) do
-        slotIndex.text:Hide()
-        slotIndex.icon:Hide()
-        slotIndex.icon.cooldown:Clear()
-        slotIndex.bar:Hide()
-        HideEngineCountdown(slotIndex)
-        slotIndex:Hide()
+    for _, slot in ipairs(displayPool) do
+        slot.text:Hide()
+        slot.icon:Hide()
+        slot.icon.cooldown:Clear()
+        slot.bar:Hide()
+        HideEngineCountdown(slot)
+        slot:Hide()
     end
     activeSlotCount = 0
     if buffAlertHost and not keepBuffLane then
@@ -1468,10 +1468,10 @@ end
 -- The countdown number's format per precision (0 or 1 decimal).
 local PREC_FMT = { [0] = "%.0f", [1] = "%.1f" }
 
-local function ShowMovementSlot(slotPos, cdInfo, spellEntry, duration)
+local function ShowMovementSlot(index, cdInfo, spellEntry, duration)
     local ma = MA()
-    local slotIndex = GetDisplaySlot(slotPos)
-    StyleSlot(slotIndex)
+    local slot = GetDisplaySlot(index)
+    StyleSlot(slot)
     local displayMode = ma.displayMode or "text"
     -- Clamp to a clean 0/1 (matches the binary Show Decimal toggle). A legacy
     -- numeric-input value could be a string ("1") or a stored -0; feeding -0 to
@@ -1507,15 +1507,15 @@ local function ShowMovementSlot(slotPos, cdInfo, spellEntry, duration)
         spellEntry._maFmtPrec, spellEntry._maFmtName = precision, spellName
     end
 
-    slotIndex.text:Hide()
-    slotIndex.icon:Hide()
-    slotIndex.bar:Hide()
-    HideEngineCountdown(slotIndex)
+    slot.text:Hide()
+    slot.icon:Hide()
+    slot.bar:Hide()
+    HideEngineCountdown(slot)
     -- How the repaint keeps this slot current until the next full check (see
     -- RepaintMovementSlots): "num" = a countdown Lua paints, "fill" = a bar
     -- filled from a secret duration object, "engine" = a number the engine
     -- draws, "static" = nothing that moves. Each branch below sets its own.
-    slotIndex._maKind = "static"
+    slot._maKind = "static"
 
     -- Start-recovery branch. GetSpellCooldown's timeUntilEndOfStartRecovery
     -- is ALWAYS present as a number on this client (0 outside an actual
@@ -1532,48 +1532,48 @@ local function ShowMovementSlot(slotPos, cdInfo, spellEntry, duration)
         -- Repainted until the window ends or drops under MIN_REAL_COOLDOWN, where
         -- IsLockoutWindow reclassifies it (IsLockoutWindow(entry, 0) asks whether
         -- this entry has that threshold at all).
-        slotIndex._maKind, slotIndex._maEnd = "num", GetTime() + recov
-        slotIndex._maFloor = IsLockoutWindow(spellEntry, 0) and MIN_REAL_COOLDOWN or 0
+        slot._maKind, slot._maEnd = "num", GetTime() + recov
+        slot._maFloor = IsLockoutWindow(spellEntry, 0) and MIN_REAL_COOLDOWN or 0
         if displayMode == "icon" and spellIcon then
-            slotIndex.icon.tex:SetTexture(spellIcon)
+            slot.icon.tex:SetTexture(spellIcon)
             -- Recharge swipe: derived from the entry's recharge duration
             -- (same source the bar branch scales by).
             local rechDur = spellEntry.rechargeDuration or 0
             if rechDur > 0 then
-                slotIndex.icon.cooldown:SetCooldown(GetTime() - (rechDur - recov), rechDur)
-                slotIndex.icon.cooldown._maBoundAt = GetTime()
+                slot.icon.cooldown:SetCooldown(GetTime() - (rechDur - recov), rechDur)
+                slot.icon.cooldown._maBoundAt = GetTime()
             else
-                slotIndex.icon.cooldown:Clear()
+                slot.icon.cooldown:Clear()
             end
-            slotIndex.icon.cooldown:SetHideCountdownNumbers(true)
-            slotIndex.icon.timeText:SetFormattedText(PREC_FMT[precision], recov)
-            slotIndex._maOut, slotIndex._maFmt = "icon", PREC_FMT[precision]
-            slotIndex.icon:Show()
+            slot.icon.cooldown:SetHideCountdownNumbers(true)
+            slot.icon.timeText:SetFormattedText(PREC_FMT[precision], recov)
+            slot._maOut, slot._maFmt = "icon", PREC_FMT[precision]
+            slot.icon:Show()
         elseif displayMode == "bar" then
             local rechDur = spellEntry.rechargeDuration or 0
-            slotIndex.bar:SetMinMaxValues(0, rechDur)
-            slotIndex.bar:SetValue(recov)
+            slot.bar:SetMinMaxValues(0, rechDur)
+            slot.bar:SetValue(recov)
             local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-            slotIndex.bar:SetStatusBarColor(r, g, b)
-            slotIndex.bar.text:SetShown(ma.barShowDuration ~= false)
+            slot.bar:SetStatusBarColor(r, g, b)
+            slot.bar.text:SetShown(ma.barShowDuration ~= false)
             if ma.barShowDuration ~= false then
-                slotIndex.bar.text:SetFormattedText(PREC_FMT[precision], recov)
+                slot.bar.text:SetFormattedText(PREC_FMT[precision], recov)
             end
-            slotIndex._maOut, slotIndex._maFmt, slotIndex._maBarText =
+            slot._maOut, slot._maFmt, slot._maBarText =
                 "bar", PREC_FMT[precision], ma.barShowDuration ~= false
             if ma.barShowIcon ~= false and spellIcon then
-                slotIndex.bar.icon:SetTexture(spellIcon)
-                slotIndex.bar.icon:Show()
+                slot.bar.icon:SetTexture(spellIcon)
+                slot.bar.icon:Show()
             else
-                slotIndex.bar.icon:Hide()
+                slot.bar.icon:Hide()
             end
-            slotIndex.bar:Show()
+            slot.bar:Show()
         else
-            slotIndex.text:SetFormattedText(fmtStr, recov)
-            slotIndex._maOut, slotIndex._maFmt = "text", fmtStr
-            slotIndex.text:Show()
+            slot.text:SetFormattedText(fmtStr, recov)
+            slot._maOut, slot._maFmt = "text", fmtStr
+            slot.text:Show()
         end
-        slotIndex:Show()
+        slot:Show()
         return true
     end
 
@@ -1639,92 +1639,92 @@ local function ShowMovementSlot(slotPos, cdInfo, spellEntry, duration)
 
     if displayMode == "icon" then
         if spellIcon then
-            slotIndex.icon.tex:SetTexture(spellIcon)
+            slot.icon.tex:SetTexture(spellIcon)
             -- Single-argument form: every proven duration-object consumer in
             -- the suite calls it this way; the extra boolean is not part of
             -- the working pattern.
-            if duration and slotIndex.icon.cooldown.SetCooldownFromDurationObject then
-                slotIndex.icon.cooldown:SetCooldownFromDurationObject(duration)
+            if duration and slot.icon.cooldown.SetCooldownFromDurationObject then
+                slot.icon.cooldown:SetCooldownFromDurationObject(duration)
             else
-                slotIndex.icon.cooldown:SetCooldown(cdStart, cdDuration, cdModRate)
+                slot.icon.cooldown:SetCooldown(cdStart, cdDuration, cdModRate)
             end
-            slotIndex.icon.cooldown._maBoundAt = GetTime()
+            slot.icon.cooldown._maBoundAt = GetTime()
             if hasSecretDuration then
                 -- Secret timing: only the engine can render the number.
-                slotIndex.icon.cooldown:SetHideCountdownNumbers(false)
-                slotIndex.icon.timeText:SetText("")
-                slotIndex._maKind = "engine"
+                slot.icon.cooldown:SetHideCountdownNumbers(false)
+                slot.icon.timeText:SetText("")
+                slot._maKind = "engine"
             else
                 -- Our own countdown text for readable durations, refreshed by
                 -- the repaint every tick; the engine numbers are suppressed here
                 -- and serve only the secret branch.
-                slotIndex.icon.cooldown:SetHideCountdownNumbers(true)
-                slotIndex.icon.timeText:SetFormattedText(PREC_FMT[precision], cdRemaining)
-                slotIndex._maKind, slotIndex._maEnd, slotIndex._maFloor = "num", GetTime() + cdRemaining, 0
-                slotIndex._maOut, slotIndex._maFmt = "icon", PREC_FMT[precision]
+                slot.icon.cooldown:SetHideCountdownNumbers(true)
+                slot.icon.timeText:SetFormattedText(PREC_FMT[precision], cdRemaining)
+                slot._maKind, slot._maEnd, slot._maFloor = "num", GetTime() + cdRemaining, 0
+                slot._maOut, slot._maFmt = "icon", PREC_FMT[precision]
             end
-            slotIndex.icon:Show()
+            slot.icon:Show()
         else
             -- Icon mode with no icon falls back to text, so it needs the same
             -- guard as the text branch below.
             if not showRemaining then
-                slotIndex.text:SetText("No " .. spellName)
-                if fromDuration and ShowEngineCountdown(slotIndex, displayMode, duration) then
-                    slotIndex._maKind = "engine"
+                slot.text:SetText("No " .. spellName)
+                if fromDuration and ShowEngineCountdown(slot, displayMode, duration) then
+                    slot._maKind = "engine"
                 end
             else
-                slotIndex.text:SetFormattedText(fmtStr, cdRemaining)
-                slotIndex._maKind, slotIndex._maEnd, slotIndex._maFloor = "num", GetTime() + cdRemaining, 0
-                slotIndex._maOut, slotIndex._maFmt = "text", fmtStr
+                slot.text:SetFormattedText(fmtStr, cdRemaining)
+                slot._maKind, slot._maEnd, slot._maFloor = "num", GetTime() + cdRemaining, 0
+                slot._maOut, slot._maFmt = "text", fmtStr
             end
-            slotIndex.text:Show()
+            slot.text:Show()
         end
     elseif displayMode == "bar" then
         local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-        slotIndex.bar:SetStatusBarColor(r, g, b)
+        slot.bar:SetStatusBarColor(r, g, b)
         if type(cdRemaining) == "boolean" then
             -- Only the sentinel leaves nothing to scale the fill with: show a
             -- full bar so the alert still reads as "unavailable" instead of an
             -- empty one, which would look like a cooldown that just finished.
-            slotIndex.bar:SetMinMaxValues(0, 1)
-            slotIndex.bar:SetValue(1)
+            slot.bar:SetMinMaxValues(0, 1)
+            slot.bar:SetValue(1)
         else
             -- A SECRET remaining still animates: SimpleStatusBar's SetValue and
             -- SetMinMaxValues are both AllowedWhenTainted, so the engine scales
             -- the fill from values Lua may not read. Gating this on
             -- hasSecretDuration would freeze the bar at 100% for no reason.
-            slotIndex.bar:SetMinMaxValues(0, cdDuration)
-            slotIndex.bar:SetValue(cdRemaining)
+            slot.bar:SetMinMaxValues(0, cdDuration)
+            slot.bar:SetValue(cdRemaining)
             -- The repaint moves the fill: from our own remaining when readable,
             -- from the duration object (secret values allowed) when not.
             if showRemaining then
-                slotIndex._maKind, slotIndex._maEnd, slotIndex._maFloor = "num", GetTime() + cdRemaining, 0
-                slotIndex._maOut, slotIndex._maFmt, slotIndex._maBarText =
+                slot._maKind, slot._maEnd, slot._maFloor = "num", GetTime() + cdRemaining, 0
+                slot._maOut, slot._maFmt, slot._maBarText =
                     "bar", PREC_FMT[precision], ma.barShowDuration ~= false
             elseif fromDuration then
-                slotIndex._maKind, slotIndex._maDur = "fill", duration
+                slot._maKind, slot._maDur = "fill", duration
             end
         end
         -- The NUMBER is the part Lua cannot produce, so it comes from our own
         -- formatter when readable and from the engine when not.
         if ma.barShowDuration == false then
-            slotIndex.bar.text:SetShown(false)
+            slot.bar.text:SetShown(false)
         elseif showRemaining then
-            slotIndex.bar.text:SetShown(true)
-            slotIndex.bar.text:SetFormattedText(PREC_FMT[precision], cdRemaining)
+            slot.bar.text:SetShown(true)
+            slot.bar.text:SetFormattedText(PREC_FMT[precision], cdRemaining)
         else
-            slotIndex.bar.text:SetShown(false)
+            slot.bar.text:SetShown(false)
             if fromDuration then
-                ShowEngineCountdownCentred(slotIndex, slotIndex.bar, duration)
+                ShowEngineCountdownCentred(slot, slot.bar, duration)
             end
         end
         if ma.barShowIcon ~= false and spellIcon then
-            slotIndex.bar.icon:SetTexture(spellIcon)
-            slotIndex.bar.icon:Show()
+            slot.bar.icon:SetTexture(spellIcon)
+            slot.bar.icon:Show()
         else
-            slotIndex.bar.icon:Hide()
+            slot.bar.icon:Hide()
         end
-        slotIndex.bar:Show()
+        slot.bar:Show()
     else -- any text mode (text_nd / text_dn / legacy "text")
         if not showRemaining then
             -- Whenever the remaining is unreadable, drop the number: the alert
@@ -1746,20 +1746,20 @@ local function ShowMovementSlot(slotPos, cdInfo, spellEntry, duration)
             -- both producers and drops the fragile type() test with it.
             -- text_d shows only the number, so the label stays empty and the
             -- engine countdown is centred on the slot instead of beside it.
-            slotIndex.text:SetText(displayMode == "text_d" and "" or ("No " .. spellName))
+            slot.text:SetText(displayMode == "text_d" and "" or ("No " .. spellName))
             -- The number Lua cannot format, drawn by the engine.
-            if fromDuration and ShowEngineCountdown(slotIndex, displayMode, duration) then
-                slotIndex._maKind = "engine"
+            if fromDuration and ShowEngineCountdown(slot, displayMode, duration) then
+                slot._maKind = "engine"
             end
         else
-            slotIndex.text:SetFormattedText(fmtStr, cdRemaining)
-            slotIndex._maKind, slotIndex._maEnd, slotIndex._maFloor = "num", GetTime() + cdRemaining, 0
-            slotIndex._maOut, slotIndex._maFmt = "text", fmtStr
+            slot.text:SetFormattedText(fmtStr, cdRemaining)
+            slot._maKind, slot._maEnd, slot._maFloor = "num", GetTime() + cdRemaining, 0
+            slot._maOut, slot._maFmt = "text", fmtStr
         end
-        slotIndex.text:Show()
+        slot.text:Show()
     end
 
-    slotIndex:Show()
+    slot:Show()
     -- Second return: the slot shows a readable cooldown long enough to be the
     -- spell's own, which arms the "ready" callout (see readyAlertArmed).
     return true, not hasSecretDuration and type(cdDuration) == "number" and cdDuration >= MIN_REAL_COOLDOWN
@@ -1782,24 +1782,24 @@ end
 -------------------------------------------------------------------------------
 local BUFF_ALERT_STYLE = "qol:movealert"
 
-local function BuffAlertApplyExtra(btnFrame, d, look)
+local function BuffAlertApplyExtra(btnFrame, d, style)
     local ma = MA()
-    local modeName = ma.displayMode or "text"
+    local mode = ma.displayMode or "text"
     if not d.maText then
         d.maText = btnFrame:CreateFontString(nil, "OVERLAY")
     end
-    local record = look.maEntry
+    local record = style.maEntry
     local labelText = (record and (record.customText or record.spellName)) or "Active!"
     local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
     -- same font, outline and size as the other alerts
     local fp, outline = AlertFontPath(), AlertFontOutline()
-    local dim = math.max(8, math.min(72, ma.textSize or 24))
-    if not d.maText:SetFont(fp, dim, outline) then
-        d.maText:SetFont(FALLBACK_FONT, dim, outline)
+    local size = math.max(8, math.min(72, ma.textSize or 24))
+    if not d.maText:SetFont(fp, size, outline) then
+        d.maText:SetFont(FALLBACK_FONT, size, outline)
     end
     d.maText:SetTextColor(r, g, b)
     d.maText:ClearAllPoints()
-    if modeName == "icon" then
+    if mode == "icon" then
         if d.icon then
             d.icon:SetAlpha(1)
         end
@@ -2032,8 +2032,8 @@ local function GetChargeAlphaCurve()
     return chargeAlphaCurve or nil
 end
 
-local function ApplyChargeVisibility(slotIndex, spellId, chargeInfo, record, duration)
-    if not slotIndex then
+local function ApplyChargeVisibility(slot, spellId, chargeInfo, record, duration)
+    if not slot then
         return
     end
     -- maxCharges stays PLAIN even when the rest of the charge record is secret,
@@ -2047,7 +2047,7 @@ local function ApplyChargeVisibility(slotIndex, spellId, chargeInfo, record, dur
     -- that path, so it must not be reduced to a bare SetAlpha(1) -- that is what
     -- let the lockout show through.
     if mc == nil or IsSecret(mc) or mc <= 1 then
-        slotIndex:SetAlpha(LockoutAlpha(record, duration))
+        slot:SetAlpha(LockoutAlpha(record, duration))
         return
     end
     local curve = GetChargeAlphaCurve()
@@ -2060,9 +2060,9 @@ local function ApplyChargeVisibility(slotIndex, spellId, chargeInfo, record, dur
     if curve and durObj and durObj.EvaluateTotalDuration then
         -- Result may be SECRET: never compare it. SetAlpha accepts secrets, and
         -- "or 1" on a secret number is safe (a secret is always truthy).
-        slotIndex:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
+        slot:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
     else
-        slotIndex:SetAlpha(1)
+        slot:SetAlpha(1)
     end
 end
 
@@ -2099,26 +2099,26 @@ end
 -- under its lockout threshold: the caller runs a full check instead.
 local function RepaintMovementSlots(nowTime)
     for idx = 1, activeSlotCount do
-        local slotIndex = displayPool[idx]
-        local kindOf = slotIndex._maKind
-        if kindOf == "num" then
-            local rem = slotIndex._maEnd - nowTime
-            if rem <= 0 or rem < slotIndex._maFloor then
+        local slot = displayPool[idx]
+        local kind = slot._maKind
+        if kind == "num" then
+            local rem = slot._maEnd - nowTime
+            if rem <= 0 or rem < slot._maFloor then
                 return false
             end
-            local out = slotIndex._maOut
+            local out = slot._maOut
             if out == "text" then
-                slotIndex.text:SetFormattedText(slotIndex._maFmt, rem)
+                slot.text:SetFormattedText(slot._maFmt, rem)
             elseif out == "icon" then
-                slotIndex.icon.timeText:SetFormattedText(slotIndex._maFmt, rem)
+                slot.icon.timeText:SetFormattedText(slot._maFmt, rem)
             else
-                slotIndex.bar:SetValue(rem)
-                if slotIndex._maBarText then
-                    slotIndex.bar.text:SetFormattedText(slotIndex._maFmt, rem)
+                slot.bar:SetValue(rem)
+                if slot._maBarText then
+                    slot.bar.text:SetFormattedText(slot._maFmt, rem)
                 end
             end
-        elseif kindOf == "fill" then
-            slotIndex.bar:SetValue(slotIndex._maDur:GetRemainingDuration())
+        elseif kind == "fill" then
+            slot.bar:SetValue(slot._maDur:GetRemainingDuration())
         end
     end
     return true
@@ -2132,11 +2132,11 @@ local function ArmMovementRepaint(count)
     local nowTime = GetTime()
     local tick, untimed = false, false
     for idx = 1, count do
-        local kindOf = displayPool[idx]._maKind
-        if kindOf == "num" or kindOf == "fill" then
+        local kind = displayPool[idx]._maKind
+        if kind == "num" or kind == "fill" then
             tick = true
         end
-        if kindOf ~= "num" then
+        if kind ~= "num" then
             untimed = true
         end
     end
@@ -2265,14 +2265,14 @@ CheckMovementCooldown = function()
     readyAlertShown, readyAlertScratch = nowShownReady, readyAlertShown
 
     for idx = count + 1, activeSlotCount do
-        local slotIndex = displayPool[idx]
-        if slotIndex then
-            slotIndex.text:Hide()
-            slotIndex.icon:Hide()
-            slotIndex.icon.cooldown:Clear()
-            slotIndex.bar:Hide()
-            HideEngineCountdown(slotIndex)
-            slotIndex:Hide()
+        local slot = displayPool[idx]
+        if slot then
+            slot.text:Hide()
+            slot.icon:Hide()
+            slot.icon.cooldown:Clear()
+            slot.bar:Hide()
+            HideEngineCountdown(slot)
+            slot:Hide()
         end
     end
 
@@ -2316,8 +2316,8 @@ local function ApplyMovementFrame()
         movementFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
         movementFrame:SetSize(200, 40)
     end
-    for _, slotIndex in ipairs(displayPool) do
-        StyleSlot(slotIndex)
+    for _, slot in ipairs(displayPool) do
+        StyleSlot(slot)
     end
     if MovementEnabled() and not CludesUI._unlockActive then
         CheckMovementCooldown()
@@ -2345,8 +2345,8 @@ local function PreviewEntry()
     if e and e.checkType ~= "buffActive" then
         return e
     end
-    local classFile = select(2, UnitClass("player"))
-    local classAbilities = MOVEMENT_ABILITIES[classFile]
+    local class = select(2, UnitClass("player"))
+    local classAbilities = MOVEMENT_ABILITIES[class]
     if classAbilities then
         for key, entries in pairs(classAbilities) do
             if type(key) == "number" and type(entries) == "table" then
@@ -2399,14 +2399,14 @@ local function PreviewTick()
     previewCdInfo.startTime = previewEnds - PREVIEW_CD
     if ShowMovementSlot(1, previewCdInfo, previewEntry) then
         for idx = 2, activeSlotCount do
-            local slotIndex = displayPool[idx]
-            if slotIndex then
-                slotIndex.text:Hide()
-                slotIndex.icon:Hide()
-                slotIndex.icon.cooldown:Clear()
-                slotIndex.bar:Hide()
-                HideEngineCountdown(slotIndex)
-                slotIndex:Hide()
+            local slot = displayPool[idx]
+            if slot then
+                slot.text:Hide()
+                slot.icon:Hide()
+                slot.icon.cooldown:Clear()
+                slot.bar:Hide()
+                HideEngineCountdown(slot)
+                slot:Hide()
             end
         end
         activeSlotCount = 1
@@ -2520,9 +2520,9 @@ local function IsValidTimeSpiralProc(spellId)
     if BUFF_ACTIVE_SPELLS[spellId] then
         return false
     end
-    local classFile = select(2, UnitClass("player"))
+    local class = select(2, UnitClass("player"))
     local specId = ResolvePlayerSpecId()
-    local classData = MOVEMENT_ABILITIES[classFile]
+    local classData = MOVEMENT_ABILITIES[class]
     local specSpells = classData and specId and classData[specId]
     if CludesUI.IS_FOREVER and specId then
         specSpells = ForeverMovementList()

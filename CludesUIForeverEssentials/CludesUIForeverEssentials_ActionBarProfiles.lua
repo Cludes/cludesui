@@ -24,8 +24,8 @@ local Get = F.Get
 local function Say(textValue)
     CludesUI.Print("|cff4cc9f0Action Bars:|r " .. textValue)
 end
-local function Plain(val, kindOf)
-    if not (issecretvalue and issecretvalue(val)) and type(val) == (kindOf or "number") then
+local function Plain(val, kind)
+    if not (issecretvalue and issecretvalue(val)) and type(val) == (kind or "number") then
         return val
     end
 end
@@ -50,19 +50,19 @@ function module.ActionProfileNames()
     return result
 end
 
-local function ReadSlot(slotIndex)
-    local kindOf, ident, subFrame = GetActionInfo(slotIndex)
-    if not kindOf then
+local function ReadSlot(slot)
+    local kind, ident, sub = GetActionInfo(slot)
+    if not kind then
         return nil
     end
-    local rowFrame = { kind = kindOf, id = Plain(ident), sub = subFrame }
-    if kindOf == "macro" and rowFrame.id then
-        local name, glyph, body = GetMacroInfo(rowFrame.id)
-        rowFrame.name, rowFrame.icon, rowFrame.body = name, glyph, body
-    elseif kindOf == "equipmentset" then
-        rowFrame.name = ident
+    local row = { kind = kind, id = Plain(ident), sub = sub }
+    if kind == "macro" and row.id then
+        local name, icon, body = GetMacroInfo(row.id)
+        row.name, row.icon, row.body = name, icon, body
+    elseif kind == "equipmentset" then
+        row.name = ident
     end
-    return rowFrame
+    return row
 end
 
 function module.SaveActionProfile(name)
@@ -71,8 +71,8 @@ function module.SaveActionProfile(name)
         return Say("give the profile a name.")
     end
     local p = { actions = {}, saved = time() }
-    for slotIndex = 1, MAX_SLOT do
-        p.actions[slotIndex] = ReadSlot(slotIndex)
+    for slot = 1, MAX_SLOT do
+        p.actions[slot] = ReadSlot(slot)
     end
     if Get("bindings") then
         p.bindings = {}
@@ -95,36 +95,31 @@ function module.DeleteActionProfile(name)
 end
 
 -- Puts one saved row on the cursor; true when something is on it.
-local function Pickup(rowFrame)
+local function Pickup(row)
     ClearCursor()
-    if rowFrame.kind == "spell" and rowFrame.id then
-        if not C_SpellBook.IsSpellKnown(rowFrame.id) then
+    if row.kind == "spell" and row.id then
+        if not C_SpellBook.IsSpellKnown(row.id) then
             return false
         end
-        C_Spell.PickupSpell(rowFrame.id)
-    elseif rowFrame.kind == "item" and rowFrame.id then
-        if (C_Item.GetItemCount(rowFrame.id) or 0) == 0 and not C_Item.IsEquippedItem(rowFrame.id) then
+        C_Spell.PickupSpell(row.id)
+    elseif row.kind == "item" and row.id then
+        if (C_Item.GetItemCount(row.id) or 0) == 0 and not C_Item.IsEquippedItem(row.id) then
             return false
         end
-        C_Item.PickupItem(rowFrame.id)
-    elseif rowFrame.kind == "macro" and rowFrame.name then
-        local slotPos = GetMacroIndexByName(rowFrame.name)
-        if (not slotPos or slotPos == 0) and rowFrame.body then
-            local success, made = pcall(
-                CreateMacro,
-                rowFrame.name,
-                rowFrame.icon or "INV_Misc_QuestionMark",
-                rowFrame.body,
-                true
-            )
-            slotPos = success and made or 0
+        C_Item.PickupItem(row.id)
+    elseif row.kind == "macro" and row.name then
+        local index = GetMacroIndexByName(row.name)
+        if (not index or index == 0) and row.body then
+            local success, made =
+                pcall(CreateMacro, row.name, row.icon or "INV_Misc_QuestionMark", row.body, true)
+            index = success and made or 0
         end
-        if not slotPos or slotPos == 0 then
+        if not index or index == 0 then
             return false
         end
-        PickupMacro(slotPos)
-    elseif rowFrame.kind == "equipmentset" and rowFrame.name then
-        local ident = C_EquipmentSet.GetEquipmentSetID(rowFrame.name)
+        PickupMacro(index)
+    elseif row.kind == "equipmentset" and row.name then
+        local ident = C_EquipmentSet.GetEquipmentSetID(row.name)
         if not ident then
             return false
         end
@@ -144,24 +139,19 @@ function module.LoadActionProfile(name)
         return Say("action bars cannot change in combat.")
     end
     local placed, skipped = 0, 0
-    for slotIndex = 1, MAX_SLOT do
-        local rowFrame = p.actions[slotIndex]
-        local current = ReadSlot(slotIndex)
-        if not rowFrame then
+    for slot = 1, MAX_SLOT do
+        local row = p.actions[slot]
+        local current = ReadSlot(slot)
+        if not row then
             if current then
-                PickupAction(slotIndex)
+                PickupAction(slot)
                 ClearCursor()
             end
         elseif
-            not (
-                current
-                and current.kind == rowFrame.kind
-                and current.id == rowFrame.id
-                and current.name == rowFrame.name
-            )
+            not (current and current.kind == row.kind and current.id == row.id and current.name == row.name)
         then
-            if Pickup(rowFrame) then
-                PlaceAction(slotIndex)
+            if Pickup(row) then
+                PlaceAction(slot)
                 placed = placed + 1
             else
                 skipped = skipped + 1

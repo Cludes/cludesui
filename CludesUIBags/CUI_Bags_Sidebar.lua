@@ -115,14 +115,14 @@ local function EnsureInsertLine()
         return nil
     end
     local eg = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-    local lineTex = sidebar:CreateTexture(nil, "OVERLAY", nil, 7)
-    lineTex:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
+    local line = sidebar:CreateTexture(nil, "OVERLAY", nil, 7)
+    line:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
-    lineTex:SetHeight(px * 2)
-    lineTex:Hide()
-    _dragInsertLine = lineTex
-    return lineTex
+    line:SetHeight(px * 2)
+    line:Hide()
+    _dragInsertLine = line
+    return line
 end
 
 local function EnsureGroupHighlight()
@@ -320,74 +320,74 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
         ghost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / (sc * gs), cy / (sc * gs))
     end
 
-    local targetUnit, modeName, targetBtn = ComputeDropZone()
+    local target, mode, targetBtn = ComputeDropZone()
 
-    if targetUnit ~= _dragLastTarget or modeName ~= _dragLastMode or targetBtn ~= _dragLastBtn then
-        _dragLastTarget = targetUnit
-        _dragLastMode = modeName
+    if target ~= _dragLastTarget or mode ~= _dragLastMode or targetBtn ~= _dragLastBtn then
+        _dragLastTarget = target
+        _dragLastMode = mode
         _dragLastBtn = targetBtn
-        local lineTex = EnsureInsertLine()
+        local line = EnsureInsertLine()
         local highlight = EnsureGroupHighlight()
 
         -- Don't group with self
-        if modeName == "group" and targetUnit == _dragFromCatIdx then
-            modeName = "above"
+        if mode == "group" and target == _dragFromCatIdx then
+            mode = "above"
         end
 
         local cats = CUI_CategoryManager:GetCategories()
 
         -- Block drops onto/above special entries (Pinned Items, Recent Items) -- nothing drags above the divider,
         -- and nothing lands among the virtual categories at the tail.
-        local targetCatCheck = cats[targetUnit]
+        local targetCatCheck = cats[target]
         if
             targetCatCheck
             and (targetCatCheck.isPinned or targetCatCheck.isRecent or targetCatCheck.isVirtual)
         then
-            lineTex:Hide()
+            line:Hide()
             highlight:Hide()
             _dragDropMode = nil
             _dragDropTarget = nil
             return
         end
         -- Can't group with or from a noGroup category (e.g. Reagent Bag)
-        if modeName == "group" and cats[targetUnit] and cats[targetUnit].noGroup then
-            modeName = "below"
+        if mode == "group" and cats[target] and cats[target].noGroup then
+            mode = "below"
         end
-        if modeName == "group" and cats[_dragFromCatIdx] and cats[_dragFromCatIdx].noGroup then
-            modeName = "above"
+        if mode == "group" and cats[_dragFromCatIdx] and cats[_dragFromCatIdx].noGroup then
+            mode = "above"
         end
 
         local fromCat = cats[_dragFromCatIdx]
-        local targetCat = cats[targetUnit]
+        local targetCat = cats[target]
         -- Can't group with a grouped member (but CAN group with a group header to join that group)
         if
-            modeName == "group"
+            mode == "group"
             and targetCat
             and targetCat.groupName
             and not (targetBtn and targetBtn._isGroupHeader)
         then
-            modeName = "above"
+            mode = "above"
         end
         -- Can't group something already in a group with an ungrouped category (would nest groups)
         if
-            modeName == "group"
+            mode == "group"
             and fromCat
             and fromCat.groupName
             and not (targetBtn and targetBtn._isGroupHeader)
         then
-            modeName = "above"
+            mode = "above"
         end
 
-        if modeName == "group" and targetBtn then
-            if lineTex then
-                lineTex:Hide()
+        if mode == "group" and targetBtn then
+            if line then
+                line:Hide()
             end
             highlight:ClearAllPoints()
             highlight:SetPoint("TOPLEFT", targetBtn, "TOPLEFT", 2, 0)
             highlight:SetPoint("BOTTOMRIGHT", targetBtn, "BOTTOMRIGHT", -2, 0)
             highlight:Show()
             _dragDropMode = "group"
-            _dragDropTarget = targetUnit
+            _dragDropTarget = target
         else
             if highlight then
                 highlight:Hide()
@@ -396,12 +396,12 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
 
             -- Resolve actual target index: "above N" = N, "below N" = N+1
             -- Exception: "below header" = same gap as "above first member" = N (not N+1)
-            local resolvedTarget = targetUnit
-            if modeName == "below" then
+            local resolvedTarget = target
+            if mode == "below" then
                 if targetBtn and targetBtn._isGroupHeader then
-                    resolvedTarget = targetUnit
+                    resolvedTarget = target
                 else
-                    resolvedTarget = targetUnit + 1
+                    resolvedTarget = target + 1
                 end
             end
 
@@ -409,8 +409,8 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
             -- an insert between them would not actually land there, so suppress
             -- the line instead of promising a position the drop can't keep.
             if targetBtn and targetBtn._isEquipSet then
-                if lineTex then
-                    lineTex:Hide()
+                if line then
+                    line:Hide()
                 end
                 _dragDropTarget = nil
                 _dragInsertGroup = nil
@@ -423,12 +423,12 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
             local posInGroup = targetBtn
                 and targetCat
                 and targetCat.groupName
-                and (targetBtn._isGroupMember or (targetBtn._isGroupHeader and modeName == "below"))
+                and (targetBtn._isGroupMember or (targetBtn._isGroupHeader and mode == "below"))
             if posInGroup then
                 if fromNoGroup then
                     -- noGroup categories can't enter groups; suppress line entirely
-                    if lineTex then
-                        lineTex:Hide()
+                    if line then
+                        line:Hide()
                     end
                     _dragDropTarget = nil
                     _dragInsertGroup = nil
@@ -444,8 +444,8 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
                 and (resolvedTarget == _dragFromCatIdx or resolvedTarget == _dragFromCatIdx + 1)
 
             if isNoOp then
-                if lineTex then
-                    lineTex:Hide()
+                if line then
+                    line:Hide()
                 end
                 _dragDropTarget = nil
                 _dragInsertGroup = nil
@@ -454,26 +454,26 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
                 _dragTargetIsHeader = targetBtn and targetBtn._isGroupHeader or false
                 _dragInsertGroup = insideGroup
 
-                if targetUnit and lineTex then
+                if target and line then
                     -- Position line in the gap between buttons (centered in SIDEBAR_PAD)
                     local gapOff = math.floor(SIDEBAR_PAD / 2)
                     local leftOff = insideGroup and (4 + SIDEBAR_INDENT) or 4
-                    if modeName == "below" and targetBtn then
-                        lineTex:ClearAllPoints()
-                        lineTex:SetPoint("TOPLEFT", targetBtn, "BOTTOMLEFT", leftOff, -gapOff)
-                        lineTex:SetPoint("TOPRIGHT", targetBtn, "BOTTOMRIGHT", -4, -gapOff)
+                    if mode == "below" and targetBtn then
+                        line:ClearAllPoints()
+                        line:SetPoint("TOPLEFT", targetBtn, "BOTTOMLEFT", leftOff, -gapOff)
+                        line:SetPoint("TOPRIGHT", targetBtn, "BOTTOMRIGHT", -4, -gapOff)
                     elseif targetBtn then
-                        lineTex:ClearAllPoints()
-                        lineTex:SetPoint("TOPLEFT", targetBtn, "TOPLEFT", leftOff, gapOff)
-                        lineTex:SetPoint("TOPRIGHT", targetBtn, "TOPRIGHT", -4, gapOff)
+                        line:ClearAllPoints()
+                        line:SetPoint("TOPLEFT", targetBtn, "TOPLEFT", leftOff, gapOff)
+                        line:SetPoint("TOPRIGHT", targetBtn, "TOPRIGHT", -4, gapOff)
                     else
                         local sidebar = CUI_Bags._sidebar
-                        local lineY = GetInsertLineY(targetUnit)
-                        lineTex:ClearAllPoints()
-                        lineTex:SetPoint("TOPLEFT", sidebar, "TOPLEFT", leftOff, lineY)
-                        lineTex:SetPoint("TOPRIGHT", sidebar, "TOPRIGHT", -4, lineY)
+                        local lineY = GetInsertLineY(target)
+                        line:ClearAllPoints()
+                        line:SetPoint("TOPLEFT", sidebar, "TOPLEFT", leftOff, lineY)
+                        line:SetPoint("TOPRIGHT", sidebar, "TOPRIGHT", -4, lineY)
                     end
-                    lineTex:Show()
+                    line:Show()
                 end
             end
         end
@@ -614,11 +614,11 @@ local function StopSidebarDrag()
             end
         end
     elseif dropMode == "insert" and dropTarget then
-        local targetUnit = dropTarget
+        local target = dropTarget
 
         local fromGroupName = fromCat and fromCat.groupName
         local dropGroupChanges = (_dragInsertGroup or false) ~= (fromGroupName or false)
-        if targetUnit ~= _dragFromCatIdx or dropGroupChanges then
+        if target ~= _dragFromCatIdx or dropGroupChanges then
             if isHeader and fromGroup then
                 -- Group header drag: move ALL members as a block, using raw dropTarget (not the -1 adjusted target).
                 local rawTarget = dropTarget
@@ -667,11 +667,11 @@ local function StopSidebarDrag()
                 local minIdx, maxIdx = members[1], members[#members]
 
                 local inGroup = (_dragInsertGroup == fromGroup)
-                    or (not _dragInsertGroup and targetUnit >= minIdx and targetUnit <= maxIdx)
-                if inGroup and targetUnit ~= _dragFromCatIdx then
+                    or (not _dragInsertGroup and target >= minIdx and target <= maxIdx)
+                if inGroup and target ~= _dragFromCatIdx then
                     -- Check if trying to move above the group (target == minIdx from the header button, not the first member)
                     if
-                        targetUnit == minIdx
+                        target == minIdx
                         and _dragFromCatIdx ~= minIdx
                         and #members >= 2
                         and _dragTargetIsHeader
@@ -691,7 +691,7 @@ local function StopSidebarDrag()
                         end
                     else
                         -- Normal intra-group reorder
-                        CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, targetUnit)
+                        CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, target)
                     end
                     if not CUI_CategoryManager:IsGroupNameCustom(fromGroup) then
                         CUI_CategoryManager:RegenerateGroupName(fromGroup)
@@ -716,7 +716,7 @@ local function StopSidebarDrag()
                                 destGroup = nil
                             end
                             if destGroup then
-                                CUI_CategoryManager:ReorderCategory(newIdx, targetUnit)
+                                CUI_CategoryManager:ReorderCategory(newIdx, target)
                                 -- Re-find after move
                                 for i, category in ipairs(cats) do
                                     if category == fromCat then
@@ -728,7 +728,7 @@ local function StopSidebarDrag()
                                     CUI_CategoryManager:RegenerateGroupName(destGroup)
                                 end
                             else
-                                CUI_CategoryManager:ReorderCategory(newIdx, targetUnit)
+                                CUI_CategoryManager:ReorderCategory(newIdx, target)
                             end
                         end
                     end
@@ -737,7 +737,7 @@ local function StopSidebarDrag()
                 -- Check if insert position is inside a group -- auto-join that group
                 local destGroup = _dragInsertGroup
                 if destGroup then
-                    CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, targetUnit)
+                    CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, target)
                     for i, category in ipairs(cats) do
                         if category == fromCat then
                             CUI_CategoryManager:AddToGroup(i, destGroup)
@@ -748,7 +748,7 @@ local function StopSidebarDrag()
                         CUI_CategoryManager:RegenerateGroupName(destGroup)
                     end
                 else
-                    CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, targetUnit)
+                    CUI_CategoryManager:ReorderCategory(_dragFromCatIdx, target)
                 end
             end
         end
@@ -957,18 +957,18 @@ function mod.ShowCategoryTip()
             end
         end)
     end
-    local targetUnit
+    local target
     for i = 1, #_sidebarBtns do
         local b = _sidebarBtns[i]
         if b:IsShown() and (b._catIdx or 0) >= 1 and not b._noMove then
-            targetUnit = b
+            target = b
             break
         end
     end
-    if not targetUnit then
+    if not target then
         return
     end
-    local _, cy = targetUnit:GetCenter()
+    local _, cy = target:GetCenter()
     local topY, bottom = scrollFrame:GetTop(), scrollFrame:GetBottom()
     if not (cy and topY and bottom and cy <= topY and cy >= bottom) then
         if tipText then
@@ -1001,7 +1001,7 @@ function mod.ShowCategoryTip()
     -- UI's scale, so it matches the panel's tips; built with PanelPP for that.
     tipText:SetScale(UIParent:GetEffectiveScale() * CludesUI.GetPopupScale() / CUI_Bags:GetEffectiveScale())
     tipText:ClearAllPoints()
-    tipText:SetPoint("LEFT", targetUnit, "RIGHT", 12, 0)
+    tipText:SetPoint("LEFT", target, "RIGHT", 12, 0)
     if not tipText:IsShown() then
         CludesUI.ShowTipCallout(tipText)
     end
@@ -1019,11 +1019,9 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
         local pinned = PinnedItems()
         local seen
         for bag = 0, 5 do
-            for slotIndex = 1, (pinned and C_Container.GetContainerNumSlots(bag) or 0) do
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
-                local itemLink = details
-                    and details.itemID
-                    and C_Container.GetContainerItemLink(bag, slotIndex)
+            for slot = 1, (pinned and C_Container.GetContainerNumSlots(bag) or 0) do
+                local details = C_Container.GetContainerItemInfo(bag, slot)
+                local itemLink = details and details.itemID and C_Container.GetContainerItemLink(bag, slot)
                 if details and details.itemID and IsItemPinned(pinned, itemLink, details.itemID) then
                     local key = NormalizePinKey(itemLink, details.itemID)
                     seen = seen or {}
@@ -1088,15 +1086,15 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
     local upTarget, downTarget, moveGroup
     -- Junk stays last: it never moves (ReorderCategory keeps the rest above it)
     if me and not category.noMove and not btn._noMove and not category.isJunk then
-        local group = category.groupName
-        if isGroupMember and group then
+        local set = category.groupName
+        if isGroupMember and set then
             -- Within its own group only (set children are skipped).
             local jdx = me - 1
             while Row(jdx) and Row(jdx)._isEquipSet do
                 jdx = jdx - 1
             end
             local q = Row(jdx)
-            if q and q._isGroupMember and q._groupName == group then
+            if q and q._isGroupMember and q._groupName == set then
                 upTarget = q._catIdx
             end
             jdx = me + 1
@@ -1104,10 +1102,10 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
                 jdx = jdx + 1
             end
             q = Row(jdx)
-            if q and q._isGroupMember and q._groupName == group then
+            if q and q._isGroupMember and q._groupName == set then
                 downTarget = q._catIdx + 1
             end
-            moveGroup = group
+            moveGroup = set
         else
             -- A plain category, or a group header moving its whole block past
             -- the neighbouring entry (a whole group counts as one entry).
@@ -1124,7 +1122,7 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
                 Row(jdx)
                 and (
                     Row(jdx)._isEquipSet
-                    or (isGroupHeader and Row(jdx)._isGroupMember and Row(jdx)._groupName == group)
+                    or (isGroupHeader and Row(jdx)._isGroupMember and Row(jdx)._groupName == set)
                 )
             do
                 jdx = jdx + 1
@@ -1145,7 +1143,7 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
             end
         end
     end
-    local function Move(targetUnit)
+    local function Move(target)
         -- The sidebar may have been rebuilt while the menu was open: act only
         -- when the same row still shows the same category.
         if
@@ -1159,7 +1157,7 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
         _dragFromCatIdx = catIdx
         _dragSourceBtn = btn
         _dragDropMode = "insert"
-        _dragDropTarget = targetUnit
+        _dragDropTarget = target
         _dragInsertGroup = moveGroup
         _dragTargetIsHeader = false
         StopSidebarDrag()
@@ -1180,13 +1178,13 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
         end)
     end
     if #rowList > 0 then
-        local subFrame = root:CreateButton(rowList.title)
+        local sub = root:CreateButton(rowList.title)
         -- A long list scrolls inside the menu instead of running off screen.
         if #rowList > 20 then
-            subFrame:SetScrollMode(20 * 20)
+            sub:SetScrollMode(20 * 20)
         end
         for _, r in ipairs(rowList) do
-            subFrame:CreateButton(r.text, r.fn)
+            sub:CreateButton(r.text, r.fn)
         end
     end
 end
@@ -1483,21 +1481,21 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 if not collapsed then
                     for _, mi in ipairs(members) do
                         local mc = cats[mi]
-                        local anchorFrame = IsSetAnchor(mc)
+                        local anchor = IsSetAnchor(mc)
                         displayList[#displayList + 1] = {
                             catIdx = mi,
                             name = mc.name,
                             icon = mc.icon or 134400,
                             isAtlas = mc.isAtlas,
                             count = (categoryCounts and categoryCounts[mi] or 0)
-                                + (anchorFrame and setChildTotal or 0),
+                                + (anchor and setChildTotal or 0),
                             indent = true,
                             groupName = category.groupName,
                             isGroupMember = true,
                             isUserCreated = mc.isUserCreated,
                         }
                         -- Set children: third level under a grouped anchor
-                        if anchorFrame then
+                        if anchor then
                             EmitSetChildren(2)
                         end
                     end
@@ -1506,8 +1504,8 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
         elseif category.isEquipSet then
             -- Emitted by EmitSetChildren under the anchor
         else
-            local anchorFrame = IsSetAnchor(category)
-            local total = (categoryCounts and categoryCounts[ci] or 0) + (anchorFrame and setChildTotal or 0)
+            local anchor = IsSetAnchor(category)
+            local total = (categoryCounts and categoryCounts[ci] or 0) + (anchor and setChildTotal or 0)
             local isUserCreated = not category.isCatchAll and (not category.types or #category.types == 0)
             -- Skip Pinned/Recent Items if disabled
             if category.isPinned and BP().bagShowPinnedItems == false then
@@ -1527,7 +1525,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                     isUserCreated = category.isUserCreated,
                     isVirtual = category.isVirtual,
                 }
-                if anchorFrame then
+                if anchor then
                     EmitSetChildren(1)
                 end
             end
@@ -1866,11 +1864,11 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                         Pix.CreateBorder(dialog, 0.2, 0.2, 0.2, 1)
                     end
 
-                    local titleText = dialog:CreateFontString(nil, "OVERLAY")
-                    SetBagFont(titleText, 13)
-                    titleText:SetPoint("TOPLEFT", dialog, "TOPLEFT", 10, -10)
-                    titleText:SetTextColor(1, 1, 1, 0.9)
-                    titleText:SetText(CludesUI.L("New Custom Category"))
+                    local title = dialog:CreateFontString(nil, "OVERLAY")
+                    SetBagFont(title, 13)
+                    title:SetPoint("TOPLEFT", dialog, "TOPLEFT", 10, -10)
+                    title:SetTextColor(1, 1, 1, 0.9)
+                    title:SetText(CludesUI.L("New Custom Category"))
 
                     local eb = CreateFrame("EditBox", nil, dialog)
                     eb:SetSize(220, 22)
@@ -1973,14 +1971,14 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                     for position, iconID in ipairs(ICON_IDS) do
                         local ib = CreateFrame("Button", nil, dialog)
                         ib:SetSize(ICON_SZ, ICON_SZ)
-                        local column = (position - 1) % ICONS_PER_ROW
-                        local rowFrame = math.floor((position - 1) / ICONS_PER_ROW)
+                        local col = (position - 1) % ICONS_PER_ROW
+                        local row = math.floor((position - 1) / ICONS_PER_ROW)
                         ib:SetPoint(
                             "TOPLEFT",
                             iconLbl,
                             "BOTTOMLEFT",
-                            column * (ICON_SZ + ICON_PAD),
-                            -(4 + rowFrame * (ICON_SZ + ICON_PAD))
+                            col * (ICON_SZ + ICON_PAD),
+                            -(4 + row * (ICON_SZ + ICON_PAD))
                         )
                         local texture = ib:CreateTexture(nil, "ARTWORK")
                         texture:SetAllPoints()
@@ -2205,12 +2203,12 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                             dialog._nameEB:SetFocus()
                             return
                         end
-                        local glyph = dialog._selectedIcon or 134400
+                        local icon = dialog._selectedIcon or 134400
                         local position = CUI_CategoryManager:AddCustomCategory(name)
                         if position then
                             local cats = CUI_CategoryManager:GetCategories()
                             if cats[position] then
-                                cats[position].icon = glyph
+                                cats[position].icon = icon
                                 cats[position].isAtlas = nil
                             end
                             CUI_CategoryManager:SaveState()

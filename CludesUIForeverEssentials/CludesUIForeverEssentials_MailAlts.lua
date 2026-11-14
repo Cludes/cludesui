@@ -36,8 +36,8 @@ end
 local function Secret(val)
     return issecretvalue and issecretvalue(val)
 end
-local function ClassName(name, classFile)
-    local c = classFile and C_ClassColor and C_ClassColor.GetClassColor(classFile)
+local function ClassName(name, class)
+    local c = class and C_ClassColor and C_ClassColor.GetClassColor(class)
     return c and c:WrapTextInColorCode(name) or name
 end
 local function Coins(copper)
@@ -88,10 +88,10 @@ end
 local here = ItemLocation:CreateEmpty()
 local function Count(into, first, last)
     for bag = first, last do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slot)
             if ident then
-                here:SetBagAndSlot(bag, slotIndex)
+                here:SetBagAndSlot(bag, slot)
                 into[ident] = (into[ident] or 0) + C_Item.GetStackCount(here)
             end
         end
@@ -280,8 +280,8 @@ local pendingSlot, pendingItem, pendingBag, pendingBagSlot
 local clicking = false
 local mEv = CreateFrame("Frame")
 
-local function Menu(ownerFrame, fillTex)
-    CludesUI.Kit.ContextMenu(ownerFrame, fillTex)
+local function Menu(ownerFrame, fill)
+    CludesUI.Kit.ContextMenu(ownerFrame, fill)
 end
 
 local function OpenAltsMenu(ownerFrame)
@@ -334,8 +334,8 @@ local function StopAttaching()
     mEv:UnregisterEvent("MAIL_SEND_SUCCESS")
 end
 
-local function Mailable(bag, slotIndex)
-    local ident = C_Container.GetContainerItemID(bag, slotIndex)
+local function Mailable(bag, slot)
+    local ident = C_Container.GetContainerItemID(bag, slot)
     if not ident then
         return
     end
@@ -343,7 +343,7 @@ local function Mailable(bag, slotIndex)
     if classID ~= TRADE_GOODS and not GEAR[classID] then
         return
     end
-    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+    local details = C_Container.GetContainerItemInfo(bag, slot)
     if not details or details.isBound or details.isLocked or details.itemID ~= ident then
         return
     end
@@ -361,8 +361,8 @@ local function Matches(key, classID, subClassID)
 end
 
 local function OnCursor(ident)
-    local kindOf, cursorID = GetCursorInfo()
-    return kindOf == "item" and cursorID == ident, kindOf
+    local kind, cursorID = GetCursorInfo()
+    return kind == "item" and cursorID == ident, kind
 end
 
 local function StillPending()
@@ -390,8 +390,8 @@ local function AttachNext()
             StopAttaching()
             return
         end
-        local slotIndex = FreeSlot()
-        if not slotIndex then
+        local slot = FreeSlot()
+        if not slot then
             local leftX = qCount - qHead + 1
             Say(
                 ("%d stack%s didn't fit, all %d attachment slots are full. Send this one and attach again."):format(
@@ -408,17 +408,17 @@ local function AttachNext()
         local details = C_Container.GetContainerItemInfo(bag, bagSlot)
         if details and details.itemID == ident and not details.isLocked and not details.isBound then
             C_Container.PickupContainerItem(bag, bagSlot)
-            local held, kindOf = OnCursor(ident)
+            local held, kind = OnCursor(ident)
             if not held then
-                if kindOf then
+                if kind then
                     ClearCursor()
                 end
                 StopAttaching()
                 return
             end
-            pendingSlot, pendingItem, pendingBag, pendingBagSlot = slotIndex, ident, bag, bagSlot
+            pendingSlot, pendingItem, pendingBag, pendingBagSlot = slot, ident, bag, bagSlot
             clicking = true
-            ClickSendMailItemButton(slotIndex)
+            ClickSendMailItemButton(slot)
             clicking = false
             if OnCursor(ident) then
                 ClearCursor()
@@ -433,11 +433,11 @@ local function Attach(key)
     StopAttaching()
     local num = 0
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident, classID, subClassID = Mailable(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident, classID, subClassID = Mailable(bag, slot)
             if ident and Matches(key, classID, subClassID) then
                 num = num + 1
-                qBag[num], qSlot[num], qItem[num] = bag, slotIndex, ident
+                qBag[num], qSlot[num], qItem[num] = bag, slot, ident
             end
         end
     end
@@ -460,8 +460,8 @@ local function OpenAttachMenu(ownerFrame)
         counts[key] = counts[key] + 1
     end
     for bag = BACKPACK_CONTAINER, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS do
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident, classID, subClassID, subType = Mailable(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident, classID, subClassID, subType = Mailable(bag, slot)
             if ident then
                 if classID == TRADE_GOODS then
                     Tally("all", "All trade goods")

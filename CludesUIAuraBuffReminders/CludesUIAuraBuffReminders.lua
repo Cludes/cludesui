@@ -385,7 +385,7 @@ local function ResolveFontPath(fontName)
     return "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 end
 local _cachedOutline
-local function SetABRFont(fontStr, font, dim)
+local function SetABRFont(fontStr, font, size)
     if not (fontStr and fontStr.SetFont) then
         return
     end
@@ -393,7 +393,7 @@ local function SetABRFont(fontStr, font, dim)
         _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff")
     end
     CludesUI.PrimeFontShadow(fontStr, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
-    fontStr:SetFont(font, dim, _cachedOutline)
+    fontStr:SetFont(font, size, _cachedOutline)
 end
 
 -------------------------------------------------------------------------------

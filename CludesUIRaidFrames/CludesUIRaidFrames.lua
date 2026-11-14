@@ -59,12 +59,12 @@ function mod._RFValidatedGroupOrder(sequence)
         return nil
     end
     for idx = 1, 8 do
-        local group = sequence[idx]
-        if type(group) ~= "number" or group < 1 or group > 8 or group % 1 ~= 0 then
+        local set = sequence[idx]
+        if type(set) ~= "number" or set < 1 or set > 8 or set % 1 ~= 0 then
             return nil
         end
         for previous = 1, idx - 1 do
-            if sequence[previous] == group then
+            if sequence[previous] == set then
                 return nil
             end
         end
@@ -251,36 +251,36 @@ local ROLE_ICON_STYLES = {
 -- Read-only share with the options file's style preview (this file loads first).
 mod.ROLE_ICON_STYLES = ROLE_ICON_STYLES
 
-local function ApplyRoleIcon(texture, role, look)
+local function ApplyRoleIcon(texture, role, style)
     -- Caller supplies style from its own settings context (party proxy /
     -- preview override) so unsynced party roleIconStyle holds; raid profile only when omitted.
-    look = look or (saved and saved.profile.roleIconStyle) or "modern"
-    local map = ROLE_ICON_STYLES[look]
+    style = style or (saved and saved.profile.roleIconStyle) or "modern"
+    local map = ROLE_ICON_STYLES[style]
     if not map then
         return false
     end
-    local glyph = map[role]
-    if not glyph then
+    local icon = map[role]
+    if not icon then
         return false
     end
     if map._isTexture then
-        texture:SetTexture(glyph)
+        texture:SetTexture(icon)
         texture:SetTexCoord(0, 1, 0, 1)
     else
-        texture:SetAtlas(glyph)
+        texture:SetAtlas(icon)
     end
     return true
 end
 
 -- Text shares the icon's carrier and anchor, and is created only when enabled.
-function mod.ApplyRoleText(glyph, role, s)
+function mod.ApplyRoleText(icon, role, s)
     if not s.roleText then
         return
     end
-    local textValue = glyph._roleText
+    local textValue = icon._roleText
     if not textValue then
-        textValue = glyph:GetParent():CreateFontString(nil, "OVERLAY")
-        glyph._roleText = textValue
+        textValue = icon:GetParent():CreateFontString(nil, "OVERLAY")
+        icon._roleText = textValue
     end
     local colorKey = role == "TANK" and "roleTextTankColor"
         or role == "HEALER" and "roleTextHealerColor"
@@ -288,15 +288,15 @@ function mod.ApplyRoleText(glyph, role, s)
     local color = s[colorKey] or mod._internals.defaults.profile[colorKey]
     textValue:SetTextColor(color.r, color.g, color.b)
     CludesUI.ApplyModuleFont(textValue, nil, s.roleIconSize or 14, "raidFrames")
-    local place = glyph:GetPoint() or "CENTER"
+    local place = icon:GetPoint() or "CENTER"
     textValue:ClearAllPoints()
-    textValue:SetPoint(place, glyph, place, 0, 0)
+    textValue:SetPoint(place, icon, place, 0, 0)
     textValue:SetText(
         role == "TANK" and CludesUI.L("Tank")
             or role == "HEALER" and CludesUI.L("Healer")
             or CludesUI.L("DPS")
     )
-    glyph:Hide()
+    icon:Hide()
     textValue:Show()
 end
 
@@ -1191,8 +1191,8 @@ end
 --  pin a string's face for good, so every font write to these strings goes
 --  through here.
 -------------------------------------------------------------------------------
-local function ApplyFont(fontStr, dim)
-    CludesUI.ApplyModuleFontFamily(fontStr, nil, dim, "raidFrames")
+local function ApplyFont(fontStr, size)
+    CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "raidFrames")
 end
 
 -------------------------------------------------------------------------------
@@ -1377,18 +1377,15 @@ end
 -- native size on BOTH axes and are correct at any bar shape -- rotating fights the
 -- tiling and stretches them. Tiling is read off the LIVE fill texture, so this stays
 -- correct no matter which style function last touched the bar.
-mod.RF_ApplyFillRotation = function(barFrame)
-    if not (barFrame and barFrame.SetRotatesTexture) then
+mod.RF_ApplyFillRotation = function(bar)
+    if not (bar and bar.SetRotatesTexture) then
         return
     end
-    local vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
-    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
-    local tiled = fillTex
-        and (
-            (fillTex.GetHorizTile and fillTex:GetHorizTile())
-            or (fillTex.GetVertTile and fillTex:GetVertTile())
-        )
-    barFrame:SetRotatesTexture((vert and not tiled) and true or false)
+    local vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    local tiled = fill
+        and ((fill.GetHorizTile and fill:GetHorizTile()) or (fill.GetVertTile and fill:GetVertTile()))
+    bar:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
 -- Inverted health fill: SetReverseFill swaps which SIDE of the seam the fill
@@ -1426,20 +1423,20 @@ end
 -- entry can be rebuilt by the next paint without losing either. host is stored only
 -- when it is NOT the overlay itself -- the Debuff Manager hangs its overlay off a
 -- wrapper frame, and that wrapper is what a fill swap has to re-anchor.
-mod.RF_RegisterBarTint = function(barFrame, tex, hostRegion, ownerFrame)
-    if not (barFrame and tex) then
+mod.RF_RegisterBarTint = function(bar, tex, host, ownerFrame)
+    if not (bar and tex) then
         return
     end
-    if hostRegion and hostRegion ~= tex then
-        tex._cuiTintHost = hostRegion
+    if host and host ~= tex then
+        tex._cuiTintHost = host
     end
     if ownerFrame then
         tex._cuiTintOwner = ownerFrame
     end
-    local reg = barFrame._cuiBarTints
+    local reg = bar._cuiBarTints
     if not reg then
         reg = setmetatable({}, { __mode = "k" })
-        barFrame._cuiBarTints = reg
+        bar._cuiBarTints = reg
     end
     if reg[tex] == nil then
         reg[tex] = {}
@@ -1455,8 +1452,8 @@ end
 -- a live overlay belonging to another owner, and an overlay that is displayed but
 -- not repainted never re-registers -- the next Health Bar Texture change would
 -- then skip it and leave it on the old art.
-mod.RF_ClearBarTints = function(barFrame, ownerFrame)
-    local reg = barFrame and barFrame._cuiBarTints
+mod.RF_ClearBarTints = function(bar, ownerFrame)
+    local reg = bar and bar._cuiBarTints
     if not (reg and ownerFrame) then
         return
     end
@@ -1467,12 +1464,12 @@ mod.RF_ClearBarTints = function(barFrame, ownerFrame)
     end
 end
 
-mod.RF_TintOverBarFill = function(tex, barFrame, r, g, b, a)
+mod.RF_TintOverBarFill = function(tex, bar, r, g, b, a)
     if not tex then
         return
     end
-    mod.RF_RegisterBarTint(barFrame, tex)
-    local reg = barFrame and barFrame._cuiBarTints
+    mod.RF_RegisterBarTint(bar, tex)
+    local reg = bar and bar._cuiBarTints
     local ent = reg and reg[tex]
     -- Stored pre-multiply: the refresh path calls back in with these, so folding
     -- the fill opacity in here would compound it on every pass.
@@ -1487,11 +1484,11 @@ mod.RF_TintOverBarFill = function(tex, barFrame, r, g, b, a)
     -- either would latch dimmed. Dark Mode is deliberately not inherited -- it
     -- dims the fill texture, and a colour the user picked should not be
     -- auto-dimmed.
-    if barFrame then
-        a = a * (barFrame._cuiFillOpacity or 1)
+    if bar then
+        a = a * (bar._cuiFillOpacity or 1)
     end
-    local fillTex = barFrame and barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
-    local filePath = fillTex and fillTex.GetTexture and fillTex:GetTexture()
+    local fill = bar and bar.GetStatusBarTexture and bar:GetStatusBarTexture()
+    local filePath = fill and fill.GetTexture and fill:GetTexture()
     if not filePath then
         -- Reset both: a texcoord from the textured branch survives the swap, and
         -- SetColorTexture bakes the color into the texture rather than into the
@@ -1502,8 +1499,8 @@ mod.RF_TintOverBarFill = function(tex, barFrame, r, g, b, a)
         return
     end
     tex:SetTexture(filePath)
-    if fillTex.GetTexCoord then
-        tex:SetTexCoord(fillTex:GetTexCoord())
+    if fill.GetTexCoord then
+        tex:SetTexCoord(fill:GetTexCoord())
     end
     tex:SetVertexColor(r, g, b, a)
 end
@@ -1512,12 +1509,12 @@ end
 -- (RF_AnchorCurHealth only rewrites one TOPLEFT/BOTTOMRIGHT pair): the caller
 -- isolates this, and a ClearAllPoints that succeeded ahead of a denied anchor
 -- write would strand the overlay with no anchor at all for the rest of the session.
-mod.RF_RefreshOneBarTint = function(barFrame, tex, ent, fillTex)
+mod.RF_RefreshOneBarTint = function(bar, tex, ent, fill)
     if ent.r then
-        mod.RF_TintOverBarFill(tex, barFrame, ent.r, ent.g, ent.b, ent.a)
+        mod.RF_TintOverBarFill(tex, bar, ent.r, ent.g, ent.b, ent.a)
     end
-    if fillTex then
-        mod.RF_AnchorCurHealth(tex._cuiTintHost or tex, barFrame, fillTex)
+    if fill then
+        mod.RF_AnchorCurHealth(tex._cuiTintHost or tex, bar, fill)
     end
 end
 
@@ -1525,14 +1522,14 @@ end
 -- runs from bare ReloadFrames calls where a throw would abort the styling loop
 -- mid-iteration. RF_TintOverBarFill only ever rewrites an entry it was handed, so
 -- the walk cannot gain keys mid-iteration.
-mod.RF_RefreshBarTints = function(barFrame)
-    local reg = barFrame and barFrame._cuiBarTints
+mod.RF_RefreshBarTints = function(bar)
+    local reg = bar and bar._cuiBarTints
     if not reg then
         return
     end
-    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
+    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
     for tex, ent in pairs(reg) do
-        pcall(mod.RF_RefreshOneBarTint, barFrame, tex, ent, fillTex)
+        pcall(mod.RF_RefreshOneBarTint, bar, tex, ent, fill)
     end
 end
 
@@ -1545,16 +1542,16 @@ end
 -- property. They read the _cuiInv stamp left on the bar (always our own
 -- StatusBar) instead of the settings, so the value they paint -- current or
 -- missing health -- always matches the fill direction set here.
-mod.RF_ApplyHealthOrientation = function(barFrame, s)
-    if not barFrame then
+mod.RF_ApplyHealthOrientation = function(bar, s)
+    if not bar then
         return false
     end
     local vert = mod.RF_IsVerticalFill(s)
     local invert = mod.RF_IsInvertedFill(s)
-    barFrame:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
-    barFrame:SetReverseFill(invert)
-    barFrame._cuiInv = invert
-    mod.RF_ApplyFillRotation(barFrame)
+    bar:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
+    bar:SetReverseFill(invert)
+    bar._cuiInv = invert
+    mod.RF_ApplyFillRotation(bar)
     return vert, invert
 end
 
@@ -1582,23 +1579,23 @@ end
 -- TOPLEFT/BOTTOMRIGHT pair in every case, so a re-anchor overwrites both points
 -- without a ClearAllPoints. vert/invert: the fill direction from the caller's
 -- settings; omitted, it is read off the bar. Style passes only.
-mod.RF_AnchorCurHealth = function(regionFrame, barFrame, fillTex, vert, invert)
+mod.RF_AnchorCurHealth = function(regionFrame, bar, fill, vert, invert)
     if invert == nil then
-        invert = barFrame.GetReverseFill and barFrame:GetReverseFill()
+        invert = bar.GetReverseFill and bar:GetReverseFill()
     end
-    if not (fillTex and invert) then
-        regionFrame:SetAllPoints(fillTex or barFrame)
+    if not (fill and invert) then
+        regionFrame:SetAllPoints(fill or bar)
         return
     end
     if vert == nil then
-        vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
+        vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
     end
     if vert then
-        regionFrame:SetPoint("TOPLEFT", fillTex, "BOTTOMLEFT", 0, 0)
-        regionFrame:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
+        regionFrame:SetPoint("TOPLEFT", fill, "BOTTOMLEFT", 0, 0)
+        regionFrame:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
     else
-        regionFrame:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
-        regionFrame:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMLEFT", 0, 0)
+        regionFrame:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        regionFrame:SetPoint("BOTTOMRIGHT", fill, "BOTTOMLEFT", 0, 0)
     end
 end
 
@@ -1606,9 +1603,9 @@ end
 -- ABSORB_STYLE_TEX, "sm:" SharedMedia keys through the health-bar lookup. Used
 -- by live render AND preview so a saved SM key paints identically.
 -- Caller-handled keys (blizzardModern / maxHealthStripes) never reach this.
-function mod.ResolveAbsorbStyleTex(look, fallback)
-    return ABSORB_STYLE_TEX[look]
-        or (CludesUI.ResolveTexturePath(healthBarTextures, look, fallback))
+function mod.ResolveAbsorbStyleTex(style, fallback)
+    return ABSORB_STYLE_TEX[style]
+        or (CludesUI.ResolveTexturePath(healthBarTextures, style, fallback))
         or fallback
 end
 
@@ -1738,12 +1735,12 @@ mod._GetEffectiveRaidSize = function()
     end
     local total = 0
     for ri = 1, num do
-        local _, _, subFrame = GetRaidRosterInfo(ri)
+        local _, _, sub = GetRaidRosterInfo(ri)
         -- Fail OPEN on nil subgroup: while the roster streams in after joining,
         -- GetRaidRosterInfo returns nil for unarrived members; dropping them
         -- undercounts the raid onto the wrong tier. Count unknowns as visible;
         -- the next roster pass refines downward.
-        if not subFrame or vg[subFrame] ~= false then
+        if not sub or vg[sub] ~= false then
             total = total + 1
         end
     end

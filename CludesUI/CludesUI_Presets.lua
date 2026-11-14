@@ -345,25 +345,25 @@ do
         if not (cid and GetSpecializationInfoForClassID) then
             return nil
         end
-        local _, _, _, glyph = GetSpecializationInfoForClassID(cid, 1)
-        return glyph
+        local _, _, _, icon = GetSpecializationInfoForClassID(cid, 1)
+        return icon
     end
 
     --- Forever: a spec-ID-keyed set where each Forever spec ID stands for
     --- every retail spec of its class (a new table; the input is untouched).
     --- Retail: the input.
-    function CludesUI.ForeverExpandSpecSet(group)
-        if not CludesUI.IS_FOREVER or not group then
-            return group
+    function CludesUI.ForeverExpandSpecSet(set)
+        if not CludesUI.IS_FOREVER or not set then
+            return set
         end
         local t, result = FV(), {}
-        for ident, val in pairs(group) do
+        for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
             if not (ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] == ident) then
                 result[ident] = val
             end
         end
-        for ident, val in pairs(group) do
+        for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
             if ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] == ident then
                 local ids = t.specs[ownerFrame]
@@ -470,26 +470,26 @@ do
             dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, BRD_A_SP, backdrop)
 
             -- Title
-            local titleText = dialog:CreateFontString(nil, "OVERLAY")
-            titleText:SetFont(FONT, 22, "")
-            titleText:SetTextColor(1, 1, 1, 1)
-            Pix.Point(titleText, "TOP", dialog, "TOP", 0, -32)
+            local title = dialog:CreateFontString(nil, "OVERLAY")
+            title:SetFont(FONT, 22, "")
+            title:SetTextColor(1, 1, 1, 1)
+            Pix.Point(title, "TOP", dialog, "TOP", 0, -32)
             -- WoW Forever has no specs: its rows are classes, and so is the wording.
-            titleText:SetText(
+            title:SetText(
                 CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes")
                     or CludesUI.L("Assign Preset to Specs")
             )
-            dialog._title = titleText
+            dialog._title = title
 
             -- Subtitle
-            local subFrame = dialog:CreateFontString(nil, "OVERLAY")
-            subFrame:SetFont(FONT, 14, "")
-            subFrame:SetTextColor(1, 1, 1, 0.45)
-            Pix.Point(subFrame, "TOP", titleText, "BOTTOM", 0, -8)
-            subFrame:SetWidth(POPUP_W - 60)
-            subFrame:SetJustifyH("CENTER")
-            subFrame:SetWordWrap(true)
-            dialog._subtitle = subFrame
+            local sub = dialog:CreateFontString(nil, "OVERLAY")
+            sub:SetFont(FONT, 14, "")
+            sub:SetTextColor(1, 1, 1, 0.45)
+            Pix.Point(sub, "TOP", title, "BOTTOM", 0, -8)
+            sub:SetWidth(POPUP_W - 60)
+            sub:SetJustifyH("CENTER")
+            sub:SetWordWrap(true)
+            dialog._subtitle = sub
 
             -- Check All | Check Tanks | Check Healers | Check DPS | Uncheck All
             local LINK_Y = -103
@@ -554,13 +554,13 @@ do
             -- Column container frames
             dialog._columns = {}
             for colIdx = 1, NUM_COLS do
-                local column = CreateFrame("Frame", nil, dialog)
-                column:SetFrameLevel(dialog:GetFrameLevel() + 1)
+                local col = CreateFrame("Frame", nil, dialog)
+                col:SetFrameLevel(dialog:GetFrameLevel() + 1)
                 local colX = CONTENT_LEFT + (colIdx - 1) * (COL_W + COL_GAP)
-                Pix.Point(column, "TOPLEFT", dialog, "TOPLEFT", colX, -CONTENT_TOP)
-                Pix.Size(column, COL_W, POPUP_H - CONTENT_TOP - 80)
-                column._rows = {}
-                dialog._columns[colIdx] = column
+                Pix.Point(col, "TOPLEFT", dialog, "TOPLEFT", colX, -CONTENT_TOP)
+                Pix.Size(col, COL_W, POPUP_H - CONTENT_TOP - 80)
+                col._rows = {}
+                dialog._columns[colIdx] = col
             end
 
             -- Bottom area: default dropdown + Done button
@@ -931,39 +931,39 @@ do
         end
 
         -- Spec checkbox row at one column slot (pooled; built on first use).
-        local function EnsureSpecRow(column, rowIdx)
-            local rowFrame = column._rows[rowIdx]
-            if not rowFrame then
-                rowFrame = CreateFrame("Button", nil, column)
-                column._rows[rowIdx] = rowFrame
+        local function EnsureSpecRow(col, rowIdx)
+            local row = col._rows[rowIdx]
+            if not row then
+                row = CreateFrame("Button", nil, col)
+                col._rows[rowIdx] = row
 
-                local boxFrame = CreateFrame("Frame", nil, rowFrame)
-                Pix.Size(boxFrame, BOX_SZ, BOX_SZ)
-                Pix.Point(boxFrame, "LEFT", rowFrame, "LEFT", 8, 0)
-                boxFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-                local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+                local box = CreateFrame("Frame", nil, row)
+                Pix.Size(box, BOX_SZ, BOX_SZ)
+                Pix.Point(box, "LEFT", row, "LEFT", 8, 0)
+                box:SetFrameLevel(row:GetFrameLevel() + 1)
+                local boxBg = box:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
-                rowFrame._boxBg = boxBg
+                row._boxBg = boxBg
                 local boxBorder =
-                    CludesUI.MakeRoundedBorder(boxFrame, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
-                rowFrame._boxBorder = boxBorder
-                local check = boxFrame:CreateTexture(nil, "ARTWORK")
-                Pix.Point(check, "TOPLEFT", boxFrame, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
-                Pix.Point(check, "BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
+                    CludesUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
+                row._boxBorder = boxBorder
+                local check = box:CreateTexture(nil, "ARTWORK")
+                Pix.Point(check, "TOPLEFT", box, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
+                Pix.Point(check, "BOTTOMRIGHT", box, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
                 check:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
                 -- The outline's radius less the inset, so the fill's corners follow it.
-                CludesUI.RoundBody(boxFrame, check, 1)
-                rowFrame._check = check
-                rowFrame._box = boxFrame
+                CludesUI.RoundBody(box, check, 1)
+                row._check = check
+                row._box = box
 
-                local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+                local labelFS = row:CreateFontString(nil, "OVERLAY")
                 labelFS:SetFont(FONT, 17, "")
-                Pix.Point(labelFS, "LEFT", boxFrame, "RIGHT", 8, 0)
+                Pix.Point(labelFS, "LEFT", box, "RIGHT", 8, 0)
                 labelFS:SetTextColor(1, 1, 1, 0.65)
-                rowFrame._lbl = labelFS
+                row._lbl = labelFS
             end
-            return rowFrame
+            return row
         end
         local ACC = CLUDES_GREEN
         local function UpdateVisual(r)
@@ -992,9 +992,9 @@ do
         end
 
         for colIdx = 1, NUM_COLS do
-            local column = specPopup._columns[colIdx]
-            for _, rowFrame in ipairs(column._rows) do
-                rowFrame:Hide()
+            local col = specPopup._columns[colIdx]
+            for _, row in ipairs(col._rows) do
+                row:Hide()
             end
 
             local entries = CludesUI.IS_FOREVER and NO_CLASSES or COL_LISTS[colIdx]
@@ -1013,14 +1013,14 @@ do
                 -- Class header
                 yOff = yOff + CLASS_PAD_TOP
                 rowIdx = rowIdx + 1
-                local heading = column._rows[rowIdx]
+                local heading = col._rows[rowIdx]
                 if not heading then
-                    heading = CreateFrame("Frame", nil, column)
-                    column._rows[rowIdx] = heading
+                    heading = CreateFrame("Frame", nil, col)
+                    col._rows[rowIdx] = heading
                 end
                 Pix.Size(heading, COL_W, CLASS_H)
                 heading:ClearAllPoints()
-                Pix.Point(heading, "TOPLEFT", column, "TOPLEFT", 0, -yOff)
+                Pix.Point(heading, "TOPLEFT", col, "TOPLEFT", 0, -yOff)
                 heading:Show()
 
                 if not heading._label then
@@ -1042,11 +1042,11 @@ do
                 -- Spec checkboxes
                 for _, specInfo in ipairs(cls.specs) do
                     rowIdx = rowIdx + 1
-                    local rowFrame = EnsureSpecRow(column, rowIdx)
-                    Pix.Size(rowFrame, COL_W, SPEC_H)
-                    rowFrame:ClearAllPoints()
-                    Pix.Point(rowFrame, "TOPLEFT", column, "TOPLEFT", 0, -yOff)
-                    rowFrame:Show()
+                    local row = EnsureSpecRow(col, rowIdx)
+                    Pix.Size(row, COL_W, SPEC_H)
+                    row:ClearAllPoints()
+                    Pix.Point(row, "TOPLEFT", col, "TOPLEFT", 0, -yOff)
+                    row:Show()
 
                     local locSpecName = specInfo.name
                     if GetSpecializationInfoByID then
@@ -1055,22 +1055,22 @@ do
                             locSpecName = sn
                         end
                     end
-                    rowFrame._lbl:SetText(locSpecName)
-                    rowFrame._specID = specInfo.id
+                    row._lbl:SetText(locSpecName)
+                    row._specID = specInfo.id
 
                     local lockedBy = lockedSpecs[specInfo.id]
                     local disabledTip = disabledSpecs[specInfo.id]
                     local lockedOnTip = lockedOnSpecs[specInfo.id]
-                    rowFrame._locked = lockedBy ~= nil
-                    rowFrame._disabled = disabledTip ~= nil
-                    rowFrame._lockedOn = lockedOnTip ~= nil and lockedOnTip ~= false
+                    row._locked = lockedBy ~= nil
+                    row._disabled = disabledTip ~= nil
+                    row._lockedOn = lockedOnTip ~= nil and lockedOnTip ~= false
 
                     local checked = assignments[specInfo.id] == true
-                    rowFrame._checked = checked
-                    UpdateVisual(rowFrame)
-                    allCheckboxes[#allCheckboxes + 1] = rowFrame
+                    row._checked = checked
+                    UpdateVisual(row)
+                    allCheckboxes[#allCheckboxes + 1] = row
 
-                    rowFrame:SetScript("OnClick", function(self)
+                    row:SetScript("OnClick", function(self)
                         if self._lockedOn or self._locked or self._disabled then
                             return
                         end
@@ -1078,7 +1078,7 @@ do
                         assignments[specInfo.id] = self._checked or nil
                         UpdateVisual(self)
                     end)
-                    rowFrame:SetScript("OnEnter", function(self)
+                    row:SetScript("OnEnter", function(self)
                         if self._disabled and disabledTip then
                             CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(disabledTip))
                         elseif self._lockedOn and type(lockedOnTip) == "string" then
@@ -1089,7 +1089,7 @@ do
                         end
                         self._lbl:SetTextColor(1, 1, 1, 0.90)
                     end)
-                    rowFrame:SetScript("OnLeave", function(self)
+                    row:SetScript("OnLeave", function(self)
                         CludesUI.HideWidgetTooltip()
                         if self._lockedOn or self._locked or self._disabled then
                             return
@@ -1105,22 +1105,22 @@ do
         -- Check All / Uncheck All wiring
         specPopup._checkAll:SetScript("OnClick", function()
             local EG2 = CLUDES_GREEN
-            for _, rowFrame in ipairs(allCheckboxes) do
-                if not rowFrame._locked and not rowFrame._disabled and not rowFrame._lockedOn then
-                    rowFrame._checked = true
-                    assignments[rowFrame._specID] = true
-                    rowFrame._check:Show()
-                    rowFrame._boxBorder:SetColor(EG2.r, EG2.g, EG2.b, CB_ACT_BRD_A)
+            for _, row in ipairs(allCheckboxes) do
+                if not row._locked and not row._disabled and not row._lockedOn then
+                    row._checked = true
+                    assignments[row._specID] = true
+                    row._check:Show()
+                    row._boxBorder:SetColor(EG2.r, EG2.g, EG2.b, CB_ACT_BRD_A)
                 end
             end
         end)
         specPopup._uncheckAll:SetScript("OnClick", function()
-            for _, rowFrame in ipairs(allCheckboxes) do
-                if not rowFrame._locked and not rowFrame._disabled and not rowFrame._lockedOn then
-                    rowFrame._checked = false
-                    assignments[rowFrame._specID] = nil
-                    rowFrame._check:Hide()
-                    rowFrame._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
+            for _, row in ipairs(allCheckboxes) do
+                if not row._locked and not row._disabled and not row._lockedOn then
+                    row._checked = false
+                    assignments[row._specID] = nil
+                    row._check:Hide()
+                    row._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
                 end
             end
         end)
@@ -1129,23 +1129,18 @@ do
         -- can be combined (Tanks + Healers) without unchecking the rest.
         local function CheckRole(role)
             local EG2 = CLUDES_GREEN
-            for _, rowFrame in ipairs(allCheckboxes) do
-                if
-                    not rowFrame._locked
-                    and not rowFrame._disabled
-                    and not rowFrame._lockedOn
-                    and rowFrame._specID
-                then
+            for _, row in ipairs(allCheckboxes) do
+                if not row._locked and not row._disabled and not row._lockedOn and row._specID then
                     -- The by-id lookup is not registered on WoW Forever: no role there.
                     local specRole
                     if GetSpecializationInfoByID then
-                        specRole = select(5, GetSpecializationInfoByID(rowFrame._specID))
+                        specRole = select(5, GetSpecializationInfoByID(row._specID))
                     end
                     if specRole == role then
-                        rowFrame._checked = true
-                        assignments[rowFrame._specID] = true
-                        rowFrame._check:Show()
-                        rowFrame._boxBorder:SetColor(EG2.r, EG2.g, EG2.b, CB_ACT_BRD_A)
+                        row._checked = true
+                        assignments[row._specID] = true
+                        row._check:Show()
+                        row._boxBorder:SetColor(EG2.r, EG2.g, EG2.b, CB_ACT_BRD_A)
                     end
                 end
             end
@@ -1178,32 +1173,31 @@ do
                 return val ~= nil and val ~= false
             end
             -- Label in the class colour at the given alpha.
-            local function Tint(rowFrame, a)
-                local c = rowFrame._fvClr
+            local function Tint(row, a)
+                local c = row._fvClr
                 if c then
-                    rowFrame._lbl:SetTextColor(c.r, c.g, c.b, a)
+                    row._lbl:SetTextColor(c.r, c.g, c.b, a)
                 else
-                    rowFrame._lbl:SetTextColor(1, 1, 1, a)
+                    row._lbl:SetTextColor(1, 1, 1, a)
                 end
             end
-            local function State(rowFrame)
-                local ids = rowFrame._fvIDs
-                rowFrame._lockedOn, rowFrame._disabled, rowFrame._checked, rowFrame._locked =
-                    false, false, false, false
-                rowFrame._fvOnTip, rowFrame._fvDisTip, rowFrame._fvBy = nil, nil, nil
+            local function State(row)
+                local ids = row._fvIDs
+                row._lockedOn, row._disabled, row._checked, row._locked = false, false, false, false
+                row._fvOnTip, row._fvDisTip, row._fvBy = nil, nil, nil
                 for i = 1, #ids do
                     local ident = ids[i]
                     if LockedOn(ident) then
-                        rowFrame._lockedOn = true
-                        if not rowFrame._fvOnTip and type(lockedOnSpecs[ident]) == "string" then
-                            rowFrame._fvOnTip = lockedOnSpecs[ident]
+                        row._lockedOn = true
+                        if not row._fvOnTip and type(lockedOnSpecs[ident]) == "string" then
+                            row._fvOnTip = lockedOnSpecs[ident]
                         end
                     end
                     local dis = disabledSpecs[ident]
                     if dis ~= nil then
-                        rowFrame._disabled = true
-                        if not rowFrame._fvDisTip and dis then
-                            rowFrame._fvDisTip = dis
+                        row._disabled = true
+                        if not row._fvDisTip and dis then
+                            row._fvDisTip = dis
                         end
                     end
                 end
@@ -1214,27 +1208,27 @@ do
                 for i = 1, #ids do
                     local ident = ids[i]
                     if assignments[ident] == true then
-                        rowFrame._checked = true
+                        row._checked = true
                         break
                     end
                     if lockedSpecs[ident] then
                         if not free then
-                            rowFrame._locked = true
-                            rowFrame._fvBy = lockedSpecs[ident]
+                            row._locked = true
+                            row._fvBy = lockedSpecs[ident]
                         end
                         break
                     end
                     free = true
                 end
-                UpdateVisual(rowFrame)
-                local _, _, _, a = rowFrame._lbl:GetTextColor()
-                Tint(rowFrame, a)
+                UpdateVisual(row)
+                local _, _, _, a = row._lbl:GetTextColor()
+                Tint(row, a)
             end
-            local function SetOn(rowFrame, enabled)
-                if rowFrame._lockedOn or rowFrame._locked or rowFrame._disabled then
+            local function SetOn(row, enabled)
+                if row._lockedOn or row._locked or row._disabled then
                     return
                 end
-                local ids = rowFrame._fvIDs
+                local ids = row._fvIDs
                 for i = 1, #ids do
                     local ident = ids[i]
                     if enabled then
@@ -1245,36 +1239,29 @@ do
                         assignments[ident] = nil
                     end
                 end
-                State(rowFrame)
+                State(row)
             end
             local classes = CludesUI.ForeverClasses()
             for num = 1, #classes do
                 local token = classes[num]
-                local column = specPopup._columns[((num - 1) % NUM_COLS) + 1]
+                local col = specPopup._columns[((num - 1) % NUM_COLS) + 1]
                 -- One row per class in a column, so the pool slot is the row number.
                 local r = math.floor((num - 1) / NUM_COLS) + 1
-                local rowFrame = EnsureSpecRow(column, r)
-                Pix.Size(rowFrame, COL_W, SPEC_H)
-                rowFrame:ClearAllPoints()
-                Pix.Point(
-                    rowFrame,
-                    "TOPLEFT",
-                    column,
-                    "TOPLEFT",
-                    0,
-                    -(CLASS_GAP + (r - 1) * (SPEC_H + CLASS_GAP))
-                )
-                rowFrame:Show()
-                rowFrame._lbl:SetText(CludesUI.ForeverClassName(token))
-                rowFrame._fvClr = CLASS_COLOR_MAP[token]
-                rowFrame._fvIDs = CludesUI.ForeverClassSpecIDs(token)
-                rowFrame._specID = nil
-                rowList[num] = rowFrame
-                State(rowFrame)
-                rowFrame:SetScript("OnClick", function(self)
+                local row = EnsureSpecRow(col, r)
+                Pix.Size(row, COL_W, SPEC_H)
+                row:ClearAllPoints()
+                Pix.Point(row, "TOPLEFT", col, "TOPLEFT", 0, -(CLASS_GAP + (r - 1) * (SPEC_H + CLASS_GAP)))
+                row:Show()
+                row._lbl:SetText(CludesUI.ForeverClassName(token))
+                row._fvClr = CLASS_COLOR_MAP[token]
+                row._fvIDs = CludesUI.ForeverClassSpecIDs(token)
+                row._specID = nil
+                rowList[num] = row
+                State(row)
+                row:SetScript("OnClick", function(self)
                     SetOn(self, not self._checked)
                 end)
-                rowFrame:SetScript("OnEnter", function(self)
+                row:SetScript("OnEnter", function(self)
                     if self._disabled and self._fvDisTip then
                         CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(self._fvDisTip))
                     elseif self._lockedOn and self._fvOnTip then
@@ -1290,7 +1277,7 @@ do
                     end
                     Tint(self, 0.90)
                 end)
-                rowFrame:SetScript("OnLeave", function(self)
+                row:SetScript("OnLeave", function(self)
                     CludesUI.HideWidgetTooltip()
                     if self._lockedOn or self._locked or self._disabled then
                         return

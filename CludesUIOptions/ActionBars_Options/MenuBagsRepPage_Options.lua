@@ -69,13 +69,13 @@ local function DataBarKit(hostFrame)
         environ.ApplyVisibilityKey, environ.EAB, environ.GetVisibilityKey
     local ShownBorderDefaults = environ.ShownBorderDefaults
     local W = CludesUI.Widgets
-    local Keys = { AfterSwitch = AfterDataBarSwitch }
+    local K = { AfterSwitch = AfterDataBarSwitch }
 
     local BLIZZ_DIS_TIP = "This option does not work with Blizzard Bars. Please use Blizzard Edit Mode."
     local function _blizzDis()
         return ABAR.db.profile.useBlizzardDataBars
     end
-    Keys.BLIZZ_DIS_TIP, Keys.BlizzDis = BLIZZ_DIS_TIP, _blizzDis
+    K.BLIZZ_DIS_TIP, K.BlizzDis = BLIZZ_DIS_TIP, _blizzDis
 
     -- Shared visibility row: left vis dropdown + right "Visibility Options" CB dropdown.
     -- trackNeverFlip: data-bar sections hide dependent rows while visibility is Never, so a
@@ -112,8 +112,8 @@ local function DataBarKit(hostFrame)
                 luaDragonriding = true,
                 noOverrideMouseover = true,
             },
-            applyScalarFn = function(s, modeName)
-                ApplyVisibilityKey(s, modeName)
+            applyScalarFn = function(s, mode)
+                ApplyVisibilityKey(s, mode)
             end,
             disabledFn = disabledFn,
             disabledTooltip = disTip,
@@ -137,7 +137,7 @@ local function DataBarKit(hostFrame)
             end,
         }
     end
-    Keys.VisOpts = VisOpts
+    K.VisOpts = VisOpts
 
     -- Single-bar row (data bar sections): one Visibility control; rightCfg is
     -- any ordinary widget for the right slot (nil = blank). Returns the row
@@ -153,10 +153,10 @@ local function DataBarKit(hostFrame)
         return visRow, posY - visH
     end
 
-    Keys.BarIsNever = BarIsNever
+    K.BarIsNever = BarIsNever
     -- A data bar's Visibility row with rightCfg in its right slot (nil =
     -- blank), locked under Blizzard's bars; a Never flip rebuilds the page.
-    function Keys.VisRow(posY, barId, visLabel, rightCfg)
+    function K.VisRow(posY, barId, visLabel, rightCfg)
         return BuildVisRow(posY, barId, visLabel, _blizzDis, BLIZZ_DIS_TIP, true, rightCfg)
     end
 
@@ -166,19 +166,19 @@ local function DataBarKit(hostFrame)
     -- data bar built here follows one of them) locks it: a flip swaps both
     -- axes, and such a match would pull one straight back or reshape the
     -- other bar. A match between two of the bars flips with them.
-    function Keys.OrientCfg(keyList)
-        local group = {}
+    function K.OrientCfg(keyList)
+        local set = {}
         for _, k in ipairs(keyList) do
-            group[k] = true
+            set[k] = true
         end
         local function OutsideSizeMatch()
             for _, k in ipairs(DATA_BAR_KEYS) do
                 local t = CludesUI.GetWidthMatchTarget(k)
-                if t and not group[k] ~= not group[t] then
+                if t and not set[k] ~= not set[t] then
                     return k, t
                 end
                 t = CludesUI.GetHeightMatchTarget(k)
-                if t and not group[k] ~= not group[t] then
+                if t and not set[k] ~= not set[t] then
                     return k, t
                 end
             end
@@ -248,7 +248,7 @@ local function DataBarKit(hostFrame)
     -- Vertical): runs the bar text (and, with dividers, the divider labels)
     -- along the bar. Each setting goes to every bar of `keys`, as the
     -- orientation does.
-    function Keys.OrientCog(regionFrame, keyList, dividers)
+    function K.OrientCog(regionFrame, keyList, dividers)
         if CludesUI._prebuilding then
             return
         end
@@ -333,9 +333,9 @@ local function DataBarKit(hostFrame)
     -- A style row: leftCfg | Orientation for `keys` with its Vertical Text
     -- cog (dividers: the bars draw dividers, so the cog also offers Rotate
     -- Divider Labels).
-    function Keys.StyleRow(posY, leftCfg, keyList, dividers)
-        local rowFrame, hgt = W:DualRow(hostFrame, posY, leftCfg, Keys.OrientCfg(keyList))
-        Keys.OrientCog(rowFrame._rightRegion, keyList, dividers)
+    function K.StyleRow(posY, leftCfg, keyList, dividers)
+        local row, hgt = W:DualRow(hostFrame, posY, leftCfg, K.OrientCfg(keyList))
+        K.OrientCog(row._rightRegion, keyList, dividers)
         return posY - hgt
     end
 
@@ -494,13 +494,13 @@ local function DataBarKit(hostFrame)
     -- edit turns it on from those values, dropping what a border once turned
     -- off left behind.
     local NO_BORDER = {}
-    function Keys.BorderRows(posY, barId, implicit)
+    function K.BorderRows(posY, barId, implicit)
         local _, hgt
-        local function Stl()
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         local function V()
-            local s = Stl()
+            local s = S()
             if implicit and s.customBorder ~= true then
                 return NO_BORDER
             end
@@ -508,7 +508,7 @@ local function DataBarKit(hostFrame)
         end
         local turnedOn = false
         local function Wr()
-            local s = Stl()
+            local s = S()
             if implicit and s.customBorder ~= true then
                 s.borderTexture, s.borderThickness, s.borderThicknessPx = nil, nil, nil
                 s.borderColor, s.borderBehind = nil, nil
@@ -561,7 +561,7 @@ local function DataBarKit(hostFrame)
                     if type(defTh) == "number" then
                         defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
                     end
-                    local column, behind = CludesUI.GetBorderStyleSelectDefaults(val)
+                    local col, behind = CludesUI.GetBorderStyleSelectDefaults(val)
                     s.borderTexture = val
                     s.borderTextureOffset, s.borderTextureOffsetY = nil, nil
                     s.borderTextureShiftX, s.borderTextureShiftY = nil, nil
@@ -569,7 +569,7 @@ local function DataBarKit(hostFrame)
                     if s.borderThicknessPx then
                         s.borderThicknessPx = false
                     end
-                    s.borderColor = { r = column.r, g = column.g, b = column.b, a = 1 }
+                    s.borderColor = { r = col.r, g = col.g, b = col.b, a = 1 }
                     s.borderBehind = behind
                     if defTh then
                         s.borderThickness = defTh
@@ -659,8 +659,8 @@ local function DataBarKit(hostFrame)
             end
             -- Landing on the shift the slider shows by default stores nil
             -- (follow the style again); any other value is an override.
-            local function SetShift(key, val, spec_def)
-                if val == math.floor(spec_def + 0.5) then
+            local function SetShift(key, val, def)
+                if val == math.floor(def + 0.5) then
                     val = nil
                 end
                 Wr()[key] = val
@@ -762,7 +762,7 @@ local function DataBarKit(hostFrame)
                 rawTooltip = true,
             })
 
-            if Stl().customBorder == true and BORDER_SYNCS[barId] then
+            if S().customBorder == true and BORDER_SYNCS[barId] then
                 DataBarSyncIcon(
                     lRgn,
                     barId,
@@ -787,14 +787,14 @@ local function DataBarKit(hostFrame)
     -- horizontal) or height (Height, vertical), its thickness up to 100. A
     -- size set outside them elsewhere (Unlock Mode, a size match) shows at the
     -- nearest end of its slider.
-    function Keys.SizeRow(posY, barId)
+    function K.SizeRow(posY, barId)
         local _, hgt
-        local function Stl()
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         local wDis, wTip, wRaw = CludesUI.MatchGuard(barId, "Width", _blizzDis, BLIZZ_DIS_TIP)
         local hDis, hTip, hRaw = CludesUI.MatchGuard(barId, "Height", _blizzDis, BLIZZ_DIS_TIP)
-        local _dbVert = (Stl().orientation == "VERTICAL")
+        local _dbVert = (S().orientation == "VERTICAL")
         local _dbLenMax = math.floor(_dbVert and UIParent:GetHeight() or UIParent:GetWidth())
         local _dbWMin, _dbWMax = (_dbVert and 4 or 50), (_dbVert and 100 or _dbLenMax)
         local _dbHMin, _dbHMax = (_dbVert and 50 or 4), (_dbVert and _dbLenMax or 100)
@@ -808,10 +808,10 @@ local function DataBarKit(hostFrame)
             disabledTooltip = wTip,
             rawTooltip = wRaw,
             getValue = function()
-                return Stl().width or 400
+                return S().width or 400
             end,
             setValue = function(val)
-                Stl().width = val
+                S().width = val
                 mod.ApplyDataBarLayout(barId)
             end,
         }, {
@@ -824,10 +824,10 @@ local function DataBarKit(hostFrame)
             disabledTooltip = hTip,
             rawTooltip = hRaw,
             getValue = function()
-                return Stl().height or 18
+                return S().height or 18
             end,
             setValue = function(val)
-                Stl().height = val
+                S().height = val
                 mod.ApplyDataBarLayout(barId)
             end,
         })
@@ -837,8 +837,8 @@ local function DataBarKit(hostFrame)
 
     -- The fill colour swatches of a bar's Color control: Custom, Accent and
     -- Reactive (Default), the active one bright (multiSwatch or inline).
-    function Keys.ColorSwatches(barId)
-        local function Stl()
+    function K.ColorSwatches(barId)
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         local rp = REACTIVE_PREVIEW[barId] or { 1, 1, 1 }
@@ -846,20 +846,20 @@ local function DataBarKit(hostFrame)
             {
                 tooltip = "Custom Color",
                 getValue = function()
-                    local c = Stl().customColor
+                    local c = S().customColor
                     if c then
                         return c.r or 1, c.g or 1, c.b or 1
                     end
                     return 1, 1, 1
                 end,
                 setValue = function(r, g, b)
-                    Stl().customColor = { r = r, g = g, b = b }
-                    Stl().colorMode = "custom"
+                    S().customColor = { r = r, g = g, b = b }
+                    S().colorMode = "custom"
                     RefreshDataBar(barId)
                 end,
                 onClick = function(self)
-                    if Stl().colorMode ~= "custom" then
-                        Stl().colorMode = "custom"
+                    if S().colorMode ~= "custom" then
+                        S().colorMode = "custom"
                         RefreshDataBar(barId)
                         CludesUI:RefreshPage()
                         return
@@ -869,7 +869,7 @@ local function DataBarKit(hostFrame)
                     end
                 end,
                 refreshAlpha = function()
-                    return Stl().colorMode == "custom" and 1 or 0.3
+                    return S().colorMode == "custom" and 1 or 0.3
                 end,
             },
             {
@@ -883,12 +883,12 @@ local function DataBarKit(hostFrame)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    Stl().colorMode = "accent"
+                    S().colorMode = "accent"
                     RefreshDataBar(barId)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return Stl().colorMode == "accent" and 1 or 0.3
+                    return S().colorMode == "accent" and 1 or 0.3
                 end,
             },
             {
@@ -898,20 +898,20 @@ local function DataBarKit(hostFrame)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    Stl().colorMode = nil
+                    S().colorMode = nil
                     RefreshDataBar(barId)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    local m = Stl().colorMode
+                    local m = S().colorMode
                     return (m ~= "custom" and m ~= "accent") and 1 or 0.3
                 end,
             },
         }
     end
 
-    function Keys.TexCfg(barId)
-        local function Stl()
+    function K.TexCfg(barId)
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         return {
@@ -923,39 +923,39 @@ local function DataBarKit(hostFrame)
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function()
-                return Stl().barTexture or "none"
+                return S().barTexture or "none"
             end,
             setValue = function(val)
-                Stl().barTexture = val
+                S().barTexture = val
                 mod.ApplyDataBarLayout(barId)
             end,
         }
     end
 
-    function Keys.ClickThroughCfg(barId)
-        local function Stl()
+    function K.ClickThroughCfg(barId)
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         return {
             type = "toggle",
             text = "Click Through",
             getValue = function()
-                return Stl().clickThrough
+                return S().clickThrough
             end,
             setValue = function(val)
-                Stl().clickThrough = val
+                S().clickThrough = val
                 ABAR:ApplyClickThroughForBar(barId)
             end,
         }
     end
     -- The same toggle as a cog row (the XP bar's Visibility cog).
-    function Keys.ClickThroughRow(barId)
-        local conf = Keys.ClickThroughCfg(barId)
+    function K.ClickThroughRow(barId)
+        local conf = K.ClickThroughCfg(barId)
         return { type = "toggle", label = conf.text, get = conf.getValue, set = conf.setValue }
     end
 
-    function Keys.TextSizeCfg(barId)
-        local function Stl()
+    function K.TextSizeCfg(barId)
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         return {
@@ -968,10 +968,10 @@ local function DataBarKit(hostFrame)
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function()
-                return Stl().textSize or 9
+                return S().textSize or 9
             end,
             setValue = function(val)
-                Stl().textSize = val
+                S().textSize = val
                 mod.ApplyDataBarLayout(barId)
             end,
         }
@@ -979,11 +979,11 @@ local function DataBarKit(hostFrame)
 
     -- The Bar Text Offsets cog on a Text Size control: the anchor and
     -- offsets, then extraRows (the XP bar text's Show Rested).
-    function Keys.TextCog(regionFrame, barId, extraRows)
+    function K.TextCog(regionFrame, barId, extraRows)
         if CludesUI._prebuilding then
             return
         end
-        local function Stl()
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
         local textRows = {
@@ -994,10 +994,10 @@ local function DataBarKit(hostFrame)
                 values = { center = "Center", top = "Top", bottom = "Bottom", left = "Left", right = "Right" },
                 order = { "center", "top", "bottom", "left", "right" },
                 get = function()
-                    return Stl().textAnchor or "center"
+                    return S().textAnchor or "center"
                 end,
                 set = function(val)
-                    Stl().textAnchor = val
+                    S().textAnchor = val
                     mod.ApplyDataBarLayout(barId)
                 end,
             },
@@ -1008,10 +1008,10 @@ local function DataBarKit(hostFrame)
                 max = 150,
                 step = 1,
                 get = function()
-                    return Stl().textOffsetX or 0
+                    return S().textOffsetX or 0
                 end,
                 set = function(val)
-                    Stl().textOffsetX = val
+                    S().textOffsetX = val
                     mod.ApplyDataBarLayout(barId)
                 end,
             },
@@ -1022,10 +1022,10 @@ local function DataBarKit(hostFrame)
                 max = 150,
                 step = 1,
                 get = function()
-                    return Stl().textOffsetY or 0
+                    return S().textOffsetY or 0
                 end,
                 set = function(val)
-                    Stl().textOffsetY = val
+                    S().textOffsetY = val
                     mod.ApplyDataBarLayout(barId)
                 end,
             },
@@ -1050,9 +1050,9 @@ local function DataBarKit(hostFrame)
     -- Border, its border rows while on, Width | Height, Color | Bar Texture,
     -- Click Through | Text Size. While Never only the rows up to Visibility
     -- are built. Returns the new y and the Visibility row.
-    function Keys.Section(posY, barId, sectionTitle, visLabel, lead)
+    function K.Section(posY, barId, sectionTitle, visLabel, lead)
         local _, hgt, heading
-        local function Stl()
+        local function S()
             return ABAR.db.profile.bars[barId]
         end
 
@@ -1081,38 +1081,38 @@ local function DataBarKit(hostFrame)
                 disabledTooltip = BLIZZ_DIS_TIP,
                 rawTooltip = true,
                 getValue = function()
-                    return Stl().customBorder or false
+                    return S().customBorder or false
                 end,
                 setValue = CludesUI.SectionToggleSetValue(function(val)
-                    Stl().customBorder = val and true or false
+                    S().customBorder = val and true or false
                     mod.ApplyDataBarLayout(barId)
                 end),
             }
         end
         local visRow
-        visRow, posY = Keys.VisRow(posY, barId, visLabel, customCfg)
+        visRow, posY = K.VisRow(posY, barId, visLabel, customCfg)
         if BarIsNever(barId) then
             return posY, visRow
         end
 
-        if Stl().customBorder then
-            posY = Keys.BorderRows(posY, barId)
+        if S().customBorder then
+            posY = K.BorderRows(posY, barId)
         end
-        posY = Keys.SizeRow(posY, barId)
+        posY = K.SizeRow(posY, barId)
         _, hgt = W:DualRow(
             hostFrame,
             posY,
-            { type = "multiSwatch", text = "Color", swatches = Keys.ColorSwatches(barId) },
-            Keys.TexCfg(barId)
+            { type = "multiSwatch", text = "Color", swatches = K.ColorSwatches(barId) },
+            K.TexCfg(barId)
         )
         posY = posY - hgt
         local textRow
-        textRow, hgt = W:DualRow(hostFrame, posY, Keys.ClickThroughCfg(barId), Keys.TextSizeCfg(barId))
+        textRow, hgt = W:DualRow(hostFrame, posY, K.ClickThroughCfg(barId), K.TextSizeCfg(barId))
         posY = posY - hgt
-        Keys.TextCog(textRow._rightRegion, barId)
+        K.TextCog(textRow._rightRegion, barId)
         return posY, visRow
     end
-    return Keys
+    return K
 end
 
 -- Used by XPBarPage_Options.lua (at page build)
@@ -1126,8 +1126,8 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     local environ = mod._ABO_OptEnv
     local ABAR, EndCapsCtl = environ.EAB, environ.EndCapsCtl
     local W = CludesUI.Widgets
-    local Keys = DataBarKit(hostFrame)
-    local VisOpts = Keys.VisOpts
+    local K = DataBarKit(hostFrame)
+    local VisOpts = K.VisOpts
     local posY = yOffset
     local _, hgt
 
@@ -1190,23 +1190,23 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
             })
         end
         local mc, bc = Ctl("MicroBar", "Micro Menu End Caps"), Ctl("BagBar", "Bag Bar End Caps")
-        local rowFrame
+        local row
         if microSkin and bagSkin then
             _, hgt = W:DualRow(hostFrame, posY, microSkin, bagSkin)
             posY = posY - hgt
         end
         if microSkin and not bagSkin then
-            rowFrame, hgt = W:DualRow(hostFrame, posY, microSkin, mc.Cfg())
+            row, hgt = W:DualRow(hostFrame, posY, microSkin, mc.Cfg())
             posY = posY - hgt
-            mc.Build(rowFrame._rightRegion)
-            rowFrame, hgt = W:DualRow(hostFrame, posY, bc.Cfg(), CludesUI.BlankRowCfg())
+            mc.Build(row._rightRegion)
+            row, hgt = W:DualRow(hostFrame, posY, bc.Cfg(), CludesUI.BlankRowCfg())
             posY = posY - hgt
-            bc.Build(rowFrame._leftRegion)
+            bc.Build(row._leftRegion)
         else
-            rowFrame, hgt = W:DualRow(hostFrame, posY, mc.Cfg(), bc.Cfg())
+            row, hgt = W:DualRow(hostFrame, posY, mc.Cfg(), bc.Cfg())
             posY = posY - hgt
-            mc.Build(rowFrame._leftRegion)
-            bc.Build(rowFrame._rightRegion)
+            mc.Build(row._leftRegion)
+            bc.Build(row._rightRegion)
         end
     end
 
@@ -1220,8 +1220,8 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
     -- saved switch for Blizzard's XP, reputation and House Favor bars (shared
     -- with the XP Bar page's Style, its Blizz Default) | Orientation, which
     -- flips the reputation and House Favor bars together.
-    posY = Keys.Section(posY, "RepBar", "REPUTATION BAR", "Rep Bar Visibility", function(ry)
-        return Keys.StyleRow(ry, {
+    posY = K.Section(posY, "RepBar", "REPUTATION BAR", "Rep Bar Visibility", function(ry)
+        return K.StyleRow(ry, {
             type = "toggle",
             text = "Use Blizzard's Rep Bars",
             tooltip = "Tied to the XP bar: Blizzard's XP and reputation bars switch together, so this also sets the XP Bar style to Blizz Default.",
@@ -1229,14 +1229,14 @@ local function BuildMenuBagsRepPage(page, hostFrame, yOffset)
                 return ABAR.db.profile.useBlizzardDataBars
             end,
             setValue = function(val)
-                Keys.AfterSwitch(mod.SetUseBlizzardDataBars(val))
+                K.AfterSwitch(mod.SetUseBlizzardDataBars(val))
             end,
         }, { "RepBar", "FavorBar" })
     end)
     if not CludesUI.IS_FOREVER then
         _, hgt = W:Spacer(hostFrame, posY, 12)
         posY = posY - hgt
-        posY = Keys.Section(posY, "FavorBar", "HOUSE FAVOR BAR", "Favor Bar Visibility")
+        posY = K.Section(posY, "FavorBar", "HOUSE FAVOR BAR", "Favor Bar Visibility")
     end -- not IS_FOREVER
 
     _, hgt = W:Spacer(hostFrame, posY, 12)

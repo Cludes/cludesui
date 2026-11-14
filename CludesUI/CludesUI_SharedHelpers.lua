@@ -566,14 +566,14 @@ function CludesUI._BlizzCastBars()
     CludesUI._blizzCastBarList = barList
 
     for idx = 1, #barList do
-        local barFrame = barList[idx]
+        local bar = barList[idx]
         -- An UnregisterAllEvents outside one of our own Capture/Restore windows is another
         -- addon claiming the frame: CUI drops its claim and records the claim as foreign.
         -- "Foreign" is tracked separately from "not ours" because those are very different states -- see RestoreBlizzCastBarEvents.
-        hooksecurefunc(barFrame.frame, "UnregisterAllEvents", function()
+        hooksecurefunc(bar.frame, "UnregisterAllEvents", function()
             if not CludesUI._blizzCastBarSnapshot then
-                barFrame.owned = false
-                barFrame.foreign = true
+                bar.owned = false
+                bar.foreign = true
             end
         end)
     end
@@ -598,19 +598,19 @@ function CludesUI.RestoreBlizzCastBarEvents()
 
     local barList = CludesUI._blizzCastBarList
     for idx = 1, #barList do
-        local barFrame = barList[idx]
-        local live = barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
+        local bar = barList[idx]
+        local live = bar.frame:IsEventRegistered("UNIT_SPELLCAST_START") and true or false
         if live ~= snapshot[idx] then
             if not live then
-                barFrame.owned = true
-            elseif barFrame.owned then
-                barFrame.owned = false
-            elseif barFrame.foreign then
+                bar.owned = true
+            elseif bar.owned then
+                bar.owned = false
+            elseif bar.foreign then
                 -- Another addon silenced this frame and we just re-registered it
                 -- on the way past; put it back the way we found it instead of
                 -- resurrecting Blizzard's cast bar next to theirs.
-                barFrame.frame:UnregisterAllEvents()
-                barFrame.frame:Hide()
+                bar.frame:UnregisterAllEvents()
+                bar.frame:Hide()
             else
                 -- Registered inside our own window with nobody claiming it.
                 -- That is CUI's own bookkeeping having lost track (a silence
@@ -658,15 +658,15 @@ function CludesUI.RearmBlizzCastBars()
         return
     end
     for idx = 1, #barList do
-        local barFrame = barList[idx]
-        if not barFrame.foreign and not barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
-            barFrame.owned = false
+        local bar = barList[idx]
+        if not bar.foreign and not bar.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
+            bar.owned = false
             for jdx = 1, #BLIZZ_CAST_EVENTS do
-                barFrame.frame:RegisterUnitEvent(BLIZZ_CAST_EVENTS[jdx], barFrame.unit)
+                bar.frame:RegisterUnitEvent(BLIZZ_CAST_EVENTS[jdx], bar.unit)
             end
-            barFrame.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-            if barFrame.unit == "pet" then
-                barFrame.frame:RegisterEvent("UNIT_PET")
+            bar.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+            if bar.unit == "pet" then
+                bar.frame:RegisterEvent("UNIT_PET")
             end
         end
     end
@@ -999,8 +999,8 @@ CludesUI.FACTION_ART_LABELS = {
 -- Returns that badge's file id, or nil. Callers pass it to SetFactionArt and memoize it.
 local HONOR_BADGE_RATIO = 30 / 50
 local honorBadgeFiles = {}
-function CludesUI.FactionBadgeFor(look, unitToken)
-    local art = CludesUI.FACTION_ART[look]
+function CludesUI.FactionBadgeFor(style, unitToken)
+    local art = CludesUI.FACTION_ART[style]
     if not (art and art.badge and unitToken) then
         return nil
     end
@@ -1020,67 +1020,67 @@ end
 -- The badge sits on a frame that follows the faction texture (textures cannot be parents);
 -- the texture's Show/Hide/alpha/desaturation are mirrored onto it.
 local function GetBadgeHost(texture)
-    local hostRegion = texture._honorBadgeHost
-    if hostRegion then
-        return hostRegion
+    local host = texture._honorBadgeHost
+    if host then
+        return host
     end
     local par = texture:GetParent()
-    hostRegion = CreateFrame("Frame", nil, par)
-    hostRegion:SetAllPoints(texture)
-    hostRegion:SetFrameLevel(par:GetFrameLevel() + 1)
-    hostRegion:Hide()
-    hostRegion:SetAlpha(texture:GetAlpha())
-    local glyph = hostRegion:CreateTexture(nil, "OVERLAY")
-    glyph:SetPoint("CENTER")
-    glyph:SetDesaturated(texture:IsDesaturated())
-    hostRegion.icon = glyph
-    hostRegion:SetScript("OnSizeChanged", function(_, wid)
+    host = CreateFrame("Frame", nil, par)
+    host:SetAllPoints(texture)
+    host:SetFrameLevel(par:GetFrameLevel() + 1)
+    host:Hide()
+    host:SetAlpha(texture:GetAlpha())
+    local icon = host:CreateTexture(nil, "OVERLAY")
+    icon:SetPoint("CENTER")
+    icon:SetDesaturated(texture:IsDesaturated())
+    host.icon = icon
+    host:SetScript("OnSizeChanged", function(_, wid)
         local s = wid * HONOR_BADGE_RATIO
-        glyph:SetSize(s, s)
+        icon:SetSize(s, s)
     end)
     hooksecurefunc(texture, "Hide", function()
-        hostRegion:Hide()
+        host:Hide()
     end)
     hooksecurefunc(texture, "Show", function()
-        if hostRegion.wanted then
-            hostRegion:Show()
+        if host.wanted then
+            host:Show()
         end
     end)
     hooksecurefunc(texture, "SetAlpha", function(_, a)
-        hostRegion:SetAlpha(a)
+        host:SetAlpha(a)
     end)
     hooksecurefunc(texture, "SetDesaturated", function(_, d)
-        glyph:SetDesaturated(d)
+        icon:SetDesaturated(d)
     end)
-    texture._honorBadgeHost = hostRegion
-    return hostRegion
+    texture._honorBadgeHost = host
+    return host
 end
 
 local function SetBadge(texture, file)
-    local hostRegion = texture._honorBadgeHost
+    local host = texture._honorBadgeHost
     if not file then
-        if hostRegion then
-            hostRegion.wanted = false
-            hostRegion:Hide()
+        if host then
+            host.wanted = false
+            host:Hide()
         end
         return
     end
-    hostRegion = hostRegion or GetBadgeHost(texture)
-    hostRegion.icon:SetTexture(file)
+    host = host or GetBadgeHost(texture)
+    host.icon:SetTexture(file)
     local wid = texture:GetWidth()
     if wid and wid > 0 then
         local s = wid * HONOR_BADGE_RATIO
-        hostRegion.icon:SetSize(s, s)
+        host.icon:SetSize(s, s)
     end
-    hostRegion.wanted = true
+    host.wanted = true
     if texture:IsShown() then
-        hostRegion:Show()
+        host:Show()
     end
 end
 
-function CludesUI.SetFactionArt(texture, look, faction, badgeFile)
+function CludesUI.SetFactionArt(texture, style, faction, badgeFile)
     SetBadge(texture, badgeFile)
-    local art = CludesUI.FACTION_ART[look] or CludesUI.FACTION_ART.pvp
+    local art = CludesUI.FACTION_ART[style] or CludesUI.FACTION_ART.pvp
     -- The resolved atlas or file name is built once per style and faction and kept
     -- on the style's entry (art.Horde / art.Alliance).
     local name = art[faction]
@@ -1473,20 +1473,20 @@ do
     -- whether the family carries a shadow; any other string its own GetFont.
     local function FontOf(fontStr)
         local fo = fontStr:GetFontObject()
-        local group = CludesUI._fontFamilySet
-        if fo and group and group[fo] and fo.GetFontObjectForAlphabet then
+        local set = CludesUI._fontFamilySet
+        if fo and set and set[fo] and fo.GetFontObjectForAlphabet then
             local roman = fo:GetFontObjectForAlphabet("roman")
-            local face, dim, flags
+            local face, size, flags
             if roman then
-                face, dim, flags = roman:GetFont()
+                face, size, flags = roman:GetFont()
             end
             if face then
                 local _, _, _, sa = fo:GetShadowColor()
-                return face, dim, flags, true, (sa or 0) > 0
+                return face, size, flags, true, (sa or 0) > 0
             end
         end
-        local face, dim, flags = fontStr:GetFont()
-        return face, dim, flags, false, false
+        local face, size, flags = fontStr:GetFont()
+        return face, size, flags, false, false
     end
 
     -- Two measuring strings: a plain SetFont pins a string's face, so the one that
@@ -1512,17 +1512,17 @@ do
     end
 
     -- Width of a clean string in fs's font face (at size, or fs's own size).
-    local function Measure(fontStr, str, dim)
+    local function Measure(fontStr, str, size)
         local font, current, flags, isFam, shadow = FontOf(fontStr)
         if not font then
             return 0
         end
-        local fam = isFam and CludesUI.GetFontFamily(font, dim or current, flags, shadow)
+        local fam = isFam and CludesUI.GetFontFamily(font, size or current, flags, shadow)
         local m = MeasureString(fam)
         if fam then
             m:SetFontObject(fam)
         else
-            m:SetFont(font, dim or current, flags)
+            m:SetFont(font, size or current, flags)
         end
         m:SetText(str)
         return m:GetUnboundedStringWidth() or 0
@@ -1534,23 +1534,23 @@ do
         if not font then
             return
         end
-        local dim = baseSize
+        local size = baseSize
         local room = fontStr:GetWidth()
         if str and not issecretvalue(str) and str ~= "" and room and not issecretvalue(room) and room > 1 then
             local wid = Measure(fontStr, str, baseSize)
             -- 1px slack: glyph hinting can round a scaled string up a pixel.
             if wid and wid > room - 1 then
-                dim = floor(baseSize * (room - 1) / wid * 2) / 2
-                if dim < MIN_SIZE then
-                    dim = MIN_SIZE
+                size = floor(baseSize * (room - 1) / wid * 2) / 2
+                if size < MIN_SIZE then
+                    size = MIN_SIZE
                 end
             end
         end
-        if current ~= dim then
+        if current ~= size then
             if isFam then
-                CludesUI.SetFontFamily(fontStr, font, dim, flags, shadow)
+                CludesUI.SetFontFamily(fontStr, font, size, flags, shadow)
             else
-                fontStr:SetFont(font, dim, flags)
+                fontStr:SetFont(font, size, flags)
             end
         end
     end
@@ -1709,9 +1709,9 @@ do
         for _, nodeID in ipairs(nodes) do
             local details = infos[nodeID]
             local col = Line(details.posX, x0, dx, xLast)
-            local rowFrame = Line(details.posY, y0, dy, yLast)
-            cells[nodeID] = { col = col, row = rowFrame, info = details }
-            rowList = math.max(rowList, rowFrame)
+            local row = Line(details.posY, y0, dy, yLast)
+            cells[nodeID] = { col = col, row = row, info = details }
+            rowList = math.max(rowList, row)
         end
         return cells, rowList + 1
     end

@@ -103,7 +103,7 @@ end
 -- Usable-tint mirror for ForceButtonRefresh, a named function so pcall passes
 -- args instead of allocating a closure per call (runs in the
 -- ACTIONBAR_SLOT_CHANGED storm path). On ns.
-mod._TintUsableIcon = function(glyph, action)
+mod._TintUsableIcon = function(icon, action)
     local isUsable, noMana
     if C_ActionBar and C_ActionBar.IsUsableAction then
         isUsable, noMana = C_ActionBar.IsUsableAction(action)
@@ -111,11 +111,11 @@ mod._TintUsableIcon = function(glyph, action)
         isUsable, noMana = IsUsableAction(action)
     end
     if isUsable then
-        glyph:SetVertexColor(1, 1, 1)
+        icon:SetVertexColor(1, 1, 1)
     elseif noMana then
-        glyph:SetVertexColor(0.5, 0.5, 1.0)
+        icon:SetVertexColor(0.5, 0.5, 1.0)
     elseif isUsable ~= nil then
-        glyph:SetVertexColor(0.4, 0.4, 0.4)
+        icon:SetVertexColor(0.4, 0.4, 0.4)
     end
 end
 
@@ -203,10 +203,10 @@ function mod.RepaintAssistIcons(suggestedSpell)
                             and C_ActionBar.IsAssistedCombatAction(action)
                         then
                             found = found + 1
-                            local glyph = button.icon or button.Icon
-                            if glyph then
-                                glyph:SetTexture(texture or GetActionTexture(action))
-                                glyph:SetShown(true)
+                            local icon = button.icon or button.Icon
+                            if icon then
+                                icon:SetTexture(texture or GetActionTexture(action))
+                                icon:SetShown(true)
                             end
                             -- This button's cooldown/charges mirror the suggested
                             -- spell: a suggestion change is content change for THIS
@@ -466,8 +466,8 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
     if not action then
         return
     end
-    local glyph = button.icon or button.Icon
-    if glyph then
+    local icon = button.icon or button.Icon
+    if icon then
         -- Stamp the icon texture-delta memo with what we actually paint:
         -- ns._cdIconHeal skips its repaint when the memo equals the live
         -- texture, so the memo must always match what is ON the icon. A
@@ -475,22 +475,22 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         -- making this paint the BASE texture; left unstamped, the memo
         -- diverges and the SPELL_UPDATE_ICON heal wrong-skips the repaint.
         local texture = GetActionTexture(action)
-        glyph:SetTexture(texture)
+        icon:SetTexture(texture)
         EFD(button).lastIconTex = texture
         -- Blizzard's Update() HIDES the icon region for empty slots and only
         -- re-Shows on fill, so painting onto a previously-empty slot renders
         -- nothing until hover runs Blizzard's Update. Gate on HasAction --
         -- the slot-filled boolean is the question being asked (the texture
         -- fileID is never secret, per the API docs on every client).
-        glyph:SetShown(HasAction(action))
+        icon:SetShown(HasAction(action))
         -- Saturated baseline on every content change: desaturation is
         -- event/hover-managed and survives the slot emptying, so new content
         -- would inherit stale desat until mouseover; recompute below
         -- re-applies genuine on-CD desat when the feature is on.
-        if glyph.SetDesaturation then
-            glyph:SetDesaturation(0)
-        elseif glyph.SetDesaturated then
-            glyph:SetDesaturated(false)
+        if icon.SetDesaturation then
+            icon:SetDesaturation(0)
+        elseif icon.SetDesaturated then
+            icon:SetDesaturated(false)
         end
         -- Usable tint is a separate stale channel: grey from a zero-quantity
         -- item survives the content change, and usability events only fire
@@ -507,7 +507,7 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         if rfd.rangeTinted then
             rfd.usableState = nil
         else
-            pcall(mod._TintUsableIcon, glyph, action)
+            pcall(mod._TintUsableIcon, icon, action)
         end
     end
     if button.Count and C_ActionBar and C_ActionBar.GetActionDisplayCount then
@@ -916,8 +916,8 @@ do
             if not desatOn and not alphaOn then
                 return
             end
-            local glyph = button.icon
-            if not glyph then
+            local icon = button.icon
+            if not icon then
                 return
             end
             if not action then
@@ -1001,7 +1001,7 @@ do
                     end
                 end
                 -- val may be SECRET: never compare it; SetDesaturation accepts secret numbers.
-                glyph:SetDesaturation(val or 0)
+                icon:SetDesaturation(val or 0)
             end
             if alphaOn then
                 local alphaSet = false
@@ -1009,20 +1009,20 @@ do
                     local curve = GetCdAlphaCurve(cdAlpha)
                     if curve and durObj.EvaluateTotalDuration then
                         if not useRealCurve or not cdInfo.isOnGCD then
-                            glyph:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
+                            icon:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
                             alphaSet = true
                         end
-                    elseif glyph.SetAlphaFromBoolean and durObj.IsZero and not cdInfo.isOnGCD then
+                    elseif icon.SetAlphaFromBoolean and durObj.IsZero and not cdInfo.isOnGCD then
                         -- Client without the total evaluator. IsZero() is a
                         -- secret boolean; SetAlphaFromBoolean consumes it
                         -- without any Lua comparison. This path has no GCD
                         -- threshold, so it leans on isOnGCD as before.
-                        glyph:SetAlphaFromBoolean(durObj:IsZero(), 1, cdAlpha / 100)
+                        icon:SetAlphaFromBoolean(durObj:IsZero(), 1, cdAlpha / 100)
                         alphaSet = true
                     end
                 end
                 if not alphaSet then
-                    glyph:SetAlpha(1)
+                    icon:SetAlpha(1)
                 end
             end
         end
@@ -1222,10 +1222,10 @@ do
             -- secret-tolerant setters; cooldown swipes ride the COOLDOWN branch.
             local _, _, subType = GetActionInfo(action)
             if subType == "assistedcombat" then
-                local glyph = button.icon or button.Icon -- same member resolution as ForceButtonRefresh
-                if glyph then
-                    glyph:SetTexture(GetActionTexture(action))
-                    glyph:SetShown(HasAction(action))
+                local icon = button.icon or button.Icon -- same member resolution as ForceButtonRefresh
+                if icon then
+                    icon:SetTexture(GetActionTexture(action))
+                    icon:SetShown(HasAction(action))
                 end
             else
                 -- Slot CONTENTS changed while slot number stayed (spec swap,
@@ -1464,14 +1464,14 @@ do
                         local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
                         if ufd.usableState ~= ustate then
                             ufd.usableState = ustate
-                            local glyph = button.icon
-                            if glyph then
+                            local icon = button.icon
+                            if icon then
                                 if ustate == 1 then
-                                    glyph:SetVertexColor(1.0, 1.0, 1.0)
+                                    icon:SetVertexColor(1.0, 1.0, 1.0)
                                 elseif ustate == 2 then
-                                    glyph:SetVertexColor(0.5, 0.5, 1.0)
+                                    icon:SetVertexColor(0.5, 0.5, 1.0)
                                 else
-                                    glyph:SetVertexColor(0.4, 0.4, 0.4)
+                                    icon:SetVertexColor(0.4, 0.4, 0.4)
                                 end
                             end
                         end
@@ -1611,9 +1611,9 @@ do
                     end
                     for _, category in pairs(Enum.CooldownViewerCategory) do
                         isEss = (category == essential)
-                        local okS, group = pcall(C_CooldownViewer.GetCooldownViewerCategorySet, category)
-                        if okS and type(group) == "table" then
-                            for _, cdID in ipairs(group) do
+                        local okS, set = pcall(C_CooldownViewer.GetCooldownViewerCategorySet, category)
+                        if okS and type(set) == "table" then
+                            for _, cdID in ipairs(set) do
                                 local okI, ci = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
                                 if okI and ci and ci.spellID then
                                     mark(ci.spellID)
@@ -1659,7 +1659,7 @@ do
                                 -- else reads them).
                                 local spellRef = aType == "spell" and GetSpell and GetSpell(a)
                                 if spellRef and spellRef > 0 then
-                                    local baseValue = GetBaseSpell and GetBaseSpell(spellRef)
+                                    local base = GetBaseSpell and GetBaseSpell(spellRef)
                                     -- Essential (true) -> fast; any other
                                     -- curated (false) or uncurated (nil)
                                     -- -> slow. No curated data at all ->
@@ -1667,10 +1667,7 @@ do
                                     local tier
                                     if not haveCurated then
                                         tier = fast
-                                    elseif
-                                        curated[spellRef]
-                                        or (baseValue and baseValue > 0 and curated[baseValue])
-                                    then
+                                    elseif curated[spellRef] or (base and base > 0 and curated[base]) then
                                         tier = fast
                                     else
                                         tier = slow
@@ -1715,13 +1712,13 @@ do
             for idx = 1, #entries do
                 local button = entries[idx]
                 local a = button:GetAttribute("action")
-                local t, ident, subFrame
+                local t, ident, sub
                 if a then
-                    t, ident, subFrame = GetActionInfo(a)
+                    t, ident, sub = GetActionInfo(a)
                 end
                 if
                     t == "macro"
-                    and subFrame == "spell"
+                    and sub == "spell"
                     and type(ident) == "number"
                     and not (issecretvalue and issecretvalue(ident))
                     and ident > 0
@@ -1992,17 +1989,17 @@ do
                     loc:SetDrawEdge(false)
                     loc:HookScript("OnCooldownDone", LoCDone)
                 end
-                local maskTex = fd.shapeApplied and fd.shapeMask or nil
-                if fd.locMask ~= maskTex then
+                local mask = fd.shapeApplied and fd.shapeMask or nil
+                if fd.locMask ~= mask then
                     if fd.locMask then
                         pcall(loc.RemoveMaskTexture, loc, fd.locMask)
                     end
-                    if maskTex then
-                        pcall(loc.AddMaskTexture, loc, maskTex)
+                    if mask then
+                        pcall(loc.AddMaskTexture, loc, mask)
                     end
-                    fd.locMask = maskTex
+                    fd.locMask = mask
                 end
-                local texture = maskTex and fd.shapeMaskPath or nil
+                local texture = mask and fd.shapeMaskPath or nil
                 if fd.locTex ~= texture then
                     fd.locTex = texture
                     pcall(loc.SetSwipeTexture, loc, texture or "")
@@ -2637,17 +2634,17 @@ do
                     end
                     if not pend[arg1] then
                         pend[arg1] = true
-                        local slotIndex = arg1
+                        local slot = arg1
                         -- Built here, under this AB-born entry, so the timer
                         -- callback bills ActionBars. One closure per slot per
                         -- window (max ~4/sec), not per event.
                         C_Timer.After((at - nowTime) + 0.02, function()
-                            pend[slotIndex] = nil
-                            nextAt[slotIndex] = 0
+                            pend[slot] = nil
+                            nextAt[slot] = 0
                             local d = mod._cdDispatcher
                             local hgt = d and d:GetScript("OnEvent")
                             if hgt then
-                                hgt(d, "ACTIONBAR_SLOT_CHANGED", slotIndex)
+                                hgt(d, "ACTIONBAR_SLOT_CHANGED", slot)
                             end
                         end)
                     end
@@ -2972,14 +2969,14 @@ do
                                         local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
                                         if ufd.usableState ~= ustate then
                                             ufd.usableState = ustate
-                                            local glyph = button.icon
-                                            if glyph then
+                                            local icon = button.icon
+                                            if icon then
                                                 if ustate == 1 then
-                                                    glyph:SetVertexColor(1.0, 1.0, 1.0)
+                                                    icon:SetVertexColor(1.0, 1.0, 1.0)
                                                 elseif ustate == 2 then
-                                                    glyph:SetVertexColor(0.5, 0.5, 1.0)
+                                                    icon:SetVertexColor(0.5, 0.5, 1.0)
                                                 else
-                                                    glyph:SetVertexColor(0.4, 0.4, 0.4)
+                                                    icon:SetVertexColor(0.4, 0.4, 0.4)
                                                 end
                                             end
                                         end

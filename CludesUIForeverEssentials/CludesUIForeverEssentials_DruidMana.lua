@@ -22,7 +22,7 @@ local MANA = Enum.PowerType.Mana
 local RULE = 5
 local LINE_H = 3
 
-local holderFrame, barFrame, lineTex, textValue
+local holderFrame, bar, line, textValue
 local lastMana, ruleEnds
 
 local function Font()
@@ -33,8 +33,8 @@ local function Secret(val)
 end
 
 local function UsesMana()
-    local upper = UnitPowerMax("player", MANA)
-    return not Secret(upper) and upper and upper > 0
+    local max = UnitPowerMax("player", MANA)
+    return not Secret(max) and max and max > 0
 end
 
 -- Druid in a form whose bar is not mana, or Always Show for a mana user.
@@ -45,8 +45,8 @@ local function Wanted()
     if CludesUI._unlockActive or Get("always") then
         return true
     end
-    local _, classFile = UnitClass("player")
-    return classFile == "DRUID" and UnitPowerType("player") ~= MANA
+    local _, class = UnitClass("player")
+    return class == "DRUID" and UnitPowerType("player") ~= MANA
 end
 
 local function Build()
@@ -54,24 +54,24 @@ local function Build()
         return holderFrame
     end
     holderFrame = CreateFrame("Frame", "CludesUIManaBar", UIParent)
-    barFrame = CreateFrame("StatusBar", nil, holderFrame)
-    barFrame:SetPoint("TOPLEFT")
-    barFrame:SetPoint("TOPRIGHT")
-    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    bar = CreateFrame("StatusBar", nil, holderFrame)
+    bar:SetPoint("TOPLEFT")
+    bar:SetPoint("TOPRIGHT")
+    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local c = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
-    barFrame:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
-    CludesUI.Kit.Panel(barFrame, 0.85)
-    textValue = barFrame:CreateFontString(nil, "OVERLAY")
+    bar:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
+    CludesUI.Kit.Panel(bar, 0.85)
+    textValue = bar:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(textValue, 10, "essentials")
     textValue:SetPoint("CENTER")
-    lineTex = CreateFrame("StatusBar", nil, holderFrame)
-    lineTex:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    lineTex:GetStatusBarTexture():SetVertexColor(1, 1, 1, 0.9)
-    lineTex:SetMinMaxValues(0, RULE)
-    lineTex:SetPoint("TOPLEFT", barFrame, "BOTTOMLEFT", 0, -1)
-    lineTex:SetPoint("TOPRIGHT", barFrame, "BOTTOMRIGHT", 0, -1)
-    lineTex:SetHeight(LINE_H)
-    lineTex:Hide()
+    line = CreateFrame("StatusBar", nil, holderFrame)
+    line:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    line:GetStatusBarTexture():SetVertexColor(1, 1, 1, 0.9)
+    line:SetMinMaxValues(0, RULE)
+    line:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 0, -1)
+    line:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 0, -1)
+    line:SetHeight(LINE_H)
+    line:Hide()
     return holderFrame
 end
 
@@ -80,7 +80,7 @@ local function Layout()
         return
     end
     holderFrame:SetSize(Get("width"), Get("height") + LINE_H + 1)
-    barFrame:SetHeight(Get("height"))
+    bar:SetHeight(Get("height"))
 end
 
 local function UpdateMana()
@@ -92,33 +92,33 @@ local function UpdateMana()
         return
     end
     holderFrame:Show()
-    local current, upper = UnitPower("player", MANA), UnitPowerMax("player", MANA)
-    barFrame:SetMinMaxValues(0, upper)
-    barFrame:SetValue(current)
-    if Secret(current) or Secret(upper) then
+    local current, max = UnitPower("player", MANA), UnitPowerMax("player", MANA)
+    bar:SetMinMaxValues(0, max)
+    bar:SetValue(current)
+    if Secret(current) or Secret(max) then
         textValue:SetText("")
         lastMana = nil
         return
     end
-    textValue:SetText(("%d / %d"):format(current, upper))
+    textValue:SetText(("%d / %d"):format(current, max))
     if Get("fiveSecond") and lastMana and current < lastMana then
         ruleEnds = GetTime() + RULE
-        lineTex:Show()
+        line:Show()
     end
     lastMana = current
 end
 
 local function Tick()
-    if not (ruleEnds and lineTex) then
+    if not (ruleEnds and line) then
         return
     end
     local leftX = ruleEnds - GetTime()
     if leftX <= 0 or not Get("fiveSecond") then
         ruleEnds = nil
-        lineTex:Hide()
+        line:Hide()
         return
     end
-    lineTex:SetValue(leftX)
+    line:SetValue(leftX)
 end
 
 local ev = CreateFrame("Frame")

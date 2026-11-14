@@ -663,22 +663,21 @@ local function RegisterUFUnlockElements()
                 { cb = "petCastbar", parent = "pet" },
             }
             local cbPositions = saved and saved.profile and saved.profile.positions
-            for _, spec_def in ipairs(CB_DEFAULTS) do
-                if not CludesUIDB._castbarUnlockSeeded[spec_def.cb] then
+            for _, def in ipairs(CB_DEFAULTS) do
+                if not CludesUIDB._castbarUnlockSeeded[def.cb] then
                     -- Skip seeding if the user already has a saved position
                     -- (they moved the cast bar freely without anchoring)
-                    local hasPos = cbPositions and cbPositions[spec_def.cb]
+                    local hasPos = cbPositions and cbPositions[def.cb]
                     if not hasPos then
-                        if not CludesUIDB.unlockAnchors[spec_def.cb] then
-                            CludesUIDB.unlockAnchors[spec_def.cb] =
-                                { target = spec_def.parent, side = "BOTTOM" }
+                        if not CludesUIDB.unlockAnchors[def.cb] then
+                            CludesUIDB.unlockAnchors[def.cb] = { target = def.parent, side = "BOTTOM" }
                         end
-                        if not CludesUIDB.unlockWidthMatch[spec_def.cb] then
-                            CludesUIDB.unlockWidthMatch[spec_def.cb] = spec_def.parent
+                        if not CludesUIDB.unlockWidthMatch[def.cb] then
+                            CludesUIDB.unlockWidthMatch[def.cb] = def.parent
                         end
                     end
                     -- Mark as seeded so we never overwrite user changes
-                    CludesUIDB._castbarUnlockSeeded[spec_def.cb] = true
+                    CludesUIDB._castbarUnlockSeeded[def.cb] = true
                 end
             end
         end

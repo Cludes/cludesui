@@ -242,22 +242,22 @@ function mod.DebuffGridPoint(s, idx0, sum, options)
     end
 
     -- perRow == 1 is a single line ALONG the growth direction (no wrapping), keeping the growth control meaningful; >= 2 wraps into rows.
-    local rowFrame, column
+    local row, col
     if perRow <= 1 then
-        rowFrame, column = 0, idx0
+        row, col = 0, idx0
     else
-        rowFrame = floor(idx0 / perRow)
-        column = idx0 % perRow
+        row = floor(idx0 / perRow)
+        col = idx0 % perRow
     end
     local centerOff = 0
     if grow == "CENTER" then
-        local rowCount = (perRow <= 1) and (sum or 0) or min(perRow, max(0, (sum or 0) - rowFrame * perRow))
+        local rowCount = (perRow <= 1) and (sum or 0) or min(perRow, max(0, (sum or 0) - row * perRow))
         if rowCount > 0 then
             centerOff = -((rowCount - 1) * step) / 2
         end
     end
-    local along = column * step
-    local across = rowFrame * step
+    local along = col * step
+    local across = row * step
     local fx = ox + gvx * along + svx * across + centerOff
     local fy = oy + gvy * along + svy * across
     return corner, fx, fy
@@ -364,12 +364,12 @@ end
 -- companion key against `size` and the drawn texture), nil = the legacy size. The drawn size
 -- (and px) is cached on the border frame so a group-wide target swap is a color write per
 -- button rather than a restyle; callers clear it when the base border returns.
-function mod.ApplyHighlightBorder(bf, s, dim, r, g, b, a, px)
+function mod.ApplyHighlightBorder(bf, s, size, r, g, b, a, px)
     if not (Pix and bf) then
         return
     end
     local texKey = s.borderTexture or "solid"
-    if not dim or dim <= 0 then
+    if not size or size <= 0 then
         if bf._hlBorderSize then
             CludesUI.ApplyBorderStyle(bf, 0, r, g, b, a, texKey)
             -- Keep the cache when the style call bailed (still shown) so the next one retries the hide.
@@ -381,13 +381,13 @@ function mod.ApplyHighlightBorder(bf, s, dim, r, g, b, a, px)
     end
     -- IsShown: a base restyle to Border Size 0 hides the frame without clearing the cache,
     -- so the size alone would let a hover/target repaint after one land on a hidden border.
-    if bf._hlBorderSize == dim and bf._hlBorderPx == px and bf:IsShown() then
+    if bf._hlBorderSize == size and bf._hlBorderPx == px and bf:IsShown() then
         CludesUI.SetBorderStyleColor(bf, r, g, b, a)
         return
     end
     CludesUI.ApplyBorderStyle(
         bf,
-        dim,
+        size,
         r,
         g,
         b,
@@ -398,11 +398,11 @@ function mod.ApplyHighlightBorder(bf, s, dim, r, g, b, a, px)
         s.borderTextureShiftX,
         s.borderTextureShiftY,
         "unitframes",
-        dim,
+        size,
         nil,
         px
     )
-    bf._hlBorderSize = dim
+    bf._hlBorderSize = size
     bf._hlBorderPx = px
 end
 
@@ -425,81 +425,76 @@ function mod.RF_VisibleHighlight(s, r, g, b)
     return 1, 1, 1
 end
 
-function mod.RF_ColorPowerDivider(hostRegion, r, g, b, a)
-    if not hostRegion or hostRegion._powerArtMode ~= "divider" then
+function mod.RF_ColorPowerDivider(host, r, g, b, a)
+    if not host or host._powerArtMode ~= "divider" then
         return
     end
-    hostRegion._powerArtR, hostRegion._powerArtG, hostRegion._powerArtB, hostRegion._powerArtAlpha =
-        r, g, b, a
-    hostRegion._powerArtTex:SetVertexColor(r, g, b, a)
+    host._powerArtR, host._powerArtG, host._powerArtB, host._powerArtAlpha = r, g, b, a
+    host._powerArtTex:SetVertexColor(r, g, b, a)
 end
 
-function mod.RF_ClearPowerBorderArt(hostRegion)
-    if not hostRegion or not hostRegion._powerArtKey then
+function mod.RF_ClearPowerBorderArt(host)
+    if not host or not host._powerArtKey then
         return
     end
-    if hostRegion._powerArtTex then
-        hostRegion._powerArtTex:Hide()
+    if host._powerArtTex then
+        host._powerArtTex:Hide()
     end
-    if hostRegion._powerArtSeam then
-        hostRegion._powerArtSeam:Hide()
+    if host._powerArtSeam then
+        host._powerArtSeam:Hide()
     end
-    CludesUI.HideBorderStyle(hostRegion)
-    CludesUI.RegisterPxReapply(hostRegion, nil)
-    Pix.ShowBorder(hostRegion)
-    hostRegion._powerArtKey = nil
-    hostRegion._powerArtMode = nil
+    CludesUI.HideBorderStyle(host)
+    CludesUI.RegisterPxReapply(host, nil)
+    Pix.ShowBorder(host)
+    host._powerArtKey = nil
+    host._powerArtMode = nil
 end
 
-function mod.RF_LayoutPowerBorderArt(hostRegion)
-    if not hostRegion:IsShown() or not hostRegion._powerArtKey then
+function mod.RF_LayoutPowerBorderArt(host)
+    if not host:IsShown() or not host._powerArtKey then
         return
     end
-    if hostRegion._powerArtMode == "border" then
+    if host._powerArtMode == "border" then
         CludesUI.ApplyBorderStyle(
-            hostRegion,
-            hostRegion._powerArtSize,
-            hostRegion._powerArtR,
-            hostRegion._powerArtG,
-            hostRegion._powerArtB,
-            hostRegion._powerArtAlpha,
-            hostRegion._powerArtKey,
-            hostRegion._powerArtOffset,
-            hostRegion._powerArtOffsetY,
-            hostRegion._powerArtShiftX,
-            hostRegion._powerArtShiftY,
+            host,
+            host._powerArtSize,
+            host._powerArtR,
+            host._powerArtG,
+            host._powerArtB,
+            host._powerArtAlpha,
+            host._powerArtKey,
+            host._powerArtOffset,
+            host._powerArtOffsetY,
+            host._powerArtShiftX,
+            host._powerArtShiftY,
             "unitframes",
-            hostRegion._powerArtSize,
+            host._powerArtSize,
             nil,
-            hostRegion._powerArtPx
+            host._powerArtPx
         )
         return
     end
-    local seam = hostRegion._powerArtSeam
-    seam:SetFrameStrata(hostRegion:GetFrameStrata())
-    seam:SetFrameLevel(hostRegion:GetParent():GetFrameLevel() + mod.LVL_TEXT - 1)
-    local es = hostRegion:GetEffectiveScale()
+    local seam = host._powerArtSeam
+    seam:SetFrameStrata(host:GetFrameStrata())
+    seam:SetFrameLevel(host:GetParent():GetFrameLevel() + mod.LVL_TEXT - 1)
+    local es = host:GetEffectiveScale()
     if not (es and es > 0.01) then
         es = UIParent:GetEffectiveScale()
     end
-    local thick = CludesUI.BorderCompanionThickness(
-        hostRegion._powerArtKey,
-        hostRegion._powerArtSize,
-        hostRegion._powerArtPx,
-        es
-    )
+    local thick =
+        CludesUI.BorderCompanionThickness(host._powerArtKey, host._powerArtSize, host._powerArtPx, es)
     local realPP = CludesUI.PP
     local raise = realPP.SnapForES(thick * 5 / 32, es) - realPP.perfect / es
-    local t = hostRegion._powerArtTex
+    local t = host._powerArtTex
     t:ClearAllPoints()
-    if hostRegion._powerArtEdge == "BOTTOM" then
+    if host._powerArtEdge == "BOTTOM" then
         t:SetTexCoord(0, 1, 1, 0)
-        t:SetPoint("BOTTOMLEFT", hostRegion, "BOTTOMLEFT", 0, -raise)
-        t:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", 0, -raise)
+        t:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, -raise)
+        t:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, -raise)
     else
         t:SetTexCoord(0, 1, 0, 1)
-        t:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", 0, raise)
-        t:SetPoint("TOPRIGHT", hostRegion, "TOPRIGHT", 0, raise)
+        t:SetPoint("TOPLEFT", host, "TOPLEFT", 0, raise)
+        t:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, raise)
     end
     t:SetHeight(thick)
     t:Show()
@@ -507,82 +502,76 @@ function mod.RF_LayoutPowerBorderArt(hostRegion)
 end
 
 -- Settings passes refresh the cached art; ordinary power paints reuse it.
-function mod.RF_ApplyPowerBorderArt(hostRegion, s, force, preview, nameBar)
-    local modeName = nameBar and "divider" or (s.powerBorderStyle or "cui")
+function mod.RF_ApplyPowerBorderArt(host, s, force, preview, nameBar)
+    local mode = nameBar and "divider" or (s.powerBorderStyle or "cui")
     local key = (
         (nameBar and s.topNameBarDivider == true) or (not nameBar and s.powerBorderMatchFrame == true)
     )
         and not mod.RF_Stock()
         and s.borderTexture
-    if not CludesUI._pixelArtBorders[key] or (modeName ~= "divider" and modeName ~= "border") then
-        mod.RF_ClearPowerBorderArt(hostRegion)
+    if not CludesUI._pixelArtBorders[key] or (mode ~= "divider" and mode ~= "border") then
+        mod.RF_ClearPowerBorderArt(host)
         return false
     end
-    local dim = s.borderSize or 1
+    local size = s.borderSize or 1
     local height = nameBar and (s.topNameBarHeight or 20) or (s.powerHeight or 4)
-    if dim <= 0 or (modeName == "divider" and height < 4) then
-        mod.RF_ClearPowerBorderArt(hostRegion)
-        hostRegion:Hide()
+    if size <= 0 or (mode == "divider" and height < 4) then
+        mod.RF_ClearPowerBorderArt(host)
+        host:Hide()
         return true
     end
     if
         not force
-        and hostRegion._powerArtKey == key
-        and hostRegion._powerArtMode == modeName
-        and hostRegion._powerArtSize == dim
+        and host._powerArtKey == key
+        and host._powerArtMode == mode
+        and host._powerArtSize == size
     then
-        hostRegion:Show()
+        host:Show()
         return true
     end
-    CludesUI.HideBorderStyle(hostRegion)
-    if hostRegion._powerArtTex then
-        hostRegion._powerArtTex:Hide()
+    CludesUI.HideBorderStyle(host)
+    if host._powerArtTex then
+        host._powerArtTex:Hide()
     end
-    if hostRegion._powerArtSeam then
-        hostRegion._powerArtSeam:Hide()
+    if host._powerArtSeam then
+        host._powerArtSeam:Hide()
     end
-    hostRegion._powerArtKey, hostRegion._powerArtMode = key, modeName
-    hostRegion._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
-    hostRegion._powerArtSize = dim
-    hostRegion._powerArtPx = CludesUI.BorderPx(s.borderSizePx, dim, key)
+    host._powerArtKey, host._powerArtMode = key, mode
+    host._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
+    host._powerArtSize = size
+    host._powerArtPx = CludesUI.BorderPx(s.borderSizePx, size, key)
     local c = s.borderColor
-    hostRegion._powerArtR, hostRegion._powerArtG, hostRegion._powerArtB =
-        c and c.r or 0, c and c.g or 0, c and c.b or 0
-    hostRegion._powerArtAlpha = s.borderAlpha or 1
-    hostRegion._powerArtOffset, hostRegion._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
-    hostRegion._powerArtShiftX, hostRegion._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
-    if modeName == "divider" then
-        local t = hostRegion._powerArtTex
+    host._powerArtR, host._powerArtG, host._powerArtB = c and c.r or 0, c and c.g or 0, c and c.b or 0
+    host._powerArtAlpha = s.borderAlpha or 1
+    host._powerArtOffset, host._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
+    host._powerArtShiftX, host._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
+    if mode == "divider" then
+        local t = host._powerArtTex
         if not t then
             -- On the Buff / Debuff Manager preview (a frame of the options page
             -- pool, CludesUI_FramePool.lua) the seam is pooled with its host
             -- and handed out again by the next build; elsewhere a plain new frame.
-            local seam = POOL.CreateFrame("Frame", nil, hostRegion)
-            seam:SetAllPoints(hostRegion)
-            hostRegion._powerArtSeam = seam
+            local seam = POOL.CreateFrame("Frame", nil, host)
+            seam:SetAllPoints(host)
+            host._powerArtSeam = seam
             t = seam:CreateTexture(nil, "ARTWORK")
             Pix.DisablePixelSnap(t)
-            hostRegion._powerArtTex = t
+            host._powerArtTex = t
         end
         t:SetTexture(CludesUI.GetBorderCompanion(key, "sepH"))
-        t:SetVertexColor(
-            hostRegion._powerArtR,
-            hostRegion._powerArtG,
-            hostRegion._powerArtB,
-            hostRegion._powerArtAlpha
-        )
+        t:SetVertexColor(host._powerArtR, host._powerArtG, host._powerArtB, host._powerArtAlpha)
     end
-    hostRegion:Show()
-    mod.RF_LayoutPowerBorderArt(hostRegion)
+    host:Show()
+    mod.RF_LayoutPowerBorderArt(host)
     CludesUI.RegisterPxReapply(
-        hostRegion,
-        (modeName == "divider" and not preview) and mod.RF_LayoutPowerBorderArt or nil
+        host,
+        (mode == "divider" and not preview) and mod.RF_LayoutPowerBorderArt or nil
     )
     return true, true
 end
 
 function mod.RF_ApplyTopNameDivider(tnb, s, preview)
-    local hostRegion = tnb._divider
+    local host = tnb._divider
     local key = s.borderTexture
     if
         not Pix
@@ -593,19 +582,19 @@ function mod.RF_ApplyTopNameDivider(tnb, s, preview)
         or (s.borderSize or 1) <= 0
         or (s.topNameBarHeight or 20) < 4
     then
-        if hostRegion then
-            mod.RF_ClearPowerBorderArt(hostRegion)
-            hostRegion:Hide()
+        if host then
+            mod.RF_ClearPowerBorderArt(host)
+            host:Hide()
         end
         return
     end
-    if not hostRegion then
+    if not host then
         -- Pooled with the options preview's replica, as the seam above.
-        hostRegion = POOL.CreateFrame("Frame", nil, tnb:GetParent())
-        hostRegion:SetAllPoints(tnb)
-        tnb._divider = hostRegion
+        host = POOL.CreateFrame("Frame", nil, tnb:GetParent())
+        host:SetAllPoints(tnb)
+        tnb._divider = host
     end
-    mod.RF_ApplyPowerBorderArt(hostRegion, s, true, preview, true)
+    mod.RF_ApplyPowerBorderArt(host, s, true, preview, true)
 end
 
 -- Unit tooltip and hover border for a raid/party button; the detached
@@ -727,40 +716,40 @@ local function StyleButton(btnFrame)
     d.bg = backdrop
 
     -- Health bar
-    local healthBar = CreateFrame("StatusBar", nil, btnFrame)
-    healthBar:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
-    healthBar:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 0, 0)
-    healthBar:SetPoint("TOPRIGHT", btnFrame, "TOPRIGHT", 0, 0)
-    healthBar:SetHeight(healthH)
+    local health = CreateFrame("StatusBar", nil, btnFrame)
+    health:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
+    health:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 0, 0)
+    health:SetPoint("TOPRIGHT", btnFrame, "TOPRIGHT", 0, 0)
+    health:SetHeight(healthH)
     local texPath = ResolveHealthTexture()
-    healthBar:SetStatusBarTexture(texPath)
-    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    health:SetStatusBarTexture(texPath)
+    health:GetStatusBarTexture():SetHorizTile(false)
     if Pix then
-        Pix.DisablePixelSnap(healthBar)
+        Pix.DisablePixelSnap(health)
     end
     -- Fill axis + inversion. StyleButton runs before d._isParty is set, so these use
     -- the raid values; ReanchorAbsorbToFill re-resolves both against the button's real
     -- settings source each update.
-    mod.RF_ApplyHealthOrientation(healthBar, s)
-    healthBar:SetMinMaxValues(0, 100)
-    healthBar:SetValue(100)
+    mod.RF_ApplyHealthOrientation(health, s)
+    health:SetMinMaxValues(0, 100)
+    health:SetValue(100)
     -- Pre-paint tint: a StatusBar texture renders WHITE (default vertex
     -- color) until the first content paint assigns the real class/reaction
     -- color a few frames after login (the styling drain). Start dark so the
     -- loading shell reads as calm empty frames instead of a flat white flash.
-    healthBar:SetStatusBarColor(0.12, 0.12, 0.12)
-    d.health = healthBar
+    health:SetStatusBarColor(0.12, 0.12, 0.12)
+    d.health = health
 
     -- Full-height anchor reference for Uniform Icon Anchoring: top tracks the health bar (so the
     -- Top Name Bar inset carries over), bottom pins to the button -- exactly where the health bar
     -- sits with no power bar. ns.RF_AnchorHost swaps decorations onto it; _cuiHealth points back
     -- for the few sites that must hug the real bar (full-overlay BM bars).
     d.uniformRef = CreateFrame("Frame", nil, btnFrame)
-    d.uniformRef:SetFrameLevel(healthBar:GetFrameLevel())
-    d.uniformRef:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+    d.uniformRef:SetFrameLevel(health:GetFrameLevel())
+    d.uniformRef:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
     d.uniformRef:SetPoint("BOTTOMRIGHT", btnFrame, "BOTTOMRIGHT", 0, 0)
-    healthBar._cuiUniformRef = d.uniformRef
-    d.uniformRef._cuiHealth = healthBar
+    health._cuiUniformRef = d.uniformRef
+    d.uniformRef._cuiHealth = health
 
     -- Power bar: ALWAYS created, hidden, anchored to the button bottom for pixel alignment;
     -- UpdateButton's per-role gate shows/fills it. Unconditional creation is what lets a
@@ -830,7 +819,7 @@ local function StyleButton(btnFrame)
     end
 
     -- Absorb shields
-    CreateAbsorbBar(btnFrame, healthBar)
+    CreateAbsorbBar(btnFrame, health)
 
     -- Border frame
     local bdrFrame = CreateFrame("Frame", nil, btnFrame)
@@ -854,26 +843,26 @@ local function StyleButton(btnFrame)
     -- before every anchor closure below and before the aura containers, so
     -- each of them takes the kit's host and spots from its first call.
     if d._isParty and mod.RF_PartyKit() then
-        mod.RF_KitBuild(btnFrame, d, healthBar, d.power, bdrFrame)
+        mod.RF_KitBuild(btnFrame, d, health, d.power, bdrFrame)
     end
 
     -- Text carrier: the texts in the text band (ns.LVL_TEXT) -- above every border incl.
     -- the raise, below the aura band. Their FontStrings are built on it on first need
     -- (ns.RF_TextLayout, run by AnchorTexts below and by the paints when the settings changed).
     local textCarrier = CreateFrame("Frame", nil, btnFrame)
-    textCarrier:SetAllPoints(healthBar)
+    textCarrier:SetAllPoints(health)
     textCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_TEXT)
     d.textCarrier = textCarrier
     -- The second carrier for texts whose Show Above Icons differs from the name's: built
     -- here with the first (never in a later layout pass), levelled by ns.RF_TextLayout.
     local textCarrierAlt = CreateFrame("Frame", nil, btnFrame)
-    textCarrierAlt:SetAllPoints(healthBar)
+    textCarrierAlt:SetAllPoints(health)
     textCarrierAlt:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_TEXT)
     d._txAlt = textCarrierAlt
     -- Status text (DEAD / OFFLINE / AFK -- always shown, own position/size/color).
     -- Party Frames kit: in the text band, so the Classic art (drawn over the
     -- bars) never covers it; it still anchors to the kit health bar.
-    local statusFS = (d.kit and textCarrier or healthBar):CreateFontString(nil, "OVERLAY")
+    local statusFS = (d.kit and textCarrier or health):CreateFontString(nil, "OVERLAY")
     local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
     ApplyFont(statusFS, s.statusTextSize or 14)
     statusFS:SetJustifyH("CENTER")
@@ -883,29 +872,29 @@ local function StyleButton(btnFrame)
 
     local function AnchorStatusText()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local healthBar = mod.RF_BarHost(healthBar, s) -- Uniform Icon Anchoring host swap / kit bar
+        local health = mod.RF_BarHost(health, s) -- Uniform Icon Anchoring host swap / kit bar
         statusFS:ClearAllPoints()
         local place = s.statusTextPosition or "center"
         local ox = s.statusTextOffsetX or 0
         local oy = s.statusTextOffsetY or 0
         if place == "topleft" then
-            statusFS:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+            statusFS:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
         elseif place == "top" then
-            statusFS:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+            statusFS:SetPoint("TOP", health, "TOP", ox, -2 + oy)
         elseif place == "topright" then
-            statusFS:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+            statusFS:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
         elseif place == "left" then
-            statusFS:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+            statusFS:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
         elseif place == "right" then
-            statusFS:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+            statusFS:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
         elseif place == "bottomleft" then
-            statusFS:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+            statusFS:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
         elseif place == "bottom" then
-            statusFS:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+            statusFS:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
         elseif place == "bottomright" then
-            statusFS:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+            statusFS:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            statusFS:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
+            statusFS:SetPoint("CENTER", health, "CENTER", ox, oy)
         end
     end
     AnchorStatusText()
@@ -914,7 +903,7 @@ local function StyleButton(btnFrame)
     -- Role icon. Carrier sits in the text band (ns.LVL_AURA - 1 = ns.LVL_TEXT): above every border incl. the raise, auras still over it.
     -- Level is owned by AnchorRoleIcon (live-resolves the "Show Behind Border" option); this is just the initial value.
     local roleCarrier = CreateFrame("Frame", nil, btnFrame)
-    roleCarrier:SetAllPoints(healthBar)
+    roleCarrier:SetAllPoints(health)
     roleCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
     local riSz = PixelSnap(s.roleIconSize or 14)
@@ -928,7 +917,7 @@ local function StyleButton(btnFrame)
         roleCarrier:SetFrameLevel(
             btnFrame:GetFrameLevel() + (s.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
         )
-        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
+        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
         roleIcon:ClearAllPoints()
         -- Party Frames kit: the stock spot plus the user's offsets.
         if d.kitG then
@@ -950,21 +939,21 @@ local function StyleButton(btnFrame)
         -- The position key uppercases directly to a valid anchor point, so all
         -- 9 positions resolve like the Marker Position dropdown.
         local place = (s.roleIconPosition or "bottomleft"):upper()
-        roleIcon:SetPoint(place, healthBar, place, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
+        roleIcon:SetPoint(place, health, place, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
     end
     AnchorRoleIcon()
     d.AnchorRoleIcon = AnchorRoleIcon
 
     -- Marker carrier: above the frame border (incl. the hover/target raise) so the raid marker renders on top, not clipped behind it.
     local markerCarrier = CreateFrame("Frame", nil, btnFrame)
-    markerCarrier:SetAllPoints(healthBar)
+    markerCarrier:SetAllPoints(health)
     markerCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + mod.LVL_MARKER)
 
     -- Leader/assistant icon. Own host frame (strata/level contract in ns.ApplyLeaderStrata) --
     -- NOT the marker carrier, whose high level keeps the raid marker always on top. Parented to
     -- the button so it tracks the frame; SetAllPoints(health) anchors it to the health bar.
     d.leaderHost = CreateFrame("Frame", nil, btnFrame)
-    d.leaderHost:SetAllPoints(healthBar)
+    d.leaderHost:SetAllPoints(health)
     mod.ApplyLeaderStrata(d.leaderHost)
 
     local leaderIcon = d.leaderHost:CreateTexture(nil, "OVERLAY")
@@ -973,7 +962,7 @@ local function StyleButton(btnFrame)
     local liPos = (s.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        mod.RF_AnchorHost(healthBar, s),
+        mod.RF_AnchorHost(health, s),
         liPos,
         s.leaderIconOffsetX or 0,
         s.leaderIconOffsetY or 0
@@ -995,29 +984,29 @@ local function StyleButton(btnFrame)
 
     local function AnchorRaidMarker()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
+        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
         raidMarker:ClearAllPoints()
         local place = s.raidMarkerPosition or "center"
         local ox = s.raidMarkerOffsetX or 0
         local oy = s.raidMarkerOffsetY or 0
         if place == "topleft" then
-            raidMarker:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+            raidMarker:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
         elseif place == "top" then
-            raidMarker:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+            raidMarker:SetPoint("TOP", health, "TOP", ox, -2 + oy)
         elseif place == "topright" then
-            raidMarker:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+            raidMarker:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
         elseif place == "left" then
-            raidMarker:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+            raidMarker:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
         elseif place == "right" then
-            raidMarker:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+            raidMarker:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
         elseif place == "bottomleft" then
-            raidMarker:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+            raidMarker:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
         elseif place == "bottom" then
-            raidMarker:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+            raidMarker:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
         elseif place == "bottomright" then
-            raidMarker:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+            raidMarker:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            raidMarker:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
+            raidMarker:SetPoint("CENTER", health, "CENTER", ox, oy)
         end
     end
     AnchorRaidMarker()
@@ -1031,7 +1020,7 @@ local function StyleButton(btnFrame)
 
     local function AnchorReadyCheck()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
+        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
         readyCheck:ClearAllPoints()
         local place = s.readyCheckPosition or "center"
         local ox = s.readyCheckOffsetX or 0
@@ -1042,23 +1031,23 @@ local function StyleButton(btnFrame)
             return
         end
         if place == "topleft" then
-            readyCheck:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 2 + ox, -2 + oy)
+            readyCheck:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
         elseif place == "top" then
-            readyCheck:SetPoint("TOP", healthBar, "TOP", ox, -2 + oy)
+            readyCheck:SetPoint("TOP", health, "TOP", ox, -2 + oy)
         elseif place == "topright" then
-            readyCheck:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", -2 + ox, -2 + oy)
+            readyCheck:SetPoint("TOPRIGHT", health, "TOPRIGHT", -2 + ox, -2 + oy)
         elseif place == "left" then
-            readyCheck:SetPoint("LEFT", healthBar, "LEFT", 2 + ox, oy)
+            readyCheck:SetPoint("LEFT", health, "LEFT", 2 + ox, oy)
         elseif place == "right" then
-            readyCheck:SetPoint("RIGHT", healthBar, "RIGHT", -2 + ox, oy)
+            readyCheck:SetPoint("RIGHT", health, "RIGHT", -2 + ox, oy)
         elseif place == "bottomleft" then
-            readyCheck:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 2 + ox, 2 + oy)
+            readyCheck:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 2 + ox, 2 + oy)
         elseif place == "bottom" then
-            readyCheck:SetPoint("BOTTOM", healthBar, "BOTTOM", ox, 2 + oy)
+            readyCheck:SetPoint("BOTTOM", health, "BOTTOM", ox, 2 + oy)
         elseif place == "bottomright" then
-            readyCheck:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+            readyCheck:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -2 + ox, 2 + oy)
         else -- center
-            readyCheck:SetPoint("CENTER", healthBar, "CENTER", ox, oy)
+            readyCheck:SetPoint("CENTER", health, "CENTER", ox, oy)
         end
     end
     AnchorReadyCheck()
@@ -1073,12 +1062,12 @@ local function StyleButton(btnFrame)
 
     local function AnchorCombatIcon()
         local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local healthBar = mod.RF_AnchorHost(healthBar, s) -- Uniform Icon Anchoring host swap
+        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
         combatIcon:ClearAllPoints()
         local place = (s.combatIndicatorPosition or "right"):upper()
         combatIcon:SetPoint(
             place,
-            healthBar,
+            health,
             place,
             s.combatIndicatorOffsetX or 0,
             s.combatIndicatorOffsetY or 0
@@ -1340,8 +1329,8 @@ local function StyleButton(btnFrame)
                 return
             end
         end
-        local look = s.powerBorderStyle or "cui"
-        if look == "cui" then
+        local style = s.powerBorderStyle or "cui"
+        if style == "cui" then
             -- CUI style: 1px divider, white at 20% opacity
             Pix.UpdateBorder(d.powerBorderFrame, 1, 1, 1, 1, 0.2)
             d.powerBorderFrame:Show()
@@ -1373,7 +1362,7 @@ local function StyleButton(btnFrame)
         d.powerBorderFrame:Show()
         local ppC = Pix.GetBorders(d.powerBorderFrame)
         if ppC then
-            if look == "divider" then
+            if style == "divider" then
                 if ppC._bottom then
                     ppC._bottom:SetAlpha(0)
                 end
@@ -1502,7 +1491,7 @@ local function StyleButton(btnFrame)
     -- 12.1 aura containers (container shell creation is combat-legal since
     -- 68914, so this rides the deferred styling pass with the rest of the body)
     if mod.RFC_SetupButton then
-        mod.RFC_SetupButton(btnFrame, healthBar, d)
+        mod.RFC_SetupButton(btnFrame, health, d)
     end
 end
 

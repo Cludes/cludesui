@@ -301,13 +301,13 @@ mod._dataBarPreview[XP] = XPPreviewRepaint
 local function BuildXPBarPage(page, hostFrame, yOffset)
     local ABAR = mod._ABO_OptEnv.EAB
     local W = CludesUI.Widgets
-    local Keys = mod.ABO_DataBarKit(hostFrame)
-    local BLIZZ_DIS_TIP, _blizzDis = Keys.BLIZZ_DIS_TIP, Keys.BlizzDis
-    local function Stl()
+    local K = mod.ABO_DataBarKit(hostFrame)
+    local BLIZZ_DIS_TIP, _blizzDis = K.BLIZZ_DIS_TIP, K.BlizzDis
+    local function S()
         return ABAR.db.profile.bars[XP]
     end
     local function Vertical()
-        return Stl().orientation == "VERTICAL"
+        return S().orientation == "VERTICAL"
     end
     -- Row chrome (frames: never on the search pre-build's absorber rows).
     local chrome = not CludesUI._prebuilding
@@ -354,10 +354,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- The setting has no tooltip of its own: Blizz Default explains itself
     -- while hovered in the menu.
     styleValues._menuOpts = {
-        onItemHover = function(key, itemInfo)
-            if key == "default" and itemInfo then
+        onItemHover = function(key, item)
+            if key == "default" and item then
                 CludesUI.ShowWidgetTooltip(
-                    itemInfo,
+                    item,
                     "Blizz Default also switches the reputation bars to Blizzard's."
                 )
             end
@@ -370,7 +370,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     }
     -- XP Bar Style | Visibility (its cog: Click Through); a Never flip
     -- rebuilds the page.
-    local visOpts = Keys.VisOpts(XP, "Visibility", _blizzDis, BLIZZ_DIS_TIP, true)
+    local visOpts = K.VisOpts(XP, "Visibility", _blizzDis, BLIZZ_DIS_TIP, true)
     visOpts.leftCfg = {
         type = "dropdown",
         text = "XP Bar Style",
@@ -382,7 +382,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             return styleValues[val] and val or "cui"
         end,
         setValue = function(val)
-            Keys.AfterSwitch(CludesUI._SetXPBarStyle(val))
+            K.AfterSwitch(CludesUI._SetXPBarStyle(val))
         end,
     }
     local visRow
@@ -393,15 +393,15 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         CludesUI.BuildInlineCog(region, {
             title = "Visibility",
             anchorTo = region._control,
-            rows = { Keys.ClickThroughRow(XP) },
+            rows = { K.ClickThroughRow(XP) },
         })
     end
     -- Rows below are hidden while visibility is Never (a Never flip rebuilds).
-    if Keys.BarIsNever(XP) then
+    if K.BarIsNever(XP) then
         return math.abs(posY)
     end
 
-    posY = Keys.SizeRow(posY, XP)
+    posY = K.SizeRow(posY, XP)
 
     -- Show Dividers (its 5% and 10% colours inline; its settings row below
     -- exists only while it is on) | Orientation (its cog: Vertical Text).
@@ -413,15 +413,15 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            return Stl().showDividers
+            return S().showDividers
         end,
         setValue = CludesUI.SectionToggleSetValue(function(val)
-            Stl().showDividers = val
+            S().showDividers = val
             mod.ApplyDataBarLayout(XP)
         end),
-    }, Keys.OrientCfg({ XP }))
+    }, K.OrientCfg({ XP }))
     posY = posY - hgt
-    Keys.OrientCog(divRowTop._rightRegion, { XP }, true)
+    K.OrientCog(divRowTop._rightRegion, { XP }, true)
     if chrome then
         -- The 5% Ticks swatch also greys while 5% Line Style is None (its
         -- tooltip then names every lock, the row's included).
@@ -430,27 +430,27 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "5% Ticks",
                 hasAlpha = true,
                 disabled = function()
-                    return Stl().divider5Style == "none"
+                    return S().divider5Style == "none"
                 end,
                 disabledTooltip = function()
                     if _blizzDis() then
                         return BLIZZ_DIS_TIP
                     end
-                    if not Stl().showDividers then
+                    if not S().showDividers then
                         return "Show Dividers"
                     end
                     return "This option requires a 5% Line Style other than None"
                 end,
                 rawTooltip = _blizzDis,
                 getValue = function()
-                    local c = Stl().tick5Color
+                    local c = S().tick5Color
                     if c then
                         return c.r or 220 / 255, c.g or 167 / 255, c.b or 127 / 255, c.a or 0.9
                     end
                     return 220 / 255, 167 / 255, 127 / 255, 0.9
                 end,
                 setValue = function(r, g, b, a)
-                    Stl().tick5Color = { r = r, g = g, b = b, a = a or 0.9 }
+                    S().tick5Color = { r = r, g = g, b = b, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -458,21 +458,21 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "10% Lines",
                 hasAlpha = true,
                 getValue = function()
-                    local c = Stl().tick10Color
+                    local c = S().tick10Color
                     if c then
                         return c.r or 1, c.g or 1, c.b or 1, c.a or 0.9
                     end
                     return 1, 1, 1, 0.9
                 end,
                 setValue = function(r, g, b, a)
-                    Stl().tick10Color = { r = r, g = g, b = b, a = a or 0.9 }
+                    S().tick10Color = { r = r, g = g, b = b, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
         }, {
             size = 20,
             disabled = function()
-                return _blizzDis() or not Stl().showDividers
+                return _blizzDis() or not S().showDividers
             end,
             disabledTooltip = function()
                 if _blizzDis() then
@@ -488,7 +488,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- saved smartTicks, which hides the marks the fill has passed) | Divider
     -- Text (its cog: the text's colour, size and offsets), while Show
     -- Dividers is on.
-    if Stl().showDividers then
+    if S().showDividers then
         local divRow
         divRow, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
@@ -499,10 +499,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function()
-                return Stl().divider5Style or "dashed"
+                return S().divider5Style or "dashed"
             end,
             setValue = function(val)
-                Stl().divider5Style = val
+                S().divider5Style = val
                 mod.ApplyDataBarLayout(XP)
                 CludesUI:RefreshPage()
             end,
@@ -513,10 +513,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             disabledTooltip = BLIZZ_DIS_TIP,
             rawTooltip = true,
             getValue = function()
-                return Stl().showDividerText
+                return S().showDividerText
             end,
             setValue = function(val)
-                Stl().showDividerText = val
+                S().showDividerText = val
                 mod.ApplyDataBarLayout(XP)
                 CludesUI:RefreshPage()
             end,
@@ -536,10 +536,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Show Ticks Over Fill Bar",
                         get = function()
-                            return not Stl().smartTicks
+                            return not S().smartTicks
                         end,
                         set = function(val)
-                            Stl().smartTicks = not val
+                            S().smartTicks = not val
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -550,7 +550,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 anchorTo = rRgn._control,
                 captureRegion = rRgn,
                 disabled = function()
-                    return _blizzDis() or not Stl().showDividerText
+                    return _blizzDis() or not S().showDividerText
                 end,
                 disabledTooltip = function()
                     if _blizzDis() then
@@ -564,14 +564,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         type = "colorpicker",
                         label = "Text Color",
                         get = function()
-                            local c = Stl().dividerTextColor
+                            local c = S().dividerTextColor
                             if c then
                                 return c.r or 1, c.g or 1, c.b or 1
                             end
                             return 1, 1, 1
                         end,
                         set = function(r, g, b)
-                            Stl().dividerTextColor = { r = r, g = g, b = b }
+                            S().dividerTextColor = { r = r, g = g, b = b }
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -582,10 +582,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         max = 18,
                         step = 1,
                         get = function()
-                            return Stl().dividerTextSize or 8
+                            return S().dividerTextSize or 8
                         end,
                         set = function(val)
-                            Stl().dividerTextSize = val
+                            S().dividerTextSize = val
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -596,10 +596,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         get = function()
-                            return Stl().dividerTextOffX or 0
+                            return S().dividerTextOffX or 0
                         end,
                         set = function(val)
-                            Stl().dividerTextOffX = val
+                            S().dividerTextOffX = val
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -610,10 +610,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         get = function()
-                            return Stl().dividerTextOffY or 0
+                            return S().dividerTextOffY or 0
                         end,
                         set = function(val)
-                            Stl().dividerTextOffY = val
+                            S().dividerTextOffY = val
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -665,7 +665,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     -- A text's saved value (the bar text: unset reads as the old Default).
     local function SlotRaw(stem, i)
-        local val = Stl()[SlotKey(stem, i)]
+        local val = S()[SlotKey(stem, i)]
         if val == nil and IsBarText(stem, i) then
             return "classic"
         end
@@ -677,11 +677,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Default, as the bar does.
     local function SlotItems(stem, i, result)
         local val = SlotRaw(stem, i)
-        local kindOf, legacy, render = mod.XPTextItems(val, Stl(), result)
-        if not kindOf and IsBarText(stem, i) and val ~= "none" then
-            kindOf, legacy, render = mod.XPTextItems("classic", Stl(), result)
+        local kind, legacy, render = mod.XPTextItems(val, S(), result)
+        if not kind and IsBarText(stem, i) and val ~= "none" then
+            kind, legacy, render = mod.XPTextItems("classic", S(), result)
         end
-        return kindOf, legacy, render
+        return kind, legacy, render
     end
     local scratch = {}
     local function Shows(stem, i)
@@ -697,7 +697,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Takes a text off: its value, Show Rested and its own size and offsets
     -- (the bar text: "none", its placement is the bar text's own).
     local function ClearSlot(stem, i)
-        local s, key = Stl(), SlotKey(stem, i)
+        local s, key = S(), SlotKey(stem, i)
         s[key .. "Rested"] = nil
         if IsBarText(stem, i) then
             s[key] = "none"
@@ -719,7 +719,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if not jdx then
             return
         end
-        local s, from, to = Stl(), SlotKey(stem, i), SlotKey(toStem, jdx)
+        local s, from, to = S(), SlotKey(stem, i), SlotKey(toStem, jdx)
         local val = SlotRaw(stem, i)
         -- The bar text shows a value it does not know as Default: so it moves.
         if not mod.XPTextItems(val, s, scratch) then
@@ -727,12 +727,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
         local rested = s[from .. "Rested"]
         local carry = not IsBarText(stem, i)
-        local dim, ox, oy = s[from .. "Size"], s[from .. "XOffset"], s[from .. "YOffset"]
+        local size, ox, oy = s[from .. "Size"], s[from .. "XOffset"], s[from .. "YOffset"]
         ClearSlot(stem, i)
         s[to] = val
         s[to .. "Rested"] = rested
         if not IsBarText(toStem, jdx) then
-            s[to .. "Size"] = carry and dim or nil
+            s[to .. "Size"] = carry and size or nil
             s[to .. "XOffset"] = carry and ox or nil
             s[to .. "YOffset"] = carry and oy or nil
         end
@@ -746,7 +746,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if not position then
             return
         end
-        local s, key = Stl(), SlotKey(stem, position)
+        local s, key = S(), SlotKey(stem, position)
         if not IsBarText(stem, position) then
             ClearSlot(stem, position)
         end
@@ -783,8 +783,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
     end
     local function EntryLabel(e)
-        local baseValue = CludesUI.L(e.pos.label)
-        return e.rank > 1 and (baseValue .. " " .. e.rank) or baseValue
+        local base = CludesUI.L(e.pos.label)
+        return e.rank > 1 and (base .. " " .. e.rank) or base
     end
     -- Every text but the bar text draws on a horizontal bar only.
     local function EntryLocked(e)
@@ -799,7 +799,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- A value's name: its items' names, " - " between them (nil for nothing).
     local labelScratch = {}
     local function ValueLabel(val)
-        if not mod.XPTextItems(val, Stl(), labelScratch) then
+        if not mod.XPTextItems(val, S(), labelScratch) then
             return nil
         end
         local nameList = {}
@@ -842,7 +842,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 return SlotRaw(stem, i) or "none"
             end,
             setValue = function(val)
-                Stl()[SlotKey(stem, i)] = val
+                S()[SlotKey(stem, i)] = val
                 mod.ApplyDataBarLayout(XP)
             end,
         }
@@ -854,7 +854,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- for another setting).
     local function WriteSlot(stem, i, val, region)
         local snap = region and CludesUI._SOAttribution(region)
-        local s, key = Stl(), SlotKey(stem, i)
+        local s, key = S(), SlotKey(stem, i)
         local _, legacy = SlotItems(stem, i, scratch)
         if legacy and s[key .. "Rested"] == nil then
             s[key .. "Rested"] = true
@@ -890,16 +890,16 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             disabledTooltip = "This option requires Current %, Current or Current / Max",
             get = function()
                 local _, legacy = SlotItems(stem, i, scratch)
-                return mod.XPTextRested(Stl(), key, legacy)
+                return mod.XPTextRested(S(), key, legacy)
             end,
             set = function(val)
                 -- An old value the bar still draws as it was (the old Default
                 -- aside, whose rested part follows this) becomes its items.
                 local _, _, render = SlotItems(stem, i, scratch)
                 if render and render ~= "classic" then
-                    Stl()[SlotKey(stem, i)] = table.concat(scratch, ",")
+                    S()[SlotKey(stem, i)] = table.concat(scratch, ",")
                 end
-                Stl()[key] = val and true or false
+                S()[key] = val and true or false
                 mod.ApplyDataBarLayout(XP)
             end,
         }
@@ -932,18 +932,18 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
         -- The checked items in the list's order (k turned on or off first).
         local function WriteChecked(sequence, k, on)
-            local group = {}
+            local set = {}
             if SlotItems(stem, i, own) == "top" then
                 for num = 1, #own do
-                    group[own[num]] = true
+                    set[own[num]] = true
                 end
             end
             if k then
-                group[k] = on or nil
+                set[k] = on or nil
             end
             local result = {}
             for num = 1, #sequence do
-                if group[sequence[num]] then
+                if set[sequence[num]] then
                     result[#result + 1] = sequence[num]
                 end
             end
@@ -1045,9 +1045,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
         local function SyncLock()
-            local offset = EntryLocked(e)
-            cbDD:SetAlpha(offset and 0.3 or 1)
-            cbDD:EnableMouse(not offset)
+            local off = EntryLocked(e)
+            cbDD:SetAlpha(off and 0.3 or 1)
+            cbDD:EnableMouse(not off)
         end
         SyncLock()
         CludesUI.RegisterWidgetRefresh(SyncLock)
@@ -1065,10 +1065,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 max = 24,
                 step = 1,
                 get = function()
-                    return Stl()[sizeKey] or Stl().textSize or 9
+                    return S()[sizeKey] or S().textSize or 9
                 end,
                 set = function(val)
-                    Stl()[sizeKey] = val
+                    S()[sizeKey] = val
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1079,10 +1079,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 max = 150,
                 step = 1,
                 get = function()
-                    return Stl()[xKey] or 0
+                    return S()[xKey] or 0
                 end,
                 set = function(val)
-                    Stl()[xKey] = val
+                    S()[xKey] = val
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1093,10 +1093,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 max = 150,
                 step = 1,
                 get = function()
-                    return Stl()[yKey] or 0
+                    return S()[yKey] or 0
                 end,
                 set = function(val)
-                    Stl()[yKey] = val
+                    S()[yKey] = val
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1392,7 +1392,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         PositionPicker(region, c)
         ItemsDropdown(region, c)
         if IsBarText(c.pos.stem, c.i) then
-            Keys.TextCog(region, XP, { RestedRow(c.pos.stem, c.i) })
+            K.TextCog(region, XP, { RestedRow(c.pos.stem, c.i) })
         else
             SlotCog(region, c)
         end
@@ -1406,11 +1406,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     for k = 1, #cells, 2 do
         local l, r = cells[k], cells[k + 1]
-        local rowFrame
-        rowFrame, hgt = W:DualRow(hostFrame, posY, CellCfg(l), CellCfg(r))
+        local row
+        row, hgt = W:DualRow(hostFrame, posY, CellCfg(l), CellCfg(r))
         posY = posY - hgt
-        CellChrome(rowFrame._leftRegion, l)
-        CellChrome(rowFrame._rightRegion, r)
+        CellChrome(row._leftRegion, l)
+        CellChrome(row._rightRegion, r)
     end
 
     _, hgt = W:Spacer(hostFrame, posY, 12)
@@ -1426,17 +1426,17 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- set) | Text Background (its colour and opacity inline): a box behind
     -- every text shown.
     local textBgRow
-    textBgRow, hgt = W:DualRow(hostFrame, posY, Keys.TextSizeCfg(XP), {
+    textBgRow, hgt = W:DualRow(hostFrame, posY, K.TextSizeCfg(XP), {
         type = "toggle",
         text = "Text Background",
         disabled = _blizzDis,
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            return Stl().showTextBg
+            return S().showTextBg
         end,
         setValue = function(val)
-            Stl().showTextBg = val
+            S().showTextBg = val
             mod.ApplyDataBarLayout(XP)
             CludesUI:RefreshPage()
         end,
@@ -1448,21 +1448,21 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "Background Color",
                 hasAlpha = true,
                 getValue = function()
-                    local c = Stl().textBgColor
+                    local c = S().textBgColor
                     if c then
                         return c.r or 0.06, c.g or 0.06, c.b or 0.08, c.a or 0.9
                     end
                     return 0.06, 0.06, 0.08, 0.9
                 end,
                 setValue = function(r, g, b, a)
-                    Stl().textBgColor = { r = r, g = g, b = b, a = a or 0.9 }
+                    S().textBgColor = { r = r, g = g, b = b, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
         }, {
             size = 20,
             disabled = function()
-                return _blizzDis() or not Stl().showTextBg
+                return _blizzDis() or not S().showTextBg
             end,
             disabledTooltip = function()
                 if _blizzDis() then
@@ -1476,7 +1476,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
 
     -- Border Style | Border Size, no Custom Border toggle: the plain line
     -- shows as Solid 1px until the first edit turns the border on.
-    posY = Keys.BorderRows(posY, XP, true)
+    posY = K.BorderRows(posY, XP, true)
 
     -- Fill Style: Custom Color (the fill colour swatches inline: Custom,
     -- Accent, Reactive), Horizontal / Vertical Gradient (s.fillGradient; its
@@ -1504,11 +1504,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     local GRAD_KEY = { HORIZONTAL = "gradH", VERTICAL = "gradV" }
     local GRAD_DIR = { gradH = "HORIZONTAL", gradV = "VERTICAL" }
     local function FillKey()
-        local f = Stl().fvFill
+        local f = S().fvFill
         if f and fillVals[f] then
             return f
         end
-        return GRAD_KEY[Stl().fillGradient] or "custom"
+        return GRAD_KEY[S().fillGradient] or "custom"
     end
     local function FillKind()
         local k = FillKey()
@@ -1534,7 +1534,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         getValue = FillKey,
         setValue = function(val)
             local was = FillKind()
-            local s = Stl()
+            local s = S()
             s.fillGradient = GRAD_DIR[val]
             s.fvFill = (val ~= "custom" and not GRAD_DIR[val]) and val or nil
             mod.ApplyDataBarLayout(XP)
@@ -1553,14 +1553,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            local c = Stl().restedColor
+            local c = S().restedColor
             if c then
                 return c.r or 0.15, c.g or 0.30, c.b or 0.60, c.a or 0.5
             end
             return 0.15, 0.30, 0.60, 0.5
         end,
         setValue = function(r, g, b, a)
-            Stl().restedColor = { r = r, g = g, b = b, a = a or 0.5 }
+            S().restedColor = { r = r, g = g, b = b, a = a or 0.5 }
             mod.ApplyDataBarLayout(XP)
         end,
     })
@@ -1570,7 +1570,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         if Custom() then
             CludesUI.BuildInlineSwatches(
                 region,
-                Keys.ColorSwatches(XP),
+                K.ColorSwatches(XP),
                 { size = 20, disabled = _blizzDis, disabledTooltip = BLIZZ_DIS_TIP, rawTooltip = true }
             )
         elseif FillKind() == "gradient" then
@@ -1579,11 +1579,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     tooltip = "Gradient Start Color",
                     hasAlpha = true,
                     getValue = function()
-                        local _, r, g, b, a = mod.XPBarGradient(Stl())
+                        local _, r, g, b, a = mod.XPBarGradient(S())
                         return r, g, b, a
                     end,
                     setValue = function(r, g, b, a)
-                        Stl().fillGradStart = { r = r, g = g, b = b, a = a or 1 }
+                        S().fillGradStart = { r = r, g = g, b = b, a = a or 1 }
                         mod.ApplyDataBarLayout(XP)
                     end,
                 },
@@ -1591,11 +1591,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     tooltip = "Gradient End Color",
                     hasAlpha = true,
                     getValue = function()
-                        local _, _, _, _, _, r, g, b, a = mod.XPBarGradient(Stl())
+                        local _, _, _, _, _, r, g, b, a = mod.XPBarGradient(S())
                         return r, g, b, a
                     end,
                     setValue = function(r, g, b, a)
-                        Stl().fillGradEnd = { r = r, g = g, b = b, a = a or 1 }
+                        S().fillGradEnd = { r = r, g = g, b = b, a = a or 1 }
                         mod.ApplyDataBarLayout(XP)
                     end,
                 },
@@ -1619,14 +1619,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         label = "Animate on XP Gain",
                         tooltip = "Plays the animation once each time you gain XP.",
                         get = function()
-                            return Stl().fvFillSmart ~= false and not Stl().fvFillAnim
+                            return S().fvFillSmart ~= false and not S().fvFillAnim
                         end,
                         set = function(on)
                             if on then
-                                Stl().fvFillSmart = nil
-                                Stl().fvFillAnim = nil
+                                S().fvFillSmart = nil
+                                S().fvFillAnim = nil
                             else
-                                Stl().fvFillSmart = false
+                                S().fvFillSmart = false
                             end
                             mod.ApplyDataBarLayout(XP)
                         end,
@@ -1636,14 +1636,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         label = "Loop Animation",
                         tooltip = "Plays the animation continuously.",
                         get = function()
-                            return Stl().fvFillAnim == true
+                            return S().fvFillAnim == true
                         end,
                         set = function(on)
                             if on then
-                                Stl().fvFillAnim = true
-                                Stl().fvFillSmart = false
+                                S().fvFillAnim = true
+                                S().fvFillSmart = false
                             else
-                                Stl().fvFillAnim = nil
+                                S().fvFillAnim = nil
                             end
                             mod.ApplyDataBarLayout(XP)
                         end,
@@ -1653,10 +1653,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         label = "Stretch to Bar",
                         tooltip = "Stretches the animation across the whole bar.",
                         get = function()
-                            return Stl().fvFillStretch
+                            return S().fvFillStretch
                         end,
                         set = function(on)
-                            Stl().fvFillStretch = on or nil
+                            S().fvFillStretch = on or nil
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -1680,30 +1680,30 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            local _, _, _, op = mod.XPBarBackground(Stl())
+            local _, _, _, op = mod.XPBarBackground(S())
             return op
         end,
         setValue = function(val)
-            local _, _, _, was = mod.XPBarBackground(Stl())
-            Stl().barBgOpacity = val
+            local _, _, _, was = mod.XPBarBackground(S())
+            S().barBgOpacity = val
             mod.ApplyDataBarLayout(XP)
             -- The colour swatch locks at 0%: refresh only on that edge.
             if (was <= 0) ~= (val <= 0) then
                 CludesUI:RefreshPage()
             end
         end,
-    }, Keys.TexCfg(XP))
+    }, K.TexCfg(XP))
     posY = posY - hgt
     if chrome then
         CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
             {
                 tooltip = "Background Color",
                 getValue = function()
-                    local r, g, b = mod.XPBarBackground(Stl())
+                    local r, g, b = mod.XPBarBackground(S())
                     return r, g, b
                 end,
                 setValue = function(r, g, b)
-                    Stl().barBgColor = { r = r, g = g, b = b }
+                    S().barBgColor = { r = r, g = g, b = b }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1713,7 +1713,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 if _blizzDis() then
                     return true
                 end
-                local _, _, _, op = mod.XPBarBackground(Stl())
+                local _, _, _, op = mod.XPBarBackground(S())
                 return op <= 0
             end,
             disabledTooltip = function()
@@ -1737,10 +1737,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            return Stl().questOverlay
+            return S().questOverlay
         end,
         setValue = function(val)
-            Stl().questOverlay = val
+            S().questOverlay = val
             mod.ApplyDataBarLayout(XP)
             CludesUI:RefreshPage()
         end,
@@ -1749,7 +1749,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     if chrome then
         local region = questRow._leftRegion
         local function overlayOff()
-            return _blizzDis() or not Stl().questOverlay
+            return _blizzDis() or not S().questOverlay
         end
         CludesUI.BuildInlineCog(region, {
             title = "Quest XP Overlay",
@@ -1768,10 +1768,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     label = "Completed Quests Only",
                     tooltip = "Only counts quests that are ready to turn in.",
                     get = function()
-                        return Stl().questOverlayCompleted
+                        return S().questOverlayCompleted
                     end,
                     set = function(val)
-                        Stl().questOverlayCompleted = val or nil
+                        S().questOverlayCompleted = val or nil
                         mod.ApplyDataBarLayout(XP)
                         CludesUI:RefreshPage()
                     end,
@@ -1781,10 +1781,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     label = "Current Zone Only",
                     tooltip = "Only counts quests in your current zone.",
                     get = function()
-                        return Stl().questOverlayZone
+                        return S().questOverlayZone
                     end,
                     set = function(val)
-                        Stl().questOverlayZone = val or nil
+                        S().questOverlayZone = val or nil
                         mod.ApplyDataBarLayout(XP)
                     end,
                 },
@@ -1795,10 +1795,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "Completed Color",
                 hasAlpha = true,
                 getValue = function()
-                    return mod.XPQuestColor(Stl(), true)
+                    return mod.XPQuestColor(S(), true)
                 end,
                 setValue = function(r, g, b, a)
-                    Stl().questOverlayDoneColor = { r = r, g = g, b = b, a = a or 0.6 }
+                    S().questOverlayDoneColor = { r = r, g = g, b = b, a = a or 0.6 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1806,28 +1806,28 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "Incomplete Color",
                 hasAlpha = true,
                 disabled = function()
-                    return Stl().questOverlayCompleted
+                    return S().questOverlayCompleted
                 end,
                 disabledTooltip = function()
                     if _blizzDis() then
                         return BLIZZ_DIS_TIP
                     end
-                    if not Stl().questOverlay then
+                    if not S().questOverlay then
                         return "Quest XP Overlay"
                     end
                     return "Completed Quests Only"
                 end,
                 requireState = function()
-                    if Stl().questOverlay and not _blizzDis() then
+                    if S().questOverlay and not _blizzDis() then
                         return "disabled"
                     end
                 end,
                 rawTooltip = _blizzDis,
                 getValue = function()
-                    return mod.XPQuestColor(Stl(), false)
+                    return mod.XPQuestColor(S(), false)
                 end,
                 setValue = function(r, g, b, a)
-                    Stl().questOverlayColor = { r = r, g = g, b = b, a = a or 0.6 }
+                    S().questOverlayColor = { r = r, g = g, b = b, a = a or 0.6 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },

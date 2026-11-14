@@ -109,12 +109,12 @@ end
 
 -- Sorted array of every curated spell id: the Search Spells popup universe.
 function mod.BM2_AllPresetSpells()
-    local group = {}
+    local set = {}
     for _, spells in pairs(DEFAULT_FILTER_SPELLS) do
-        for ident in pairs(spells) do group[ident] = true end
+        for ident in pairs(spells) do set[ident] = true end
     end
     local result = {}
-    for ident in pairs(group) do result[#result + 1] = ident end
+    for ident in pairs(set) do result[#result + 1] = ident end
     table.sort(result)
     return result
 end
@@ -122,7 +122,7 @@ end
 -------------------------------------------------------------------------------
 -- Storage
 -------------------------------------------------------------------------------
-local function Prm()
+local function P()
     return mod.db and mod.db.profile
 end
 
@@ -143,10 +143,10 @@ end
 local function SameSpellSet(a, b)
     a, b = a or {}, b or {}
     if #a ~= #b then return false end
-    local group = {}
-    for idx = 1, #a do group[a[idx]] = true end
+    local set = {}
+    for idx = 1, #a do set[a[idx]] = true end
     for idx = 1, #b do
-        if not group[b[idx]] then return false end
+        if not set[b[idx]] then return false end
     end
     return true
 end
@@ -167,13 +167,13 @@ end
 -- Untouched = every field the stored indicator carries matches the freshly
 -- built default (fields the default lacks are ignored). When in doubt migrate:
 -- copying a near-default setup is harmless, dropping a customized one is not.
-local function IndMatchesDefault(ind, spec_def)
+local function IndMatchesDefault(ind, def)
     if (ind.type or "icon") ~= "icon" then return false end
-    if ind.position ~= spec_def.position then return false end
-    if not SameSpellSet(ind.spells, spec_def.spells) then return false end
+    if ind.position ~= def.position then return false end
+    if not SameSpellSet(ind.spells, def.spells) then return false end
     for k, v in pairs(ind) do
         if k ~= "id" and k ~= "spells" and k ~= "position" then
-            local dv = spec_def[k]
+            local dv = def[k]
             if dv ~= nil and not SameValue(v, dv) then return false end
         end
     end
@@ -186,10 +186,10 @@ local function IsDefaultBucket(specKey, entries)
     if not newInd or not presets then return #entries == 0 end
     if #entries ~= #presets then return false end
     for idx = 1, #presets do
-        local spec_def = newInd("icon", presets[idx].spells)
-        spec_def.position = presets[idx].pos
-        if presets[idx].pos == "TOPRIGHT" then spec_def.growDirection = "LEFT" end
-        if not IndMatchesDefault(entries[idx], spec_def) then return false end
+        local def = newInd("icon", presets[idx].spells)
+        def.position = presets[idx].pos
+        if presets[idx].pos == "TOPRIGHT" then def.growDirection = "LEFT" end
+        if not IndMatchesDefault(entries[idx], def) then return false end
     end
     return true
 end
@@ -279,7 +279,7 @@ local function ImportLegacyProfile(p, b)
 end
 
 local function Store()
-    local p = Prm()
+    local p = P()
     if not p then return nil end
     local b = p.bm2
     -- WoW Forever: the one-time buff clear ("fvBuffWipe" is its frozen mark,
@@ -317,12 +317,12 @@ end
 -- content (healer keys + the shared non-healer key) pre-seeded EMPTY, so nothing
 -- renders anywhere until the user builds it; the additive group buckets start
 -- empty either way.
-function _G._CURF_BM2PresetFork(kindOf)
+function _G._CURF_BM2PresetFork(kind)
     local result = { specs = {}, seeded = {} }
     -- WoW Forever builds "default" exactly like "empty": nothing seeds there,
     -- and the pre-seeded payload reads blank on the other client as well
     -- (CludesUI_Migration.lua).
-    if kindOf ~= "empty" and not (FVBW and FVBW.ClientOK()) then return result end
+    if kind ~= "empty" and not (FVBW and FVBW.ClientOK()) then return result end
     local function Empty(key)
         result.specs[key] = { nextId = 1000001, inds = {} }
         result.seeded[key] = true
@@ -377,15 +377,15 @@ local function EnsureFilters()
     local b = Store()
     if not b then return nil end
     for idx = 1, #PRESET_FILTERS do
-        local spec_def = PRESET_FILTERS[idx]
-        local f = FindPreset(b, spec_def.key)
+        local def = PRESET_FILTERS[idx]
+        local f = FindPreset(b, def.key)
         if not f then
-            f = { id = b.filters.nextId, name = spec_def.name, preset = spec_def.key,
+            f = { id = b.filters.nextId, name = def.name, preset = def.key,
                 spells = {}, custom = {} }
             b.filters.nextId = b.filters.nextId + 1
             b.filters.list[#b.filters.list + 1] = f
         end
-        local curated = DEFAULT_FILTER_SPELLS[spec_def.key]
+        local curated = DEFAULT_FILTER_SPELLS[def.key]
         if curated then
             for ident, details in pairs(curated) do
                 if f.spells[ident] == nil and not f.custom[ident] then
@@ -402,7 +402,7 @@ local function EnsureFilters()
         -- client keeps those checkbox states for its next visit there
         -- (OtherClientSpell keeps them inert here). Clearing a key in pairs()
         -- is legal in 5.1.
-        local other = OTHER_IDS[spec_def.key]
+        local other = OTHER_IDS[def.key]
         for ident in pairs(f.spells) do
             if not (curated and curated[ident]) and not f.custom[ident]
                 and not (other and other[ident]) then
@@ -413,7 +413,7 @@ local function EnsureFilters()
     -- WoW Forever: the starter seed, decided once per store now that the
     -- preset filters exist ("fvBmSeed" is its frozen mark,
     -- CludesUI_Migration.lua). A marked store costs one field read.
-    if FVBW and b.fvBmSeed == nil and FVBW.SeedStarter(Prm(), b) then
+    if FVBW and b.fvBmSeed == nil and FVBW.SeedStarter(P(), b) then
         mod.BM2_Invalidate()
     end
     return b
@@ -922,7 +922,7 @@ end
 -- mutates ind.spells without bumping the edit generation, so a generation-keyed cache
 -- would serve stale unions after a spell edit.
 function mod.BM2_ResolveSpellsOwn(ind)
-    local group = {} -- id -> own-only boolean
+    local set = {} -- id -> own-only boolean
     -- WoW Forever: a rank alternate counts as its family's primary (nil on
     -- every other client). Per-extra own flags stay keyed by the stored id.
     local ap = mod.BM2_ForeverAltPrimary
@@ -935,11 +935,11 @@ function mod.BM2_ResolveSpellsOwn(ind)
         for ident in pairs(ind.exactSpells) do typed[ident] = true end
     end
     local function Add(ident, own)
-        local current = group[ident]
+        local current = set[ident]
         if current == nil then
-            group[ident] = own and true or false
+            set[ident] = own and true or false
         elseif current and not own then
-            group[ident] = false
+            set[ident] = false
         end
     end
     if ind.spells then
@@ -987,7 +987,7 @@ function mod.BM2_ResolveSpellsOwn(ind)
                 for ident, on in pairs(f.spells) do
                     local k = (ap and ap[ident]) or ident
                     if on and not (direct and direct[k])
-                        and not OtherClientSpell(f, ident) then group[k] = nil end
+                        and not OtherClientSpell(f, ident) then set[k] = nil end
                 end
             end
         end
@@ -997,18 +997,18 @@ function mod.BM2_ResolveSpellsOwn(ind)
     -- talent/rank id. Alt ids ride the engine include maps instead
     -- (BmIncludeMap consults BM2_PresetAlts) so they still match their slot.
     local result = {}
-    for ident in pairs(group) do result[#result + 1] = ident end
+    for ident in pairs(set) do result[#result + 1] = ident end
     table.sort(result)
     local exact
     if typed then
         for ident in pairs(typed) do
-            if group[ident] ~= nil and not FamilySource(ind, ident) then
+            if set[ident] ~= nil and not FamilySource(ind, ident) then
                 exact = exact or {}
                 exact[ident] = true
             end
         end
     end
-    return result, group, exact
+    return result, set, exact
 end
 
 function mod.BM2_ResolveSpells(ind)
@@ -1061,8 +1061,8 @@ function mod.BM2_PreferredSpell(ind, classOverride)
     local resolved = mod.BM2_ResolveSpells(ind)
     if #resolved == 0 then return nil end
     local _, playerClass = UnitClass("player")
-    local classFile = classOverride or playerClass
-    local useKnown = classFile == playerClass
+    local class = classOverride or playerClass
+    local useKnown = class == playerClass
     local classPick, allPick
     for idx = 1, #resolved do
         local ident = resolved[idx]
@@ -1077,7 +1077,7 @@ function mod.BM2_PreferredSpell(ind, classOverride)
             end
         end
         local c = SPELL_CLASS[ident]
-        if not classPick and c == classFile then classPick = ident end
+        if not classPick and c == class then classPick = ident end
         if not allPick and c == "ALL" then allPick = ident end
     end
     return classPick or allPick or resolved[1]

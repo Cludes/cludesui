@@ -52,12 +52,12 @@ function mod.RegisterTBBUnlockElements()
     for i, conf in ipairs(barList) do
         local position = i
         local posKey = tostring(position)
-        local barFrame = tbbFrames[position]
+        local bar = tbbFrames[position]
         local barGid = mod.TBBBarGroupID(conf)
         local isGroupMover = barGid ~= 0
             and position == mod.TBBGroupAnchorIndex(barGid)
             and mod.TBBGroupedCount(barGid) >= 2
-        if barFrame then
+        if bar then
             elements[#elements + 1] = MK({
                 key = "TBB_" .. posKey,
                 label = isGroupMover

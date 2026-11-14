@@ -101,39 +101,39 @@ local function Rebuild()
         boxHolder = nil
     end
     built = key
-    local dim = Get("iconSize")
+    local size = Get("iconSize")
     for idx, d in ipairs(entries) do
         local c = Cell(idx)
-        c:SetSize(dim, dim)
+        c:SetSize(size, size)
         c:ClearAllPoints()
-        c:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (dim + GAP), 0)
+        c:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
         c.missing:SetTexture(C_Spell.GetSpellTexture(d.ids[1]))
         c:Show()
     end
     for idx = #entries + 1, #cells do
         cells[idx]:Hide()
     end
-    holderFrame:SetSize(math.max(1, #entries) * (dim + GAP) - GAP, dim)
+    holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
     if #entries == 0 then
         return
     end
 
-    AK.styles[STYLE] = { width = dim, height = dim }
+    AK.styles[STYLE] = { width = size, height = size }
     local success, err = pcall(function()
         local cont = AK.CreateContainerShell(holderFrame, { point = { "TOPLEFT", holderFrame, "TOPLEFT" } })
         for idx, d in ipairs(entries) do
-            local group = {}
+            local set = {}
             for _, ident in ipairs(d.ids) do
-                group[ident] = true
+                set[ident] = true
             end
-            local cellFrame = cells[idx]
+            local cell = cells[idx]
             AK.AddSlotToContainer(cont, {
                 key = d.key,
                 filter = { "HARMFUL" },
-                candidateFilters = { includeSpellIDs = group },
+                candidateFilters = { includeSpellIDs = set },
                 style = STYLE,
                 extraInit = function(btnFrame)
-                    btnFrame:SetAllPoints(cellFrame)
+                    btnFrame:SetAllPoints(cell)
                     -- Display only: an aura button takes the mouse by default.
                     if btnFrame.SetMouseClickEnabled then
                         btnFrame:SetMouseClickEnabled(false)
@@ -234,8 +234,8 @@ F.Start(Apply, {
     end,
     size = function()
         local num = math.max(1, #Picked())
-        local dim = Get("iconSize")
-        return num * dim + (num - 1) * GAP, dim
+        local size = Get("iconSize")
+        return num * size + (num - 1) * GAP, size
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

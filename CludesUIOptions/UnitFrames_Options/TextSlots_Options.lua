@@ -116,8 +116,8 @@ end
 -- complement; Custom writes its own %, so it keeps only the Name Format, and
 -- only while the format shows a name.
 local PCT_TIP = "This option is only available for formats that display a percentage."
-function mod.UFO_PowerTextCog(get, group, pctOff, setShowPct)
-    local rowList = mod.UF_NameFormatRows("powerText", "perpp", get, group, {
+function mod.UFO_PowerTextCog(get, set, pctOff, setShowPct)
+    local rowList = mod.UF_NameFormatRows("powerText", "perpp", get, set, {
         {
             type = "toggle",
             label = "Show %",
@@ -166,8 +166,8 @@ function mod.UFO_AddCustomFormatAccessor(region, labelText, prefixText, contentF
 end
 
 -- Level coloring is shared by the unit, and edited from its level-text cogs.
-function mod.UF_CoreTextRows(prefixText, contentDefault, get, group, rowList)
-    rowList = mod.UF_NameFormatRows(prefixText, contentDefault, get, group, rowList)
+function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
+    rowList = mod.UF_NameFormatRows(prefixText, contentDefault, get, set, rowList)
     local contentFrame = get(prefixText .. "Content", contentDefault)
     local parsed = contentFrame == "custom"
         and CludesUI.TextTags.Parse(mod.UF_TextTags, get(prefixText .. "CustomFormat"))
@@ -186,7 +186,7 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, group, rowList)
             return get("levelDifficultyColor", false) == true
         end,
         set = function(val)
-            group("levelDifficultyColor", val)
+            set("levelDifficultyColor", val)
             mod._UFO_OptEnv.UpdatePreview()
         end,
     }
@@ -202,7 +202,7 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, group, rowList)
             return get("levelDifficultyColorFriendly", false) == true
         end,
         set = function(val)
-            group("levelDifficultyColorFriendly", val)
+            set("levelDifficultyColorFriendly", val)
             mod._UFO_OptEnv.UpdatePreview()
         end,
     }
@@ -210,10 +210,10 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, group, rowList)
 end
 
 -- Keep the unit-frame settings and inline controls; only the list changes.
-function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
-    local headerFrame, headerH = Widgets:SectionHeader(hostFrame, "CORE TEXT POSITIONS", posY)
+function mod.UFO_BuildTextSlots(W, hostFrame, posY, options)
+    local header, headerH = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", posY)
     posY = posY - headerH
-    hostFrame._ufTextHeader = headerFrame
+    hostFrame._ufTextHeader = header
     local slots, sequence, values = options.slots, {}, {}
     local byKey, cells, targets = {}, {}, {}
     local textValues = CopyTable(options.values)
@@ -309,7 +309,7 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
         end
         local db = options.db()
         local contentFrame = byKey[source].cfg.getValue()
-        local dim = db[source .. "Size"] or db.textSize or 12
+        local size = db[source .. "Size"] or db.textSize or 12
         for idx = 1, #MOVE_KEYS do
             local suffix = MOVE_KEYS[idx]
             -- The format moves only with Custom; otherwise the destination keeps its own.
@@ -321,7 +321,7 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
                 db[dest .. suffix] = val
             end
         end
-        db[dest .. "Size"] = dim
+        db[dest .. "Size"] = size
         if dest == "extraText" then
             db.extraTextAlign = source == "rightText" and "right"
                 or source == "centerText" and "center"
@@ -356,13 +356,13 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
         return c.cfg or c
     end
     local firstRow
-    local function Finish(rowFrame, sideName, cellFrame)
-        if not cellFrame then
+    local function Finish(row, side, cell)
+        if not cell then
             return
         end
-        firstRow = firstRow or rowFrame
-        local region = rowFrame[sideName]
-        if cellFrame == addCfg then
+        firstRow = firstRow or row
+        local region = row[side]
+        if cell == addCfg then
             if not CludesUI._prebuilding then
                 addOpen = CludesUI.AttachButtonMenu(region._control, {
                     width = 220,
@@ -376,10 +376,10 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
             end
             return
         end
-        if not cellFrame.key then
+        if not cell.key then
             return
         end
-        targets[cellFrame.key] = { row = rowFrame, side = sideName }
+        targets[cell.key] = { row = row, side = side }
         if CludesUI._prebuilding then
             return
         end
@@ -387,34 +387,34 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
             order = sequence,
             values = values,
             getValue = function()
-                return cellFrame.key
+                return cell.key
             end,
             setValue = function(val)
-                Move(cellFrame.key, val)
+                Move(cell.key, val)
             end,
             itemDisabled = function(val)
-                if not Assigned(cellFrame.key) then
+                if not Assigned(cell.key) then
                     return true
                 end
-                if val ~= cellFrame.key and Assigned(val) then
+                if val ~= cell.key and Assigned(val) then
                     return true
                 end
             end,
             tooltip = "Choose this text's slot position.",
         })
-        cellFrame.decorate(region)
-        if cellFrame.cfg.values and cellFrame.cfg.values.custom then
+        cell.decorate(region)
+        if cell.cfg.values and cell.cfg.values.custom then
             mod.UFO_AddCustomFormatAccessor(
                 region,
-                cellFrame.position,
-                cellFrame.key,
-                cellFrame.cfg.getValue(),
+                cell.position,
+                cell.key,
+                cell.cfg.getValue(),
                 options.db,
                 options.apply
             )
         end
         local pending = mod._ufTextNotify
-        if pending and pending.unit == options.unit and pending.key == cellFrame.key then
+        if pending and pending.unit == options.unit and pending.key == cell.key then
             mod._ufTextNotify = nil
             -- The slot read now, while this build's cell is its dress.
             local snap = CludesUI._SOAttribution(region)
@@ -422,10 +422,10 @@ function mod.UFO_BuildTextSlots(Widgets, hostFrame, posY, options)
         end
     end
     for idx = 1, #cells, 2 do
-        local rowFrame, hgt = Widgets:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
+        local row, hgt = W:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
         posY = posY - hgt
-        Finish(rowFrame, "_leftRegion", cells[idx])
-        Finish(rowFrame, "_rightRegion", cells[idx + 1])
+        Finish(row, "_leftRegion", cells[idx])
+        Finish(row, "_rightRegion", cells[idx + 1])
     end
     hostFrame._ufTextCells = targets
     if not CludesUI._prebuilding then

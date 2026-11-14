@@ -20,7 +20,7 @@ local GetCursorPosition = GetCursorPosition
 local InCombatLockdown = InCombatLockdown
 local GetTime = GetTime
 
-local LIVE_STRATA, liveFrame, Prm = Inner.LIVE_STRATA, Inner.liveFrame, Inner.P
+local LIVE_STRATA, liveFrame, P = Inner.LIVE_STRATA, Inner.liveFrame, Inner.P
 local LATCH_TIMEOUT, OPEN_TIMEOUT = Inner.LATCH_TIMEOUT, Inner.OPEN_TIMEOUT
 local secureButtons, SetLiveView = Inner.secureButtons, Inner.SetLiveView
 local SetScrollCatcher = Inner.SetScrollCatcher
@@ -323,7 +323,7 @@ local function PositionPalette(forceFixed)
 end
 
 function mod.Open(paletteIndex)
-    local p = Prm()
+    local p = P()
     if not p or not p.enabled then
         return
     end

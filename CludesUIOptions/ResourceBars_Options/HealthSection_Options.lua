@@ -20,8 +20,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- false: the Advanced per-spec page was retired.
 function mod.ERB_BuildHealthSection(hostFrame, posY, context)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix, Refresh, SmoothRefresh =
-        environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshHealth, RebuildHealth, AddFormBarBtn, AddFormTextBtn =
         environ.RefreshHealth, environ.RebuildHealth, environ.AddFormBarBtn, environ.AddFormTextBtn
     local BuildHashCog, BuildThresholdSettingsButton =
@@ -78,7 +77,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
             local c = conf()
-            local p = SavedDB()
+            local p = DB()
             return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
         setValue = function(val)
@@ -189,9 +188,9 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     hidden = lossOff,
                     get = function()
                         local c = conf()
-                        local column = c and c[k.color]
-                        if column then
-                            return column.r or k.r, column.g or k.g, column.b or k.b, column.a or k.a
+                        local col = c and c[k.color]
+                        if col then
+                            return col.r or k.r, col.g or k.g, col.b or k.b, col.a or k.a
                         end
                         return k.r, k.g, k.b, k.a
                     end,
@@ -214,7 +213,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
     if not healthOff() then
         -- Absorb Style | Absorb Opacity, then Heal Absorb Style | Heal Absorb Opacity: None turns
         -- the overlay off, the inline swatch sets its colour and the slider its opacity.
-        for _, spec_def in ipairs({
+        for _, def in ipairs({
             {
                 k = mod.HEALTH_INDICATORS[1],
                 styleText = "Absorb Style",
@@ -228,7 +227,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 order = hiHealOrder,
             },
         }) do
-            local k, styleText = spec_def.k, spec_def.styleText
+            local k, styleText = def.k, def.styleText
             local function styleOf()
                 local c = conf()
                 return c and c[k.style] or "none"
@@ -241,7 +240,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 type = "dropdown",
                 text = styleText,
                 values = hiNames,
-                order = spec_def.order,
+                order = def.order,
                 getValue = styleOf,
                 setValue = function(val)
                     local c = conf()
@@ -254,7 +253,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 end,
             }, {
                 type = "slider",
-                text = spec_def.opacityText,
+                text = def.opacityText,
                 min = 5,
                 max = 100,
                 step = 1,
@@ -287,7 +286,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     end
                     local lastVertical
                     local function isVertical()
-                        local c, p = conf(), SavedDB()
+                        local c, p = conf(), DB()
                         local ori = (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
                         return ori == "VERTICAL_UP" or ori == "VERTICAL_DOWN"
                     end
@@ -308,7 +307,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         end
                         return fallback
                     end
-                    local function group(key, value)
+                    local function set(key, value)
                         local c = conf()
                         if not c then
                             return
@@ -335,7 +334,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 return get(edgeKey, edgeDefault)
                             end,
                             set = function(val)
-                                group(edgeKey, val)
+                                set(edgeKey, val)
                             end,
                         },
                     }
@@ -352,7 +351,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 return get("healAbsorbBgOpacity", 0)
                             end,
                             set = function(val)
-                                group("healAbsorbBgOpacity", val)
+                                set("healAbsorbBgOpacity", val)
                             end,
                         }
                     else
@@ -370,7 +369,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 return get("overshieldMode", "always")
                             end,
                             set = function(val)
-                                group("overshieldMode", val)
+                                set("overshieldMode", val)
                             end,
                         }
                         rowList[3] = {
@@ -389,7 +388,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 return get("absorbGlowLine", false) == true
                             end,
                             set = function(val)
-                                group("absorbGlowLine", val)
+                                set("absorbGlowLine", val)
                             end,
                         }
                         rowList[4] = {
@@ -410,7 +409,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 return get("absorbGlowLineTexture", "blizzard")
                             end,
                             set = function(val)
-                                group("absorbGlowLineTexture", val)
+                                set("absorbGlowLineTexture", val)
                             end,
                         }
                     end
@@ -437,9 +436,9 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     absorbRow:GetFrameLevel() + 3,
                     function()
                         local c = conf()
-                        local column = c and c[k.color]
-                        if column then
-                            return column.r or k.r, column.g or k.g, column.b or k.b, 1
+                        local col = c and c[k.color]
+                        if col then
+                            return col.r or k.r, col.g or k.g, col.b or k.b, 1
                         end
                         return k.r, k.g, k.b, 1
                     end,
@@ -493,7 +492,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
         -- sync icons below are Simple-only). Orientation-aware: a vertical bar swaps the
         -- drawn axes, so the Height slider controls what the match calls Width.
         local function healthOri()
-            local c, p = conf(), SavedDB()
+            local c, p = conf(), DB()
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
@@ -557,7 +556,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -568,7 +567,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -590,7 +589,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     region = rgn,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -601,7 +600,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -986,7 +985,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 and mod.ERB_ClassicBorderRow()
             then
                 context.syncRows.healthBorder = hpBsRow._rightRegion
-                mod.ERB_ClassicBorderSync(hpBsRow._rightRegion, SavedDB, "health", SmoothRefresh, function()
+                mod.ERB_ClassicBorderSync(hpBsRow._rightRegion, DB, "health", SmoothRefresh, function()
                     return {
                         context.syncRows.healthBorder,
                         context.syncRows.classBorder,
@@ -999,7 +998,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     region = hpBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1025,7 +1024,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1044,7 +1043,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     region = hpBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1072,7 +1071,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
                     end,
                     isSynced = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return false
                         end
@@ -1301,8 +1300,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 {
                     tooltip = "Class Colored",
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b, 1
                         end
@@ -1333,7 +1332,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 region = rgn,
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -1344,7 +1343,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return false
                     end
@@ -1538,8 +1537,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 {
                     tooltip = "Class Colored",
                     getValue = function()
-                        local _, classFile = UnitClass("player")
-                        local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                        local _, class = UnitClass("player")
+                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                         if cc then
                             return cc.r, cc.g, cc.b, 1
                         end
@@ -1698,7 +1697,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 parentRgn = healthColorRow._rightRegion,
                 anchorTo = healthSettingsBtn,
                 getBarData = function()
-                    return SavedDB().health
+                    return DB().health
                 end,
                 refreshFn = function()
                     RebuildHealth()

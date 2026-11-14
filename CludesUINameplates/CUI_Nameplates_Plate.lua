@@ -85,12 +85,12 @@ local function HideBlizzardFrame(nameplate, unitToken)
     -- registered), skipping the whole block and leaving Blizzard's UnitFrame visible as a
     -- giant black box.
     uf:SetAlpha(0)
-    local recd = mod._npParked[uf]
-    if not recd then
-        recd = {}
-        mod._npParked[uf] = recd
+    local rec = mod._npParked[uf]
+    if not rec then
+        rec = {}
+        mod._npParked[uf] = rec
     end
-    recd.held = true
+    rec.held = true
     -- The AurasFrame rides offscreen with the other children (WidgetContainer is the one child
     -- kept live, below): our containers own plate auras and these lists are taint-locked and
     -- unused. Alpha-0 keep-alive is NOT enough -- its item frames are mouse-enabled Blizzard
@@ -120,7 +120,7 @@ local function HideBlizzardFrame(nameplate, unitToken)
         then
             if not storedParents[childFrame] then
                 storedParents[childFrame] = uf
-                recd[#recd + 1] = childFrame
+                rec[#rec + 1] = childFrame
             end
             childFrame:SetParent(npOffscreenParent)
         end
@@ -165,10 +165,10 @@ local function HideBlizzardFrame(nameplate, unitToken)
         -- pooled UnitFrame's own current unit (the driver's SetUnit sets it before it
         -- shows the icon), never on where the icon hangs: the first Show of an add
         -- runs before we park or reclaim the frame. Every attackable unit is ours.
-        local glyph = uf.SoftTargetFrame.Icon
-        if glyph and not hookedSoftTargetIcons[glyph] then
-            hookedSoftTargetIcons[glyph] = uf
-            hooksecurefunc(glyph, "Show", function(self)
+        local icon = uf.SoftTargetFrame.Icon
+        if icon and not hookedSoftTargetIcons[icon] then
+            hookedSoftTargetIcons[icon] = uf
+            hooksecurefunc(icon, "Show", function(self)
                 local ownerFrame = hookedSoftTargetIcons[self]
                 local ufUnit = ownerFrame and ownerFrame.unit
                 if not ufUnit then
@@ -241,13 +241,13 @@ end
 -- (base.UnitFrame is nil) before any addon sees that event. Enemy re-acquires skip this and
 -- re-park in place. Zero cost for a frame no enemy ever held: one lookup.
 function mod.NP_ReclaimBlizzardFrame(uf)
-    local recd = uf and mod._npParked[uf]
-    if not (recd and recd.held) or uf:IsForbidden() then
+    local rec = uf and mod._npParked[uf]
+    if not (rec and rec.held) or uf:IsForbidden() then
         return
     end
     -- Reverse park order, so the children return to uf in their original order.
-    for idx = #recd, 1, -1 do
-        local childFrame = recd[idx]
+    for idx = #rec, 1, -1 do
+        local childFrame = rec[idx]
         if storedParents[childFrame] == uf then
             storedParents[childFrame] = nil
             if childFrame:GetParent() == npOffscreenParent then
@@ -255,7 +255,7 @@ function mod.NP_ReclaimBlizzardFrame(uf)
             end
         end
     end
-    wipe(recd)
+    wipe(rec)
     uf:SetAlpha(1)
     local auras = uf.AurasFrame
     local auraParent = auras and storedParents[auras]
@@ -285,9 +285,9 @@ function mod.NP_HideBehindCameraIcon(uf)
         return
     end
     hiddenBehindCam[uf] = true
-    local glyph = uf.behindCameraIcon
-    if glyph then
-        glyph:SetAlpha(0)
+    local icon = uf.behindCameraIcon
+    if icon then
+        icon:SetAlpha(0)
     end
 end
 mod.HideBlizzardFrame = HideBlizzardFrame
@@ -343,21 +343,21 @@ castFallbackFrame:Hide()
 --   reserve : timer reserved width (only consumed when pushed)
 --   isTimer : the timer uses slightly tighter base insets than text
 -- Returns: point (anchor), xOff (base, before the user X offset), justify
-function mod.GetCastTextAnchor(sideName, pushed, reserve, isTimer)
-    if sideName == "center" then
+function mod.GetCastTextAnchor(side, pushed, reserve, isTimer)
+    if side == "center" then
         return "CENTER", 0, "CENTER"
-    elseif sideName == "left" then
-        local baseValue = isTimer and 3 or 5
+    elseif side == "left" then
+        local base = isTimer and 3 or 5
         if pushed then
-            baseValue = baseValue + reserve
+            base = base + reserve
         end
-        return "LEFT", baseValue, "LEFT"
+        return "LEFT", base, "LEFT"
     else -- "right"
-        local baseValue = -3
+        local base = -3
         if pushed then
-            baseValue = baseValue - reserve
+            base = base - reserve
         end
-        return "RIGHT", baseValue, "RIGHT"
+        return "RIGHT", base, "RIGHT"
     end
 end
 
@@ -631,31 +631,24 @@ end
 -- re-runs this on every cast show / hide). A top corner slot sits over the
 -- bar's corner at the Top text's height, above the class power pips while they
 -- show (AnchorTopCornerTexts re-runs this with the name's re-anchor).
-function NameplateFrame:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
+function NameplateFrame:PlaceSlotText(fontStr, slot, txOff, tyOff)
     fontStr:ClearAllPoints()
-    if slotIndex.bottom then
+    if slot.bottom then
         local drop = (self.cast:IsShown() and self._castDrop) or 0
+        Pix.Point(fontStr, slot.anchor, self.health, slot.point, slot.xOff + txOff, drop - 2 + tyOff)
+    elseif slot.top then
         Pix.Point(
             fontStr,
-            slotIndex.anchor,
+            slot.anchor,
             self.health,
-            slotIndex.point,
-            slotIndex.xOff + txOff,
-            drop - 2 + tyOff
-        )
-    elseif slotIndex.top then
-        Pix.Point(
-            fontStr,
-            slotIndex.anchor,
-            self.health,
-            slotIndex.point,
-            slotIndex.xOff + txOff,
+            slot.point,
+            slot.xOff + txOff,
             4 + GetNameYOffset() + GetClassPowerTopPush(self) + tyOff
         )
-    elseif slotIndex.anchor == "CENTER" then
+    elseif slot.anchor == "CENTER" then
         fontStr:SetPoint("CENTER", self.health, "CENTER", txOff, tyOff)
     else
-        Pix.Point(fontStr, slotIndex.anchor, self.health, slotIndex.point, slotIndex.xOff + txOff, tyOff)
+        Pix.Point(fontStr, slot.anchor, self.health, slot.point, slot.xOff + txOff, tyOff)
     end
 end
 -- Cast shown or hidden: re-anchor whatever the bottom slots hold. Runs only
@@ -663,17 +656,17 @@ end
 function NameplateFrame:AnchorBottomTexts()
     local B = mod._npBottomFS
     for si = 4, 5 do
-        local slotIndex = HP_BAR_SLOTS[si]
+        local slot = HP_BAR_SLOTS[si]
         local key = B[si - 3]
         local fontStr = key and self[key]
         if fontStr then
             -- Prebuilt keys: this runs on every cast show / hide.
-            local txOff = (p and p[slotIndex.xKey]) or 0
-            local tyOff = (p and p[slotIndex.yKey]) or 0
+            local txOff = (p and p[slot.xKey]) or 0
+            local tyOff = (p and p[slot.yKey]) or 0
             if key == "name" and si == 4 and self._nameRaidMarkerShown then
                 txOff = txOff + ((p and p.nameRaidMarkerSize) or defaultSet.nameRaidMarkerSize or 14) + 3
             end
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
         end
     end
 end
@@ -682,16 +675,16 @@ end
 function NameplateFrame:AnchorTopCornerTexts()
     local T = mod._npTopCornerFS
     for si = 6, 7 do
-        local slotIndex = HP_BAR_SLOTS[si]
+        local slot = HP_BAR_SLOTS[si]
         local key = T[si - 5]
         local fontStr = key and self[key]
         if fontStr then
-            local txOff = (p and p[slotIndex.xKey]) or 0
-            local tyOff = (p and p[slotIndex.yKey]) or 0
+            local txOff = (p and p[slot.xKey]) or 0
+            local tyOff = (p and p[slot.yKey]) or 0
             if key == "name" and si == 6 and self._nameRaidMarkerShown then
                 txOff = txOff + ((p and p.nameRaidMarkerSize) or defaultSet.nameRaidMarkerSize or 14) + 3
             end
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
         end
     end
 end
@@ -832,7 +825,7 @@ end
 -- Custom text in one slot (slot: its HP_BAR_SLOTS entry, nil for Top): its own font
 -- string, placed and coloured like the slot's other texts, plus an entry in the
 -- plate's custom list (ca._cu) for PaintCustomTexts.
-function NameplateFrame:AddCustomText(ca, slotKey, slotIndex)
+function NameplateFrame:AddCustomText(ca, slotKey, slot)
     local fsKey = mod.NP_CustomFSKey[slotKey]
     local fontStr = self[fsKey]
     if not fontStr then
@@ -844,9 +837,9 @@ function NameplateFrame:AddCustomText(ca, slotKey, slotIndex)
     local sr, sg, scrollBar = GetTextSlotColor(slotKey)
     fontStr:SetParent(mod.SlotTextHost(self, slotKey, (p and p[slotKey .. "Strata"]) or "MEDIUM"))
     SetFSFont(fontStr, GetTextSlotSize(slotKey), GetNPOutline())
-    if slotIndex then
-        self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
-        fontStr:SetJustifyH(slotIndex.justify or slotIndex.anchor)
+    if slot then
+        self:PlaceSlotText(fontStr, slot, txOff, tyOff)
+        fontStr:SetJustifyH(slot.justify or slot.anchor)
     else
         fontStr:ClearAllPoints()
         Pix.Point(
@@ -864,16 +857,16 @@ function NameplateFrame:AddCustomText(ca, slotKey, slotIndex)
     -- name would (the bar left by the other bar texts, or on Top the room the name
     -- has there, kept current by UpdateNameWidth), scaled by Width %; any other text
     -- is boxed only below 100% (the health loop).
-    local corner = slotIndex and slotIndex.corner
+    local corner = slot and slot.corner
     local wid = 0
-    if not slotIndex then
+    if not slot then
         self._cuTopName = (c and c.has.name) and true or nil
     end
     if not corner then
         local wpct = (p and p[slotKey .. "WidthPct"]) or 100
         if c and c.has.name then
             wid = math.max(
-                (slotIndex and mod.NP_BarRestWidth(slotKey) or mod.NP_TopNameWidth(self, GetHealthBarWidth()))
+                (slot and mod.NP_BarRestWidth(slotKey) or mod.NP_TopNameWidth(self, GetHealthBarWidth()))
                     * wpct
                     / 100,
                 20
@@ -961,18 +954,18 @@ function NameplateFrame:ApplyHealthTextAppearance()
     local ci = 0
 
     for si = 1, #HP_BAR_SLOTS do
-        local slotIndex = HP_BAR_SLOTS[si]
-        local element = GetTextSlot(slotIndex.key)
-        local txOff, tyOff = GetTextSlotOffsets(slotIndex.key)
-        local slotFontSz = GetTextSlotSize(slotIndex.key)
-        local sr, sg, scrollBar = GetTextSlotColor(slotIndex.key)
-        local slotStrata = (p and p[slotIndex.key .. "Strata"]) or "MEDIUM"
+        local slot = HP_BAR_SLOTS[si]
+        local element = GetTextSlot(slot.key)
+        local txOff, tyOff = GetTextSlotOffsets(slot.key)
+        local slotFontSz = GetTextSlotSize(slot.key)
+        local sr, sg, scrollBar = GetTextSlotColor(slot.key)
+        local slotStrata = (p and p[slot.key .. "Strata"]) or "MEDIUM"
         if element == "healthPercent" or element == "healthPercentNoSign" then
             local fontStr = self.hpText
-            fontStr:SetParent(mod.SlotTextHost(self, slotIndex.key, slotStrata))
+            fontStr:SetParent(mod.SlotTextHost(self, slot.key, slotStrata))
             SetFSFont(fontStr, slotFontSz, GetNPOutline())
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
-            fontStr:SetJustifyH(slotIndex.justify or slotIndex.anchor)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
+            fontStr:SetJustifyH(slot.justify or slot.anchor)
             fontStr:SetTextColor(sr, sg, scrollBar, 1)
             fontStr:Show()
             ci = ci + 1
@@ -981,14 +974,14 @@ function NameplateFrame:ApplyHealthTextAppearance()
             end
             ca[ci].element = element
             ca[ci].fs = fontStr
-            ca[ci].slotKey = slotIndex.key
-            ca[ci].corner = slotIndex.corner or false
+            ca[ci].slotKey = slot.key
+            ca[ci].corner = slot.corner or false
         elseif element == "healthNumber" then
             local fontStr = self.hpNumber
-            fontStr:SetParent(mod.SlotTextHost(self, slotIndex.key, slotStrata))
+            fontStr:SetParent(mod.SlotTextHost(self, slot.key, slotStrata))
             SetFSFont(fontStr, slotFontSz, GetNPOutline())
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
-            fontStr:SetJustifyH(slotIndex.justify or slotIndex.anchor)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
+            fontStr:SetJustifyH(slot.justify or slot.anchor)
             fontStr:SetTextColor(sr, sg, scrollBar, 1)
             fontStr:Show()
             ci = ci + 1
@@ -997,14 +990,14 @@ function NameplateFrame:ApplyHealthTextAppearance()
             end
             ca[ci].element = element
             ca[ci].fs = fontStr
-            ca[ci].slotKey = slotIndex.key
-            ca[ci].corner = slotIndex.corner or false
+            ca[ci].slotKey = slot.key
+            ca[ci].corner = slot.corner or false
         elseif IsComboHealthText(element) then
             local fontStr = self.hpText
-            fontStr:SetParent(mod.SlotTextHost(self, slotIndex.key, slotStrata))
+            fontStr:SetParent(mod.SlotTextHost(self, slot.key, slotStrata))
             SetFSFont(fontStr, slotFontSz, GetNPOutline())
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
-            fontStr:SetJustifyH(slotIndex.justify or slotIndex.anchor)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
+            fontStr:SetJustifyH(slot.justify or slot.anchor)
             fontStr:SetTextColor(sr, sg, scrollBar, 1)
             fontStr:Show()
             ci = ci + 1
@@ -1013,8 +1006,8 @@ function NameplateFrame:ApplyHealthTextAppearance()
             end
             ca[ci].element = element
             ca[ci].fs = fontStr
-            ca[ci].slotKey = slotIndex.key
-            ca[ci].corner = slotIndex.corner or false
+            ca[ci].slotKey = slot.key
+            ca[ci].corner = slot.corner or false
         elseif element == "level" or element == "targetOfTarget" then
             -- Standalone level / Target of Target: own FontString, NOT in the health slot
             -- cache (level content is static per unit -- written here and by UpdateName on
@@ -1022,23 +1015,23 @@ function NameplateFrame:ApplyHealthTextAppearance()
             -- Width/wrap applied inline since the cache loop below skips it.
             local isLevel = element == "level"
             local fontStr = isLevel and self.levelText or self:EnsureToTText()
-            fontStr:SetParent(mod.SlotTextHost(self, slotIndex.key, slotStrata))
+            fontStr:SetParent(mod.SlotTextHost(self, slot.key, slotStrata))
             SetFSFont(fontStr, slotFontSz, GetNPOutline())
-            self:PlaceSlotText(fontStr, slotIndex, txOff, tyOff)
-            fontStr:SetJustifyH(slotIndex.justify or slotIndex.anchor)
+            self:PlaceSlotText(fontStr, slot, txOff, tyOff)
+            fontStr:SetJustifyH(slot.justify or slot.anchor)
             fontStr:SetTextColor(sr, sg, scrollBar, 1)
             if isLevel and self.unit then
                 fontStr:SetText(mod.GetUnitLevelText(self.unit))
             end
             -- The corner slots never truncate: no Width % or Wrap there.
-            local lwpct = (not slotIndex.corner and p and p[slotIndex.key .. "WidthPct"]) or 100
+            local lwpct = (not slot.corner and p and p[slot.key .. "WidthPct"]) or 100
             fontStr:SetWidth(lwpct < 100 and (GetHealthBarWidth() * lwpct / 100) or 0)
-            local lwrap = (not slotIndex.corner and p and p[slotIndex.key .. "Wrap"]) and true or false
+            local lwrap = (not slot.corner and p and p[slot.key .. "Wrap"]) and true or false
             fontStr:SetWordWrap(lwrap)
             fontStr:SetMaxLines(lwrap and 2 or 1)
             fontStr:Show()
         elseif element == "custom" then
-            self:AddCustomText(ca, slotIndex.key, slotIndex)
+            self:AddCustomText(ca, slot.key, slot)
         end
     end
 
@@ -1250,9 +1243,9 @@ function NameplateFrame:SetUnit(unitToken, nameplate)
                 end
                 -- classToken may be SECRET: type() is the safe nil check
                 if type(classToken) == "nil" then
-                    local targetUnit = self.unit .. "target"
-                    if UnitIsPlayer(targetUnit) then
-                        classToken = UnitClassBase(targetUnit)
+                    local target = self.unit .. "target"
+                    if UnitIsPlayer(target) then
+                        classToken = UnitClassBase(target)
                     end
                 end
                 if type(classToken) ~= "nil" and C_ClassColor then

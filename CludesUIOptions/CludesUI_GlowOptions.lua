@@ -240,9 +240,9 @@ function GO.Spec(desc)
     s.style = GO.ToShared(desc, desc.get("style")) or (posX and posX.style) or 1
     s.excludes = desc.excludes
     local dc = desc.defaultColor
-    local modeName = desc.caps and desc.caps.mode and desc.get("mode") or "custom"
+    local mode = desc.caps and desc.caps.mode and desc.get("mode") or "custom"
     local cr, cg, cb = desc.get("color")
-    s.r, s.g, s.b = G.ResolveColor(modeName, cr, cg, cb, dc and dc.r, dc and dc.g, dc and dc.b)
+    s.r, s.g, s.b = G.ResolveColor(mode, cr, cg, cb, dc and dc.r, dc and dc.g, dc and dc.b)
     local caps = desc.caps or {}
     if caps.params then
         s.lines, s.thickness, s.speed = desc.get("lines"), desc.get("thickness"), desc.get("speed")
@@ -478,7 +478,7 @@ GO.CogRows = CogRows
 
 -- Default/Custom/Class swatches as one BuildCogPopup row (off: when the
 -- row is locked).
-local function ColorRow(desc, offset)
+local function ColorRow(desc, off)
     local function modeAlpha(m)
         return function()
             return (desc.get("mode") == m) and 1 or 0.3
@@ -495,7 +495,7 @@ local function ColorRow(desc, offset)
     return {
         type = "multiswatch",
         label = "Glow Color",
-        disabled = offset,
+        disabled = off,
         disabledTooltip = function()
             return NoColor(desc) and NO_COLOR_TIP or "a Glow Style"
         end,
@@ -551,7 +551,7 @@ end
 function GO.PopupRows(desc, styleLabel, hidePixel)
     local values, sequence = GO.StyleValues(desc)
     local rowList = {}
-    local offset = function()
+    local off = function()
         return not GO.Renders(desc)
     end
     local lockFn, lockTip, lockRaw = StyleLock(desc)
@@ -581,7 +581,7 @@ function GO.PopupRows(desc, styleLabel, hidePixel)
     local caps = desc.caps or {}
     if caps.mode then
         rowList[#rowList + 1] = ColorRow(desc, function()
-            return offset() or NoColor(desc)
+            return off() or NoColor(desc)
         end)
     end
     local notPixel = hidePixel and NotPixel(desc) or nil
@@ -607,7 +607,7 @@ function GO.AttachInline(region, desc, colorRgn)
     local function siteOff()
         return desc.disabled and desc.disabled()
     end
-    local function offset()
+    local function off()
         if siteOff() then
             return true
         end
@@ -652,21 +652,21 @@ function GO.AttachInline(region, desc, colorRgn)
     -- Disabled swatches still explain themselves: a mouse blocker over them
     -- (from first to last) with the reason, shown while the color is locked.
     local function Blocker(first, last)
-        local blockData = CreateFrame("Frame", nil, colorRgn or region)
-        blockData:SetPoint("TOPLEFT", first, "TOPLEFT")
-        blockData:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT")
-        blockData:SetFrameLevel(level + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function(self)
+        local block = CreateFrame("Frame", nil, colorRgn or region)
+        block:SetPoint("TOPLEFT", first, "TOPLEFT")
+        block:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT")
+        block:SetFrameLevel(level + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function(self)
             local tipText = colorLockTip()
             if tipText then
                 CludesUI.ShowWidgetTooltip(self, tipText)
             end
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        return blockData
+        return block
     end
 
     -- colorInCog: the row is too narrow for the swatches; they go in the cog.
@@ -684,7 +684,7 @@ function GO.AttachInline(region, desc, colorRgn)
             rows = rowList,
             captureRegion = region,
             disabled = function()
-                if offset() then
+                if off() then
                     return true
                 end
                 return not hasExtra and not GO.IsPixel(desc)
@@ -732,10 +732,10 @@ function GO.AttachInline(region, desc, colorRgn)
             disabled = colorOff,
             overrideSize = 20,
         })
-        local anchorFrame = srgn._lastInline or srgn._control
-        if anchorFrame then
+        local anchor = srgn._lastInline or srgn._control
+        if anchor then
             -- 8 left of the cog when it shares this half, else 12 left of the control.
-            Pix.Point(classSw, "RIGHT", anchorFrame, "LEFT", (cog and srgn == region) and -8 or -12, 0)
+            Pix.Point(classSw, "RIGHT", anchor, "LEFT", (cog and srgn == region) and -8 or -12, 0)
         else
             Pix.Point(classSw, "RIGHT", srgn, "RIGHT", -20, 0)
         end
@@ -744,13 +744,13 @@ function GO.AttachInline(region, desc, colorRgn)
         srgn._lastInline = defaultSw
         -- An off glow has no color to set: the swatches take no clicks and the
         -- blocker over them explains why. The build and every refresh apply it.
-        local blockData = Blocker(defaultSw, classSw)
+        local block = Blocker(defaultSw, classSw)
         local function SyncColorLock()
             local o = colorOff()
             customSw:EnableMouse(not o)
             defaultSw:EnableMouse(not o)
             classSw:EnableMouse(not o)
-            blockData:SetShown(o)
+            block:SetShown(o)
         end
         SyncColorLock()
         CludesUI.RegisterWidgetRefresh(SyncColorLock)
@@ -893,10 +893,10 @@ end
 --  aura managers' icon glows (RF Debuff/Buff Manager, Player Aura Bars).
 --  getT returns the live settings table; style is a shared index, 0 = off.
 -------------------------------------------------------------------------------
-function GO.PrefixSite(getT, p, hostRegion, onChange, defColor)
+function GO.PrefixSite(getT, p, host, onChange, defColor)
     local key = G.PrefixKeys(p)
     local desc = {
-        host = hostRegion,
+        host = host,
         caps = { mode = true, params = true, bg = true },
         defaultColor = defColor or { r = 1.0, g = 0.776, b = 0.376 },
         onChange = onChange,
@@ -1041,11 +1041,11 @@ function GO.MatchesTemplate(desc, t)
     if GO.ToShared(desc, desc.get("style")) ~= position then
         return false
     end
-    local modeName = caps.mode and desc.get("mode") or "custom"
-    if modeName ~= (t.mode or "custom") then
+    local mode = caps.mode and desc.get("mode") or "custom"
+    if mode ~= (t.mode or "custom") then
         return false
     end
-    if modeName == "custom" and t.r then
+    if mode == "custom" and t.r then
         local r, g, b = desc.get("color")
         if r ~= t.r or g ~= t.g or b ~= t.b then
             return false

@@ -20,12 +20,12 @@ local function Readout()
             .. (s.gap > 0 and (mod.Fmt(s.gap) .. " to go") or "reached")
             .. "|r"
     end
-    local lineTex = table.concat(parts, "     ")
+    local line = table.concat(parts, "     ")
     -- Titles are account-wide: on an alt, the distances are your best character's.
     if not context.subject.isCurrent and context.subject.name then
-        lineTex = lineTex .. "   |cff898781(" .. context.subject.name .. ")|r"
+        line = line .. "   |cff898781(" .. context.subject.name .. ")|r"
     end
-    return lineTex
+    return line
 end
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_ChallengesUI", function()

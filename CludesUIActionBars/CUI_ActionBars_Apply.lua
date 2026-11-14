@@ -302,18 +302,18 @@ ABAR.TEXT_INSET_Y = { keybind = 3, count = 4, macro = 4 }
 -- Offsets that reproduce a text's stock spacing at the position just picked.
 -- 0/0 for a position PlaceButtonText does not know (hand-edited, or from a newer
 -- build): that text draws at the stock placement, which carries its own spacing.
-function ABAR.StockTextOffsets(kindOf, anchorFrame)
-    if not ABAR.TEXT_ANCHOR_JUSTIFY[anchorFrame] then
+function ABAR.StockTextOffsets(kind, anchor)
+    if not ABAR.TEXT_ANCHOR_JUSTIFY[anchor] then
         return 0, 0
     end
     local posX = 0
-    if anchorFrame:find("LEFT", 1, true) then
+    if anchor:find("LEFT", 1, true) then
         posX = ABAR.TEXT_INSET_X
-    elseif anchorFrame:find("RIGHT", 1, true) then
+    elseif anchor:find("RIGHT", 1, true) then
         posX = -ABAR.TEXT_INSET_X
     end
-    local posY = ABAR.TEXT_INSET_Y[kindOf] or 0
-    if anchorFrame:find("TOP", 1, true) then
+    local posY = ABAR.TEXT_INSET_Y[kind] or 0
+    if anchor:find("TOP", 1, true) then
         posY = -posY
     end
     return posX, posY
@@ -342,8 +342,8 @@ ABAR.TEXT_ANCHOR_JUSTIFY = {
     BOTTOM = "CENTER",
     BOTTOMRIGHT = "RIGHT",
 }
-function ABAR.PlaceButtonText(fontStr, hostFrame, anchorFrame, ox, oy)
-    local justify = anchorFrame and ABAR.TEXT_ANCHOR_JUSTIFY[anchorFrame]
+function ABAR.PlaceButtonText(fontStr, hostFrame, anchor, ox, oy)
+    local justify = anchor and ABAR.TEXT_ANCHOR_JUSTIFY[anchor]
     if not justify then
         return false
     end
@@ -351,7 +351,7 @@ function ABAR.PlaceButtonText(fontStr, hostFrame, anchorFrame, ox, oy)
     -- boxes are the only thing between the text and the edge, and they read the
     -- same at all six positions. The spacing the three stock placements carry
     -- (EAB.TEXT_INSET_*) rides in those boxes (see EAB.TEXT_INSET_X).
-    local edge = (anchorFrame:find("TOP", 1, true) and "TOP") or "BOTTOM"
+    local edge = (anchor:find("TOP", 1, true) and "TOP") or "BOTTOM"
     local posY = oy or 0
     ox = ox or 0
     fontStr:ClearAllPoints()
@@ -567,19 +567,19 @@ function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
     if not cdFit then
         return cdSize
     end
-    local hostRegion = cdFrame and (cdFrame:GetParent() or cdFrame)
-    if not (hostRegion and hostRegion.GetWidth and hostRegion.GetHeight) then
+    local host = cdFrame and (cdFrame:GetParent() or cdFrame)
+    if not (host and host.GetWidth and host.GetHeight) then
         return cdSize
     end
-    local wid, hgt = hostRegion:GetWidth(), hostRegion:GetHeight()
+    local wid, hgt = host:GetWidth(), host:GetHeight()
     if not wid or not hgt or wid <= 0 or hgt <= 0 then
         return cdSize -- not laid out yet; re-applied on the next layout pass
     end
     -- Smaller dimension, not width: buttonWidth and buttonHeight are separate
     -- settings, so a wide short button still overflows vertically. The tighter
     -- axis is the one that constrains.
-    local dim = (wid < hgt) and wid or hgt
-    local cap = math.floor(dim * 0.40)
+    local size = (wid < hgt) and wid or hgt
+    local cap = math.floor(size * 0.40)
     if cap < 5 then
         cap = 5
     end -- never shrink to illegibility
@@ -789,9 +789,9 @@ function ABAR:ApplyCDAlphaAll()
             local btns = barButtons[details.key]
             if btns then
                 for _, button in ipairs(btns) do
-                    local glyph = button and button.icon
-                    if glyph then
-                        glyph:SetAlpha(1)
+                    local icon = button and button.icon
+                    if icon then
+                        icon:SetAlpha(1)
                         if enabled and ABAR._RefreshCooldownVisuals then
                             ABAR._RefreshCooldownVisuals(button)
                         end
@@ -879,11 +879,11 @@ function ABAR:ApplyBackgroundForBar(barId)
 
     local background = barBackgrounds[barId]
     if not background then
-        local fillTex = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
+        local fill = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
         local border = CreateFrame("Frame", nil, widget, "BackdropTemplate")
         border:EnableMouse(false)
         border:SetFrameLevel(math.max(0, widget:GetFrameLevel()))
-        background = { fill = fillTex, border = border }
+        background = { fill = fill, border = border }
         barBackgrounds[barId] = background
     end
 

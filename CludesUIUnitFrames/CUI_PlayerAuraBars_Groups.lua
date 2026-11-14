@@ -119,35 +119,35 @@ do
         local picks, nTypes, clash = 0, 0, false
         local inc, anyType, exc, typeKey, playerTok, hideBool, dispTok
         for idx = 1, #tokenClasses do
-            local classFile = tokenClasses[idx]
-            if LISTED[classFile.key] then
-                if ClassEnabled(classFile, false, conf) then
+            local class = tokenClasses[idx]
+            if LISTED[class.key] then
+                if ClassEnabled(class, false, conf) then
                     picks = picks + 1
-                    tokens[#tokens + 1] = classFile.token
-                    cats[#cats + 1] = classFile.key
-                    if classFile.key == "castbyme" then
+                    tokens[#tokens + 1] = class.token
+                    cats[#cats + 1] = class.key
+                    if class.key == "castbyme" then
                         playerTok = true
                     end
-                    if classFile.key == "dispellable" then
+                    if class.key == "dispellable" then
                         dispTok = true
                     end
-                elseif neg and neg[classFile.skey] == true then
-                    tokens[#tokens + 1] = classFile.neg or ("!" .. classFile.token)
+                elseif neg and neg[class.skey] == true then
+                    tokens[#tokens + 1] = class.neg or ("!" .. class.token)
                 end
             end
         end
         for idx = 1, #candidateClasses do
-            local classFile = candidateClasses[idx]
-            local cc = classFile.cand
-            if cc and LISTED[classFile.key] then
-                if ClassEnabled(classFile, false, conf) then
+            local class = candidateClasses[idx]
+            local cc = class.cand
+            if cc and LISTED[class.key] then
+                if ClassEnabled(class, false, conf) then
                     picks = picks + 1
-                    if classFile.key == "dispeltyped" then
+                    if class.key == "dispeltyped" then
                         anyType = cc.includeDispelTypes
-                        cats[#cats + 1] = classFile.key
+                        cats[#cats + 1] = class.key
                     elseif cc.includeDispelTypes then
                         inc = MergeTypes(inc, cc.includeDispelTypes)
-                        nTypes, typeKey = nTypes + 1, classFile.key
+                        nTypes, typeKey = nTypes + 1, class.key
                     else
                         for k, v in pairs(cc) do
                             -- Two picks on one field (stale data only: the setters keep
@@ -157,9 +157,9 @@ do
                             end
                             cand[k] = v
                         end
-                        cats[#cats + 1] = classFile.key
+                        cats[#cats + 1] = class.key
                     end
-                elseif neg and neg[classFile.skey] == true then
+                elseif neg and neg[class.skey] == true then
                     if cc.includeDispelTypes then
                         exc = MergeTypes(exc, cc.includeDispelTypes)
                     else
@@ -219,12 +219,12 @@ do
     -- How category `class` relates to part p: "in" when every member belongs to it;
     -- nil when no member can; else "split" under `probe`, or the (p AND class,
     -- p AND NOT class) parts.
-    local function Relate(p, classFile, probe)
-        if classFile.token then
-            if HasToken(p, classFile.token) then
+    local function Relate(p, class, probe)
+        if class.token then
+            if HasToken(p, class.token) then
                 return "in"
             end
-            local negTok = classFile.neg or ("!" .. classFile.token)
+            local negTok = class.neg or ("!" .. class.token)
             if HasToken(p, negTok) then
                 return nil
             end
@@ -232,25 +232,25 @@ do
                 return "split"
             end
             local a, b = CopyPart(p), CopyPart(p)
-            a.tokens[#a.tokens + 1] = classFile.token
+            a.tokens[#a.tokens + 1] = class.token
             b.tokens[#b.tokens + 1] = negTok
             return a, b
         end
-        local cc = classFile.cand
+        local cc = class.cand
         if not cc then
             return nil
         end
-        local group = cc.includeDispelTypes
-        if group then
+        local set = cc.includeDispelTypes
+        if set then
             local inc, exc = p.cand.includeDispelTypes, p.cand.excludeDispelTypes
-            if inc and not TypesMinus(inc, group) then
+            if inc and not TypesMinus(inc, set) then
                 return "in"
             end
             local place
             if inc then
-                place = TypesAnd(inc, group)
+                place = TypesAnd(inc, set)
             else
-                place = group
+                place = set
             end
             if place then
                 place = TypesMinus(place, exc)
@@ -265,9 +265,9 @@ do
             a.cand.includeDispelTypes = place
             a.cand.excludeDispelTypes = nil
             if inc then
-                b.cand.includeDispelTypes = TypesMinus(inc, group)
+                b.cand.includeDispelTypes = TypesMinus(inc, set)
             else
-                b.cand.excludeDispelTypes = MergeTypes(exc, group)
+                b.cand.excludeDispelTypes = MergeTypes(exc, set)
             end
             return a, b
         end
@@ -331,8 +331,8 @@ do
                             if inSet[key] then
                                 hit = true
                             else
-                                local classFile = ClassByKey(key)
-                                if classFile and Relate(rest, classFile, true) == "in" then
+                                local class = ClassByKey(key)
+                                if class and Relate(rest, class, true) == "in" then
                                     inSet[key] = true
                                     cats[#cats + 1] = key
                                     hit = true
@@ -347,10 +347,10 @@ do
                         local key = DEBUFF_FILTER_ORDER[jdx]
                         if f[key] and not seen[key] then
                             seen[key] = true
-                            local classFile = ClassByKey(key)
+                            local class = ClassByKey(key)
                             local a, b
-                            if classFile then
-                                a, b = Relate(rest, classFile)
+                            if class then
+                                a, b = Relate(rest, class)
                             end
                             if type(a) == "table" then
                                 local pc = {}
@@ -376,9 +376,9 @@ do
         if chain then
             return chain
         end
-        return BuildChain("HARMFUL", function(classFile)
-            return ClassEnabled(classFile, false, conf)
-                or (PAB_FxSafeToForce(classFile) and PAB_FxWantsCategory(conf.fxList, classFile.key))
+        return BuildChain("HARMFUL", function(class)
+            return ClassEnabled(class, false, conf)
+                or (PAB_FxSafeToForce(class) and PAB_FxWantsCategory(conf.fxList, class.key))
         end, DebuffCatchAllOn(conf), DebuffSubtractFn(conf))
     end
 
@@ -436,15 +436,15 @@ local function CandFP(castFrame)
     return table.concat(parts, ",")
 end
 
-local function MergeCandidateFilters(baseValue, extra)
+local function MergeCandidateFilters(base, extra)
     if not extra then
-        return baseValue
+        return base
     end
-    if not baseValue then
+    if not base then
         return extra
     end
     local result = {}
-    for k, v in pairs(baseValue) do
+    for k, v in pairs(base) do
         result[k] = v
     end
     for k, v in pairs(extra) do
@@ -486,14 +486,14 @@ end
 -- same size share one variant, everything else riding along via the shallow copy.
 -- Rebuilt unconditionally every pass (settings-apply frequency) rather than
 -- fingerprint-cached.
-local function EnsurePabSizedStyle(baseKey, dim, shape)
-    local baseValue = AK.styles[baseKey]
-    if not baseValue then
+local function EnsurePabSizedStyle(baseKey, size, shape)
+    local base = AK.styles[baseKey]
+    if not base then
         return baseKey
     end
-    local variantKey = baseKey .. ":sz" .. tostring(dim)
+    local variantKey = baseKey .. ":sz" .. tostring(size)
     local v = {}
-    for k, val in pairs(baseValue) do
+    for k, val in pairs(base) do
         v[k] = val
     end
     -- Snapped like BuildStyle's own width/height (same button SetSize path, so a raw
@@ -501,22 +501,22 @@ local function EnsurePabSizedStyle(baseKey, dim, shape)
     -- keyed by the raw size. Shape-expand applies the same as BuildStyle's own
     -- iconSize -- base already carries iconShape/shapeMaskPath/etc via the shallow
     -- copy above, only width/height need recomputing for this variant's own size.
-    v.width = PabSnap(PabShapedSize(dim, shape))
-    v.height = shape == "cropped" and PabSnap(mod.PAB_CroppedHeight(dim, baseValue)) or v.width
+    v.width = PabSnap(PabShapedSize(size, shape))
+    v.height = shape == "cropped" and PabSnap(mod.PAB_CroppedHeight(size, base)) or v.width
     AK.styles[variantKey] = v
     AK.RestyleSoon(variantKey)
     return variantKey
 end
 
-local function BuildGroupLayout(conf, gap, rowGap, dim)
+local function BuildGroupLayout(conf, gap, rowGap, size)
     rowGap = rowGap or gap
-    local rawSize = dim or conf.iconSize or 32
-    dim = PabSnap(PabShapedSize(rawSize, conf.iconShape))
+    local rawSize = size or conf.iconSize or 32
+    size = PabSnap(PabShapedSize(rawSize, conf.iconShape))
     gap = PabSnap(gap)
     rowGap = PabSnap(rowGap)
     return {
-        elementWidth = dim,
-        elementHeight = conf.iconShape == "cropped" and PabSnap(mod.PAB_CroppedHeight(rawSize, conf)) or dim,
+        elementWidth = size,
+        elementHeight = conf.iconShape == "cropped" and PabSnap(mod.PAB_CroppedHeight(rawSize, conf)) or size,
         elementSpacing = gap,
         lineSpacing = rowGap,
         -- ZERO on purpose: the engine's flow layout advances the cursor by
@@ -618,9 +618,9 @@ local function ApplyGroupConfig(
                 -- BEFORE extraInit at creation (CludesUI_AuraKit.lua's
                 -- MakeInitializer), so the first applyExtra pass sees d.dmCat == nil
                 -- harmlessly and this re-arms it right after.
-                extraInit = function(btnFrame, d, look)
+                extraInit = function(btnFrame, d, style)
                     d.dmCat = catKey
-                    PAB_ApplyDmFx(btnFrame, d, look, true)
+                    PAB_ApplyDmFx(btnFrame, d, style, true)
                 end,
             })
             declaredSet[effKey] = true

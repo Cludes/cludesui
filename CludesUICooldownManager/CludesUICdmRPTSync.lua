@@ -161,8 +161,8 @@ function mod.GetAllCDMSpecInfo()
 
     local numClasses = (GetNumClasses and GetNumClasses()) or 0
     for classID = 1, numClasses do
-        local className, classFile = GetClassInfo(classID)
-        local isCurrentClass = (classFile ~= nil and classFile == curClassFile)
+        local className, class = GetClassInfo(classID)
+        local isCurrentClass = (class ~= nil and class == curClassFile)
         local numSpecs = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
         for specIndex = 1, numSpecs do
             local specID, sName, _, sIcon = GetSpecializationInfoForClassID(classID, specIndex)
@@ -260,21 +260,21 @@ end
 -- Set of buff-preset ids already present anywhere in a spec's bars, so additive
 -- sync never seeds a buff preset onto a second bar (cross-bar duplication guard).
 local function BuffIdsPresentOnTarget(tgtProf)
-    local group = {}
+    local set = {}
     if type(tgtProf) ~= "table" or type(tgtProf.barSpells) ~= "table" then
-        return group
+        return set
     end
     local presetIds = BuffPresetIds()
     for barId, sd in pairs(tgtProf.barSpells) do
         if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
             for _, ident in ipairs(sd.assignedSpells) do
                 if presetIds[ident] then
-                    group[ident] = true
+                    set[ident] = true
                 end
             end
         end
     end
-    return group
+    return set
 end
 
 -- Active profile's synced-spec set, or nil. Read-only.

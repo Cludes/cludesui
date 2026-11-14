@@ -289,20 +289,20 @@ local function ApplyVehicleHidden(hidden)
     -- (bar gone after a delete/profile switch) stay hidden -- the old
     -- `not bar` show-fallback punched through every gate.
     for barId, hostFrame in pairs(customBuffParents) do
-        local barFrame, bk = mod.PAB_GetCustomBuffBar(barId)
+        local bar, bk = mod.PAB_GetCustomBuffBar(barId)
         SetParentShownSafe(
             "vehicle-cb-" .. barId,
             hostFrame,
-            barFrame ~= nil and mod.PAB_BarActive(barFrame, bk),
+            bar ~= nil and mod.PAB_BarActive(bar, bk),
             recompute
         )
     end
     for barId, hostFrame in pairs(customDebuffParents) do
-        local barFrame, bk = mod.PAB_GetCustomDebuffBar(barId)
+        local bar, bk = mod.PAB_GetCustomDebuffBar(barId)
         SetParentShownSafe(
             "vehicle-cd-" .. barId,
             hostFrame,
-            barFrame ~= nil and mod.PAB_BarActive(barFrame, bk),
+            bar ~= nil and mod.PAB_BarActive(bar, bk),
             recompute
         )
     end

@@ -121,13 +121,13 @@ initFrame:SetScript("OnEvent", function(self)
     -- its Border Size, and the Show Behind cog (allowBehind) left of its style. opts: apply =
     -- run after a pick (the Loot Window card's live refresh); quality = { key, tip } adds a
     -- Quality swatch whose own color is saved at key.
-    local function AttachBorderControls(rowFrame, prefixText, disabledFn, allowBehind, options)
+    local function AttachBorderControls(row, prefixText, disabledFn, allowBehind, options)
         if CludesUI._prebuilding then
             return
         end
         local Pix = CludesUI.PanelPP
         local apply = options and options.apply
-        local leftX, right = rowFrame._leftRegion, rowFrame._rightRegion
+        local leftX, right = row._leftRegion, row._rightRegion
         -- The offsets live in their own row below the style row (BorderOffsetCfgs); the cog
         -- keeps only Show Behind, so a surface without that option gets no cog at all.
         if allowBehind then
@@ -157,7 +157,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- A pickable swatch (Custom, Quality) opens its color picker on a click while its mode
         -- is the active one; colorKey is where it saves (default the Custom color).
-        local function AddModeSwatch(anchorFrame, modeName, tipText, getColor, pickable, colorKey)
+        local function AddModeSwatch(anchor, mode, tipText, getColor, pickable, colorKey)
             local sw, refresh = CludesUI.BuildColorSwatch(
                 right,
                 right:GetFrameLevel() + 5,
@@ -165,7 +165,7 @@ initFrame:SetScript("OnEvent", function(self)
                 function(r, g, b, a)
                     CludesUIDB[colorKey or (prefixText .. "BorderColor")] = { r = r, g = g, b = b }
                     CludesUIDB[prefixText .. "BorderOpacity"] = a
-                    CludesUIDB[prefixText .. "BorderColorMode"] = modeName
+                    CludesUIDB[prefixText .. "BorderColorMode"] = mode
                     if apply then
                         apply()
                     end
@@ -173,11 +173,11 @@ initFrame:SetScript("OnEvent", function(self)
                 pickable,
                 20
             )
-            Pix.Point(sw, "RIGHT", anchorFrame, "LEFT", -8, 0)
+            Pix.Point(sw, "RIGHT", anchor, "LEFT", -8, 0)
             local orig = sw:GetScript("OnClick")
             sw:SetScript("OnClick", function(self)
-                if not pickable or (CludesUIDB[prefixText .. "BorderColorMode"] or "custom") ~= modeName then
-                    CludesUIDB[prefixText .. "BorderColorMode"] = modeName
+                if not pickable or (CludesUIDB[prefixText .. "BorderColorMode"] or "custom") ~= mode then
+                    CludesUIDB[prefixText .. "BorderColorMode"] = mode
                     if apply then
                         apply()
                     end
@@ -195,10 +195,10 @@ initFrame:SetScript("OnEvent", function(self)
             -- Applied once at build time too -- widget refresh only fires
             -- on later changes, so without this every swatch opened lit.
             local function UpdSwatchState()
-                local offset = disabledFn and disabledFn()
-                local isActive = (CludesUIDB[prefixText .. "BorderColorMode"] or "custom") == modeName
-                sw:SetAlpha(offset and 0.15 or (isActive and 1 or 0.3))
-                sw:EnableMouse(not offset)
+                local off = disabledFn and disabledFn()
+                local isActive = (CludesUIDB[prefixText .. "BorderColorMode"] or "custom") == mode
+                sw:SetAlpha(off and 0.15 or (isActive and 1 or 0.3))
+                sw:EnableMouse(not off)
                 refresh()
             end
             CludesUI.RegisterWidgetRefresh(UpdSwatchState)
@@ -209,12 +209,12 @@ initFrame:SetScript("OnEvent", function(self)
             local c = CludesUI.CLUDES_GREEN
             return c.r, c.g, c.b, 1
         end, false)
-        local classFile = AddModeSwatch(accent, "class", "Class Color", function()
+        local class = AddModeSwatch(accent, "class", "Class Color", function()
             local _, k = UnitClass("player")
             local c = RAID_CLASS_COLORS[k]
             return c.r, c.g, c.b, 1
         end, false)
-        local last = AddModeSwatch(classFile, "custom", "Custom Color", function()
+        local last = AddModeSwatch(class, "custom", "Custom Color", function()
             local c = CludesUIDB[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b, CludesUIDB[prefixText .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
         end, true)
@@ -235,7 +235,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- small title (the Mythic+ Tools header previews' look); one untitled column centres.
     local PV_TITLE_H = 15
     local function SampleHeaderBuilder(cols)
-        return function(headerFrame, hdrW)
+        return function(header, hdrW)
             local building, H = true, 0
             local num = #cols
             local titled = cols[1].title ~= nil
@@ -243,13 +243,13 @@ initFrame:SetScript("OnEvent", function(self)
             local st = {}
             local lblHost
             if titled then
-                lblHost = CreateFrame("Frame", nil, headerFrame)
-                lblHost:SetAllPoints(headerFrame)
-                lblHost:SetFrameLevel(headerFrame:GetFrameLevel() + 3)
+                lblHost = CreateFrame("Frame", nil, header)
+                lblHost:SetAllPoints(header)
+                lblHost:SetFrameLevel(header:GetFrameLevel() + 3)
             end
             local function Layout()
-                local s = UIParent:GetEffectiveScale() / headerFrame:GetEffectiveScale()
-                local colW = ((building and hdrW or headerFrame:GetWidth()) - 2 * CludesUI.CONTENT_PAD) / num
+                local s = UIParent:GetEffectiveScale() / header:GetEffectiveScale()
+                local colW = ((building and hdrW or header:GetWidth()) - 2 * CludesUI.CONTENT_PAD) / num
                 local maxH = 0
                 for idx = 1, num do
                     local c = st[idx]
@@ -275,7 +275,7 @@ initFrame:SetScript("OnEvent", function(self)
                             local cx = (-(num - 1) / 2 + (idx - 1)) * colW
                             root:SetPoint(
                                 "TOP",
-                                headerFrame,
+                                header,
                                 "CENTER",
                                 Snap(cx / hs),
                                 Snap((blockH / 2 - titleH) / hs)
@@ -284,12 +284,12 @@ initFrame:SetScript("OnEvent", function(self)
                             c.fs:SetPoint("BOTTOMLEFT", root, "TOPLEFT", 0, 3)
                             c.fs:Show()
                         else
-                            root:SetPoint("CENTER", headerFrame, "CENTER", 0, 0)
+                            root:SetPoint("CENTER", header, "CENTER", 0, 0)
                         end
                     end
                 end
                 H = math.max(80, math.ceil(blockH + 40))
-                if not building and headerFrame:IsVisible() and math.abs(headerFrame:GetHeight() - H) > 1 then
+                if not building and header:IsVisible() and math.abs(header:GetHeight() - H) > 1 then
                     CludesUI:SetContentHeaderHeightSilent(H)
                 end
             end
@@ -302,9 +302,9 @@ initFrame:SetScript("OnEvent", function(self)
                     c.fs:SetText(cols[idx].title)
                     c.fs:Hide()
                 end
-                cols[idx].show(headerFrame, function(root, wid, hgt)
+                cols[idx].show(header, function(root, wid, hgt)
                     if not wid then
-                        root:SetScale(UIParent:GetEffectiveScale() / headerFrame:GetEffectiveScale())
+                        root:SetScale(UIParent:GetEffectiveScale() / header:GetEffectiveScale())
                         return
                     end
                     c.root, c.w, c.h = root, wid, hgt
@@ -319,17 +319,17 @@ initFrame:SetScript("OnEvent", function(self)
     local TooltipHeaderBuilder = SampleHeaderBuilder({
         {
             title = CludesUI.L("Popups"),
-            show = function(headerFrame, place)
+            show = function(header, place)
                 if CludesUI.ShowPopupPreview then
-                    CludesUI.ShowPopupPreview(headerFrame, place)
+                    CludesUI.ShowPopupPreview(header, place)
                 end
             end,
         },
         {
             title = CludesUI.L("Tooltip"),
-            show = function(headerFrame, place)
+            show = function(header, place)
                 if CludesUI.ShowTooltipPreview then
-                    CludesUI.ShowTooltipPreview(headerFrame, place)
+                    CludesUI.ShowTooltipPreview(header, place)
                 end
             end,
         },
@@ -1822,9 +1822,9 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Called at build time too: the refresh list only runs on page show.
             local function UpdQueueTimerState()
-                local offset = timerOff()
-                qtSwatch:SetAlpha(offset and 0.15 or 1)
-                qtSwatch:EnableMouse(not offset)
+                local off = timerOff()
+                qtSwatch:SetAlpha(off and 0.15 or 1)
+                qtSwatch:EnableMouse(not off)
                 qtSwatchRefresh()
             end
             CludesUI.RegisterWidgetRefresh(UpdQueueTimerState)
@@ -1872,26 +1872,26 @@ initFrame:SetScript("OnEvent", function(self)
                 and (CludesUI.IS_FOREVER or not (CludesUIDB and CludesUIDB.charSheetBlizzColors == false))
         end
 
-        local function AttachDisabledOverlay(targetUnit)
-            local blockData = CreateFrame("Frame", nil, targetUnit)
-            blockData:SetAllPoints(targetUnit)
-            blockData:SetFrameLevel(targetUnit:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            local backdrop = CludesUI.SolidTex(blockData, "BACKGROUND", 0, 0, 0, 0)
+        local function AttachDisabledOverlay(target)
+            local block = CreateFrame("Frame", nil, target)
+            block:SetAllPoints(target)
+            block:SetFrameLevel(target:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            local backdrop = CludesUI.SolidTex(block, "BACKGROUND", 0, 0, 0, 0)
             backdrop:SetAllPoints()
-            blockData:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(blockData, CludesUI.DisabledTooltip("Character Sheet"))
+            block:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Character Sheet"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function refresh()
                 if themedOff() then
-                    blockData:Show()
-                    targetUnit:SetAlpha(0.3)
+                    block:Show()
+                    target:SetAlpha(0.3)
                 else
-                    blockData:Hide()
-                    targetUnit:SetAlpha(1)
+                    block:Hide()
+                    target:SetAlpha(1)
                 end
             end
             CludesUI.RegisterWidgetRefresh(refresh)
@@ -1981,40 +1981,35 @@ initFrame:SetScript("OnEvent", function(self)
                     { key = "showGems", label = "Gems", refresh = "_refreshGemsVisibility" }
             end
             local coreRow1
-            coreRow1, hgt = W:DualRow(
-                hostFrame,
-                posY,
-                {
-                    type = "toggle",
-                    text = "Mythic+ Rating",
-                    tooltip = "Display your Mythic+ rating above the item level on the character sheet.",
-                    getValue = function()
-                        return CludesUIDB and CludesUIDB.showMythicRating or false
-                    end,
-                    setValue = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.showMythicRating = val
-                        if CludesUI._updateMythicRatingDisplay then
-                            CludesUI._updateMythicRatingDisplay()
-                        end
-                    end,
-                },
-                {
-                    type = "label",
-                    text = "Item Details",
-                    tooltip = "Choose what shows on each equipped item.",
-                }
-            )
+            coreRow1, hgt = W:DualRow(hostFrame, posY, {
+                type = "toggle",
+                text = "Mythic+ Rating",
+                tooltip = "Display your Mythic+ rating above the item level on the character sheet.",
+                getValue = function()
+                    return CludesUIDB and CludesUIDB.showMythicRating or false
+                end,
+                setValue = function(val)
+                    if not CludesUIDB then
+                        CludesUIDB = {}
+                    end
+                    CludesUIDB.showMythicRating = val
+                    if CludesUI._updateMythicRatingDisplay then
+                        CludesUI._updateMythicRatingDisplay()
+                    end
+                end,
+            }, {
+                type = "label",
+                text = "Item Details",
+                tooltip = "Choose what shows on each equipped item.",
+            })
             posY = posY - hgt
             if not CludesUI._prebuilding then
                 local region = coreRow1._rightRegion
                 -- Keys are on unless false; an optIn key is off unless true.
                 local refreshOf, optIn = {}, {}
-                for _, itemInfo in ipairs(ITEM_DETAILS) do
-                    refreshOf[itemInfo.key] = itemInfo.refresh
-                    optIn[itemInfo.key] = itemInfo.optIn
+                for _, item in ipairs(ITEM_DETAILS) do
+                    refreshOf[item.key] = item.refresh
+                    optIn[item.key] = item.optIn
                 end
                 local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                     region,
@@ -2158,8 +2153,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
         local function EnchantTextShown(showKey, namesKey)
-            local modeName = EnchantMode(showKey, namesKey)
-            return modeName == "text" or (CludesUI.IS_FOREVER and modeName == "icons")
+            local mode = EnchantMode(showKey, namesKey)
+            return mode == "text" or (CludesUI.IS_FOREVER and mode == "icons")
         end
 
         local enchGemRow
@@ -2551,7 +2546,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- Blizzard UI Color applies or the section is unchecked.
             local itemList = {}
             for idx, sec in ipairs(STAT_SECTIONS) do
-                local key, labelText, colorKey, spec_def = sec.key, sec.label, sec.color, sec.def
+                local key, labelText, colorKey, def = sec.key, sec.label, sec.color, sec.def
                 itemList[idx] = {
                     key = key,
                     label = labelText,
@@ -2563,7 +2558,7 @@ initFrame:SetScript("OnEvent", function(self)
                             if c then
                                 return c.r, c.g, c.b, 1
                             end
-                            return spec_def.r, spec_def.g, spec_def.b, 1
+                            return def.r, def.g, def.b, 1
                         end,
                         set = function(r, g, b)
                             if not CludesUIDB then
@@ -2978,7 +2973,7 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local function BuildFriendsCardContent(hostFrame, posY)
         local W = CludesUI.Widgets
-        local _, rowFrame, hgt
+        local _, row, hgt
         local Kit = CludesUI.FriendsKit
 
         local CUSTOM = "Custom Friends List Tiles"
@@ -2989,8 +2984,8 @@ initFrame:SetScript("OnEvent", function(self)
         local function tilesOff()
             return CludesUI.GetBlizzWindowStyle("socialui") == "off" and customOff()
         end
-        local function tileGate(conf, offset)
-            conf.disabled = offset or tilesOff
+        local function tileGate(conf, off)
+            conf.disabled = off or tilesOff
             conf.disabledTooltip = CUSTOM
             return conf
         end
@@ -3001,7 +2996,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Custom Friends List Tiles | Tile Height: the custom friends list
         -- (CludesUI_FriendsList.lua) and its own height
         local tileMin, tileMax = CludesUI.FriendsList.TileRange()
-        rowFrame, hgt = W:DualRow(
+        row, hgt = W:DualRow(
             hostFrame,
             posY,
             {
@@ -3034,7 +3029,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         -- Tile Features | Class Icon Theme
-        rowFrame, hgt = W:DualRow(
+        row, hgt = W:DualRow(
             hostFrame,
             posY,
             tileGate({
@@ -3065,7 +3060,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Tile Features: one checkbox dropdown over the three tile switches,
         -- each still its own key, in place of the row's placeholder.
         if not CludesUI._prebuilding then
-            local region = rowFrame._leftRegion
+            local region = row._leftRegion
             if region._control then
                 region._control:Hide()
             end
@@ -3102,7 +3097,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Auto-Accept Friend Invites
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Auto-Accept Friend Invites",
             tooltip = "Auto-accepts all group invites from people on your friends list",
@@ -3119,7 +3114,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Guildmates in a cog on Auto-Accept Friend Invites: it only extends
         -- that feature, so the cog blocks while the toggle is off.
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+            CludesUI.BuildInlineCog(row._leftRegion, {
                 title = "Auto Accept Settings",
                 rows = {
                     {
@@ -3151,26 +3146,26 @@ initFrame:SetScript("OnEvent", function(self)
             return CludesUIDB and CludesUIDB.reskinMerchant == false
         end
 
-        local function AttachDisabledOverlay(targetUnit)
-            local blockData = CreateFrame("Frame", nil, targetUnit)
-            blockData:SetAllPoints(targetUnit)
-            blockData:SetFrameLevel(targetUnit:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            local backdrop = CludesUI.SolidTex(blockData, "BACKGROUND", 0, 0, 0, 0)
+        local function AttachDisabledOverlay(target)
+            local block = CreateFrame("Frame", nil, target)
+            block:SetAllPoints(target)
+            block:SetFrameLevel(target:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            local backdrop = CludesUI.SolidTex(block, "BACKGROUND", 0, 0, 0, 0)
             backdrop:SetAllPoints()
-            blockData:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(blockData, CludesUI.DisabledTooltip("Merchant"))
+            block:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(block, CludesUI.DisabledTooltip("Merchant"))
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function refresh()
                 if themedOff() then
-                    blockData:Show()
-                    targetUnit:SetAlpha(0.3)
+                    block:Show()
+                    target:SetAlpha(0.3)
                 else
-                    blockData:Hide()
-                    targetUnit:SetAlpha(1)
+                    block:Hide()
+                    target:SetAlpha(1)
                 end
             end
             CludesUI.RegisterWidgetRefresh(refresh)
@@ -3184,8 +3179,8 @@ initFrame:SetScript("OnEvent", function(self)
             return CludesUIDB and CludesUIDB.merchantShowAsList == false
         end
 
-        local rowFrame
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        local row
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show As List",
             tooltip = "Shows the items as a list instead of pages.",
@@ -3234,7 +3229,7 @@ initFrame:SetScript("OnEvent", function(self)
             end,
         })
         posY = posY - hgt
-        AttachDisabledOverlay(rowFrame)
+        AttachDisabledOverlay(row)
 
         _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
@@ -3337,7 +3332,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Expand Vendor UI",
             tooltip = "Shows more vendor items at once, in the columns and rows set in the cog.",
@@ -3358,8 +3353,8 @@ initFrame:SetScript("OnEvent", function(self)
             end,
         }, CludesUI.BlankRowCfg())
         posY = posY - hgt
-        BuildExpandCog(rowFrame._leftRegion)
-        AttachDisabledOverlay(rowFrame)
+        BuildExpandCog(row._leftRegion)
+        AttachDisabledOverlay(row)
 
         return posY
     end
@@ -3399,8 +3394,8 @@ initFrame:SetScript("OnEvent", function(self)
         texValues.default = "Default"
         table.insert(texOrder, 1, "default")
 
-        local rowFrame
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        local row
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Border Style",
             tooltip = "Replaces the loot window's border. Default keeps the standard window border.",
@@ -3425,9 +3420,9 @@ initFrame:SetScript("OnEvent", function(self)
                     saved[prefixText .. "BorderColor"] = c
                     -- Full opacity and the style's own size: the 18% default leaves textured art faded
                     saved[prefixText .. "BorderOpacity"] = 1
-                    local dim = CludesUI.GetBorderDefaultSize(nil, val)
-                    if dim then
-                        saved[prefixText .. "BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[dim]
+                    local size = CludesUI.GetBorderDefaultSize(nil, val)
+                    if size then
+                        saved[prefixText .. "BorderThickness"] = CludesUI.BORDER_LABEL_OF_STEP[size]
                     end
                 end
                 saved[prefixText .. "BorderOffsetX"] = nil
@@ -3442,7 +3437,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         -- Accent | Class | Custom | Quality swatches beside Border Size, as on the Tooltips page.
-        AttachBorderControls(rowFrame, prefixText, lootOff, false, {
+        AttachBorderControls(row, prefixText, lootOff, false, {
             apply = refresh,
             quality = {
                 key = prefixText .. "BorderQualityColor",
@@ -3598,7 +3593,7 @@ initFrame:SetScript("OnEvent", function(self)
             return posY
         end
         local W = CludesUI.Widgets
-        local _, rowFrame, hgt
+        local _, row, hgt
         local REQ = "Show Alt List"
         local function On()
             return CludesUIDB and CludesUIDB.mailAltList == true
@@ -3641,7 +3636,7 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = WSCardSection(hostFrame, "ALT LIST", posY)
         posY = posY - hgt
 
-        rowFrame, hgt = W:DualRow(hostFrame, posY, {
+        row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Alt List",
             tooltip = "Lists your alts beside Send Mail.",
@@ -3666,7 +3661,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(rowFrame._leftRegion, {
+            CludesUI.BuildInlineCog(row._leftRegion, {
                 title = "Alt List",
                 disabled = Off,
                 disabledTooltip = REQ,
@@ -3713,7 +3708,7 @@ initFrame:SetScript("OnEvent", function(self)
             })
             -- Shown Characters: the checkbox dropdown in place of the row's
             -- placeholder; a long roster gets the search box.
-            local region = rowFrame._rightRegion
+            local region = row._rightRegion
             if region._control then
                 region._control:Hide()
             end
@@ -3799,19 +3794,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- blocked while isOff() (that dropdown is not on Modern). The picker
     -- carries the opacity slider; edits write the Modern preset directly, so
     -- windows already on Modern recolor immediately (no Apply to All).
-    local function AttachModernSwatch(hostRegion, anchorTo, isOff)
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            hostRegion,
-            hostRegion:GetFrameLevel() + 5,
-            function()
-                return WSModernGet()
-            end,
-            function(r, g, b, a)
-                WSModernSet(r, g, b, a)
-            end,
-            true,
-            20
-        )
+    local function AttachModernSwatch(host, anchorTo, isOff)
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(host, host:GetFrameLevel() + 5, function()
+            return WSModernGet()
+        end, function(r, g, b, a)
+            WSModernSet(r, g, b, a)
+        end, true, 20)
         CludesUI.PanelPP.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
         colorSwatch:HookScript("OnEnter", function(s)
             CludesUI.ShowWidgetTooltip(s, "Background color for the Modern style.")
@@ -3819,24 +3807,24 @@ initFrame:SetScript("OnEvent", function(self)
         colorSwatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        local blockData = CreateFrame("Frame", nil, colorSwatch)
-        blockData:SetAllPoints()
-        blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        blockData:EnableMouse(true)
-        blockData:SetScript("OnEnter", function()
+        local block = CreateFrame("Frame", nil, colorSwatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 colorSwatch,
                 CludesUI.DisabledTooltip("This option requires the Modern style.")
             )
         end)
-        blockData:SetScript("OnLeave", function()
+        block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         local function Refresh()
             updateSwatch()
-            local offset = isOff()
-            colorSwatch:SetAlpha(offset and 0.3 or 1)
-            blockData:SetShown(offset)
+            local off = isOff()
+            colorSwatch:SetAlpha(off and 0.3 or 1)
+            block:SetShown(off)
         end
         CludesUI.RegisterWidgetRefresh(Refresh)
         Refresh()
@@ -3865,18 +3853,18 @@ initFrame:SetScript("OnEvent", function(self)
     -- Inline accent|custom swatch pair on a DualRow region (the standard
     -- dual-swatch treatment): custom sits nearest the control, accent left of
     -- it; the active mode renders bright, the other dimmed.
-    local function AttachLookSwatches(region, rowFrame, key)
+    local function AttachLookSwatches(region, row, key)
         local Pix = CludesUI.PanelPP
         local ctrl = region._control
 
         local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
             region,
-            rowFrame:GetFrameLevel() + 3,
+            row:GetFrameLevel() + 3,
             function()
                 local c = WSLook(key)
-                local column = c and c.color
-                if column then
-                    return column.r or 1, column.g or 1, column.b or 1
+                local col = c and c.color
+                if col then
+                    return col.r or 1, col.g or 1, col.b or 1
                 end
                 return 1, 1, 1
             end,
@@ -3910,7 +3898,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
             region,
-            rowFrame:GetFrameLevel() + 3,
+            row:GetFrameLevel() + 3,
             function()
                 return CludesUI.ResolveActiveAccent()
             end,
@@ -4574,9 +4562,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- on/off boundary, or the character sheet's Blizz Default one (= needs a
     -- reload). suppressPopup lets Apply to All show one popup for the whole
     -- batch instead of one per window.
-    local function WSSetStyle(window, look, suppressPopup)
+    local function WSSetStyle(window, style, suppressPopup)
         local old = WSGetStyle(window)
-        if old == look then
+        if old == style then
             return false
         end
         if not CludesUIDB then
@@ -4585,18 +4573,18 @@ initFrame:SetScript("OnEvent", function(self)
         -- A pick here belongs to the whole UI's current look: the Style
         -- page's Apply to All saves it into that look's window slot when
         -- the look changes (CludesUI.SwapWindowSkinStyle).
-        window.setEnabled(look ~= "off")
-        if look ~= "off" then
+        window.setEnabled(style ~= "off")
+        if style ~= "off" then
             -- Remember which skin set this window uses; kept while "off" so
             -- re-enabling restores the same pick.
             if not CludesUIDB.blizzWindowSkinStyles then
                 CludesUIDB.blizzWindowSkinStyles = {}
             end
-            CludesUIDB.blizzWindowSkinStyles[window.key] = look
+            CludesUIDB.blizzWindowSkinStyles[window.key] = style
         end
         -- A card with no reloadMsg swaps live both ways (retail Friends List).
         local oldClass = (old == "off" and 0) or (old == "blizzard" and 1) or 2
-        local newClass = (look == "off" and 0) or (look == "blizzard" and 1) or 2
+        local newClass = (style == "off" and 0) or (style == "blizzard" and 1) or 2
         local crossed = window.reloadMsg ~= nil and oldClass ~= newClass
         -- cui<->modern applies live (shell backdrops swap in place).
         if CludesUI._WSkinRefreshStyles then
@@ -4725,25 +4713,25 @@ initFrame:SetScript("OnEvent", function(self)
         -- Procedural mini-window glyph: a tiny framed "window" with a title
         -- bar. The bar lights up in accent while the reskin is enabled, but
         -- only on cards that actually have settings.
-        local glyph = CreateFrame("Frame", nil, heading)
-        Pix.Size(glyph, 22, 16)
-        Pix.Point(glyph, "LEFT", heading, "LEFT", 16, 0)
-        local glyphBrd = CludesUI.MakeBorder(glyph, 1, 1, 1, 0.35, Pix)
-        local glyphBar = glyph:CreateTexture(nil, "ARTWORK")
+        local icon = CreateFrame("Frame", nil, heading)
+        Pix.Size(icon, 22, 16)
+        Pix.Point(icon, "LEFT", heading, "LEFT", 16, 0)
+        local glyphBrd = CludesUI.MakeBorder(icon, 1, 1, 1, 0.35, Pix)
+        local glyphBar = icon:CreateTexture(nil, "ARTWORK")
         glyphBar:SetHeight(4)
-        Pix.Point(glyphBar, "TOPLEFT", glyph, "TOPLEFT", 1, -1)
-        Pix.Point(glyphBar, "TOPRIGHT", glyph, "TOPRIGHT", -1, -1)
+        Pix.Point(glyphBar, "TOPLEFT", icon, "TOPLEFT", 1, -1)
+        Pix.Point(glyphBar, "TOPRIGHT", icon, "TOPRIGHT", -1, -1)
         if glyphBar.SetSnapToPixelGrid then
             glyphBar:SetSnapToPixelGrid(false)
             glyphBar:SetTexelSnappingBias(0)
         end
 
-        local titleText = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
-        Pix.Point(titleText, "TOPLEFT", heading, "TOPLEFT", 50, -12)
-        titleText:SetText(L(window.title))
+        local title = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
+        Pix.Point(title, "TOPLEFT", heading, "TOPLEFT", 50, -12)
+        title:SetText(L(window.title))
 
         local desc = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
-        Pix.Point(desc, "TOPLEFT", titleText, "BOTTOMLEFT", 0, -4)
+        Pix.Point(desc, "TOPLEFT", title, "BOTTOMLEFT", 0, -4)
         desc:SetWidth(590)
         desc:SetJustifyH("LEFT")
         desc:SetWordWrap(false)
@@ -4815,7 +4803,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local function ApplyHeaderHover()
             hbg:SetColorTexture(1, 1, 1, 0.05)
-            titleText:SetAlpha(1)
+            title:SetAlpha(1)
             chev:SetAlpha(0.85)
             if brd then
                 brd:SetColor(1, 1, 1, 0.22)
@@ -4828,7 +4816,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             hbg:SetColorTexture(0, 0, 0, 0)
-            titleText:SetAlpha(0.9)
+            title:SetAlpha(0.9)
             chev:SetAlpha(0.45)
             if brd then
                 brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12)
@@ -4929,9 +4917,9 @@ initFrame:SetScript("OnEvent", function(self)
         local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
         local HERO_H = 470
-        local hostRegion = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(hostRegion, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
-        Pix.Point(hostRegion, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, yOffset - 24)
+        local host = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(host, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
+        Pix.Point(host, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, yOffset - 24)
 
         -- Three mini Blizzard "windows" with colored title bars (the intro
         -- popup's header visual): center one scaled up with a resize grip.
@@ -4945,27 +4933,27 @@ initFrame:SetScript("OnEvent", function(self)
             local isCenter = (idx == 2)
             local wid = CARD_W
             local ch = isCenter and (CARD_H + 10) or CARD_H
-            local cardFrame = CreateFrame("Frame", nil, hostRegion)
-            cardFrame:SetFrameLevel(hostRegion:GetFrameLevel() + 1)
+            local cardFrame = CreateFrame("Frame", nil, host)
+            cardFrame:SetFrameLevel(host:GetFrameLevel() + 1)
             Pix.Size(cardFrame, wid, ch)
-            Pix.Point(cardFrame, "CENTER", hostRegion, "TOP", (idx - 2) * (CARD_W + CARD_GAP), -64)
+            Pix.Point(cardFrame, "CENTER", host, "TOP", (idx - 2) * (CARD_W + CARD_GAP), -64)
             local cbg = cardFrame:CreateTexture(nil, "BACKGROUND")
             cbg:SetAllPoints()
             cbg:SetColorTexture(0.121, 0.113, 0.106, 1)
             local c = titleColors[idx]
-            local barFrame = cardFrame:CreateTexture(nil, "ARTWORK")
-            barFrame:SetColorTexture(c[1], c[2], c[3], isCenter and 0.95 or 0.75)
-            barFrame:SetHeight(8)
-            Pix.Point(barFrame, "TOPLEFT", cardFrame, "TOPLEFT", 1, -1)
-            Pix.Point(barFrame, "TOPRIGHT", cardFrame, "TOPRIGHT", -1, -1)
-            if barFrame.SetSnapToPixelGrid then
-                barFrame:SetSnapToPixelGrid(false)
-                barFrame:SetTexelSnappingBias(0)
+            local bar = cardFrame:CreateTexture(nil, "ARTWORK")
+            bar:SetColorTexture(c[1], c[2], c[3], isCenter and 0.95 or 0.75)
+            bar:SetHeight(8)
+            Pix.Point(bar, "TOPLEFT", cardFrame, "TOPLEFT", 1, -1)
+            Pix.Point(bar, "TOPRIGHT", cardFrame, "TOPRIGHT", -1, -1)
+            if bar.SetSnapToPixelGrid then
+                bar:SetSnapToPixelGrid(false)
+                bar:SetTexelSnappingBias(0)
             end
             local dot = cardFrame:CreateTexture(nil, "OVERLAY")
             dot:SetColorTexture(0, 0, 0, 0.4)
             Pix.Size(dot, 4, 4)
-            Pix.Point(dot, "RIGHT", barFrame, "RIGHT", -3, 0)
+            Pix.Point(dot, "RIGHT", bar, "RIGHT", -3, 0)
             local l1 = cardFrame:CreateTexture(nil, "ARTWORK")
             l1:SetColorTexture(1, 1, 1, isCenter and 0.42 or 0.32)
             Pix.Size(l1, wid - 26, 5)
@@ -4987,25 +4975,25 @@ initFrame:SetScript("OnEvent", function(self)
             MakeBorder(cardFrame, 1, 1, 1, isCenter and 0.16 or 0.10, Pix)
         end
 
-        local eyebrow = hostRegion:CreateFontString(nil, "OVERLAY")
+        local eyebrow = host:CreateFontString(nil, "OVERLAY")
         eyebrow:SetFont(FONT, 13, "")
         eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
-        Pix.Point(eyebrow, "TOP", hostRegion, "TOP", 0, -122)
+        Pix.Point(eyebrow, "TOP", host, "TOP", 0, -122)
         eyebrow:SetText(L("CUI FEATURE"))
 
-        local titleText = hostRegion:CreateFontString(nil, "OVERLAY")
-        titleText:SetFont(FONT, 25, "")
-        titleText:SetTextColor(1, 1, 1, 1)
-        Pix.Point(titleText, "TOP", eyebrow, "BOTTOM", 0, -6)
-        titleText:SetText(L("Blizzard Window Skinning"))
+        local title = host:CreateFontString(nil, "OVERLAY")
+        title:SetFont(FONT, 25, "")
+        title:SetTextColor(1, 1, 1, 1)
+        Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
+        title:SetText(L("Blizzard Window Skinning"))
 
-        local desc = hostRegion:CreateFontString(nil, "OVERLAY")
+        local desc = host:CreateFontString(nil, "OVERLAY")
         desc:SetFont(FONT, 15, "")
         desc:SetTextColor(1, 1, 1, 0.5)
         desc:SetWidth(430)
         desc:SetJustifyH("CENTER")
         desc:SetWordWrap(true)
-        Pix.Point(desc, "TOP", titleText, "BOTTOM", 0, -12)
+        Pix.Point(desc, "TOP", title, "BOTTOM", 0, -12)
         desc:SetText(
             L(
                 "Blizzard's windows match the CludesUI theme with a WoW 2.0 Dark Theme, from the Dungeon Journal to the Auction House and beyond."
@@ -5019,33 +5007,33 @@ initFrame:SetScript("OnEvent", function(self)
         }
         local prev
         for idx, textValue in ipairs(BULLETS) do
-            local bl = hostRegion:CreateFontString(nil, "OVERLAY")
+            local bl = host:CreateFontString(nil, "OVERLAY")
             bl:SetFont(FONT, 14, "")
             bl:SetTextColor(1, 1, 1, 0.72)
             bl:SetJustifyH("LEFT")
             if idx == 1 then
-                Pix.Point(bl, "TOP", hostRegion, "TOP", -20, -252)
-                bl:SetPoint("LEFT", hostRegion, "CENTER", -160, 0)
+                Pix.Point(bl, "TOP", host, "TOP", -20, -252)
+                bl:SetPoint("LEFT", host, "CENTER", -160, 0)
             else
                 Pix.Point(bl, "TOPLEFT", prev, "BOTTOMLEFT", 0, -10)
             end
             bl:SetText(L(textValue))
-            local bdot = hostRegion:CreateTexture(nil, "OVERLAY")
+            local bdot = host:CreateTexture(nil, "OVERLAY")
             bdot:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
             Pix.Size(bdot, 5, 5)
             Pix.Point(bdot, "RIGHT", bl, "LEFT", -10, 0)
             prev = bl
         end
 
-        local enableBtn = CreateFrame("Button", nil, hostRegion)
+        local enableBtn = CreateFrame("Button", nil, host)
         Pix.Size(enableBtn, 220, 40)
-        Pix.Point(enableBtn, "TOP", hostRegion, "TOP", 0, -344)
-        enableBtn:SetFrameLevel(hostRegion:GetFrameLevel() + 2)
+        Pix.Point(enableBtn, "TOP", host, "TOP", 0, -344)
+        enableBtn:SetFrameLevel(host:GetFrameLevel() + 2)
         CludesUI.MakeStyledButton(enableBtn, "Enable Window Skins", 15, CludesUI.WB_COLOURS, function()
             WSKillSwitchSet(false)
         end)
 
-        local footnote = hostRegion:CreateFontString(nil, "OVERLAY")
+        local footnote = host:CreateFontString(nil, "OVERLAY")
         footnote:SetFont(FONT, 12, "")
         footnote:SetTextColor(1, 1, 1, 0.35)
         Pix.Point(footnote, "TOP", enableBtn, "BOTTOM", 0, -12)
@@ -5239,8 +5227,8 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI.MakeStyledButton(applyBtn, "Apply to All", 12, CludesUI.WB_COLOURS, function()
             local crossed = false
             for _, window in ipairs(WINDOWS) do
-                local look = (_wsApplyAllStyle == "off" and window.blizzDefault) or _wsApplyAllStyle
-                if not WSStyleOwned(window) and WSSetStyle(window, look, true) then
+                local style = (_wsApplyAllStyle == "off" and window.blizzDefault) or _wsApplyAllStyle
+                if not WSStyleOwned(window) and WSSetStyle(window, style, true) then
                     crossed = true
                 end
             end
@@ -5310,9 +5298,9 @@ initFrame:SetScript("OnEvent", function(self)
                     tooltip = "Custom Color",
                     getValue = function()
                         local c = WSLook("blizzWinLinks")
-                        local column = c and c.color
-                        if column then
-                            return column.r or 1, column.g or 1, column.b or 1
+                        local col = c and c.color
+                        if col then
+                            return col.r or 1, col.g or 1, col.b or 1
                         end
                         return 1, 1, 1
                     end,
@@ -5411,18 +5399,14 @@ initFrame:SetScript("OnEvent", function(self)
     local _, EDR_BAR_TEXTURE_NAMES, EDR_BAR_TEXTURE_ORDER = CludesUI.BuildBarTextureTables()
 
     -- Live sample bubble in the content header; sized to the bubble plus margin.
-    local function ChatBubblesHeaderBuilder(headerFrame)
+    local function ChatBubblesHeaderBuilder(header)
         local building = true
         local function HeightFor(bubbleH)
             return math.max(80, math.floor(bubbleH + 40))
         end
-        local bubble = CludesUI.ChatBubbles.ShowPreview(headerFrame, function(bubbleH)
+        local bubble = CludesUI.ChatBubbles.ShowPreview(header, function(bubbleH)
             local wanted = HeightFor(bubbleH)
-            if
-                not building
-                and headerFrame:IsVisible()
-                and math.abs(headerFrame:GetHeight() - wanted) > 1
-            then
+            if not building and header:IsVisible() and math.abs(header:GetHeight() - wanted) > 1 then
                 CludesUI:SetContentHeaderHeightSilent(wanted)
             end
         end)
@@ -5434,9 +5418,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- passes (ns.EDR_ShowSample).
     local SkyridingHeaderBuilder = SampleHeaderBuilder({
         {
-            show = function(headerFrame, place)
+            show = function(header, place)
                 if mod.EDR_ShowSample then
-                    mod.EDR_ShowSample(headerFrame, place)
+                    mod.EDR_ShowSample(header, place)
                 end
             end,
         },
@@ -6340,26 +6324,26 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.PanelPP.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
                 -- No border to colour at size 0: dimmed and blocked.
-                local blockData = CreateFrame("Frame", nil, colorSwatch)
-                blockData:SetAllPoints()
-                blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                blockData:EnableMouse(true)
-                blockData:SetScript("OnEnter", function()
+                local block = CreateFrame("Frame", nil, colorSwatch)
+                block:SetAllPoints()
+                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+                block:EnableMouse(true)
+                block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
                         colorSwatch,
                         CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
                     )
                 end)
-                blockData:SetScript("OnLeave", function()
+                block:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateSwatchState()
                     if (EDR_Cfg("borderThickness") or 0) == 0 then
                         colorSwatch:SetAlpha(0.3)
-                        blockData:Show()
+                        block:Show()
                     else
                         colorSwatch:SetAlpha(1)
-                        blockData:Hide()
+                        block:Hide()
                     end
                 end
                 CludesUI.RegisterWidgetRefresh(function()

@@ -54,11 +54,11 @@ local BUFF_SPELLS = {
     },
 }
 
-local _, classFile = UnitClass("player")
-local buffSpells = BUFF_SPELLS[classFile]
+local _, class = UnitClass("player")
+local buffSpells = BUFF_SPELLS[class]
 -- The classes the icon draws for; on any other it stays hidden.
 local FORM_CLASSES = { WARRIOR = true, DRUID = true, PALADIN = true, HUNTER = true }
-local supported = FORM_CLASSES[classFile] == true
+local supported = FORM_CLASSES[class] == true
 local buffIDs -- [spell id] = true, built the first time it is needed
 -- The last buff scan's answer (the aspect or aura icon and its aura instance),
 -- reused until an aura change can have moved it (buffDirty).
@@ -171,15 +171,15 @@ local function CurrentIcon()
         return false
     end
     for idx = 1, num do
-        local glyph, isActive, _, spellID = GetShapeshiftFormInfo(idx)
+        local icon, isActive, _, spellID = GetShapeshiftFormInfo(idx)
         if IsSecret(isActive) then
             return false
         end
         if isActive then
             if spellID and not IsSecret(spellID) then
-                return C_Spell.GetSpellTexture(spellID) or glyph
+                return C_Spell.GetSpellTexture(spellID) or icon
             end
-            return glyph
+            return icon
         end
     end
     return buffSpells and BuffIcon() or nil
@@ -189,18 +189,18 @@ local function Refresh()
     if not active then
         return
     end
-    local glyph = CurrentIcon()
+    local icon = CurrentIcon()
     -- A secret icon still paints (the texture takes it); it cannot be tested.
-    if IsSecret(glyph) then
-        tex:SetTexture(glyph)
+    if IsSecret(icon) then
+        tex:SetTexture(icon)
         widget:Show()
         return
     end
-    if glyph == false then
+    if icon == false then
         return
     end
-    if glyph then
-        tex:SetTexture(glyph)
+    if icon then
+        tex:SetTexture(icon)
         widget:Show()
     else
         widget:Hide()
@@ -343,8 +343,8 @@ F.Start(Apply, {
         return widget
     end,
     size = function()
-        local dim = SnappedSize()
-        return dim, dim
+        local size = SnappedSize()
+        return size, size
     end,
     snap = true,
     noAnchorTarget = true,

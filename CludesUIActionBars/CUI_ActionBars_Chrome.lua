@@ -16,7 +16,7 @@ local POOL = CludesUI._Pool
 
 local _G = _G
 local pairs = pairs
-local min, upper = math.min, math.max
+local min, max = math.min, math.max
 local hooksecurefunc = hooksecurefunc
 local C_Timer_After = C_Timer.After
 
@@ -215,16 +215,16 @@ function mod.AB_CapsLook(key)
     if not (l or r) then
         return nil
     end
-    local look
+    local style
     if mod.AB_Forever() then
-        look = "forever"
+        style = "forever"
     else
-        look = mod.AB_Style()
-        if look == "cui" then
-            look = mod.AB_CapsArt(key)
+        style = mod.AB_Style()
+        if style == "cui" then
+            style = mod.AB_CapsArt(key)
         end
     end
-    return look, l, r
+    return style, l, r
 end
 
 -- A bar's end cap tweaks (the End Caps cog): the size as a fraction of the
@@ -239,13 +239,13 @@ end
 -- Every chrome input of a bar in one string, for LayoutBar's stamp (the
 -- tweaks only while a cap shows; "-" for a bar with no chrome).
 function mod.AB_ChromeStamp(key)
-    local look, l, r = mod.AB_CapsLook(key)
+    local style, l, r = mod.AB_CapsLook(key)
     local fv = mod.AB_ForeverBg(key)
-    if not look then
+    if not style then
         return fv and "fv" or "-"
     end
     local _, dx, dy, sc = mod.AB_CapsTweak(key)
-    return look
+    return style
         .. (l and "L" or "")
         .. (r and "R" or "")
         .. (fv and ",fv," or ",")
@@ -261,23 +261,23 @@ end
 -- button size / 45) and `look`'s caps (nil = none; multi = several rows)
 -- with bar `key`'s tweaks. pxK scales the cap offsets (the preview's scale;
 -- nil = 1).
-function mod.AB_ChromeReach(btnW, gridH, forever, look, multi, pxK, key)
+function mod.AB_ChromeReach(btnW, gridH, forever, style, multi, pxK, key)
     local topY, bottom = 0, 0
     if forever then
         topY, bottom = 6 * btnW / 45, 5 * btnW / 45
     end
-    local c = look and mod.AB_CAPS[look]
+    local c = style and mod.AB_CAPS[style]
     if c then
         local sc, _, dy = mod.AB_CapsTweak(key)
         dy = dy * (pxK or 1)
         local kc = min(btnW / c.unit, 1) * sc
         local posY = ((multi and c.far) or c.near)[4]
         if c.mid then
-            topY = upper(topY, (c.h / 2 + posY) * kc - gridH / 2 + dy)
-            bottom = upper(bottom, (c.h / 2 - posY) * kc - gridH / 2 - dy)
+            topY = max(topY, (c.h / 2 + posY) * kc - gridH / 2 + dy)
+            bottom = max(bottom, (c.h / 2 - posY) * kc - gridH / 2 - dy)
         else
-            topY = upper(topY, (c.h + posY) * kc - gridH + dy)
-            bottom = upper(bottom, -posY * kc - dy)
+            topY = max(topY, (c.h + posY) * kc - gridH + dy)
+            bottom = max(bottom, -posY * kc - dy)
         end
     end
     return topY, bottom
@@ -315,14 +315,14 @@ function mod.AB_CapsFaction(st)
     end
     local c = st.capsOn and mod.AB_CAPS[st.capLook]
     local fac = c and c.art and UnitFactionGroup("player")
-    local group = c and (c.any or (fac and c.art[fac])) or nil
-    if group and st.capSet ~= group then
-        mod.AB_SetCapArt(capL, c, group[1], false)
-        mod.AB_SetCapArt(capR, c, group[2], true)
-        st.capSet = group
+    local set = c and (c.any or (fac and c.art[fac])) or nil
+    if set and st.capSet ~= set then
+        mod.AB_SetCapArt(capL, c, set[1], false)
+        mod.AB_SetCapArt(capR, c, set[2], true)
+        st.capSet = set
     end
-    capL:SetShown(group ~= nil and st.capSideL == true)
-    capR:SetShown(group ~= nil and st.capSideR == true)
+    capL:SetShown(set ~= nil and st.capSideL == true)
+    capR:SetShown(set ~= nil and st.capSideR == true)
     st.capKnown = not (c and c.art) or fac ~= nil
     return st.capKnown
 end
@@ -334,25 +334,25 @@ end
 -- (under Action Bar 1's paging arrows), scale with the icon size (down only)
 -- times bar `key`'s size, and move by its offsets (times pxK, the preview's
 -- scale; nil = 1).
-function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, look, multi, pxK, key, sideL, sideR)
-    local c = look and mod.AB_CAPS[look]
+function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, pxK, key, sideL, sideR)
+    local c = style and mod.AB_CAPS[style]
     st.capsOn = (c and (sideL or sideR) and (c.any or mod.AB_AtlasOK(c.art.Alliance[1]))) and true or false
     st.capSideL, st.capSideR = sideL and true or false, sideR and true or false
-    local hostRegion = st.capHost
+    local host = st.capHost
     if not st.capsOn then
-        if hostRegion then
-            hostRegion:Hide()
+        if host then
+            host:Hide()
         end
         return
     end
-    if not hostRegion then
+    if not host then
         -- Through the options page pool: the options preview builds its chrome on a
         -- frame of that pool, which hands it to the preview's next build; on a
         -- live bar this is CreateFrame.
-        hostRegion = POOL.CreateFrame("Frame", nil, ownerFrame)
-        st.capL = hostRegion:CreateTexture(nil, "OVERLAY", nil, 5)
-        st.capR = hostRegion:CreateTexture(nil, "OVERLAY", nil, 5)
-        st.capHost = hostRegion
+        host = POOL.CreateFrame("Frame", nil, ownerFrame)
+        st.capL = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        st.capR = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        st.capHost = host
     end
     local sc, dx, dy = mod.AB_CapsTweak(key)
     local kc = btnW / c.unit
@@ -363,25 +363,25 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, look, multi, p
     -- The offsets in the host's (scaled) units.
     dx, dy = dx * (pxK or 1) / kc, dy * (pxK or 1) / kc
     local g = (multi and c.far) or c.near
-    if st.capLook ~= look or st.capGeo ~= g or st.capDX ~= dx or st.capDY ~= dy then
+    if st.capLook ~= style or st.capGeo ~= g or st.capDX ~= dx or st.capDY ~= dy then
         local capL, capR = st.capL, st.capR
         capL:SetSize(c.w, c.h)
         capR:SetSize(c.w, c.h)
         capL:ClearAllPoints()
         capR:ClearAllPoints()
-        capL:SetPoint(g[1], hostRegion, g[2], g[3] - dx, g[4] + dy)
-        capR:SetPoint(g[5], hostRegion, g[6], g[7] + dx, g[8] + dy)
-        if st.capLook ~= look then
+        capL:SetPoint(g[1], host, g[2], g[3] - dx, g[4] + dy)
+        capR:SetPoint(g[5], host, g[6], g[7] + dx, g[8] + dy)
+        if st.capLook ~= style then
             st.capSet = nil
         end
-        st.capLook, st.capGeo, st.capDX, st.capDY = look, g, dx, dy
+        st.capLook, st.capGeo, st.capDX, st.capDY = style, g, dx, dy
     end
-    hostRegion:SetFrameLevel(ownerFrame:GetFrameLevel() + c.lvl)
-    hostRegion:SetScale(kc)
-    hostRegion:ClearAllPoints()
-    hostRegion:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / kc, oy / kc)
-    hostRegion:SetSize(wid / kc, hgt / kc)
-    hostRegion:Show()
+    host:SetFrameLevel(ownerFrame:GetFrameLevel() + c.lvl)
+    host:SetScale(kc)
+    host:ClearAllPoints()
+    host:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / kc, oy / kc)
+    host:SetSize(wid / kc, hgt / kc)
+    host:Show()
 end
 
 function mod.AB_HideBarChrome(st)
@@ -435,10 +435,8 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
     -- (12 across, 5 of overlap, the edges at the atlas depth), so in the
     -- under frame's units every one of those divides by k.
     local ik = 1 / k
-    local group = vertical and ART.divV or ART.divH
-    if
-        num > 1 and not (mod.AB_AtlasOK(group[1]) and mod.AB_AtlasOK(group[2]) and mod.AB_AtlasOK(group[3]))
-    then
+    local set = vertical and ART.divV or ART.divH
+    if num > 1 and not (mod.AB_AtlasOK(set[1]) and mod.AB_AtlasOK(set[2]) and mod.AB_AtlasOK(set[3])) then
         num = 0
     end
     local divs = st.divs
@@ -453,26 +451,26 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
             divs[idx] = d
         end
         local a, b, c = d[1], d[2], d[3]
-        if d.set ~= group then
-            a:SetAtlas(group[1])
-            b:SetAtlas(group[2])
-            c:SetAtlas(group[3])
-            d.set = group
+        if d.set ~= set then
+            a:SetAtlas(set[1])
+            b:SetAtlas(set[2])
+            c:SetAtlas(set[3])
+            d.set = set
         end
         local at = (idx * step + (idx < extra and idx or extra) * onePx) / k
         a:ClearAllPoints()
         b:ClearAllPoints()
         c:ClearAllPoints()
         if vertical then
-            a:SetSize(group[4] * ik, 12 * ik)
-            b:SetSize(group[5] * ik, 12 * ik)
+            a:SetSize(set[4] * ik, 12 * ik)
+            b:SetSize(set[5] * ik, 12 * ik)
             a:SetPoint("TOPLEFT", under, "TOPLEFT", 0, 7 * ik - at)
             b:SetPoint("TOPRIGHT", under, "TOPRIGHT", 0, 7 * ik - at)
             c:SetPoint("TOPLEFT", a, "TOPRIGHT")
             c:SetPoint("BOTTOMRIGHT", b, "BOTTOMLEFT")
         else
-            a:SetSize(12 * ik, group[4] * ik)
-            b:SetSize(12 * ik, group[5] * ik)
+            a:SetSize(12 * ik, set[4] * ik)
+            b:SetSize(12 * ik, set[5] * ik)
             a:SetPoint("TOPLEFT", under, "TOPLEFT", at - 7 * ik, 0)
             b:SetPoint("BOTTOMLEFT", under, "BOTTOMLEFT", at - 7 * ik, 0)
             c:SetPoint("TOPLEFT", a, "BOTTOMLEFT")
@@ -503,7 +501,7 @@ function mod.AB_PaintBarChrome(
     hgt,
     btnW,
     forever,
-    look,
+    style,
     multi,
     vertical,
     num,
@@ -533,7 +531,7 @@ function mod.AB_PaintBarChrome(
     elseif st.under then
         st.under:Hide()
     end
-    mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, look, multi, pxK, key, sideL, sideR)
+    mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, pxK, key, sideL, sideR)
     return mod.AB_CapsFaction(st)
 end
 
@@ -593,11 +591,11 @@ function mod.AB_ApplyBarChrome(key, widget, wid, hgt, btnW, vertical, multi, num
     local all = mod._abChrome
     local st = all and all[key]
     local fv = mod.AB_ForeverBg(key)
-    local look, sideL, sideR
+    local style, sideL, sideR
     if not vertical then
-        look, sideL, sideR = mod.AB_CapsLook(key)
+        style, sideL, sideR = mod.AB_CapsLook(key)
     end
-    if not (fv or look) then
+    if not (fv or style) then
         if st then
             mod.AB_HideBarChrome(st)
             mod.AB_CapsEvSync()
@@ -621,7 +619,7 @@ function mod.AB_ApplyBarChrome(key, widget, wid, hgt, btnW, vertical, multi, num
         hgt,
         btnW,
         fv,
-        look,
+        style,
         multi,
         vertical,
         num,
@@ -671,8 +669,8 @@ end
 
 function mod.AB_ExtraCapsShown(key)
     local st = mod._abChrome and mod._abChrome[key]
-    local hostRegion = st and st.capHost
-    if not hostRegion then
+    local host = st and st.capHost
+    if not host then
         return
     end
     local bf = _G[BAR_LOOKUP[key].frameName]
@@ -682,7 +680,7 @@ function mod.AB_ExtraCapsShown(key)
         local m = _G.MicroMenu
         enabled = m ~= nil and m:GetParent() == bf and m:IsShown()
     end
-    hostRegion:SetShown(enabled and true or false)
+    host:SetShown(enabled and true or false)
 end
 
 -- After EAB itself hid or showed one of the two Blizzard frames.
@@ -838,11 +836,11 @@ function mod.AB_ExtraCaps(key)
     end
     local all = mod._abChrome
     local st = all and all[key]
-    local look, sL, sR
+    local style, sL, sR
     if not mod.AB_ExtraCapsVertical(key) then
-        look, sL, sR = mod.AB_CapsLook(key)
+        style, sL, sR = mod.AB_CapsLook(key)
     end
-    if not look then
+    if not style then
         if st and st.capsOn then
             mod.AB_HideBarChrome(st)
             if mod._abFadeTwin then
@@ -864,8 +862,8 @@ function mod.AB_ExtraCaps(key)
         st = {}
         all[key] = st
     end
-    local baseValue = mod.AB_ExtraCapsBase(key) or bf
-    local lvl, strata = baseValue:GetFrameLevel(), baseValue:GetFrameStrata()
+    local base = mod.AB_ExtraCapsBase(key) or bf
+    local lvl, strata = base:GetFrameLevel(), base:GetFrameStrata()
     local ownerFrame, ox = holderFrame, 0
     local wid, hgt, u = holderFrame:GetWidth(), holderFrame:GetHeight(), mod._abMainBtnW or 45
     local m = (key == "MicroBar") and _G.MicroMenu
@@ -890,7 +888,7 @@ function mod.AB_ExtraCaps(key)
     local sc, dx, dy = mod.AB_CapsTweak(key)
     if
         not st.capsOn
-        or st.xLook ~= look
+        or st.xLook ~= style
         or st.xL ~= sL
         or st.xR ~= sR
         or st.xW ~= wid
@@ -913,9 +911,9 @@ function mod.AB_ExtraCaps(key)
             end
             ownerFrame:SetFrameLevel(lvl)
         end
-        mod.AB_PaintCaps(st, ownerFrame, ox, 0, wid, hgt, u, look, false, nil, key, sL, sR)
+        mod.AB_PaintCaps(st, ownerFrame, ox, 0, wid, hgt, u, style, false, nil, key, sL, sR)
         mod.AB_CapsFaction(st)
-        st.xLook, st.xL, st.xR, st.xW, st.xH, st.xU = look, sL, sR, wid, hgt, u
+        st.xLook, st.xL, st.xR, st.xW, st.xH, st.xU = style, sL, sR, wid, hgt, u
         st.xS, st.xDX, st.xDY, st.xLvl, st.xStr, st.xOX = sc, dx, dy, lvl, strata, ox
         local tw = mod._abFadeTwin
         if not tw then

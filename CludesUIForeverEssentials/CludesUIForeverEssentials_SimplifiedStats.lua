@@ -67,14 +67,14 @@ end
 -- "Equip: ... by up to %1$d." -> "^Equip: ... by up to ([%d.]+)%.$", plus
 -- each positional argument's capture slot (a locale may reorder them).
 local function StatPattern(fmt)
-    local slotIndex, n = {}, 0
+    local slot, n = {}, 0
     for a in fmt:gmatch("%%(%d)%$") do
         n = n + 1
-        slotIndex[tonumber(a)] = n
+        slot[tonumber(a)] = n
     end
     local p = fmt:gsub("%%%d%$[%d.]*[dfs]", "\001"):gsub("%%%%", "%%")
     p = p:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0"):gsub("\001", "([%%d.]+)")
-    return "^" .. p .. "$", slotIndex
+    return "^" .. p .. "$", slot
 end
 
 -- "(%d) Set: %s" -> "^(%(%d+%) Set: )(.*)$"; nil unless the format ends in %s.
@@ -124,7 +124,7 @@ local function BuildStatRules()
         for idx, o in ipairs(outs) do
             statLabels[labels[idx]] = o[4]
         end
-        local pat, slotIndex = StatPattern(fmt)
+        local pat, slot = StatPattern(fmt)
         local barePat
         if equip and fmt:find(equip, 1, true) == 1 then
             barePat = StatPattern((fmt:sub(#equip + 1):gsub("^%s+", "")))
@@ -132,7 +132,7 @@ local function BuildStatRules()
         statRules[#statRules + 1] = {
             pat = pat,
             barePat = barePat,
-            slot = slotIndex,
+            slot = slot,
             outs = outs,
             labels = labels,
             pct = fmt:find("%%%%") and "%" or "",

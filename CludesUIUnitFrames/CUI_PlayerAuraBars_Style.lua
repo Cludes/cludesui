@@ -111,12 +111,12 @@ local PV_DISPEL_ICON_POINTS = {
 local function BuildDispelColorMap(conf)
     local map, fp = {}, {}
     for idx = 1, #DISPEL_SLOTS do
-        local spec_def = DISPEL_SLOTS[idx]
-        local c = conf[spec_def.colorKey]
-        local r = (c and c.r) or spec_def.fallback[1]
-        local g = (c and c.g) or spec_def.fallback[2]
-        local b = (c and c.b) or spec_def.fallback[3]
-        map[spec_def.token] = CreateColor(r, g, b, 1)
+        local def = DISPEL_SLOTS[idx]
+        local c = conf[def.colorKey]
+        local r = (c and c.r) or def.fallback[1]
+        local g = (c and c.g) or def.fallback[2]
+        local b = (c and c.b) or def.fallback[3]
+        map[def.token] = CreateColor(r, g, b, 1)
         fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", r, g, b)
     end
     return map, table.concat(fp, ";")
@@ -149,7 +149,7 @@ end
 -- d.duration/d.stack are the FontStrings AK's own initializer creates. Adds what AK has
 -- no native field for: duration/stack text color and independent stack-text show/hide
 -- (AK's hideDurationText covers duration hide only, no native stack equivalent).
-local function PAB_ApplyExtraText(btnFrame, d, look)
+local function PAB_ApplyExtraText(btnFrame, d, style)
     -- Own text pipeline (style.noDefaultFonts): fonts ride the user's global/per-module
     -- Unit Frames font and the house icon-text outline rules, resolved once per style
     -- rebuild into style.fontPath/fontFlag (see BuildStyle). Font/anchor writes are
@@ -157,26 +157,26 @@ local function PAB_ApplyExtraText(btnFrame, d, look)
     -- is policed by the 12.1 button access restriction while auras are secret, so
     -- unchanged values must make zero button-involving calls for restyles to stay live
     -- in-instance.
-    local filePath = look.fontPath or STANDARD_TEXT_FONT
-    local flag = look.fontFlag or "OUTLINE"
+    local filePath = style.fontPath or STANDARD_TEXT_FONT
+    local flag = style.fontFlag or "OUTLINE"
     if d.duration then
-        local fKey = filePath .. "|" .. (look.durationFontSize or 11) .. "|" .. flag
+        local fKey = filePath .. "|" .. (style.durationFontSize or 11) .. "|" .. flag
         if d.pabDurFont ~= fKey then
             d.pabDurFont = fKey
             -- Prime the shadow FontObject before SetFont; Drop Shadow mode (empty
             -- flag) keeps the text legible instead of flat.
             CludesUI.PrimeFontShadow(d.duration, flag == "")
-            d.duration:SetFont(filePath, look.durationFontSize or 11, flag)
+            d.duration:SetFont(filePath, style.durationFontSize or 11, flag)
         end
-        local dp = look.durationPoint or "CENTER"
-        local drp = look.durationRelPoint or "CENTER"
-        local aKey = dp .. "|" .. drp .. "|" .. (look.durationX or 0) .. "|" .. (look.durationY or 0)
+        local dp = style.durationPoint or "CENTER"
+        local drp = style.durationRelPoint or "CENTER"
+        local aKey = dp .. "|" .. drp .. "|" .. (style.durationX or 0) .. "|" .. (style.durationY or 0)
         if d.pabDurAnchor ~= aKey then
             d.duration:ClearAllPoints()
-            d.duration:SetPoint(dp, btnFrame, drp, look.durationX or 0, look.durationY or 0)
+            d.duration:SetPoint(dp, btnFrame, drp, style.durationX or 0, style.durationY or 0)
             d.pabDurAnchor = aKey
         end
-        local c = look.durationColor
+        local c = style.durationColor
         d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         -- "Show S for Seconds" rebind: duration opts land once at creation;
         -- re-register when the style's formatter choice changed. The nil
@@ -185,37 +185,37 @@ local function PAB_ApplyExtraText(btnFrame, d, look)
         -- BmRebindDurationCurve rule: a denied registration under the
         -- secret-aura button restriction must leave the stamp unchanged so
         -- the next restyle retries.
-        local wantFmt = (look.durationShowSeconds and "s" or "b")
-            .. tostring(look.durationPrecisionThreshold or 0)
+        local wantFmt = (style.durationShowSeconds and "s" or "b")
+            .. tostring(style.durationPrecisionThreshold or 0)
         if d.durationFmtS ~= nil and d.durationFmtS ~= wantFmt then
             local AK = CludesUI.AuraKit
             local durationOpts = AK.BuildDurationTextOpts(
-                AK.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold),
-                look.durationColorCurve,
-                look.durationUpdateInterval
+                AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold),
+                style.durationColorCurve,
+                style.durationUpdateInterval
             )
             local success, full = AK.SetDurationTextSafe(btnFrame, d.duration, durationOpts)
-            if success and (full or not look.durationColorCurve) then
+            if success and (full or not style.durationColorCurve) then
                 d.durationFmtS = wantFmt
             end
         end
     end
     if d.stack then
-        local fKey = filePath .. "|" .. (look.stackFontSize or 11) .. "|" .. flag
+        local fKey = filePath .. "|" .. (style.stackFontSize or 11) .. "|" .. flag
         if d.pabStackFont ~= fKey then
             d.pabStackFont = fKey
             CludesUI.PrimeFontShadow(d.stack, flag == "")
-            d.stack:SetFont(filePath, look.stackFontSize or 11, flag)
+            d.stack:SetFont(filePath, style.stackFontSize or 11, flag)
         end
-        local sp = look.stackPoint or "BOTTOMRIGHT"
-        local sKey = sp .. "|" .. (look.stackX or 0) .. "|" .. (look.stackY or 0)
+        local sp = style.stackPoint or "BOTTOMRIGHT"
+        local sKey = sp .. "|" .. (style.stackX or 0) .. "|" .. (style.stackY or 0)
         if d.pabStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
-            d.stack:SetPoint(sp, btnFrame, sp, look.stackX or 0, look.stackY or 0)
+            d.stack:SetPoint(sp, btnFrame, sp, style.stackX or 0, style.stackY or 0)
             d.pabStackAnchor = sKey
         end
-        d.stack:SetShown(look.showStacks ~= false)
-        local c = look.stackColor
+        d.stack:SetShown(style.showStacks ~= false)
+        local c = style.stackColor
         d.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
     end
 
@@ -232,7 +232,7 @@ local function PAB_ApplyExtraText(btnFrame, d, look)
     --      engine paths that re-show the frame outside the hooked Lua method
     --      (post-instance-change re-shows do this).
     if d.cooldown then
-        d.pabHideSwipe = look.hideSwipe == true
+        d.pabHideSwipe = style.hideSwipe == true
         -- Install lazily on the first apply that actually hides the swipe. The
         -- hook reads the live flag, so a later toggle back on still works, and a
         -- user who never turns the setting off never gets a closure or a secure
@@ -254,15 +254,15 @@ local function PAB_ApplyExtraText(btnFrame, d, look)
 
     -- Icon Effects Per-Filter (debuffs only): flag-gated so buff buttons, which never
     -- carry style.fxList or fx overlay frames, pay zero cost.
-    if look.fxList or d.pabFxGlow or d.pabFxBdr then
-        PAB_ApplyDmFx(btnFrame, d, look)
+    if style.fxList or d.pabFxGlow or d.pabFxBdr then
+        PAB_ApplyDmFx(btnFrame, d, style)
     end
 
     -- Centered runs can have an odd content width/height, whose CENTER anchor is a
     -- half pixel. Let textures use Blizzard's normal pixel snapping so
     -- icon art cannot bleed over PP's one-pixel border. Edge-growing bars keep CUI's
     -- usual unsnapped rendering.
-    d.pabCenteredSnap = look.centeredGrowth == true
+    d.pabCenteredSnap = style.centeredGrowth == true
     -- Lazy install on the first centered apply: bars that never use centered
     -- growth never pay the closure. Once installed the hook reads the live
     -- flag, so switching back to edge growth costs one boolean per SetTexture.
@@ -295,14 +295,14 @@ end
 -- rule: crisp "OUTLINE, SLUG" unless Unit Frames is unchecked in Global Settings'
 -- "Outline Icon Text", then the global/per-module choice. A per-bar Font Outline pick
 -- overrides that; every branch stays slug-gated centrally via "Never Show Slug".
-local function ResolveFontFlag(modeName)
-    if modeName == "none" then
+local function ResolveFontFlag(mode)
+    if mode == "none" then
         return ""
     end
-    if modeName == "outline" then
+    if mode == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE"
     end
-    if modeName == "thick" then
+    if mode == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE"
     end
     return (CludesUI.GetIconTextOutlineFlag("unitFrames")) or "OUTLINE"
@@ -387,7 +387,7 @@ local function BuildStyle(isBuff, conf)
         or conf.growDirection == "DOWN"
         or conf.growDirection == "CENTER_VERTICAL"
 
-    local look = {
+    local style = {
         width = iconSize,
         height = iconHeight,
         hitInsetX = (vertical and rowOverlap or gapOverlap) / 2,
@@ -480,16 +480,16 @@ local function BuildStyle(isBuff, conf)
     -- separate TOC and never touches ns, so resolved paths travel through style.*.
     local shape = conf.iconShape
     if PabShapeActive(shape) then
-        look.iconShape = shape
-        look.shapeMaskPath = mod.PORTRAIT_MASKS and mod.PORTRAIT_MASKS[shape]
-        look.shapeBorderPath = mod.PORTRAIT_BORDERS and mod.PORTRAIT_BORDERS[shape]
-        look.shapeInsetPx = mod.MASK_INSETS and mod.MASK_INSETS[shape]
-        look.shapeBorderSize = conf.shapeBorderSizeOverride or PabShapeBorderSize(borderSize)
+        style.iconShape = shape
+        style.shapeMaskPath = mod.PORTRAIT_MASKS and mod.PORTRAIT_MASKS[shape]
+        style.shapeBorderPath = mod.PORTRAIT_BORDERS and mod.PORTRAIT_BORDERS[shape]
+        style.shapeInsetPx = mod.MASK_INSETS and mod.MASK_INSETS[shape]
+        style.shapeBorderSize = conf.shapeBorderSizeOverride or PabShapeBorderSize(borderSize)
     elseif shape == "cropped" then
-        local zoom = look.iconZoom
-        look.iconCropPercent = mod.PAB_CropPercent(conf)
-        local trim = look.iconCropPercent / 100
-        look.texCoord = { zoom, 1 - zoom, zoom + trim, 1 - zoom - trim }
+        local zoom = style.iconZoom
+        style.iconCropPercent = mod.PAB_CropPercent(conf)
+        local trim = style.iconCropPercent / 100
+        style.texCoord = { zoom, 1 - zoom, zoom + trim, 1 - zoom - trim }
     end
 
     -- Engine dispel-type border, debuffs only (buffs have no dispel type). AK's gate
@@ -502,20 +502,20 @@ local function BuildStyle(isBuff, conf)
         if mod.PAB_Blizz() then
             -- Blizzard Style: the engine stamps Blizzard's own per-dispel-type
             -- debuff border art (red for untyped) -- no ring size, no palette.
-            look.dispelBorder = true
-            look.blizzBorder = true
+            style.dispelBorder = true
+            style.blizzBorder = true
         else
             local dcMap, dcFP = BuildDispelColorMap(conf)
-            look.dispelBorder = true
-            look.dispelBorderPx = solidPx or borderSize
-            look.dispelColorMap = dcMap
-            look.dispelColorFP = dcFP
+            style.dispelBorder = true
+            style.dispelBorderPx = solidPx or borderSize
+            style.dispelColorMap = dcMap
+            style.dispelColorFP = dcFP
             -- Textured Dispel Ring (per bar, opt-in): AuraKit draws the ring in
             -- this bar's border art on the geometry its border lane draws that
             -- border with (style.border), tinted by the engine from the palette
             -- above. Solid, shaped or size-0 bars keep the strips/shape ring.
             if conf.borderDispelTextured == true and border and border.texture then
-                look.dispelBorderTexture = border.texture
+                style.dispelBorderTexture = border.texture
             end
         end
 
@@ -523,7 +523,7 @@ local function BuildStyle(isBuff, conf)
         -- Independent of borderSize: the icon renders with or without a ring.
         local dip = conf.dispelIconPosition
         if dip and dip ~= "none" then
-            look.dispelTypeIcon = {
+            style.dispelTypeIcon = {
                 pos = dip,
                 -- Scaled like iconSize (button-geometry class); offsets stay raw
                 -- like durationX (fine-tune class).
@@ -535,10 +535,10 @@ local function BuildStyle(isBuff, conf)
 
         -- Icon Effects Per-Filter: debuffs only (buffs never get style.fxList, so
         -- PAB_ApplyDmFx's gate in PAB_ApplyExtraText stays a cheap no-op).
-        look.fxList = PAB_FxListView(conf.fxList)
+        style.fxList = PAB_FxListView(conf.fxList)
     end
 
-    return look
+    return style
 end
 
 -- ApplyGroupConfig (CUI_PlayerAuraBars_Groups.lua) declares/updates every group in `chain` on an existing

@@ -47,13 +47,13 @@ function mod.RF_CompactOn(s, party)
     if not s or not (party and s.partyCompactMode == true or not party and s.raidCompactMode == true) then
         return false
     end
-    local look = s
+    local style = s
     if party and s == saved.profile then
-        look = mod._partyProxy
+        style = mod._partyProxy
     elseif party and s == mod._pvOverlayProxy then
-        look = mod._scaledPartyProxy
+        style = mod._scaledPartyProxy
     end
-    if not mod.RF_CompactEligible(look) then
+    if not mod.RF_CompactEligible(style) then
         return false
     end
     return not party or (not mod.RF_PartyKit() and not mod.PT_AlongStack(s, s.partyShowTargets == true))
@@ -115,19 +115,19 @@ function mod.RF_PetCompactHighlight(btnFrame, s)
 end
 
 function mod.RF_CompactHighlight(widget, d, s, btnFrame)
-    local c, a, dim, px
+    local c, a, size, px
     if d._hovered and s.hoverBorderEnabled ~= false then
-        c, a, dim =
+        c, a, size =
             s.hoverBorderColor or defaultSet.profile.hoverBorderColor,
             s.hoverBorderAlpha or 1,
             s.hoverBorderSize or 1
-        px = CUI.BorderPx(s.hoverBorderSizePx, dim, "solid")
+        px = CUI.BorderPx(s.hoverBorderSizePx, size, "solid")
     elseif d._isTarget and s.targetBorderEnabled ~= false then
-        c, a, dim =
+        c, a, size =
             s.targetBorderColor or defaultSet.profile.targetBorderColor,
             s.targetBorderAlpha or 1,
             s.targetBorderSize or 1
-        px = CUI.BorderPx(s.targetBorderSizePx, dim, "solid")
+        px = CUI.BorderPx(s.targetBorderSizePx, size, "solid")
     end
     solidStyle = solidStyle or { borderTexture = "solid" }
     if c then
@@ -137,7 +137,7 @@ function mod.RF_CompactHighlight(widget, d, s, btnFrame)
         if widget:GetFrameLevel() ~= level then
             widget:SetFrameLevel(level)
         end
-        mod.ApplyHighlightBorder(widget, solidStyle, dim, r, g, b, a, px)
+        mod.ApplyHighlightBorder(widget, solidStyle, size, r, g, b, a, px)
         local strips = CUI.PP.GetBorders(widget)
         if strips and strips:GetFrameLevel() ~= level + 1 then
             strips:SetFrameLevel(level + 1)
@@ -161,11 +161,11 @@ local function HideState(st)
     if not st or not st.shown then
         return
     end
-    for _, hostRegion in ipairs(st.hosts) do
-        if hostRegion:IsShown() then
-            CUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
-            hostRegion._sg = nil
+    for _, host in ipairs(st.hosts) do
+        if host:IsShown() then
+            CUI.HideBorderStyle(host)
+            host:Hide()
+            host._sg = nil
         end
     end
     for _, f in ipairs(st.empty) do
@@ -236,16 +236,16 @@ local function UpdateStyle(st, s)
 end
 
 -- Records frame f as the index-th cell of group gi (rect in the owner's scale, top-left).
-local function Cell(st, gi, slotPos, f)
-    local group = st.groups[gi]
-    if not group then
-        group = { cells = {} }
-        st.groups[gi] = group
+local function Cell(st, gi, index, f)
+    local set = st.groups[gi]
+    if not set then
+        set = { cells = {} }
+        st.groups[gi] = set
     end
-    local cellFrame = group.cells[slotPos]
-    if not cellFrame then
-        cellFrame = {}
-        group.cells[slotPos] = cellFrame
+    local cell = set.cells[index]
+    if not cell then
+        cell = {}
+        set.cells[index] = cell
     end
     local scale = f:GetEffectiveScale() / st.owner:GetEffectiveScale()
     local posX, posY, wid, hgt = f:GetRect()
@@ -255,16 +255,16 @@ local function Cell(st, gi, slotPos, f)
     posX, posY, wid, hgt = posX * scale, (posY + hgt) * scale, wid * scale, hgt * scale
     local level, strata = f:GetFrameLevel(), f:GetFrameStrata()
     if
-        cellFrame.frame ~= f
-        or cellFrame.x ~= posX
-        or cellFrame.y ~= posY
-        or cellFrame.w ~= wid
-        or cellFrame.h ~= hgt
-        or cellFrame.level ~= level
-        or cellFrame.strata ~= strata
+        cell.frame ~= f
+        or cell.x ~= posX
+        or cell.y ~= posY
+        or cell.w ~= wid
+        or cell.h ~= hgt
+        or cell.level ~= level
+        or cell.strata ~= strata
     then
-        cellFrame.frame, cellFrame.x, cellFrame.y, cellFrame.w, cellFrame.h = f, posX, posY, wid, hgt
-        cellFrame.level, cellFrame.strata = level, strata
+        cell.frame, cell.x, cell.y, cell.w, cell.h = f, posX, posY, wid, hgt
+        cell.level, cell.strata = level, strata
         st.dirty = true
     end
     return true
@@ -279,37 +279,37 @@ local function Along(a, b)
 end
 
 local function FinishGroup(st, gi, total, growth)
-    local group = st.groups[gi]
-    if not group then
-        group = { cells = {} }
-        st.groups[gi] = group
+    local set = st.groups[gi]
+    if not set then
+        set = { cells = {} }
+        st.groups[gi] = set
     end
-    if group.count ~= total then
-        group.count, st.dirty = total, true
+    if set.count ~= total then
+        set.count, st.dirty = total, true
     end
-    if group.growth ~= growth then
-        group.growth, st.dirty = growth, true
+    if set.growth ~= growth then
+        set.growth, st.dirty = growth, true
     end
 end
 
 -- An outline host round one box (x, y: its top-left in the owner's scale).
-local function Host(st, slotPos, first, posX, posY, wid, hgt)
-    local hostRegion = st.hosts[slotPos]
-    if not hostRegion then
-        hostRegion = CreateFrame("Frame", nil, st.owner)
-        st.hosts[slotPos] = hostRegion
+local function Host(st, index, first, posX, posY, wid, hgt)
+    local host = st.hosts[index]
+    if not host then
+        host = CreateFrame("Frame", nil, st.owner)
+        st.hosts[index] = host
     end
     local val = st.style
-    hostRegion:SetFrameStrata(first.strata)
+    host:SetFrameStrata(first.strata)
     -- Normal dispel strips can reach button + 14; shared edges sit above them.
-    hostRegion:SetFrameLevel(val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2)
-    hostRegion:ClearAllPoints()
-    hostRegion:SetPoint("TOPLEFT", first.frame, "TOPLEFT", posX - first.x, posY - first.y)
-    hostRegion:SetSize(wid, hgt)
-    if hostRegion._sg ~= st.styleGen or hostRegion._w ~= wid or hostRegion._h ~= hgt then
-        hostRegion._sg, hostRegion._w, hostRegion._h = st.styleGen, wid, hgt
+    host:SetFrameLevel(val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2)
+    host:ClearAllPoints()
+    host:SetPoint("TOPLEFT", first.frame, "TOPLEFT", posX - first.x, posY - first.y)
+    host:SetSize(wid, hgt)
+    if host._sg ~= st.styleGen or host._w ~= wid or host._h ~= hgt then
+        host._sg, host._w, host._h = st.styleGen, wid, hgt
         CUI.ApplyBorderStyle(
-            hostRegion,
+            host,
             val.size,
             val.r,
             val.g,
@@ -326,27 +326,27 @@ local function Host(st, slotPos, first, posX, posY, wid, hgt)
             val.px
         )
     end
-    hostRegion:Show()
+    host:Show()
 end
 
 -- A separator along one join (x, y: the join's top-left in the owner's scale).
-local function Seam(st, slotPos, first, posX, posY, length, vertical)
-    local t = st.seams[slotPos]
+local function Seam(st, index, first, posX, posY, length, vertical)
+    local t = st.seams[index]
     if not t then
         if not st.seamHost then
             st.seamHost = CreateFrame("Frame", nil, st.owner)
         end
         t = st.seamHost:CreateTexture(nil, "OVERLAY")
         CUI.PP.DisablePixelSnap(t)
-        st.seams[slotPos] = t
+        st.seams[index] = t
     end
     local val = st.style
-    local hostRegion = st.seamHost
+    local host = st.seamHost
     local level = val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2
-    if hostRegion._level ~= level or hostRegion._strata ~= first.strata then
-        hostRegion._level, hostRegion._strata = level, first.strata
-        hostRegion:SetFrameStrata(first.strata)
-        hostRegion:SetFrameLevel(level)
+    if host._level ~= level or host._strata ~= first.strata then
+        host._level, host._strata = level, first.strata
+        host:SetFrameStrata(first.strata)
+        host:SetFrameLevel(level)
     end
     if t._sg ~= st.styleGen or t._vertical ~= vertical then
         t._sg, t._vertical = st.styleGen, vertical
@@ -385,21 +385,21 @@ local function Draw(st)
     local hostCount, emptyCount, seamCount = 0, 0, 0
     local minX, maxY, maxX, minY, area, first = nil, nil, nil, nil, 0, nil
     for gi = 1, st.count do
-        local group = st.groups[gi]
-        local cells, num = group.cells, group.count
+        local set = st.groups[gi]
+        local cells, num = set.cells, set.count
         if num > 0 then
             -- Keep the capture order stable so an unchanged UP/LEFT stack stays cached.
-            group.sorted = group.sorted or {}
+            set.sorted = set.sorted or {}
             for idx = 1, num do
-                group.sorted[idx] = cells[idx]
+                set.sorted[idx] = cells[idx]
             end
-            for idx = #group.sorted, num + 1, -1 do
-                group.sorted[idx] = nil
+            for idx = #set.sorted, num + 1, -1 do
+                set.sorted[idx] = nil
             end
-            table.sort(group.sorted, Along)
-            cells = group.sorted
+            table.sort(set.sorted, Along)
+            cells = set.sorted
             local c = cells[1]
-            local horizontal = group.growth == "LEFT" or group.growth == "RIGHT"
+            local horizontal = set.growth == "LEFT" or set.growth == "RIGHT"
             local posX, posY = c.x, c.y
             local wid = horizontal and (num * c.w + (num - 1) * gap) or c.w
             local hgt = horizontal and c.h or (num * c.h + (num - 1) * gap)
@@ -407,10 +407,10 @@ local function Draw(st)
             -- its last frame along its growth.
             if val.grid and not st.isPet and num < 5 then
                 local missing = 5 - num
-                if group.growth == "LEFT" then
+                if set.growth == "LEFT" then
                     posX = posX - missing * (c.w + gap)
                 end
-                if group.growth == "UP" then
+                if set.growth == "UP" then
                     posY = posY + missing * (c.h + gap)
                 end
                 wid = horizontal and (5 * c.w + 4 * gap) or c.w
@@ -425,12 +425,10 @@ local function Draw(st)
                         CUI.PP.DisablePixelSnap(f.bg)
                         st.empty[emptyCount] = f
                     end
-                    local offset = idx - num
-                    local endCell = (group.growth == "UP" or group.growth == "LEFT") and cells[1]
-                        or cells[num]
-                    local dx = horizontal and offset * (c.w + gap) * (group.growth == "LEFT" and -1 or 1) or 0
-                    local dy = not horizontal and offset * (c.h + gap) * (group.growth == "UP" and 1 or -1)
-                        or 0
+                    local off = idx - num
+                    local endCell = (set.growth == "UP" or set.growth == "LEFT") and cells[1] or cells[num]
+                    local dx = horizontal and off * (c.w + gap) * (set.growth == "LEFT" and -1 or 1) or 0
+                    local dy = not horizontal and off * (c.h + gap) * (set.growth == "UP" and 1 or -1) or 0
                     f:ClearAllPoints()
                     f:SetPoint("TOPLEFT", endCell.frame, "TOPLEFT", dx, dy)
                     f:SetSize(c.w, c.h)
@@ -445,7 +443,7 @@ local function Draw(st)
                 end
                 num = 5
             end
-            group.x, group.y, group.w, group.h = posX, posY, wid, hgt
+            set.x, set.y, set.w, set.h = posX, posY, wid, hgt
             minX, maxY = math.min(minX or posX, posX), math.max(maxY or posY, posY)
             maxX, minY =
                 math.max(maxX or (posX + wid), posX + wid), math.min(minY or (posY - hgt), posY - hgt)
@@ -475,25 +473,25 @@ local function Draw(st)
         Host(st, 1, first, minX, maxY, maxX - minX, maxY - minY)
     end
     for gi = 1, st.count do
-        local group = st.groups[gi]
-        if group.count > 0 then
+        local set = st.groups[gi]
+        if set.count > 0 then
             if not rectangular then
                 hostCount = hostCount + 1
-                Host(st, hostCount, group.sorted[1], group.x, group.y, group.w, group.h)
+                Host(st, hostCount, set.sorted[1], set.x, set.y, set.w, set.h)
             else
                 -- Separators where two joined groups meet, along their shared length.
                 for gj = gi + 1, st.count do
                     local other = st.groups[gj]
                     if other.count > 0 then
-                        local posX = math.max(group.x, other.x)
-                        local posY = math.min(group.y, other.y)
-                        local width = math.min(group.x + group.w, other.x + other.w) - posX
-                        local height = posY - math.max(group.y - group.h, other.y - other.h)
+                        local posX = math.max(set.x, other.x)
+                        local posY = math.min(set.y, other.y)
+                        local width = math.min(set.x + set.w, other.x + other.w) - posX
+                        local height = posY - math.max(set.y - set.h, other.y - other.h)
                         if
                             height > 0
                             and (
-                                math.abs(group.x + group.w + gap - other.x) < gap / 2
-                                or math.abs(other.x + other.w + gap - group.x) < gap / 2
+                                math.abs(set.x + set.w + gap - other.x) < gap / 2
+                                or math.abs(other.x + other.w + gap - set.x) < gap / 2
                             )
                         then
                             seamCount = seamCount + 1
@@ -501,8 +499,8 @@ local function Draw(st)
                         elseif
                             width > 0
                             and (
-                                math.abs(group.y - group.h - gap - other.y) < gap / 2
-                                or math.abs(other.y - other.h - gap - group.y) < gap / 2
+                                math.abs(set.y - set.h - gap - other.y) < gap / 2
+                                or math.abs(other.y - other.h - gap - set.y) < gap / 2
                             )
                         then
                             seamCount = seamCount + 1
@@ -514,11 +512,11 @@ local function Draw(st)
         end
     end
     for idx = hostCount + 1, #st.hosts do
-        local hostRegion = st.hosts[idx]
-        if hostRegion:IsShown() then
-            CUI.HideBorderStyle(hostRegion)
-            hostRegion:Hide()
-            hostRegion._sg = nil
+        local host = st.hosts[idx]
+        if host:IsShown() then
+            CUI.HideBorderStyle(host)
+            host:Hide()
+            host._sg = nil
         end
     end
     for idx = emptyCount + 1, #st.empty do
@@ -615,8 +613,8 @@ local function CollectGroup(st, frameList, start, limit, gi, growth)
     FinishGroup(st, gi, num, growth)
 end
 
-local function HeaderGrowth(headerFrame)
-    local anchorPoint = headerFrame and headerFrame:GetAttribute("point")
+local function HeaderGrowth(header)
+    local anchorPoint = header and header:GetAttribute("point")
     return anchorPoint == "BOTTOM" and "UP"
         or anchorPoint == "LEFT" and "RIGHT"
         or anchorPoint == "RIGHT" and "LEFT"

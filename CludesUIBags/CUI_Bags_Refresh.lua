@@ -742,21 +742,21 @@ function CUI_Bags:RefreshInventory()
         elseif not restricted then
             regularTotal = regularTotal + numSlots
         end
-        for slotIndex = 1, numSlots do
-            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+        for slot = 1, numSlots do
+            local details = C_Container.GetContainerItemInfo(bag, slot)
             if details then
                 if bag == 5 then
                     reagentUsed = reagentUsed + 1
                 elseif not restricted then
                     regularUsed = regularUsed + 1
                 end
-                local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
+                local itemLink = C_Container.GetContainerItemLink(bag, slot)
                 local d = AcquireSlotTable()
                 d.bag = bag
-                d.slot = slotIndex
+                d.slot = slot
                 d.info = details
                 d.itemLink = itemLink
-                CUI_Bags.ApplyBindKeyword(details, bag, slotIndex)
+                CUI_Bags.ApplyBindKeyword(details, bag, slot)
                 -- Pre-cache per-item data for RenderButton (zero API calls at render time)
                 if itemLink then
                     local facts = _linkFacts[itemLink]
@@ -777,7 +777,7 @@ function CUI_Bags:RefreshInventory()
                             _linkFactsN = _linkFactsN + 1
                         end
                     end
-                    _slotLoc:SetBagAndSlot(bag, slotIndex)
+                    _slotLoc:SetBagAndSlot(bag, slot)
                     local loc = _slotLoc
                     -- Slot-grouping fields (_equipSlot/_classID/_subclassID) are NOT
                     -- pre-cached here: GetArmorySlotBucket fetches them lazily, only
@@ -842,20 +842,20 @@ function CUI_Bags:RefreshInventory()
                         end
                     end
                     -- Cooldown (any item can have a cooldown: trinkets, consumables, toys, etc.)
-                    local cdStart, cdDur, cdEnable = C_Container.GetContainerItemCooldown(bag, slotIndex)
+                    local cdStart, cdDur, cdEnable = C_Container.GetContainerItemCooldown(bag, slot)
                     if cdEnable and cdEnable ~= 0 and cdStart > 0 and cdDur > 0 then
                         d._cdStart = cdStart
                         d._cdDuration = cdDur
                     end
                     -- _isQuest (any quest item, incl. active objectives + starters) drives the gold
                     -- border; _isQuestStarter (questID set but inactive) is Blizzard's "!" and drives the corner marker.
-                    d._isQuest, d._isQuestStarter = mod.GetSlotQuestFlags(bag, slotIndex)
+                    d._isQuest, d._isQuestStarter = mod.GetSlotQuestFlags(bag, slot)
                 end
                 tempItems[#tempItems + 1] = d
             else
                 local d = AcquireSlotTable()
                 d.bag = bag
-                d.slot = slotIndex
+                d.slot = slot
                 emptySlots[#emptySlots + 1] = d
             end
         end
@@ -1093,7 +1093,7 @@ function CUI_Bags:RefreshInventory()
         local HDR = 0.74 * 38 / pitch -- section-header height in slot-row units (~28/38)
         -- Slot count (n) + section-header count (S) for the active tab. Headers add HEIGHT
         -- but not WIDTH, so they MUST fold into the estimate or a header-heavy tab (All Items with many categories) grows taller than wide.
-        local num, Stl
+        local num, S
         if selectedCategoryIndex > 0 and not selectedGroupName then
             num = (categoryCounts and categoryCounts[selectedCategoryIndex]) or #tempItems
             -- The anchor view folds in its set children's items; count them too
@@ -1108,11 +1108,11 @@ function CUI_Bags:RefreshInventory()
                     end
                 end
             end
-            Stl = 1
+            S = 1
         elseif selectedCategoryIndex == 0 and not selectedGroupName then
             -- All Items: one section per non-empty category
             num = #tempItems + #emptySlots
-            Stl = 0
+            S = 0
             if categoryCounts then
                 -- Set children fold into their anchor's section: count them as one
                 local sizeCats = BP().bagSplitSetGearBySet and CUI_CategoryManager:GetCategories() or nil
@@ -1122,50 +1122,50 @@ function CUI_Bags:RefreshInventory()
                         if sizeCats and sizeCats[i] and sizeCats[i].isEquipSet then
                             hasSetChild = true
                         else
-                            Stl = Stl + 1
+                            S = S + 1
                         end
                     end
                 end
                 if hasSetChild then
-                    Stl = Stl + 1
+                    S = S + 1
                 end
             end
-            if Stl < 1 then
-                Stl = 1
+            if S < 1 then
+                S = 1
             end
         elseif selectedCategoryIndex == -2 then
             -- MultiBag: one section per bag that has slots (+ reagent)
             num = #tempItems + #emptySlots
-            Stl = 0
+            S = 0
             for bag = 0, 5 do
                 if C_Container.GetContainerNumSlots(bag) > 0 then
-                    Stl = Stl + 1
+                    S = S + 1
                 end
             end
-            if Stl < 1 then
-                Stl = 1
+            if S < 1 then
+                S = 1
             end
         else
             -- OneBag / group view: a few sections (pinned/recent/main/reagent,
             -- plus OneBag's special bags)
             num = #tempItems + #emptySlots
-            Stl = 3 + (selectedCategoryIndex == -1 and spBags or 0)
+            S = 3 + (selectedCategoryIndex == -1 and spBags or 0)
         end
         num = math.max(num, 1)
         -- Compact: no header rows; each block's gap and part-filled last row
         -- (about a cell) and the label bands are folded into the cell count
         -- as an estimate
         if CUI_Bags.IsCompactMode() then
-            num = (num + Stl - 1) * (1 + mod.CompactBandHeight() / (SLOT_SIZE + SPACING))
-            Stl = 0
+            num = (num + S - 1) * (1 + mod.CompactBandHeight() / (SLOT_SIZE + SPACING))
+            S = 0
         end
         local ideal = baseCols
         -- Only grow when the tab won't fit at the base column count.
-        if math.ceil(num / baseCols) + math.ceil(HDR * Stl) > BASE_ROWS then
+        if math.ceil(num / baseCols) + math.ceil(HDR * S) > BASE_ROWS then
             -- Cols such that item+header rows keep the base rows:cols slope (grow together):
             -- solve A*cols^2 - HDR*S*cols - n = 0, where A = BASE_ROWS/baseCols.
             local A = BASE_ROWS / baseCols
-            local hs = HDR * Stl
+            local hs = HDR * S
             ideal = math.ceil((hs + math.sqrt(hs * hs + 4 * A * num)) / (2 * A))
         end
         local sbW = GetSidebarWidth()
@@ -1324,9 +1324,9 @@ function CUI_BagsReagent:RefreshInventory()
     local tempItems = {}
     local numSlots = C_Container.GetContainerNumSlots(5)
     if numSlots > 0 then
-        for slotIndex = 1, numSlots do
-            local details = C_Container.GetContainerItemInfo(5, slotIndex)
-            tempItems[#tempItems + 1] = { bag = 5, slot = slotIndex, info = details }
+        for slot = 1, numSlots do
+            local details = C_Container.GetContainerItemInfo(5, slot)
+            tempItems[#tempItems + 1] = { bag = 5, slot = slot, info = details }
         end
     end
 
@@ -1430,12 +1430,12 @@ function CUI_BagsReagent:RefreshInventory()
                 end
             end
 
-            local column = (i - 1) % REAGENT_COLUMNS
-            local rowFrame = math.floor((i - 1) / REAGENT_COLUMNS)
+            local col = (i - 1) % REAGENT_COLUMNS
+            local row = math.floor((i - 1) / REAGENT_COLUMNS)
             hostFrame:SetPoint(
                 "TOPLEFT",
-                startX + (column * (SLOT_SIZE + SPACING)),
-                startY - (rowFrame * (SLOT_SIZE + SPACING))
+                startX + (col * (SLOT_SIZE + SPACING)),
+                startY - (row * (SLOT_SIZE + SPACING))
             )
         end
     end

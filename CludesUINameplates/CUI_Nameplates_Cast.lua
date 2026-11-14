@@ -52,23 +52,23 @@ local minorScale, nonEliteScale = 1, 1
 -- UNKNOWNOBJECT) until its data arrives, so Non-Elite waits for UNIT_NAME_UPDATE then:
 -- a dungeon elite never spawns shrunk and grows back.
 function NameplateFrame:UpdateTypeScale()
-    local baseValue = 1
+    local base = 1
     local unitToken = self.unit
     if unitToken and mod._typeScaleOn then
         local c = UnitClassification(unitToken)
         if c == "minus" or c == "trivial" then
-            baseValue = minorScale
+            base = minorScale
         elseif c == "normal" and nonEliteScale ~= 1 and mod._inDungeon and not UnitIsPlayer(unitToken) then
             local name = UnitName(unitToken)
             if (issecretvalue and issecretvalue(name)) or name ~= UNKNOWNOBJECT then
-                baseValue = nonEliteScale
+                base = nonEliteScale
             end
         end
     end
-    if self._typeScale == baseValue then
+    if self._typeScale == base then
         return false
     end
-    self._typeScale = baseValue
+    self._typeScale = base
     return true
 end
 
@@ -125,12 +125,12 @@ local castGlowSpec = {}
 -- Starts the glow on a cast bar overlay. Restarts only when the setting or the bar size changed.
 local function StartCastGlow(self, shade, conf, key)
     local Glows = CludesUI.Glows
-    local look = conf[key.style] or defaultSet[key.style] or 1
-    if type(look) ~= "number" or look < 1 or look > #PANDEMIC_GLOW_STYLES then
-        look = 1
+    local style = conf[key.style] or defaultSet[key.style] or 1
+    if type(style) ~= "number" or style < 1 or style > #PANDEMIC_GLOW_STYLES then
+        style = 1
     end
     local specInfo = Glows.SpecFromFlat(castGlowSpec, conf, key, conf[key.mode] or "custom", defaultSet)
-    specInfo.style = mod.NP_TO_SHARED_GLOW[look] or 1
+    specInfo.style = mod.NP_TO_SHARED_GLOW[style] or 1
     local pW, pH = self.cast:GetWidth(), self.cast:GetHeight()
     if pW < 5 then
         pW = 100
@@ -466,21 +466,21 @@ do
     end
 end
 function NameplateFrame:ApplyScale()
-    local baseValue = 1
+    local base = 1
     if self.unit and UnitIsUnit(self.unit, "target") then
         local ts = GetTargetScale() / 100
         if ts ~= 1 then
-            baseValue = ts
+            base = ts
         end
     elseif mod._typeScaleOn then
         -- Minor Enemy Scale: minor (minus) and trivial mobs. Non-Elite Enemy Scale: normal NPCs in
         -- dungeons (the Mini Enemies color's scope). The target keeps Target Scale.
-        baseValue = self._typeScale or 1
+        base = self._typeScale or 1
     end
     local cs = GetCastScale() / 100
-    local dest = baseValue
+    local dest = base
     if self.isCasting and cs ~= 1 then
-        dest = baseValue * cs
+        dest = base * cs
     end
     self._destScale = dest
     local current = self._curScale
@@ -880,8 +880,8 @@ function NameplateFrame:ShowInterrupted(interrupterGUID)
     local interrupterName
     local interrupterClass
     if type(interrupterGUID) ~= "nil" then
-        local _, classFile, _, _, _, name = GetPlayerInfoByGUID(interrupterGUID)
-        interrupterClass = classFile
+        local _, class, _, _, _, name = GetPlayerInfoByGUID(interrupterGUID)
+        interrupterClass = class
         interrupterName = name
         if type(interrupterName) == "nil" then
             -- Fallback for a NON-player interrupter GUID (pet or NPC): GetPlayerInfoByGUID

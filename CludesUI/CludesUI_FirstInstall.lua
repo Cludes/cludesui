@@ -100,11 +100,11 @@ local GROUPS = {
 -- roster in CludesUI.lua).
 do
     local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
-    for _, group in ipairs(GROUPS) do
-        for idx = #group.entries, 1, -1 do
-            local addon = group.entries[idx].addon
+    for _, set in ipairs(GROUPS) do
+        for idx = #set.entries, 1, -1 do
+            local addon = set.entries[idx].addon
             if addon and hidden[addon] then
-                table.remove(group.entries, idx)
+                table.remove(set.entries, idx)
             end
         end
     end
@@ -204,22 +204,22 @@ local function ShowFirstInstallPopup()
             end
 
             -- Checked box + stand-in lines: the picker rows in miniature.
-            local boxFrame = cardFrame:CreateTexture(nil, "ARTWORK")
-            boxFrame:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
-            Pix.Size(boxFrame, 12, 12)
-            Pix.Point(boxFrame, "TOPLEFT", cardFrame, "TOPLEFT", 12, -14)
+            local box = cardFrame:CreateTexture(nil, "ARTWORK")
+            box:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
+            Pix.Size(box, 12, 12)
+            Pix.Point(box, "TOPLEFT", cardFrame, "TOPLEFT", 12, -14)
             local check = cardFrame:CreateTexture(nil, "OVERLAY")
             check:SetColorTexture(EGh.r, EGh.g, EGh.b, isCenter and 1 or 0.8)
             Pix.Size(check, 6, 6)
-            Pix.Point(check, "CENTER", boxFrame, "CENTER", 0, 0)
+            Pix.Point(check, "CENTER", box, "CENTER", 0, 0)
             local l1 = cardFrame:CreateTexture(nil, "ARTWORK")
             l1:SetColorTexture(1, 1, 1, isCenter and 0.42 or 0.32)
             Pix.Size(l1, wid - 52, 5)
-            Pix.Point(l1, "LEFT", boxFrame, "RIGHT", 8, 0)
+            Pix.Point(l1, "LEFT", box, "RIGHT", 8, 0)
             local l2 = cardFrame:CreateTexture(nil, "ARTWORK")
             l2:SetColorTexture(1, 1, 1, 0.16)
             Pix.Size(l2, wid - 72, 5)
-            Pix.Point(l2, "TOPLEFT", boxFrame, "BOTTOMLEFT", 0, -8)
+            Pix.Point(l2, "TOPLEFT", box, "BOTTOMLEFT", 0, -8)
             if isCenter then
                 local l3 = cardFrame:CreateTexture(nil, "ARTWORK")
                 l3:SetColorTexture(1, 1, 1, 0.12)
@@ -238,21 +238,21 @@ local function ShowFirstInstallPopup()
     eyebrow:SetText(CludesUI.L("FIRST TIME SETUP"))
 
     -- Title
-    local titleText = dialog:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont(FONT, 25, "")
-    titleText:SetTextColor(1, 1, 1, 1)
-    Pix.Point(titleText, "TOP", eyebrow, "BOTTOM", 0, -6)
-    titleText:SetText(CludesUI.L("Welcome to CludesUI"))
+    local title = dialog:CreateFontString(nil, "OVERLAY")
+    title:SetFont(FONT, 25, "")
+    title:SetTextColor(1, 1, 1, 1)
+    Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
+    title:SetText(CludesUI.L("Welcome to CludesUI"))
 
     -- Subtitle
-    local subFrame = dialog:CreateFontString(nil, "OVERLAY")
-    subFrame:SetFont(FONT, 14, "")
-    subFrame:SetTextColor(1, 1, 1, 0.45)
-    Pix.Point(subFrame, "TOP", titleText, "BOTTOM", 0, -8)
-    subFrame:SetWidth(POPUP_W - 60)
-    subFrame:SetJustifyH("CENTER")
-    subFrame:SetWordWrap(true)
-    subFrame:SetText(
+    local sub = dialog:CreateFontString(nil, "OVERLAY")
+    sub:SetFont(FONT, 14, "")
+    sub:SetTextColor(1, 1, 1, 0.45)
+    Pix.Point(sub, "TOP", title, "BOTTOM", 0, -8)
+    sub:SetWidth(POPUP_W - 60)
+    sub:SetJustifyH("CENTER")
+    sub:SetWordWrap(true)
+    sub:SetText(
         CludesUI.L(
             "Choose which addons you want enabled. You can change any of these later in the CludesUI settings panel."
         )
@@ -308,48 +308,47 @@ local function ShowFirstInstallPopup()
     local allRows = {}
 
     -- One column per group
-    for colIdx, group in ipairs(GROUPS) do
-        local column = CreateFrame("Frame", nil, dialog)
-        column:SetFrameLevel(dialog:GetFrameLevel() + 1)
+    for colIdx, set in ipairs(GROUPS) do
+        local col = CreateFrame("Frame", nil, dialog)
+        col:SetFrameLevel(dialog:GetFrameLevel() + 1)
         local colX = CONTENT_LEFT + (colIdx - 1) * (COL_W + COL_GAP)
-        Pix.Point(column, "TOPLEFT", dialog, "TOPLEFT", colX, -CONTENT_TOP)
-        Pix.Size(column, COL_W, POPUP_H - CONTENT_TOP - 80)
+        Pix.Point(col, "TOPLEFT", dialog, "TOPLEFT", colX, -CONTENT_TOP)
+        Pix.Size(col, COL_W, POPUP_H - CONTENT_TOP - 80)
 
         -- Group header (styled like a class header)
-        local heading = column:CreateFontString(nil, "OVERLAY")
+        local heading = col:CreateFontString(nil, "OVERLAY")
         heading:SetFont(FONT, 18, "")
         heading:SetTextColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.9)
-        Pix.Point(heading, "TOPLEFT", column, "TOPLEFT", 4, -4)
-        heading:SetText(CludesUI.L(group.header))
+        Pix.Point(heading, "TOPLEFT", col, "TOPLEFT", 4, -4)
+        heading:SetText(CludesUI.L(set.header))
 
         local yOff = HEADER_H + HEADER_PAD
 
-        for _, record in ipairs(group.entries) do
-            local rowFrame = CreateFrame("Button", nil, column)
-            Pix.Size(rowFrame, COL_W, ROW_H)
-            rowFrame:ClearAllPoints()
-            Pix.Point(rowFrame, "TOPLEFT", column, "TOPLEFT", 0, -yOff)
+        for _, record in ipairs(set.entries) do
+            local row = CreateFrame("Button", nil, col)
+            Pix.Size(row, COL_W, ROW_H)
+            row:ClearAllPoints()
+            Pix.Point(row, "TOPLEFT", col, "TOPLEFT", 0, -yOff)
 
-            local boxFrame = CreateFrame("Frame", nil, rowFrame)
-            Pix.Size(boxFrame, BOX_SZ, BOX_SZ)
-            Pix.Point(boxFrame, "LEFT", rowFrame, "LEFT", 8, 0)
-            boxFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
+            local box = CreateFrame("Frame", nil, row)
+            Pix.Size(box, BOX_SZ, BOX_SZ)
+            Pix.Point(box, "LEFT", row, "LEFT", 8, 0)
+            box:SetFrameLevel(row:GetFrameLevel() + 1)
 
-            local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
+            local boxBg = box:CreateTexture(nil, "BACKGROUND")
             boxBg:SetAllPoints()
             boxBg:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
-            local boxBorder =
-                CludesUI.MakeRoundedBorder(boxFrame, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
+            local boxBorder = CludesUI.MakeRoundedBorder(box, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
 
-            local check = boxFrame:CreateTexture(nil, "ARTWORK")
-            Pix.Point(check, "TOPLEFT", boxFrame, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
-            Pix.Point(check, "BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
+            local check = box:CreateTexture(nil, "ARTWORK")
+            Pix.Point(check, "TOPLEFT", box, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
+            Pix.Point(check, "BOTTOMRIGHT", box, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
             check:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-            CludesUI.RoundBody(boxFrame, check, 1)
+            CludesUI.RoundBody(box, check, 1)
 
-            local labelFS = rowFrame:CreateFontString(nil, "OVERLAY")
+            local labelFS = row:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(FONT, 17, "")
-            Pix.Point(labelFS, "LEFT", boxFrame, "RIGHT", 8, 0)
+            Pix.Point(labelFS, "LEFT", box, "RIGHT", 8, 0)
             labelFS:SetTextColor(1, 1, 1, 0.65)
             labelFS:SetText(CludesUI.L(record.label))
 
@@ -370,12 +369,12 @@ local function ShowFirstInstallPopup()
                 checked = false
             end
 
-            rowFrame._entry = record
-            rowFrame._checked = checked
-            rowFrame._check = check
-            rowFrame._boxBorder = boxBorder
-            rowFrame._lbl = labelFS
-            rowFrame._informational = (record.comingSoon == true)
+            row._entry = record
+            row._checked = checked
+            row._check = check
+            row._boxBorder = boxBorder
+            row._lbl = labelFS
+            row._informational = (record.comingSoon == true)
                 or (record.addon == nil and record.setting == nil)
 
             local function UpdateVisual(r)
@@ -392,24 +391,24 @@ local function ShowFirstInstallPopup()
                     r._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
                 end
             end
-            rowFrame._boxBg = boxBg
-            UpdateVisual(rowFrame)
+            row._boxBg = boxBg
+            UpdateVisual(row)
 
-            rowFrame:SetScript("OnClick", function(self)
+            row:SetScript("OnClick", function(self)
                 if self._informational then
                     return
                 end
                 self._checked = not self._checked
                 UpdateVisual(self)
             end)
-            rowFrame:SetScript("OnEnter", function(self)
+            row:SetScript("OnEnter", function(self)
                 if self._informational then
                     CludesUI.ShowWidgetTooltip(self, "Coming soon")
                     return
                 end
                 self._lbl:SetTextColor(1, 1, 1, 0.90)
             end)
-            rowFrame:SetScript("OnLeave", function(self)
+            row:SetScript("OnLeave", function(self)
                 CludesUI.HideWidgetTooltip()
                 if self._informational then
                     return
@@ -417,7 +416,7 @@ local function ShowFirstInstallPopup()
                 self._lbl:SetTextColor(1, 1, 1, 0.65)
             end)
 
-            allRows[#allRows + 1] = rowFrame
+            allRows[#allRows + 1] = row
             yOff = yOff + ROW_H
         end
     end
@@ -453,9 +452,9 @@ local function ShowFirstInstallPopup()
     RefreshButtonLabel()
 
     -- Hook each checkbox click to refresh the button label
-    for _, rowFrame in ipairs(allRows) do
-        local origOnClick = rowFrame:GetScript("OnClick")
-        rowFrame:SetScript("OnClick", function(self, ...)
+    for _, row in ipairs(allRows) do
+        local origOnClick = row:GetScript("OnClick")
+        row:SetScript("OnClick", function(self, ...)
             if origOnClick then
                 origOnClick(self, ...)
             end
@@ -465,21 +464,21 @@ local function ShowFirstInstallPopup()
 
     -- Check All / Uncheck All wiring
     checkAllBtn:SetScript("OnClick", function()
-        for _, rowFrame in ipairs(allRows) do
-            if not rowFrame._informational and not rowFrame._checked then
-                rowFrame._checked = true
-                rowFrame._check:Show()
-                rowFrame._boxBorder:SetColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, CB_ACT_BRD_A)
+        for _, row in ipairs(allRows) do
+            if not row._informational and not row._checked then
+                row._checked = true
+                row._check:Show()
+                row._boxBorder:SetColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, CB_ACT_BRD_A)
             end
         end
         RefreshButtonLabel()
     end)
     uncheckAllBtn:SetScript("OnClick", function()
-        for _, rowFrame in ipairs(allRows) do
-            if not rowFrame._informational and rowFrame._checked then
-                rowFrame._checked = false
-                rowFrame._check:Hide()
-                rowFrame._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
+        for _, row in ipairs(allRows) do
+            if not row._informational and row._checked then
+                row._checked = false
+                row._check:Hide()
+                row._boxBorder:SetColor(BORDER_R, BORDER_G, BORDER_B, CB_BRD_A)
             end
         end
         RefreshButtonLabel()
@@ -531,9 +530,9 @@ local function ShowFirstInstallPopup()
         -- Always write the Cursor Circle choice, even on "no reload" close,
         -- since the default (cursor.enabled = true) differs from the popup's
         -- default-unchecked state.
-        for _, rowFrame in ipairs(allRows) do
-            if rowFrame._entry.setting == "cursorCircle" then
-                ApplyCursorCircle(rowFrame._checked)
+        for _, row in ipairs(allRows) do
+            if row._entry.setting == "cursorCircle" then
+                ApplyCursorCircle(row._checked)
             end
         end
 
@@ -546,9 +545,9 @@ local function ShowFirstInstallPopup()
             -- options addon loads for it, never in combat; in combat, or when
             -- it cannot load, the picker offers the look as its default instead.
             CludesUI.RequestReload(nil, nil, function()
-                for _, rowFrame in ipairs(allRows) do
-                    if rowFrame._entry.addon then
-                        SetAddonEnabled(rowFrame._entry.addon, rowFrame._checked)
+                for _, row in ipairs(allRows) do
+                    if row._entry.addon then
+                        SetAddonEnabled(row._entry.addon, row._checked)
                     end
                 end
                 if

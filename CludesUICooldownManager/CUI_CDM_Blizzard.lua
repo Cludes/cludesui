@@ -25,11 +25,11 @@ local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inn
 local function GetCDMFont()
     return CludesUI.GetFontPath("cdm")
 end
-local function SetBlizzCDMFont(fontStr, font, dim, r, g, b)
+local function SetBlizzCDMFont(fontStr, font, size, r, g, b)
     if not (fontStr and fontStr.SetFont) then
         return
     end
-    CludesUI.ApplyIconTextFont(fontStr, font, dim, "cdm")
+    CludesUI.ApplyIconTextFont(fontStr, font, size, "cdm")
     if r then
         fontStr:SetTextColor(r, g, b)
     end
@@ -616,24 +616,23 @@ end
 -- Nil when the rolls are not in the column's own anchor; false (asked again
 -- after combat) when a geometry read is secret.
 local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, posX, posY)
-    local column = BottomManagedFrameContainer
-    if not column then
+    local col = BottomManagedFrameContainer
+    if not col then
         return nil
     end
     -- Only the column's own anchor: TOP of the rolls to the TOP of the column.
     local hostFrame = widget:GetParent()
     if
         issecretvalue(hostFrame)
-        or hostFrame ~= column
+        or hostFrame ~= col
         or anchorPoint ~= "TOP"
         or relativePoint ~= "TOP"
-        or relativeTo ~= column
+        or relativeTo ~= col
     then
         return nil
     end
-    local cs, s, us = column:GetEffectiveScale(), widget:GetEffectiveScale(), UIParent:GetEffectiveScale()
-    local colTop, colBottom, colL, colR =
-        column:GetTop(), column:GetBottom(), column:GetLeft(), column:GetRight()
+    local cs, s, us = col:GetEffectiveScale(), widget:GetEffectiveScale(), UIParent:GetEffectiveScale()
+    local colTop, colBottom, colL, colR = col:GetTop(), col:GetBottom(), col:GetLeft(), col:GetRight()
     local wid, hgt, uiTop = widget:GetWidth(), widget:GetHeight(), UIParent:GetTop()
     if AnySecret(cs, s, us, colTop, colBottom, colL, colR, wid, hgt, uiTop) then
         return false
@@ -656,7 +655,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
         _G[BLIZZ_CDM_FRAMES.cooldowns],
         _G[BLIZZ_CDM_FRAMES.utility],
         _G[BLIZZ_CDM_FRAMES.buffs],
-        column:GetChildren()
+        col:GetChildren()
     )
     local p = ECME.db and ECME.db.profile
     local cdmBars = p and p.cdmBars
@@ -739,7 +738,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     -- counts as covered too, so they never stop closer than that to one
     -- they jumped past. Each pass clears a higher top than the last, so n
     -- passes cover every rise, whatever the obstacles' order.
-    local gap = (column.spacing or 0) * cs
+    local gap = (col.spacing or 0) * cs
     local reach = 0
     for _ = 1, num do
         local hi
@@ -763,7 +762,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     if topY > uiTop * us then
         topY = uiTop * us
     end
-    return anchorPoint, column, relativePoint, posX, (topY - colTop * cs) / s
+    return anchorPoint, col, relativePoint, posX, (topY - colTop * cs) / s
 end
 
 -- Rolls already up follow a CDM bar or Tracking Bar that was rebuilt, moved

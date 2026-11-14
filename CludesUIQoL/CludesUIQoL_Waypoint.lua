@@ -107,13 +107,13 @@ local function FindZones(query)
         local ident, key = zoneIDs[idx], zoneKeys[idx]
         local details = C_Map.GetMapInfo(ident)
         local hostFrame = C_Map.GetMapInfo(details.parentMapID)
-        local slotIndex = key .. ":" .. details.parentMapID
+        local slot = key .. ":" .. details.parentMapID
         if
-            not slots[slotIndex]
+            not slots[slot]
             and C_Map.CanSetUserWaypointOnMap(ident)
             and not (hostFrame and Fold(hostFrame.name) == key)
         then
-            slots[slotIndex] = true
+            slots[slot] = true
             ids[#ids + 1] = ident
             if not named[key] then
                 named[key] = true
@@ -200,16 +200,16 @@ end
 
 -- n: the destination's number, when the list holds several.
 local function LinkLine(dest, num)
-    local lineTex = PinLink(dest.mapID, dest.x, dest.y)
+    local line = PinLink(dest.mapID, dest.x, dest.y)
         .. " "
         .. CC.WHITE
         .. dest.label
         .. "|r "
         .. Coords(dest.x, dest.y)
     if dest.desc then
-        lineTex = lineTex .. "  " .. dest.desc
+        line = line .. "  " .. dest.desc
     end
-    return num and (CC.BRAND .. num .. ".|r " .. lineTex) or lineTex
+    return num and (CC.BRAND .. num .. ".|r " .. line) or line
 end
 
 -------------------------------------------------------------------------------

@@ -247,13 +247,13 @@ mod.EDM.DB = function()
     return {}
 end
 
-local function SavedDB()
+local function DB()
     return mod.EDM.DB()
 end
 -- The header's height: the Header Height setting, plus the Forever header
 -- band's rail under it (ns.DMFvRail; 0 on every other look).
 local function GetHeaderH()
-    local c = SavedDB()
+    local c = DB()
     local hgt = c.hdrHeight or 22
     return hgt + mod.DMFvRail(hgt)
 end
@@ -269,7 +269,7 @@ end
 CludesUI.NewInternals(mod, "_dmInternals", {
     BAR_POOL_SIZE = BAR_POOL_SIZE,
     BAR_TEX = BAR_TEX,
-    DB = SavedDB,
+    DB = DB,
     DM_TYPE_ICONS = DM_TYPE_ICONS,
     DM_TYPE_NAMES = DM_TYPE_NAMES,
     EnsureDB = EnsureDB,

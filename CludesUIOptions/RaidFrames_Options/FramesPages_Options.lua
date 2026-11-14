@@ -56,11 +56,11 @@ local function BuildSortByControl(region, options)
     sLabel:SetPoint("RIGHT", sArrow, "LEFT", -5, 0)
 
     local function UpdateSortLabel()
-        local modeName = options.readMode()
-        if modeName == "FRAMESORT" then
+        local mode = options.readMode()
+        if mode == "FRAMESORT" then
             sLabel:SetText("FrameSort")
         else
-            sLabel:SetText(modeName == "ROLE" and CludesUI.L("Role") or CludesUI.L("Group"))
+            sLabel:SetText(mode == "ROLE" and CludesUI.L("Role") or CludesUI.L("Group"))
         end
     end
     UpdateSortLabel()
@@ -220,42 +220,42 @@ local function BuildSortByControl(region, options)
     insLine:Hide()
 
     for ci, cb in ipairs(roleItems) do
-        local rowFrame = CreateFrame("Button", nil, menuFrame)
-        rowFrame:SetHeight(MH)
-        rowFrame._baseY = mY
-        rowFrame._cbIndex = ci
-        rowFrame._cb = cb
-        rowFrame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
-        rowFrame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
-        rowFrame:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
+        local row = CreateFrame("Button", nil, menuFrame)
+        row:SetHeight(MH)
+        row._baseY = mY
+        row._cbIndex = ci
+        row._cb = cb
+        row:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, mY)
+        row:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, mY)
+        row:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
 
-        local rl = rowFrame:CreateFontString(nil, "OVERLAY")
+        local rl = row:CreateFontString(nil, "OVERLAY")
         rl:SetFont(FONT, 13, "")
-        rl:SetPoint("LEFT", rowFrame, "LEFT", 20, 0)
+        rl:SetPoint("LEFT", row, "LEFT", 20, 0)
         rl:SetJustifyH("LEFT")
         rl:SetText(CludesUI.L(cb.label))
         rl:SetTextColor(0.75, 0.75, 0.75, 1)
-        rowFrame._lbl = rl
+        row._lbl = rl
 
         -- Drag handle dots
-        local grip = rowFrame:CreateFontString(nil, "OVERLAY")
+        local grip = row:CreateFontString(nil, "OVERLAY")
         grip:SetFont(FONT, 10, "")
-        grip:SetPoint("LEFT", rowFrame, "LEFT", 8, 0)
+        grip:SetPoint("LEFT", row, "LEFT", 8, 0)
         grip:SetText("=")
         grip:SetTextColor(1, 1, 1, 0.2)
 
-        local rHL = rowFrame:CreateTexture(nil, "ARTWORK")
+        local rHL = row:CreateTexture(nil, "ARTWORK")
         rHL:SetAllPoints()
         rHL:SetColorTexture(1, 1, 1, 0)
 
-        rowFrame:SetScript("OnEnter", function()
+        row:SetScript("OnEnter", function()
             if isDragging then
                 return
             end
             rl:SetTextColor(1, 1, 1, 1)
             rHL:SetColorTexture(1, 1, 1, 0.04)
         end)
-        rowFrame:SetScript("OnLeave", function()
+        row:SetScript("OnLeave", function()
             if isDragging then
                 return
             end
@@ -263,7 +263,7 @@ local function BuildSortByControl(region, options)
             rHL:SetColorTexture(1, 1, 1, 0)
         end)
 
-        rowFrame:SetScript("OnMouseDown", function(self, b)
+        row:SetScript("OnMouseDown", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
@@ -272,7 +272,7 @@ local function BuildSortByControl(region, options)
             dragRow = self
         end)
 
-        rowFrame:SetScript("OnUpdate", function(self)
+        row:SetScript("OnUpdate", function(self)
             if dragRow ~= self then
                 return
             end
@@ -320,7 +320,7 @@ local function BuildSortByControl(region, options)
             self:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, cY - mT)
         end)
 
-        rowFrame:SetScript("OnMouseUp", function(self, b)
+        row:SetScript("OnMouseUp", function(self, b)
             if b ~= "LeftButton" then
                 return
             end
@@ -385,7 +385,7 @@ local function BuildSortByControl(region, options)
             end
         end)
 
-        rowFrames[#rowFrames + 1] = rowFrame
+        rowFrames[#rowFrames + 1] = row
         mY = mY - MH
     end
 
@@ -418,7 +418,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     local SWrite, optionState = environ.SWrite, environ.optState
     local W = CludesUI.Widgets
     local _, hgt, heading
-    local rowFrame
+    local row
 
     -- Both Group Growth menus grey out the grid flow while groups are merged,
     -- where it would render as Right (ReadGroupGrowth).
@@ -608,8 +608,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             if mod._HideSizePreview then
                                 mod._HideSizePreview()
                             end
-                            local modeName = db.profile.previewMode or "overlay"
-                            if modeName ~= "none" and mod.ShowPreview then
+                            local mode = db.profile.previewMode or "overlay"
+                            if mode ~= "none" and mod.ShowPreview then
                                 mod.ShowPreview()
                             end
                         else
@@ -1556,11 +1556,11 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 hlCog:Show()
             end
             -- The swatches close up on the dropdown while the cog is hidden.
-            local anchorFrame = hlCog:IsShown() and hlCog or cbDD
-            if anchorFrame ~= hoverAnchor then
-                hoverAnchor = anchorFrame
+            local anchor = hlCog:IsShown() and hlCog or cbDD
+            if anchor ~= hoverAnchor then
+                hoverAnchor = anchor
                 hoverSwatch:ClearAllPoints()
-                hoverSwatch:SetPoint("RIGHT", anchorFrame, "LEFT", -8, 0)
+                hoverSwatch:SetPoint("RIGHT", anchor, "LEFT", -8, 0)
             end
         end
         CludesUI.RegisterWidgetRefresh(UpdateHLCogVis)
@@ -1749,7 +1749,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         -- Class list in saved order, always covering every class: any missing/new
         -- class is appended from the default alphabetical order.
         local function GetClassItems()
-            local spec_def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
+            local def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
             local nameList = mod._classNameByToken or {}
             local saved = db.profile.classOrder
             local sequence, seen = {}, {}
@@ -1761,7 +1761,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            for _, t in ipairs(spec_def) do
+            for _, t in ipairs(def) do
                 if not seen[t] then
                     sequence[#sequence + 1] = t
                     seen[t] = true
@@ -1869,8 +1869,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
             if useCustomOrder then
                 local savedGroupOrder = mod._RFValidatedGroupOrder(db.profile.groupOrder)
                 for idx = 1, 8 do
-                    local group = savedGroupOrder and savedGroupOrder[idx] or idx
-                    groupItems[idx] = { key = group, label = "Group " .. group }
+                    local set = savedGroupOrder and savedGroupOrder[idx] or idx
+                    groupItems[idx] = { key = set, label = "Group " .. set }
                 end
             else
                 for idx = 1, 8 do
@@ -1913,9 +1913,9 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         end,
                         summaryLabel = function(movable, _, getFn)
                             local visible = {}
-                            for _, itemInfo in ipairs(movable) do
-                                if getFn(itemInfo.key) then
-                                    visible[#visible + 1] = CludesUI.L("Group") .. " " .. itemInfo.key
+                            for _, item in ipairs(movable) do
+                                if getFn(item.key) then
+                                    visible[#visible + 1] = CludesUI.L("Group") .. " " .. item.key
                                 end
                             end
                             return #visible > 0 and table.concat(visible, ", ") or CludesUI.L("None")
@@ -2063,7 +2063,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     local Pix, SVal = environ.PP, environ.SVal
     local W = CludesUI.Widgets
     local _, hgt, heading
-    local rowFrame
+    local row
     -- The Party Frames' Move in Unlock Mode button goes on the page's first
     -- section: FRAME STYLE where the stock-style block builds, else RAID
     -- SYNC AND SOLO.
@@ -2556,7 +2556,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         local region = pSortRow._rightRegion
         -- Class list in saved order, always covering all 13 classes: any missing/new class is appended from the default alphabetical order.
         local function GetClassItems()
-            local spec_def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
+            local def = mod._GetDefaultClassOrder() -- also populates ns._classNameByToken
             local nameList = mod._classNameByToken or {}
             local saved = db.profile.partyClassOrder
             local sequence, seen = {}, {}
@@ -2568,7 +2568,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            for _, t in ipairs(spec_def) do
+            for _, t in ipairs(def) do
                 if not seen[t] then
                     sequence[#sequence + 1] = t
                     seen[t] = true

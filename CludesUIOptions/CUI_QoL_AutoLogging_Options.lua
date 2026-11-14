@@ -384,11 +384,11 @@ local function BuildAutoLoggingPage(page, hostFrame, yOffset)
         -- Gray + block the triggers dropdown (and its label) while Auto
         -- Logging is off; the CB dropdown has no native disabled handling.
         local function UpdateTrigDisabled()
-            local offset = Cfg().enabled ~= true
-            cbDD:SetAlpha(offset and 0.3 or 1)
-            cbDD:EnableMouse(not offset)
+            local off = Cfg().enabled ~= true
+            cbDD:SetAlpha(off and 0.3 or 1)
+            cbDD:EnableMouse(not off)
             if rightRgn._label then
-                rightRgn._label:SetAlpha(offset and 0.3 or 1)
+                rightRgn._label:SetAlpha(off and 0.3 or 1)
             end
         end
         UpdateTrigDisabled()

@@ -35,16 +35,16 @@ mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- Unlock-mode loadPos/clearPos for a QoL element whose slice (P()) stores pos as a
 -- center offset (Battle Res, Bloodlust).
-function mod.CenterPosFns(Prm)
+function mod.CenterPosFns(P)
     local function loadPos()
-        local p = Prm()
+        local p = P()
         if p and p.pos then
             return { point = "CENTER", relPoint = "CENTER", x = p.pos.centerX, y = p.pos.centerY }
         end
         return nil
     end
     local function clearPos()
-        local p = Prm()
+        local p = P()
         if p then
             p.pos = nil
         end
@@ -139,9 +139,9 @@ qolFrame:SetScript("OnEvent", function(self)
         local function LootSpec()
             local ident = GetLootSpecialization()
             if ident == 0 then
-                local slotPos = C_SpecializationInfo.GetSpecialization()
-                if slotPos then
-                    ident = C_SpecializationInfo.GetSpecializationInfo(slotPos)
+                local index = C_SpecializationInfo.GetSpecialization()
+                if index then
+                    ident = C_SpecializationInfo.GetSpecializationInfo(index)
                 end
             end
             local name = ident and select(2, GetSpecializationInfoByID(ident))
@@ -502,8 +502,8 @@ qolFrame:SetScript("OnEvent", function(self)
         end
         -- Forward-declared: scanFrame's OnUpdate calls ScanAndOpen once cache is built, so both must be in-scope upvalues (assigned further down).
         local ScanAndOpen, RequestScan
-        local function SlotKey(bag, slotIndex)
-            return bag * 1000 + slotIndex
+        local function SlotKey(bag, slot)
+            return bag * 1000 + slot
         end
         local function IsEnabled()
             return CludesUIDB and CludesUIDB.autoOpenContainers == true
@@ -568,7 +568,7 @@ qolFrame:SetScript("OnEvent", function(self)
             [Enum.ItemBind.ToBnetAccount] = true,
             [Enum.ItemBind.ToBnetAccountUntilEquipped] = true,
         }
-        local function IsWarboundExcluded(bag, slotIndex)
+        local function IsWarboundExcluded(bag, slot)
             -- Default ON (unset behaves as enabled, matching the options UI's
             -- checked-by-default display); only explicit false disables it -- `not value` would wrongly let nil skip the exclusion.
             if not CludesUIDB or CludesUIDB.autoOpenContainersExcludeWarbound == false then
@@ -577,7 +577,7 @@ qolFrame:SetScript("OnEvent", function(self)
             if not (C_Container and C_Container.GetContainerItemInfo and C_Item and C_Item.GetItemInfo) then
                 return false
             end
-            local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            local details = C_Container.GetContainerItemInfo(bag, slot)
             if not (details and details.itemID) then
                 return false
             end
@@ -597,7 +597,7 @@ qolFrame:SetScript("OnEvent", function(self)
             -- ToBnetAccountUntilEquipped above never actually matches one. The item's
             -- own bound-until-equip flag is the only reliable signal.
             if bindType == Enum.ItemBind.OnEquip and ItemLocation and C_Item.IsBoundToAccountUntilEquip then
-                local loc = ItemLocation:CreateFromBagAndSlot(bag, slotIndex)
+                local loc = ItemLocation:CreateFromBagAndSlot(bag, slot)
                 if loc and C_Item.DoesItemExist(loc) then
                     return C_Item.IsBoundToAccountUntilEquip(loc) == true
                 end
@@ -606,17 +606,15 @@ qolFrame:SetScript("OnEvent", function(self)
         end
         local SLOTS_PER_FRAME = 3 -- check 3 slots per OnUpdate tick
 
-        local function IsOpenableByID(itemId, bag, slotIndex)
+        local function IsOpenableByID(itemId, bag, slot)
             local cached = _openableCache[itemId]
             if cached ~= nil then
                 return cached
             end
-            local tipText = C_TooltipInfo
-                and C_TooltipInfo.GetBagItem
-                and C_TooltipInfo.GetBagItem(bag, slotIndex)
+            local tipText = C_TooltipInfo and C_TooltipInfo.GetBagItem and C_TooltipInfo.GetBagItem(bag, slot)
             if tipText and tipText.lines then
-                for _, lineTex in ipairs(tipText.lines) do
-                    if lineTex and lineTex.leftText and lineTex.leftText == ITEM_OPENABLE then
+                for _, line in ipairs(tipText.lines) do
+                    if line and line.leftText and line.leftText == ITEM_OPENABLE then
                         _openableCache[itemId] = true
                         return true
                     end
@@ -801,15 +799,15 @@ qolFrame:SetScript("OnEvent", function(self)
 
             local toOpen = {}
             for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-                for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
                     if details and details.itemID then
                         -- Only tooltip-check uncached items (new loot)
                         if _openableCache[details.itemID] == nil then
-                            IsOpenableByID(details.itemID, bag, slotIndex)
+                            IsOpenableByID(details.itemID, bag, slot)
                         end
                         if _openableCache[details.itemID] and not _failedItems[details.itemID] then
-                            toOpen[#toOpen + 1] = { bag = bag, slot = slotIndex }
+                            toOpen[#toOpen + 1] = { bag = bag, slot = slot }
                         end
                     end
                 end
@@ -867,13 +865,13 @@ qolFrame:SetScript("OnEvent", function(self)
                 if _lootOpen then
                     return finish()
                 end
-                local itemInfo = toOpen[position]
-                local key = SlotKey(itemInfo.bag, itemInfo.slot)
-                local details = C_Container.GetContainerItemInfo(itemInfo.bag, itemInfo.slot)
+                local item = toOpen[position]
+                local key = SlotKey(item.bag, item.slot)
+                local details = C_Container.GetContainerItemInfo(item.bag, item.slot)
                 -- Never act on a slot mid-action (_openInProgress, or Blizzard's isLocked): reusing a still-resolving container strands it.
                 if details and details.itemID and not details.isLocked and not _openInProgress[key] then
                     if
-                        IsWarboundExcluded(itemInfo.bag, itemInfo.slot)
+                        IsWarboundExcluded(item.bag, item.slot)
                         or ShouldHoldCappedArtisanPayout(details.itemID)
                     then
                         return step(position + 1)
@@ -883,13 +881,13 @@ qolFrame:SetScript("OnEvent", function(self)
                         local prevCount = details.stackCount or 1
                         _openInProgress[key] = true
                         _pendingOpen = {
-                            bag = itemInfo.bag,
-                            slot = itemInfo.slot,
+                            bag = item.bag,
+                            slot = item.slot,
                             itemID = prevID,
                             count = prevCount,
                         }
-                        AODbg(("open bag=%d slot=%d item=%d"):format(itemInfo.bag, itemInfo.slot, prevID))
-                        C_Container.UseContainerItem(itemInfo.bag, itemInfo.slot)
+                        AODbg(("open bag=%d slot=%d item=%d"):format(item.bag, item.slot, prevID))
+                        C_Container.UseContainerItem(item.bag, item.slot)
                         C_Timer.After(0.5, function()
                             -- Always release the slot flag; a stale-generation chain
                             -- stops here since its verdict would race the cycle that replaced it.
@@ -897,15 +895,15 @@ qolFrame:SetScript("OnEvent", function(self)
                             -- No loot window claimed this open by now: drop the attribution so an unrelated later window can't inherit it.
                             if
                                 _pendingOpen
-                                and _pendingOpen.bag == itemInfo.bag
-                                and _pendingOpen.slot == itemInfo.slot
+                                and _pendingOpen.bag == item.bag
+                                and _pendingOpen.slot == item.slot
                             then
                                 _pendingOpen = nil
                             end
                             if myGen ~= _cycleGen then
                                 return
                             end
-                            local after = C_Container.GetContainerItemInfo(itemInfo.bag, itemInfo.slot)
+                            local after = C_Container.GetContainerItemInfo(item.bag, item.slot)
                             local progressed = not after
                                 or after.itemID ~= prevID
                                 or (after.stackCount or 1) < prevCount
@@ -1364,8 +1362,8 @@ qolFrame:SetScript("OnEvent", function(self)
         local function CountJunk()
             local junk, unknown = 0, 0
             for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-                for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-                    local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+                for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                    local details = C_Container.GetContainerItemInfo(bag, slot)
                     if details and details.itemID then
                         if details.quality == nil then
                             unknown = unknown + 1
@@ -1501,14 +1499,14 @@ qolFrame:SetScript("OnEvent", function(self)
 
     -- Total, then guild's share; spelled out only on a split bill since a wholly guild-funded one is unambiguous from the suffix alone.
     local function ReportRepairOutcome(guildPart, ownPart)
-        local lineTex = CludesUI.Lf("Repaired all items for %s", RepairCostString(guildPart + ownPart))
+        local line = CludesUI.Lf("Repaired all items for %s", RepairCostString(guildPart + ownPart))
         if guildPart > 0 then
-            lineTex = lineTex .. CludesUI.L(" (guild bank)")
+            line = line .. CludesUI.L(" (guild bank)")
             if ownPart > 0 then
-                lineTex = lineTex .. " " .. RepairCostString(guildPart)
+                line = line .. " " .. RepairCostString(guildPart)
             end
         end
-        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. lineTex)
+        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. line)
     end
 
     local function ReportRepairBroke()
@@ -1735,9 +1733,9 @@ qolFrame:SetScript("OnEvent", function(self)
                             return
                         end
                         for i = 1, GetNumLootItems() do
-                            local slotPos = i
-                            C_Timer.After(0.05 * slotPos, function()
-                                LootSlot(slotPos)
+                            local index = i
+                            C_Timer.After(0.05 * index, function()
+                                LootSlot(index)
                             end)
                         end
                     end)
@@ -1997,10 +1995,10 @@ qolFrame:SetScript("OnEvent", function(self)
             end
             for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
                 local slots = C_Container.GetContainerNumSlots(bag)
-                for slotIndex = 1, slots do
-                    local itemLink = C_Container.GetContainerItemLink(bag, slotIndex)
+                for slot = 1, slots do
+                    local itemLink = C_Container.GetContainerItemLink(bag, slot)
                     if itemLink and itemLink:find("|Hkeystone:") then
-                        C_Container.PickupContainerItem(bag, slotIndex)
+                        C_Container.PickupContainerItem(bag, slot)
                         if CursorHasItem() then
                             C_ChallengeMode.SlotKeystone()
                         end
@@ -2944,11 +2942,11 @@ do
         -- color means the user was using it, so custom wins; otherwise class
         -- color, the pre-mode default look.
         local c = CludesUI.QoLExtrasGet("secondaryStatsColor")
-        local modeName = CludesUI.QoLExtrasGet("secondaryStatsColorMode") or (c and "custom" or "class")
+        local mode = CludesUI.QoLExtrasGet("secondaryStatsColorMode") or (c and "custom" or "class")
         local customHex
-        if modeName == "custom" and c then
+        if mode == "custom" and c then
             customHex = format("%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255)
-        elseif modeName == "class" then
+        elseif mode == "class" then
             -- Per-use white fallback while the class color is still
             -- resolving; never cached, so the real color takes over.
             customHex = statsFrame._classHex or "ffffff"
@@ -3378,10 +3376,10 @@ do
         fpsFrame:SetFrameLevel(10)
         fpsFrame:EnableMouse(false)
 
-        local function MakeFS(dim)
+        local function MakeFS(size)
             local f = fpsFrame:CreateFontString(nil, "OVERLAY")
             CludesUI.PrimeFontShadow(f, CludesUI.GetFontUseShadow("extras"))
-            f:SetFont(FONT, dim, CludesUI.GetFontOutlineFlag("extras"))
+            f:SetFont(FONT, size, CludesUI.GetFontOutlineFlag("extras"))
             f:SetTextColor(1, 1, 1, 1)
             return f
         end
@@ -3435,25 +3433,25 @@ do
 
             fsFps:ClearAllPoints()
             fsFps:SetPoint("LEFT", fpsFrame, "LEFT", 0, 0)
-            local anchorFrame = fsFps
+            local anchor = fsFps
 
             if showWorld then
                 fsWorldVal:SetText(latWorld .. " ms")
                 divWorld:ClearAllPoints()
-                divWorld:SetPoint("LEFT", anchorFrame, "RIGHT", DIV_PAD, 0)
+                divWorld:SetPoint("LEFT", anchor, "RIGHT", DIV_PAD, 0)
                 divWorld:Show()
                 fsWorldVal:ClearAllPoints()
                 fsWorldVal:SetPoint("LEFT", divWorld, "RIGHT", DIV_PAD, 0)
                 fsWorldVal:Show()
                 if hideLabel then
                     fsWorldLbl:Hide()
-                    anchorFrame = fsWorldVal
+                    anchor = fsWorldVal
                 else
                     fsWorldLbl:SetText("(world)")
                     fsWorldLbl:ClearAllPoints()
                     fsWorldLbl:SetPoint("LEFT", fsWorldVal, "RIGHT", 3, 0)
                     fsWorldLbl:Show()
-                    anchorFrame = fsWorldLbl
+                    anchor = fsWorldLbl
                 end
             else
                 divWorld:Hide()
@@ -3464,20 +3462,20 @@ do
             if showLocal then
                 fsLocalVal:SetText(latHome .. " ms")
                 divLocal:ClearAllPoints()
-                divLocal:SetPoint("LEFT", anchorFrame, "RIGHT", DIV_PAD, 0)
+                divLocal:SetPoint("LEFT", anchor, "RIGHT", DIV_PAD, 0)
                 divLocal:Show()
                 fsLocalVal:ClearAllPoints()
                 fsLocalVal:SetPoint("LEFT", divLocal, "RIGHT", DIV_PAD, 0)
                 fsLocalVal:Show()
                 if hideLabel then
                     fsLocalLbl:Hide()
-                    anchorFrame = fsLocalVal
+                    anchor = fsLocalVal
                 else
                     fsLocalLbl:SetText("(local)")
                     fsLocalLbl:ClearAllPoints()
                     fsLocalLbl:SetPoint("LEFT", fsLocalVal, "RIGHT", 3, 0)
                     fsLocalLbl:Show()
-                    anchorFrame = fsLocalLbl
+                    anchor = fsLocalLbl
                 end
             else
                 divLocal:Hide()
@@ -3973,9 +3971,9 @@ do
         end
 
         local lowestDur = 100
-        for slotIndex = 1, 18 do
-            local cur, mx = GetInventoryItemDurability(slotIndex)
-            if cur and mx and mx > 0 and slotIndex ~= thrownSlot then
+        for slot = 1, 18 do
+            local cur, mx = GetInventoryItemDurability(slot)
+            if cur and mx and mx > 0 and slot ~= thrownSlot then
                 local pct = (cur / mx) * 100
                 if pct < lowestDur then
                     lowestDur = pct
@@ -4427,8 +4425,8 @@ do
         local Pix = CludesUI.PP
         -- Effective reads (profile override -> global root -> inline default)
         local G = CrosshairGet
-        local dim = G("crosshairSize") or "None"
-        if dim == "None" then
+        local size = G("crosshairSize") or "None"
+        if size == "None" then
             SyncVisWatch(false)
             -- OnUpdate stops with the frame hidden and can't release the shared range engine itself, so release it here.
             CludesUI.Range_SetActive("crosshair", false)
@@ -4457,7 +4455,7 @@ do
         local ca = c and c.a or 0.75
 
         -- Preset gives the baseline width/length, sliders override per axis.
-        local preset = CludesUI.CROSSHAIR_PRESETS[dim] or CludesUI.CROSSHAIR_PRESETS.Normal
+        local preset = CludesUI.CROSSHAIR_PRESETS[size] or CludesUI.CROSSHAIR_PRESETS.Normal
         local hWidth = G("crosshairHWidth") or preset.width
         local vWidth = G("crosshairVWidth") or preset.width
         local hLen = G("crosshairHLength") or preset.length
@@ -5197,11 +5195,11 @@ do
         if not outline:find("OUTLINE") then
             outline = (outline == "") and "OUTLINE" or (outline .. ", OUTLINE")
         end
-        local dim = (CludesUIDB and CludesUIDB.groupDeathTextSize) or DEFAULT_TEXT_SIZE
+        local size = (CludesUIDB and CludesUIDB.groupDeathTextSize) or DEFAULT_TEXT_SIZE
         -- A font family: the alert shows a group member's name, in any script
-        CludesUI.SetFontFamily(alertOverlay._text, fontFile, dim, outline, false)
+        CludesUI.SetFontFamily(alertOverlay._text, fontFile, size, outline, false)
         -- Keep the frame (and unlock-mode mover) sized to the alert text, not a fixed wide box.
-        alertOverlay:SetSize(dim * 7, dim + 14)
+        alertOverlay:SetSize(size * 7, size + 14)
 
         alertOverlay:ClearAllPoints()
         local place = CludesUIDB and CludesUIDB.groupDeathAlertPos
@@ -5468,8 +5466,8 @@ do
                     return alertOverlay
                 end,
                 getSize = function()
-                    local dim = (CludesUIDB and CludesUIDB.groupDeathTextSize) or DEFAULT_TEXT_SIZE
-                    return dim * 7, dim + 14
+                    local size = (CludesUIDB and CludesUIDB.groupDeathTextSize) or DEFAULT_TEXT_SIZE
+                    return size * 7, size + 14
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     if not anchorPoint then
@@ -5583,13 +5581,13 @@ do
         if not (db and db.combatAlertEnabled) then
             return
         end
-        local modeName = db.combatAlertMode or "both"
+        local mode = db.combatAlertMode or "both"
         if event == "PLAYER_REGEN_DISABLED" then
-            if modeName ~= "leave" then
+            if mode ~= "leave" then
                 ShowAlert("enter")
             end
         elseif event == "PLAYER_REGEN_ENABLED" then
-            if modeName ~= "enter" then
+            if mode ~= "enter" then
                 ShowAlert("leave")
             end
         end
@@ -5753,17 +5751,17 @@ do
         if not outline:find("OUTLINE") then
             outline = (outline == "") and "OUTLINE" or (outline .. ", OUTLINE")
         end
-        local dim = (CludesUIDB and CludesUIDB.targetDistanceTextSize) or DEFAULT_TEXT_SIZE
+        local size = (CludesUIDB and CludesUIDB.targetDistanceTextSize) or DEFAULT_TEXT_SIZE
         -- HIGH = the pre-setting strata, so existing installs keep their look; the
         -- setting is the opt-in to sit lower (e.g. under the bank window).
         local strata = (CludesUIDB and CludesUIDB.targetDistanceStrata) or "HIGH"
         local align = GetAlign()
-        distFrame._text:SetFont(fontFile, dim, outline)
+        distFrame._text:SetFont(fontFile, size, outline)
         distFrame._text:SetJustifyH(align)
         distFrame._text:ClearAllPoints()
         distFrame._text:SetPoint(align, distFrame, align, 0, 0)
         distFrame:SetFrameStrata(strata)
-        distFrame:SetSize(dim * 5, dim + 10)
+        distFrame:SetSize(size * 5, size + 10)
 
         -- Unlock Mode owns anchors while dragging, or when Anchor-to is linked.
         if CludesUI._unlockActive then
@@ -5956,8 +5954,8 @@ do
                     return distFrame
                 end,
                 getSize = function()
-                    local dim = (CludesUIDB and CludesUIDB.targetDistanceTextSize) or DEFAULT_TEXT_SIZE
-                    return dim * 5, dim + 10
+                    local size = (CludesUIDB and CludesUIDB.targetDistanceTextSize) or DEFAULT_TEXT_SIZE
+                    return size * 5, size + 10
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     if not anchorPoint then
@@ -6136,8 +6134,8 @@ do
 
     -- Per-key default: included unless defaultOff; picker stores only values that differ from default, so nil = default.
     local ITEM_DEFAULT = {}
-    for _, itemInfo in ipairs(TRANSFORMS) do
-        ITEM_DEFAULT[itemInfo.key] = not itemInfo.defaultOff
+    for _, item in ipairs(TRANSFORMS) do
+        ITEM_DEFAULT[item.key] = not item.defaultOff
     end
 
     local function ItemEnabled(key)
@@ -6154,9 +6152,9 @@ do
         if not (CludesUIDB and CludesUIDB.hideTransforms) then
             return
         end
-        for _, itemInfo in ipairs(TRANSFORMS) do
-            if ItemEnabled(itemInfo.key) then
-                for _, ident in ipairs(itemInfo.ids) do
+        for _, item in ipairs(TRANSFORMS) do
+            if ItemEnabled(item.key) then
+                for _, ident in ipairs(item.ids) do
                     cTable[ident] = true
                 end
             end
@@ -6326,17 +6324,17 @@ do
     end
 
     -- Item level + quality + link from a decoded bag/slot pair. Prefers the ItemLocation API (exact, no caching); falls back to the item link.
-    local function LevelFromSlot(isBags, bag, slotIndex)
+    local function LevelFromSlot(isBags, bag, slot)
         if isBags then
             if ItemLocation then
-                local loc = ItemLocation:CreateFromBagAndSlot(bag, slotIndex)
+                local loc = ItemLocation:CreateFromBagAndSlot(bag, slot)
                 if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
                     return C_Item.GetCurrentItemLevel(loc),
                         C_Item.GetItemQuality(loc),
                         C_Item.GetItemLink(loc)
                 end
             end
-            local itemLink = C_Container and C_Container.GetContainerItemLink(bag, slotIndex)
+            local itemLink = C_Container and C_Container.GetContainerItemLink(bag, slot)
             if itemLink then
                 return C_Item.GetDetailedItemLevelInfo(itemLink),
                     select(3, C_Item.GetItemInfo(itemLink)),
@@ -6346,14 +6344,14 @@ do
         end
         -- Equipped inventory slot.
         if ItemLocation then
-            local loc = ItemLocation:CreateFromEquipmentSlot(slotIndex)
+            local loc = ItemLocation:CreateFromEquipmentSlot(slot)
             if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
                 return C_Item.GetCurrentItemLevel(loc), C_Item.GetItemQuality(loc), C_Item.GetItemLink(loc)
             end
         end
-        local itemLink = GetInventoryItemLink("player", slotIndex)
+        local itemLink = GetInventoryItemLink("player", slot)
         if itemLink then
-            local quality = GetInventoryItemQuality and GetInventoryItemQuality("player", slotIndex)
+            local quality = GetInventoryItemQuality and GetInventoryItemQuality("player", slot)
             return C_Item.GetDetailedItemLevelInfo(itemLink),
                 quality or select(3, C_Item.GetItemInfo(itemLink)),
                 itemLink
@@ -6386,11 +6384,11 @@ do
             end
             return LevelFromSlot(ld.isBags, ld.bag, ld.slot)
         elseif EquipmentManager_UnpackLocation then
-            local _, _, bags, voidStorage, slotIndex, bag = EquipmentManager_UnpackLocation(location)
+            local _, _, bags, voidStorage, slot, bag = EquipmentManager_UnpackLocation(location)
             if voidStorage then
                 return
             end
-            return LevelFromSlot(bags, bag, slotIndex)
+            return LevelFromSlot(bags, bag, slot)
         end
     end
 
@@ -6472,23 +6470,23 @@ do
         if EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION and location >= EQUIPMENTFLYOUT_FIRST_SPECIAL_LOCATION then
             return
         end
-        local slotIndex = location
+        local slot = location
         local isBank = band(location, ITEM_INVENTORY_LOCATION_BANK) ~= 0
         if band(location, ITEM_INVENTORY_LOCATION_PLAYER) ~= 0 then
-            slotIndex = slotIndex - ITEM_INVENTORY_LOCATION_PLAYER
+            slot = slot - ITEM_INVENTORY_LOCATION_PLAYER
         elseif isBank then
-            slotIndex = slotIndex - ITEM_INVENTORY_LOCATION_BANK
+            slot = slot - ITEM_INVENTORY_LOCATION_BANK
         end
         if band(location, ITEM_INVENTORY_LOCATION_BAGS) ~= 0 then
-            slotIndex = slotIndex - ITEM_INVENTORY_LOCATION_BAGS
-            local bag = rshift(slotIndex, ITEM_INVENTORY_BAG_BIT_OFFSET)
-            slotIndex = slotIndex - lshift(bag, ITEM_INVENTORY_BAG_BIT_OFFSET)
+            slot = slot - ITEM_INVENTORY_LOCATION_BAGS
+            local bag = rshift(slot, ITEM_INVENTORY_BAG_BIT_OFFSET)
+            slot = slot - lshift(bag, ITEM_INVENTORY_BAG_BIT_OFFSET)
             if isBank then
                 bag = bag + ITEM_INVENTORY_BANK_BAG_OFFSET
             end
-            return C_Container.GetContainerItemLink(bag, slotIndex)
+            return C_Container.GetContainerItemLink(bag, slot)
         end
-        return GetInventoryItemLink("player", slotIndex)
+        return GetInventoryItemLink("player", slot)
     end
 
     -- What each button shows (weak-keyed, off the button like its texts): the

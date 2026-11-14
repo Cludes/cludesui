@@ -315,8 +315,8 @@ do
         if not GetChatWindowSavedPosition then
             return
         end
-        local Widgets, H = GetScreenWidth(), GetScreenHeight()
-        if not (Widgets and H) then
+        local W, H = GetScreenWidth(), GetScreenHeight()
+        if not (W and H) then
             return
         end
         for idx = 2, NUM_CHAT_WINDOWS or 10 do
@@ -327,7 +327,7 @@ do
                     -- Blizzard's own restore formula, re-run now that the
                     -- scale (and therefore GetScreenWidth/Height) has settled.
                     castFrame:ClearAllPoints()
-                    castFrame:SetPoint(anchorPoint, UIParent, anchorPoint, xOff * Widgets, yOff * H)
+                    castFrame:SetPoint(anchorPoint, UIParent, anchorPoint, xOff * W, yOff * H)
                 end
             end
         end

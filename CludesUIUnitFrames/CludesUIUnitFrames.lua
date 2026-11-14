@@ -1559,8 +1559,8 @@ end
 -- own faces draw Cyrillic, Korean and Chinese. A plain SetFont would pin a
 -- string's face for good, so every font write to these strings goes through
 -- here (or ApplyModuleFontFamily).
-local function SetFSFont(fontStr, dim, flags)
-    CludesUI.ApplyModuleFontFamily(fontStr, GetSelectedFont(), dim or 12, "unitFrames", flags)
+local function SetFSFont(fontStr, size, flags)
+    CludesUI.ApplyModuleFontFamily(fontStr, GetSelectedFont(), size or 12, "unitFrames", flags)
 end
 
 -- Shared cast-bar text anchoring (mirrors the nameplate cast text system). Three
@@ -1572,21 +1572,21 @@ end
 --   reserve : duration reserved width (only consumed when pushed)
 --   isTimer : the duration uses slightly tighter base insets than text
 -- Returns: point (anchor), xOff (base, before the user X offset), justify
-function mod.GetCastTextAnchor(sideName, pushed, reserve, isTimer)
-    if sideName == "center" then
+function mod.GetCastTextAnchor(side, pushed, reserve, isTimer)
+    if side == "center" then
         return "CENTER", 0, "CENTER"
-    elseif sideName == "left" then
-        local baseValue = isTimer and 3 or 5
+    elseif side == "left" then
+        local base = isTimer and 3 or 5
         if pushed then
-            baseValue = baseValue + reserve
+            base = base + reserve
         end
-        return "LEFT", baseValue, "LEFT"
+        return "LEFT", base, "LEFT"
     else -- "right"
-        local baseValue = -3
+        local base = -3
         if pushed then
-            baseValue = baseValue - reserve
+            base = base - reserve
         end
-        return "RIGHT", baseValue, "RIGHT"
+        return "RIGHT", base, "RIGHT"
     end
 end
 
@@ -1877,8 +1877,8 @@ do
 
     -- From ns.ApplyCastBarTexture, before it applies the fill.
     function mod.UF_TexBgCast(castbar, texKey)
-        local hostRegion = castbar:GetParent()
-        local backdrop = hostRegion and hostRegion._bgTex
+        local host = castbar:GetParent()
+        local backdrop = host and host._bgTex
         if not backdrop or (not saved.profile.castTextureBg and not backdrop._cuiTexPath) then
             return
         end
@@ -2293,19 +2293,19 @@ do
     -- (The Raid Frames twin greys out instead; keeping the real color is
     -- strictly better here, and only differs on focus/ToT-style units.)
     function mod.UF_DynamicHealthColor(unitToken, s)
-        local modeName = s and s.healthColorMode
-        if not modeName or modeName == "none" or not unitToken then
+        local mode = s and s.healthColorMode
+        if not mode or mode == "none" or not unitToken then
             return false
         end
         if not (C_CurveUtil and UnitHealthPercent) then
             return false
         end
         local curve
-        if modeName == "classic" then
+        if mode == "classic" then
             curve = GetClassicCurve()
-        elseif modeName == "customDynamic" then
+        elseif mode == "customDynamic" then
             curve = GetDynamicCurve(s)
-        elseif modeName == "classReactive" then
+        elseif mode == "classReactive" then
             local _, classToken = UnitClass(unitToken)
             if not classToken or issecretvalue(classToken) then
                 return false
@@ -2365,15 +2365,15 @@ do
     -- One entry point for every preview surface: resolves whichever dynamic mode
     -- `s` is on at a FAKE percent, or nil when the unit is on a flat fill.
     function mod.UF_PreviewDynamicColor(s, pct01)
-        local modeName = s and s.healthColorMode
-        if not modeName or modeName == "none" then
+        local mode = s and s.healthColorMode
+        if not mode or mode == "none" then
             return nil
         end
-        if modeName == "classic" then
+        if mode == "classic" then
             return mod.UF_ResolveClassicColor(pct01)
-        elseif modeName == "customDynamic" then
+        elseif mode == "customDynamic" then
             return mod.UF_ResolveDynamicColor(s, pct01)
-        elseif modeName == "classReactive" then
+        elseif mode == "classReactive" then
             local _, ct = UnitClass("player")
             return mod.UF_ResolveClassReactiveColor(s, ct, pct01)
         end
@@ -2417,8 +2417,8 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
         or (element.colorClassNPC and not (UnitIsPlayer(unitToken) or UnitInPartyIsAI(unitToken)))
         or (element.colorClassPet and UnitPlayerControlled(unitToken) and not UnitIsPlayer(unitToken))
     then
-        local _, classFile = UnitClass(unitToken)
-        if issecretvalue(classFile) then
+        local _, class = UnitClass(unitToken)
+        if issecretvalue(class) then
             -- 12.1 (68914): UnitClass is SecretWhenUnitIdentityRestricted (focus/focus-target/ToT):
             -- token can't be read or used as a table key. C_ClassColor.GetClassColor and
             -- SetStatusBarColor are both SecretArguments="AllowedWhenTainted", so the real
@@ -2426,15 +2426,15 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
             -- Blizzard's shade. GetClassColorForRestrictedUnit recovers the user's custom
             -- class color for group members with the compare done in C; its r/g/b are secret,
             -- so they go into a scratch ColorMixin (plain field writes) and are never read.
-            local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, classFile)
+            local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
             if success then
                 SECRET_CLASS_COLOR:SetRGB(r, g, b)
                 color = SECRET_CLASS_COLOR
             elseif C_ClassColor and C_ClassColor.GetClassColor then
-                color = C_ClassColor.GetClassColor(classFile)
+                color = C_ClassColor.GetClassColor(class)
             end
         else
-            color = classFile and self.colors.class[classFile]
+            color = class and self.colors.class[class]
         end
         if not color then
             -- Unreadable class: fall to the tiers the lib chain would have hit

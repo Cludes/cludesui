@@ -152,7 +152,7 @@ Inner.FrameBorderEnter, Inner.FrameBorderLeave = FrameBorderEnter, FrameBorderLe
 -- Unified border for unit frames using the PP border system
 local function CreateUnifiedBorder(widget, unitToken)
     local prefs = GetSettingsForUnit(unitToken or "player")
-    local dim = prefs.borderSize or 1
+    local size = prefs.borderSize or 1
     local bc = prefs.borderColor or { r = 0, g = 0, b = 0 }
     local textureKey = prefs.borderTexture or "solid"
 
@@ -166,7 +166,7 @@ local function CreateUnifiedBorder(widget, unitToken)
 
     CludesUI.ApplyBorderStyle(
         border,
-        dim,
+        size,
         bc.r,
         bc.g,
         bc.b,
@@ -177,14 +177,14 @@ local function CreateUnifiedBorder(widget, unitToken)
         prefs.borderTextureShiftX,
         prefs.borderTextureShiftY,
         "unitframes",
-        dim,
+        size,
         nil,
-        CludesUI.BorderPx(prefs.borderSizePx, dim, textureKey)
+        CludesUI.BorderPx(prefs.borderSizePx, size, textureKey)
     )
 
     widget.unifiedBorder = border
 
-    if dim == 0 then
+    if size == 0 then
         border:Hide()
     end
 
@@ -204,8 +204,8 @@ local AURA_CROP_HEIGHT = 0.80
 local AURA_ZOOM = 0.07
 -- zoom (optional) overrides the default AURA_ZOOM crop; per-unit/per-category
 -- Icon Zoom values flow in here, defaulting to AURA_ZOOM so unset = unchanged.
-local function SetAuraIconCrop(glyph, cropped, wid, hgt, zoom)
-    if not glyph then
+local function SetAuraIconCrop(icon, cropped, wid, hgt, zoom)
+    if not icon then
         return
     end
     local z = zoom or AURA_ZOOM
@@ -213,9 +213,9 @@ local function SetAuraIconCrop(glyph, cropped, wid, hgt, zoom)
         local uSpan = 1 - 2 * z
         local vSpan = uSpan * (hgt / wid)
         local v0 = 0.5 - vSpan / 2
-        glyph:SetTexCoord(z, 1 - z, v0, 1 - v0)
+        icon:SetTexCoord(z, 1 - z, v0, 1 - v0)
     else
-        glyph:SetTexCoord(z, 1 - z, z, 1 - z)
+        icon:SetTexCoord(z, 1 - z, z, 1 - z)
     end
 end
 -- Exposed so the options live preview can apply the exact same crop math
@@ -719,7 +719,7 @@ local function StyleFullFrame(widget, unitToken)
 
     -- Bottom Text Bar
     if prefs.bottomTextBar then
-        local anchorFrame = (powerIsAtt and widget.Power) or widget.Health
+        local anchor = (powerIsAtt and widget.Power) or widget.Health
         local btbPos = prefs.btbPosition or "bottom"
         local btbIsAttached = (btbPos == "top" or btbPos == "bottom")
         -- BTB spans full frame width; offset left when portrait is attached on the left
@@ -741,7 +741,7 @@ local function StyleFullFrame(widget, unitToken)
                 btbXOff = -adj
             end
         end
-        widget.BottomTextBar = CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, btbXOff, totalWidth)
+        widget.BottomTextBar = CreateBottomTextBar(widget, unitToken, prefs, anchor, btbXOff, totalWidth)
         widget._btb = widget.BottomTextBar
         -- Cast bar positioning owned by centralized unlock system
     end
@@ -906,7 +906,7 @@ local function StyleFocusFrame(widget, unitToken)
 
     -- Bottom Text Bar
     if prefs.bottomTextBar then
-        local anchorFrame = (fPpIsAtt and widget.Power) or widget.Health
+        local anchor = (fPpIsAtt and widget.Power) or widget.Health
         local btbPos = prefs.btbPosition or "bottom"
         local btbIsAttached = (btbPos == "top" or btbPos == "bottom")
         -- BTB spans full frame width; offset left when portrait is attached on the left
@@ -914,7 +914,7 @@ local function StyleFocusFrame(widget, unitToken)
         if btbIsAttached and showPortrait and isAttached and effectiveSide == "left" then
             btbXOff = -adjPortraitH
         end
-        widget.BottomTextBar = CreateBottomTextBar(widget, unitToken, prefs, anchorFrame, btbXOff, totalWidth)
+        widget.BottomTextBar = CreateBottomTextBar(widget, unitToken, prefs, anchor, btbXOff, totalWidth)
         widget._btb = widget.BottomTextBar
         -- Cast bar positioning owned by centralized unlock system
     end
@@ -955,39 +955,39 @@ local function StyleSimpleFrame(widget, unitToken)
 
     Pix.Size(widget, totalWidth, barH)
 
-    local healthBar = CreateFrame("StatusBar", nil, widget)
-    Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", portraitOffset, -aboveOff)
-    Pix.Point(healthBar, "RIGHT", widget, "RIGHT", -healthRightInset, 0)
-    Pix.Height(healthBar, prefs.healthHeight)
-    healthBar._topOffset = aboveOff -- SnapLayout re-anchoring
-    healthBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    healthBar:GetStatusBarTexture():SetHorizTile(false)
+    local health = CreateFrame("StatusBar", nil, widget)
+    Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", portraitOffset, -aboveOff)
+    Pix.Point(health, "RIGHT", widget, "RIGHT", -healthRightInset, 0)
+    Pix.Height(health, prefs.healthHeight)
+    health._topOffset = aboveOff -- SnapLayout re-anchoring
+    health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    health:GetStatusBarTexture():SetHorizTile(false)
 
-    local bg = healthBar:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bg, "TOPLEFT", healthBar, "TOPLEFT", 0, 0)
-    Pix.Point(bg, "BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+    local bg = health:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bg, "TOPLEFT", health, "TOPLEFT", 0, 0)
+    Pix.Point(bg, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     bg:SetColorTexture(0, 0, 0, 0.5)
-    healthBar.bg = bg
+    health.bg = bg
 
     if unitToken ~= "pet" then
-        healthBar.colorClass = true
+        health.colorClass = true
     end
-    healthBar.colorReaction = true
-    healthBar.colorTapped = true
-    healthBar.colorDisconnected = true
-    healthBar._cuiUnitKey = UnitToSettingsKey(unitToken)
+    health.colorReaction = true
+    health.colorTapped = true
+    health.colorDisconnected = true
+    health._cuiUnitKey = UnitToSettingsKey(unitToken)
 
     -- Inherit health bar texture from the donor frame (Copy Look From),
     -- unless this frame set its own override.
     local unitKey = UnitToSettingsKey(unitToken)
     local donor = GetMiniDonorSettings(unitKey)
-    ApplyHealthBarTexture(healthBar, unitKey, mod.ResolveHealthBarTextureKey(prefs, donor))
-    ApplyHealthBarAlpha(healthBar, unitKey)
-    healthBar:SetReverseFill(prefs.healthReverseFill and true or false)
-    mod.ApplyHealthOrientation(healthBar, prefs)
-    ApplyDarkTheme(healthBar, unitToken)
+    ApplyHealthBarTexture(health, unitKey, mod.ResolveHealthBarTextureKey(prefs, donor))
+    ApplyHealthBarAlpha(health, unitKey)
+    health:SetReverseFill(prefs.healthReverseFill and true or false)
+    mod.ApplyHealthOrientation(health, prefs)
+    ApplyDarkTheme(health, unitToken)
 
-    widget.Health = healthBar
+    widget.Health = health
     -- Blizzard Style: the stock small-frame power bar. Otherwise only a WoW Forever
     -- pet has one, built even at "none" so its position changes live (the painter
     -- is parked while it is hidden); ToT and FoT carry none.
@@ -1014,20 +1014,20 @@ local function StyleSimpleFrame(widget, unitToken)
     end
     if widget.Portrait and widget.Portrait.backdrop and showPortrait then
         local portW = math.max(barH, 1)
-        healthBar:ClearAllPoints()
+        health:ClearAllPoints()
         if pSide == "right" then
-            Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", 0, -aboveOff)
-            Pix.Point(healthBar, "RIGHT", widget, "RIGHT", -portW, 0)
-            healthBar._xOffset = 0
-            healthBar._rightInset = portW
+            Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", 0, -aboveOff)
+            Pix.Point(health, "RIGHT", widget, "RIGHT", -portW, 0)
+            health._xOffset = 0
+            health._rightInset = portW
         else
-            Pix.Point(healthBar, "TOPLEFT", widget, "TOPLEFT", portW, -aboveOff)
-            Pix.Point(healthBar, "RIGHT", widget, "RIGHT", 0, 0)
-            healthBar._xOffset = portW
-            healthBar._rightInset = 0
+            Pix.Point(health, "TOPLEFT", widget, "TOPLEFT", portW, -aboveOff)
+            Pix.Point(health, "RIGHT", widget, "RIGHT", 0, 0)
+            health._xOffset = portW
+            health._rightInset = 0
         end
-        Pix.Height(healthBar, prefs.healthHeight)
-        healthBar._topOffset = aboveOff
+        Pix.Height(health, prefs.healthHeight)
+        health._topOffset = aboveOff
     end
 
     CreateUnifiedBorder(widget, unitToken)
@@ -1036,8 +1036,8 @@ local function StyleSimpleFrame(widget, unitToken)
 
     -- Text overlay frame (parented to frame, not health, to avoid clipping)
     local textOverlay = CreateFrame("Frame", nil, widget)
-    textOverlay:SetAllPoints(healthBar)
-    textOverlay:SetFrameLevel(healthBar:GetFrameLevel() + 12)
+    textOverlay:SetAllPoints(health)
+    textOverlay:SetFrameLevel(health:GetFrameLevel() + 12)
     widget._textOverlay = textOverlay
 
     local leftContent = prefs.leftTextContent or "name"

@@ -75,7 +75,7 @@ local function CreateIndicatorBtn(name, hostFrame, upAtlas, overAtlas, downAtlas
     button._bg = backdrop
 
     -- Icon sized to preserve the atlas aspect ratio within the button.
-    local glyph = button:CreateTexture(nil, "ARTWORK")
+    local icon = button:CreateTexture(nil, "ARTWORK")
     local inset = 3
     local ratio = upAtlas and INDICATOR_ATLAS_RATIO[upAtlas]
     if ratio then
@@ -90,17 +90,17 @@ local function CreateIndicatorBtn(name, hostFrame, upAtlas, overAtlas, downAtlas
             iconH = avail * scale
             iconW = (avail * ratio) * scale
         end
-        glyph:SetSize(iconW, iconH)
-        local offset = INDICATOR_ATLAS_OFFSET[name]
-        glyph:SetPoint("CENTER", button, "CENTER", offset and offset[1] or 0, offset and offset[2] or 0)
+        icon:SetSize(iconW, iconH)
+        local off = INDICATOR_ATLAS_OFFSET[name]
+        icon:SetPoint("CENTER", button, "CENTER", off and off[1] or 0, off and off[2] or 0)
     else
-        glyph:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-        glyph:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+        icon:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+        icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     end
     if upAtlas then
-        glyph:SetAtlas(upAtlas)
+        icon:SetAtlas(upAtlas)
     end
-    button._icon = glyph
+    button._icon = icon
     button._upAtlas = upAtlas
     button._overAtlas = overAtlas
     button._downAtlas = downAtlas
@@ -260,21 +260,21 @@ local function GetVaultTooltip()
     f._fadeOut = fadeOut
 
     -- Title row (font set at show-time)
-    local titleText = f:CreateFontString(nil, "OVERLAY")
-    titleText:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
-    titleText:SetTextColor(0.80, 0.80, 0.80, 1)
-    titleText:SetPoint("TOP", f, "TOP", 0, -VAULT_PAD)
-    titleText:SetText(CludesUI.L("Great Vault"))
-    f._title = titleText
+    local title = f:CreateFontString(nil, "OVERLAY")
+    title:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
+    title:SetTextColor(0.80, 0.80, 0.80, 1)
+    title:SetPoint("TOP", f, "TOP", 0, -VAULT_PAD)
+    title:SetText(CludesUI.L("Great Vault"))
+    f._title = title
 
     -- 3 data rows x 4 columns (label + 3 tokens)
-    for rowFrame = 1, 3 do
-        _vaultTTRows[rowFrame] = {}
-        for column = 0, 3 do
+    for row = 1, 3 do
+        _vaultTTRows[row] = {}
+        for col = 0, 3 do
             local fontStr = f:CreateFontString(nil, "OVERLAY")
             fontStr:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
             fontStr:SetJustifyH("LEFT")
-            _vaultTTRows[rowFrame][column] = fontStr
+            _vaultTTRows[row][col] = fontStr
         end
     end
 
@@ -282,7 +282,7 @@ local function GetVaultTooltip()
     return f
 end
 
-local function ShowVaultTooltip(anchorFrame)
+local function ShowVaultTooltip(anchor)
     local raidType = (
         Enum
         and Enum.WeeklyRewardChestThresholdType
@@ -362,7 +362,7 @@ local function ShowVaultTooltip(anchorFrame)
     tt:SetSize(totalW, totalH)
     tt:ClearAllPoints()
     local gpt = SKIN._Grow.center[SKIN._Grow.Dir()] or SKIN._Grow.center.left
-    tt:SetPoint(gpt[1], anchorFrame, gpt[2], gpt[3], gpt[4])
+    tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
 
     tt._fadeOutAG:Stop()
     tt._fadeInAG:Stop()
@@ -543,10 +543,10 @@ local function CreatePortalBtn(hostFrame)
     backdrop:SetFrameLevel(button:GetFrameLevel() - 1)
     button._bg = backdrop
 
-    local glyph = button:CreateTexture(nil, "ARTWORK")
-    glyph:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
-    glyph:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
-    button._icon = glyph
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
+    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
+    button._icon = icon
 
     SizePortalBtn(button)
 
@@ -581,7 +581,7 @@ local function CreatePortalBtn(hostFrame)
         ToggleMinimapPortalFlyout(self)
     end)
 
-    glyph:SetVertexColor(0.85, 0.85, 0.85, 1)
+    icon:SetVertexColor(0.85, 0.85, 0.85, 1)
 
     button._indicatorKey = "_portals"
 

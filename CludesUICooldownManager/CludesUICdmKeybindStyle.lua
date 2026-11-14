@@ -43,9 +43,9 @@ local function StyleBadge(textValue, edge, scale)
         -- Pooled with the options preview's text overlay (an options page pool
         -- host); the plain CreateFrame on a live icon.
         local f = POOL.CreateFrame("Frame", nil, textValue:GetParent())
-        local fillTex = f:CreateTexture(nil, "BACKGROUND")
-        fillTex:SetAllPoints()
-        badge = { frame = f, fill = fillTex, rim = Pix.CreateBorder(f, 1, 1, 1, 1, 1) }
+        local fill = f:CreateTexture(nil, "BACKGROUND")
+        fill:SetAllPoints()
+        badge = { frame = f, fill = fill, rim = Pix.CreateBorder(f, 1, 1, 1, 1, 1) }
         badges[textValue] = badge
     end
     badge.bd, badge.on = edge, enabled
@@ -136,7 +136,7 @@ function mod.ShowCDMKeybindBadge(textValue, edge)
     ShowBadge(textValue, badge)
 end
 
-function mod.StyleCDMKeybind(textValue, edge, anchorFrame, scale, fontFile)
+function mod.StyleCDMKeybind(textValue, edge, anchor, scale, fontFile)
     if not edge.showKeybind then
         -- Existing badges can survive a bar/profile switch; no allocation.
         textValue:Hide()
@@ -150,15 +150,15 @@ function mod.StyleCDMKeybind(textValue, edge, anchorFrame, scale, fontFile)
     if font and font ~= "__global" then
         fontFile = CludesUI.ResolveFontName(font)
     end
-    local dim = (edge.keybindSize or 10) * scale
+    local size = (edge.keybindSize or 10) * scale
     local outline = edge.keybindOutline
     if outline == "NONE" then
         -- The suite's plain text: no outline token, drop shadow.
-        CludesUI.ApplyModuleFont(textValue, fontFile, dim, "cdm", "")
+        CludesUI.ApplyModuleFont(textValue, fontFile, size, "cdm", "")
     elseif outline == "OUTLINE" or outline == "THICKOUTLINE" then
-        CludesUI.ApplyModuleFont(textValue, fontFile, dim, "cdm", CludesUI.SlugFlag(outline .. ", SLUG"))
+        CludesUI.ApplyModuleFont(textValue, fontFile, size, "cdm", CludesUI.SlugFlag(outline .. ", SLUG"))
     else
-        CludesUI.ApplyIconTextFont(textValue, fontFile, dim, "cdm")
+        CludesUI.ApplyIconTextFont(textValue, fontFile, size, "cdm")
     end
     local anchorPoint = edge.keybindAnchor
     if not anchors[anchorPoint] then
@@ -170,7 +170,7 @@ function mod.StyleCDMKeybind(textValue, edge, anchorFrame, scale, fontFile)
     textValue:ClearAllPoints()
     textValue:SetPoint(
         anchorPoint,
-        anchorFrame,
+        anchor,
         anchorPoint,
         right and -posX or posX,
         (edge.keybindOffsetY or -2) * scale

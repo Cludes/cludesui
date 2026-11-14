@@ -19,7 +19,7 @@ Inner.broken = true
 
 local CUI = CludesUI
 
-local SavedDB, DM_TYPE_ICONS, EnsureDB, MEDIA = Inner.DB, Inner.DM_TYPE_ICONS, Inner.EnsureDB, Inner.MEDIA
+local DB, DM_TYPE_ICONS, EnsureDB, MEDIA = Inner.DB, Inner.DM_TYPE_ICONS, Inner.EnsureDB, Inner.MEDIA
 
 -------------------------------------------------------------------------------
 --  Stock styles (Global Settings > Style) on our own windows and rows:
@@ -115,7 +115,7 @@ end
 -- latched this session (the latch above, read off `p`), so the switch asks
 -- for a reload.
 function mod.DMFvBorderChanged(p)
-    local kindOf
+    local kind
     if
         type(p) == "table"
         and not p.useClassicStyle
@@ -123,9 +123,9 @@ function mod.DMFvBorderChanged(p)
         and CludesUI.IS_FOREVER == true
         and p.useForeverStyle == true
     then
-        kindOf = CludesUI.ForeverBorderKind(p.foreverBorder)
+        kind = CludesUI.ForeverBorderKind(p.foreverBorder)
     end
-    return kindOf ~= mod.DMFvKind()
+    return kind ~= mod.DMFvKind()
 end
 -- The one-time Classic WoW UI seed on a profile `p`: a near-black window
 -- (#101010), the game's own bar fill as the bar texture and a quarter-black
@@ -240,9 +240,9 @@ mod.DM_HDR_CLASSIC_SCALE, mod.DM_HDR_CLASSIC_PAD = 0.85, 2
 -- WoW Forever reads its own set; an atlas entry the client lacks keeps the
 -- glyph.
 function mod.DMHdrArt(key)
-    local look = mod.DMStyle()
-    local group = mod.DM_HDR_ART[mod._dmForever and "forever" or look]
-    local art = group and group[key] or nil
+    local style = mod.DMStyle()
+    local set = mod.DM_HDR_ART[mod._dmForever and "forever" or style]
+    local art = set and set[key] or nil
     if art and art.atlas and not mod.DMFvAtlas(art.atlas) then
         return nil
     end
@@ -275,13 +275,13 @@ end
 -- Seats a header icon texture in its button: full-bleed, or inset to its
 -- art entry's `scale` (relative anchors, so the button's current size
 -- decides; re-run after a resize).
-function mod.DMSeatHdrArt(texture, dim)
+function mod.DMSeatHdrArt(texture, size)
     local button = texture:GetParent()
     local art = texture._hdrArt
     local k = art and art.scale
     texture:ClearAllPoints()
     if k and k < 1 then
-        local inset = ((dim or button:GetWidth()) * (1 - k)) / 2
+        local inset = ((size or button:GetWidth()) * (1 - k)) / 2
         texture:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
         texture:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     else
@@ -357,9 +357,9 @@ end
 -- glyph otherwise (its desaturation and tint were set when the button was
 -- built and stay).
 function mod.DMSetTypeIcon(texture, dmType)
-    local look = mod.DMStyle()
-    local group = mod.DM_HDR_ART[mod._dmForever and "forever" or look]
-    local art = group and group.types and group.types[dmType]
+    local style = mod.DMStyle()
+    local set = mod.DM_HDR_ART[mod._dmForever and "forever" or style]
+    local art = set and set.types and set.types[dmType]
     if art then
         mod.DMApplyHdrArt(texture, art)
         return
@@ -388,14 +388,14 @@ end
 -- from its own settings), the main meter's otherwise; the configured colour
 -- on the CUI look.
 function mod.DMPaintHeaderBg(texture, r, g, b, a, winR, winG, winB)
-    local look = mod.DMStyle()
-    if look == "blizzard" then
+    local style = mod.DMStyle()
+    if style == "blizzard" then
         if mod._dmForever and mod.DMFvHeader(texture, a) then
             return
         end
         texture:SetAtlas(mod.DM_BLIZZ_HEADER)
         texture:SetVertexColor(1, 1, 1, a)
-    elseif look == "classic" then
+    elseif style == "classic" then
         local c, k, lift = mod.EDM.DB(), mod.DM_CLASSIC_HDR_SHADE, mod.DM_CLASSIC_HDR_LIFT
         mod.DMClassicTint(
             texture,
@@ -540,8 +540,8 @@ mod.DM_BLIZZ_BG_BODY = 245 / 255
 mod._dmBgLo = CreateColor(0, 0, 0, 1)
 mod._dmBgHi = CreateColor(0, 0, 0, 0.5)
 function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
-    local look = mod.DMStyle()
-    if look == "cui" then
+    local style = mod.DMStyle()
+    if style == "cui" then
         local filePath = texKey
             and texKey ~= "none"
             and CUI.ResolveTexturePath(_G._CUDM_BarTextures, texKey, nil)
@@ -557,7 +557,7 @@ function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
             texture:SetColorTexture(r, g, b, a)
         end
         return
-    elseif look == "classic" then
+    elseif style == "classic" then
         mod.DMPaintClassicBg(texture, r, g, b, a, edged)
         return
     end
@@ -567,10 +567,10 @@ function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
     local parts = texture._blizzParts
     if not parts then
         local hostFrame = texture:GetParent()
-        local layer, subFrame = texture:GetDrawLayer()
+        local layer, sub = texture:GetDrawLayer()
         parts = {}
         for idx = 1, 2 do
-            local t = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, subFrame or 0)
+            local t = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sub or 0)
             t:SetTexture("Interface\\Buttons\\WHITE8X8")
             if t.SetSnapToPixelGrid then
                 t:SetSnapToPixelGrid(false)
@@ -606,13 +606,13 @@ mod._dmShadeClear = CreateColor(0, 0, 0, 0)
 mod._dmShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._dmShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._dmShadeEnd = CreateColor(0, 0, 0, 0.35)
-function mod.DMApplyBlizzFill(fillTex)
-    local sh = fillTex._blizzShadow
+function mod.DMApplyBlizzFill(fill)
+    local sh = fill._blizzShadow
     if not sh then
         sh = {}
-        fillTex._blizzShadow = sh
+        fill._blizzShadow = sh
         for idx = 1, 4 do
-            local texture = fillTex:CreateTexture(nil, "OVERLAY", nil, -3)
+            local texture = fill:CreateTexture(nil, "OVERLAY", nil, -3)
             texture:SetTexture("Interface\\Buttons\\WHITE8X8")
             if texture.SetSnapToPixelGrid then
                 texture:SetSnapToPixelGrid(false)
@@ -626,8 +626,8 @@ function mod.DMApplyBlizzFill(fillTex)
         sh[3]:SetGradient("HORIZONTAL", mod._dmShadeEnd, mod._dmShadeClear)
         sh[4]:SetGradient("HORIZONTAL", mod._dmShadeClear, mod._dmShadeEnd)
     end
-    local ft = fillTex:GetStatusBarTexture()
-    local hgt = fillTex:GetHeight()
+    local ft = fill:GetStatusBarTexture()
+    local hgt = fill:GetHeight()
     -- A bar carrying secret values (the tooltip preview rows in combat)
     -- reports a secret height; the last plain height stands in, then the
     -- row default, so nothing here ever compares a secret.
@@ -671,24 +671,24 @@ end
 -- insets: the track sits 2px outside the fill on every side, exactly under
 -- its edge). One-time per row. WoW Forever wears the same track (a bar
 -- texture, not frame art).
-function mod.DMApplyBlizzBarBg(barFrame)
-    local backdrop = barFrame._bg
-    if not backdrop or not barFrame.fill then
+function mod.DMApplyBlizzBarBg(bar)
+    local backdrop = bar._bg
+    if not backdrop or not bar.fill then
         return
     end
-    if barFrame._blizzBgOn then
+    if bar._blizzBgOn then
         return
     end
-    barFrame._blizzBgOn = true
+    bar._blizzBgOn = true
     backdrop:SetAtlas(mod.DM_BLIZZ_BAR_BG)
     backdrop:SetVertexColor(1, 1, 1, 1)
     backdrop:ClearAllPoints()
-    backdrop:SetPoint("TOPLEFT", barFrame.fill, "TOPLEFT", -2, 2)
-    backdrop:SetPoint("BOTTOMRIGHT", barFrame.fill, "BOTTOMRIGHT", 2, -2)
-    local edge = barFrame.fill:CreateTexture(nil, "OVERLAY", nil, 6)
+    backdrop:SetPoint("TOPLEFT", bar.fill, "TOPLEFT", -2, 2)
+    backdrop:SetPoint("BOTTOMRIGHT", bar.fill, "BOTTOMRIGHT", 2, -2)
+    local edge = bar.fill:CreateTexture(nil, "OVERLAY", nil, 6)
     edge:SetAtlas(mod.DM_BLIZZ_BAR_EDGE)
-    edge:SetPoint("TOPLEFT", barFrame.fill, "TOPLEFT", -2, 2)
-    edge:SetPoint("BOTTOMRIGHT", barFrame.fill, "BOTTOMRIGHT", 2, -2)
+    edge:SetPoint("TOPLEFT", bar.fill, "TOPLEFT", -2, 2)
+    edge:SetPoint("BOTTOMRIGHT", bar.fill, "BOTTOMRIGHT", 2, -2)
 end
 
 -------------------------------------------------------------------------------
@@ -777,24 +777,24 @@ function mod.DMFvFrameArt(ownerFrame, outside)
     end
     if mod.DMFvHeavy() then
         local H = CUI.FOREVER_HEAVY
-        local hostRegion = CreateFrame("Frame", nil, ownerFrame)
-        hostRegion:SetScale(H.k)
-        hostRegion:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
-        hostRegion:SetAllPoints(ownerFrame)
+        local host = CreateFrame("Frame", nil, ownerFrame)
+        host:SetScale(H.k)
+        host:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
+        host:SetAllPoints(ownerFrame)
         local o = outside and H.band * H.k or 0
-        CUI.ForeverHeavySeat(CUI.ForeverHeavy(hostRegion, "ARTWORK"), ownerFrame, "TOPLEFT", -o, o, o, -o)
-        ownerFrame._fvRim = hostRegion
-        return hostRegion
+        CUI.ForeverHeavySeat(CUI.ForeverHeavy(host, "ARTWORK"), ownerFrame, "TOPLEFT", -o, o, o, -o)
+        ownerFrame._fvRim = host
+        return host
     end
     if not (mod.DMForever() and CUI.ForeverBorderOK()) then
         return nil
     end
-    local hostRegion = CreateFrame("Frame", nil, ownerFrame)
-    hostRegion:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
-    hostRegion:SetAllPoints(ownerFrame)
+    local host = CreateFrame("Frame", nil, ownerFrame)
+    host:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
+    host:SetAllPoints(ownerFrame)
     local o = outside and CUI.FOREVER_BORDER.fill or 0
     CUI.ForeverBorderSeat(
-        CUI.ForeverBorder(hostRegion, nil, nil, nil, mod._dmFvKind),
+        CUI.ForeverBorder(host, nil, nil, nil, mod._dmFvKind),
         ownerFrame,
         "TOPLEFT",
         -o,
@@ -802,8 +802,8 @@ function mod.DMFvFrameArt(ownerFrame, outside)
         o,
         -o
     )
-    ownerFrame._fvRim = hostRegion
-    return hostRegion
+    ownerFrame._fvRim = host
+    return host
 end
 -- Window background under WoW Forever. With `edged` the window wears the
 -- bronze line over a flat dark body spanning it (from the line's inner
@@ -881,7 +881,7 @@ end
 -- How far a header's title and buttons rise to centre on the band's body
 -- (h = the header's own height setting; nil = the meter's Header Height).
 function mod.DMHdrLift(hgt)
-    return mod.DMFvRail(hgt or SavedDB().hdrHeight or 22) / 2
+    return mod.DMFvRail(hgt or DB().hdrHeight or 22) / 2
 end
 -- A header glyph's square plate (Forever's button art, normal or hover)
 -- under the glyph on its button, built once; hidden when the texture's art

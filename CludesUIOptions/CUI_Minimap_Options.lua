@@ -47,7 +47,7 @@ initFrame:SetScript("OnEvent", function(self)
         saved = _G._CUMM_DB
     end)
 
-    local function SavedDB()
+    local function DB()
         if not saved then
             saved = _G._CUMM_DB
         end
@@ -55,12 +55,12 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function ChatDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.chat
     end
 
     local function MinimapDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.minimap
     end
 
@@ -76,7 +76,7 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function FriendsDB()
-        local p = SavedDB()
+        local p = DB()
         return p and p.friends
     end
 
@@ -1111,9 +1111,9 @@ initFrame:SetScript("OnEvent", function(self)
             -- The checkbox dropdown has no disabled state of its own: grey it and
             -- block clicks; the row's disabled overlay shows the requirement.
             local function ApplyUngroupDisabled()
-                local offset = TooFewButtons()
-                cbDD:SetAlpha(offset and 0.3 or 1)
-                cbDD:EnableMouse(not offset)
+                local off = TooFewButtons()
+                cbDD:SetAlpha(off and 0.3 or 1)
+                cbDD:EnableMouse(not off)
             end
             ApplyUngroupDisabled()
             CludesUI.RegisterWidgetRefresh(ApplyUngroupDisabled)

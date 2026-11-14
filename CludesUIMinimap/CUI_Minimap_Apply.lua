@@ -389,11 +389,11 @@ local function ApplyMinimap()
         -- BackdropTemplate) on a dedicated host frame -- the engine shows/hides the host
         -- freely, so it must never be the Minimap itself.
         local bs = p.borderSize or 1
-        local hostRegion = GetFFD(minimap).borderHost
-        if not hostRegion then
-            hostRegion = CreateFrame("Frame", nil, minimap)
-            hostRegion:EnableMouse(false)
-            GetFFD(minimap).borderHost = hostRegion
+        local host = GetFFD(minimap).borderHost
+        if not host then
+            host = CreateFrame("Frame", nil, minimap)
+            host:EnableMouse(false)
+            GetFFD(minimap).borderHost = host
         end
         -- Re-anchor on EVERY apply, not just create: this pass queues the Minimap's
         -- reparent to UIParent a frame out (above), and a host anchored across that
@@ -404,17 +404,17 @@ local function ApplyMinimap()
         -- survive a reload even though the stored value was never lost; anchoring only at
         -- creation made it permanent for the session, tracking how much else was loading
         -- at login rather than the actual setting. Re-setting the points forces a layout recompute; harmless no-op otherwise.
-        hostRegion:ClearAllPoints()
-        hostRegion:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
+        host:ClearAllPoints()
+        host:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
         -- Same level as the minimap keeps the border under all child buttons; Show Behind drops it under the map surface for the Shadow style.
-        hostRegion:SetFrameLevel(
+        host:SetFrameLevel(
             p.borderBehind and math.max(0, minimap:GetFrameLevel() - 1) or minimap:GetFrameLevel()
         )
-        hostRegion:SetAlpha(1)
+        host:SetAlpha(1)
         -- Exact size beside the legacy step (nil = the legacy path unchanged).
         local px = CludesUI.BorderPx(p.borderSizePx, bs, p.borderTexture or "solid")
         CludesUI.ApplyBorderStyle(
-            hostRegion,
+            host,
             bs,
             r,
             g,
@@ -492,9 +492,9 @@ local function ApplyMinimap()
                 if not mp or not mp.useClassColor or mp.borderUseClassColor then
                     return
                 end
-                local hostRegion = GetFFD(minimap).borderHost
-                if hostRegion and hostRegion:IsShown() then
-                    CludesUI.SetBorderStyleColor(hostRegion, ar, ag, ab, 1)
+                local host = GetFFD(minimap).borderHost
+                if host and host:IsShown() then
+                    CludesUI.SetBorderStyleColor(host, ar, ag, ab, 1)
                 end
                 local cb = GetFFD(minimap).circBorder
                 if cb and cb:IsShown() then
@@ -526,18 +526,18 @@ local function ApplyMinimap()
             texture:SetAllPoints(widget)
         end
         if isCircle or crop > 0 then
-            local maskTex = widget:CreateMaskTexture()
-            maskTex:SetAllPoints(widget)
+            local mask = widget:CreateMaskTexture()
+            mask:SetAllPoints(widget)
             -- The housing frame already has the visible size, so it takes a
             -- whole-frame mask: Rectangular's full rectangular one, a square
             -- frame's crop the plain square (the canvas takes the crop masks).
-            maskTex:SetTexture(
+            mask:SetTexture(
                 isRectangular and "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-mask.blp"
                     or (isCircle and maskID)
                     or 130937
             )
-            texture:AddMaskTexture(maskTex)
-            widget._mask = maskTex
+            texture:AddMaskTexture(mask)
+            widget._mask = mask
             widget._maskAttached = true
         end
         widget._isCircle = isCircle
@@ -608,9 +608,9 @@ local function ApplyMinimap()
             end
             if isCircle or crop > 0 then
                 if not widget._mask then
-                    local maskTex = widget:CreateMaskTexture()
-                    maskTex:SetAllPoints(widget)
-                    widget._mask = maskTex
+                    local mask = widget:CreateMaskTexture()
+                    mask:SetAllPoints(widget)
+                    widget._mask = mask
                 end
                 if widget._tex and not widget._maskAttached then
                     widget._tex:AddMaskTexture(widget._mask)
@@ -905,11 +905,11 @@ local function ApplyMinimap()
             clockBg:SetScript("OnEnter", function(self)
                 SKIN._HVRevealMapHover()
                 local mp = SKIN.db and SKIN.db.profile.minimap
-                local modeName = (mp and mp.clockHoverTooltip) or "none"
-                if CludesUI.IS_FOREVER and modeName == "vault" then
-                    modeName = "none"
+                local mode = (mp and mp.clockHoverTooltip) or "none"
+                if CludesUI.IS_FOREVER and mode == "vault" then
+                    mode = "none"
                 end
-                if modeName == "lockouts" then
+                if mode == "lockouts" then
                     if CludesUI.InProtectedInstance() then
                         return
                     end
@@ -917,7 +917,7 @@ local function ApplyMinimap()
                     if entries then
                         ShowCalendarTooltip(self, entries)
                     end
-                elseif modeName == "vault" then
+                elseif mode == "vault" then
                     ShowVaultTooltip(self)
                 end
             end)
@@ -1035,13 +1035,13 @@ local function ApplyMinimap()
             -- Either square: the zone text rides the frame's title bar, held
             -- to the bar's band by both ends (a longer name is cut short with
             -- an ellipsis); the offsets still apply.
-            local slotIndex = GetFFD(minimap).fvTitleSlot
+            local slot = GetFFD(minimap).fvTitleSlot
             locationBg:SetBackdropColor(0, 0, 0, 0)
             locationBg:ClearAllPoints()
-            locationBg:SetPoint("CENTER", slotIndex, "CENTER", lxOff, lyOff)
+            locationBg:SetPoint("CENTER", slot, "CENTER", lxOff, lyOff)
             locationFrame:ClearAllPoints()
-            locationFrame:SetPoint("LEFT", slotIndex, "LEFT", lxOff, lyOff)
-            locationFrame:SetPoint("RIGHT", slotIndex, "RIGHT", lxOff, lyOff)
+            locationFrame:SetPoint("LEFT", slot, "LEFT", lxOff, lyOff)
+            locationFrame:SetPoint("RIGHT", slot, "RIGHT", lxOff, lyOff)
             locationFrame:SetWordWrap(false)
         end
         local ls = p.locationScale or 1.15
@@ -1110,9 +1110,9 @@ local function ApplyMinimap()
             fpsBg:SetSize(60, 20)
             fpsBg:SetFrameLevel(minimap:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
             fpsBg:EnableMouse(false)
-            local function MakeFS(dim)
+            local function MakeFS(size)
                 local fontStr = fpsBg:CreateFontString(nil, "OVERLAY")
-                ApplyMinimapFont(fontStr, dim)
+                ApplyMinimapFont(fontStr, size)
                 fontStr:SetTextColor(1, 1, 1, 1)
                 return fontStr
             end
@@ -1153,18 +1153,18 @@ local function ApplyMinimap()
                 fsFps:SetPoint("LEFT", self, "LEFT", 0, 0)
                 fsFps:SetFormattedText("%d |cff%sFPS|r", fps, hex)
                 local totalW = fsFps:GetStringWidth() or 0
-                local anchorFrame = fsFps
+                local anchor = fsFps
 
                 if showWorld then
                     divWorld:ClearAllPoints()
-                    divWorld:SetPoint("LEFT", anchorFrame, "RIGHT", DIV_PAD, 0)
+                    divWorld:SetPoint("LEFT", anchor, "RIGHT", DIV_PAD, 0)
                     divWorld:Show()
                     fsWorld:ClearAllPoints()
                     fsWorld:SetPoint("LEFT", divWorld, "RIGHT", DIV_PAD, 0)
                     fsWorld:SetFormattedText("%d |cff%sMS|r", latWorld, hex)
                     fsWorld:Show()
                     totalW = totalW + DIV_PAD + DIV_W + DIV_PAD + (fsWorld:GetStringWidth() or 0)
-                    anchorFrame = fsWorld
+                    anchor = fsWorld
                 else
                     divWorld:Hide()
                     fsWorld:Hide()
@@ -1172,7 +1172,7 @@ local function ApplyMinimap()
 
                 if showLocal then
                     divLocal:ClearAllPoints()
-                    divLocal:SetPoint("LEFT", anchorFrame, "RIGHT", DIV_PAD, 0)
+                    divLocal:SetPoint("LEFT", anchor, "RIGHT", DIV_PAD, 0)
                     divLocal:Show()
                     fsLocal:ClearAllPoints()
                     fsLocal:SetPoint("LEFT", divLocal, "RIGHT", DIV_PAD, 0)
@@ -1205,11 +1205,11 @@ local function ApplyMinimap()
             fpsBg:SetScript("OnEnter", function(self)
                 SKIN._HVRevealMapHover()
                 local mp = SKIN.db and SKIN.db.profile.minimap
-                local modeName = (mp and mp.fpsHoverTooltip) or "none"
-                if CludesUI.IS_FOREVER and modeName == "vault" then
-                    modeName = "none"
+                local mode = (mp and mp.fpsHoverTooltip) or "none"
+                if CludesUI.IS_FOREVER and mode == "vault" then
+                    mode = "none"
                 end
-                if modeName == "lockouts" then
+                if mode == "lockouts" then
                     if CludesUI.InProtectedInstance() then
                         return
                     end
@@ -1217,7 +1217,7 @@ local function ApplyMinimap()
                     if entries then
                         ShowCalendarTooltip(self, entries)
                     end
-                elseif modeName == "vault" then
+                elseif mode == "vault" then
                     ShowVaultTooltip(self)
                 end
             end)

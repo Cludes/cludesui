@@ -717,14 +717,9 @@ local function _loadVariantBases()
     if type(storage) ~= "table" then
         return
     end
-    for variant, baseValue in pairs(storage) do
-        if
-            type(variant) == "number"
-            and type(baseValue) == "number"
-            and baseValue > 0
-            and baseValue ~= variant
-        then
-            _variantBaseLearned[variant] = baseValue
+    for variant, base in pairs(storage) do
+        if type(variant) == "number" and type(base) == "number" and base > 0 and base ~= variant then
+            _variantBaseLearned[variant] = base
         end
     end
 end
@@ -735,11 +730,11 @@ end
 -- which relearns the live pairing on every call, from touching the store per
 -- frame. Persists only once the spec is known, so a pair observed before that
 -- still routes this session without being filed under the wrong spec.
-local function _learnVariantBase(variant, baseValue)
-    if _variantBaseLearned[variant] == baseValue then
+local function _learnVariantBase(variant, base)
+    if _variantBaseLearned[variant] == base then
         return
     end
-    _variantBaseLearned[variant] = baseValue
+    _variantBaseLearned[variant] = base
     if not _variantBaseSpec then
         return
     end
@@ -757,7 +752,7 @@ local function _learnVariantBase(variant, baseValue)
         storage = {}
         root[_variantBaseSpec] = storage
     end
-    storage[variant] = baseValue
+    storage[variant] = base
 end
 
 -- Reset hook for the CDM's own reset path. Without it a pair learned wrong is
@@ -874,18 +869,18 @@ function mod.RebuildSpellRouteMap()
         -- Learn the base while the client will still say, else recall the last
         -- answer: without the recall the claim is written only on rebuilds that
         -- happen while this exact variant is live, and routing still flips.
-        local baseValue
+        local base
         if GetBase then
             local success, b = pcall(GetBase, spellRef)
             if success and type(b) == "number" and b > 0 and b ~= spellRef then
-                baseValue = b
+                base = b
                 _learnVariantBase(spellRef, b)
             end
         end
-        baseValue = baseValue or _variantBaseLearned[spellRef]
-        if baseValue and baseValue ~= spellRef then
+        base = base or _variantBaseLearned[spellRef]
+        if base and base ~= spellRef then
             local varMap = isBuff and _divertedVarBaseBuff or _divertedVarBaseCD
-            varMap[baseValue] = barId
+            varMap[base] = barId
         end
     end
 
@@ -913,9 +908,9 @@ function mod.RebuildSpellRouteMap()
                 -- for that slot, which has no spellID to key on. Same overwrite
                 -- order as the sid maps above, so a custom bar outranks the
                 -- default (pass 3) and a ghost bar hides it (pass 4).
-                local slotIndex = mod.SlotIDFromKey and mod.SlotIDFromKey(spellRef)
-                if slotIndex then
-                    mod._divertedSlotCD[slotIndex] = edge.key
+                local slot = mod.SlotIDFromKey and mod.SlotIDFromKey(spellRef)
+                if slot then
+                    mod._divertedSlotCD[slot] = edge.key
                 elseif mod.IsItemPresetKey(spellRef) then
                     -- Item preset entry: Blizzard's own row for that item (a potion
                     -- or healthstone category row) routes to the bar listing it.
@@ -1077,14 +1072,14 @@ function mod.RebuildSpellRouteMap()
     local expanded
     repeat
         expanded = false
-        for variant, baseValue in pairs(_variantBaseLearned) do
-            if ghostAliasSkip[variant] or ghostAliasSkip[baseValue] then
+        for variant, base in pairs(_variantBaseLearned) do
+            if ghostAliasSkip[variant] or ghostAliasSkip[base] then
                 if not ghostAliasSkip[variant] then
                     ghostAliasSkip[variant] = true
                     expanded = true
                 end
-                if not ghostAliasSkip[baseValue] then
-                    ghostAliasSkip[baseValue] = true
+                if not ghostAliasSkip[base] then
+                    ghostAliasSkip[base] = true
                     expanded = true
                 end
             end
@@ -1115,9 +1110,9 @@ function mod.RebuildSpellRouteMap()
         for category, keyList in pairs(nativeKeys) do
             local pick
             for idx = 1, #keyList do
-                local barFrame = mod._divertedItemCD[keyList[idx]]
-                local bdK = barFrame and byKey and byKey[barFrame]
-                if barFrame and not (bdK and bdK.isGhostBar) then
+                local bar = mod._divertedItemCD[keyList[idx]]
+                local bdK = bar and byKey and byKey[bar]
+                if bar and not (bdK and bdK.isGhostBar) then
                     pick = keyList[idx]
                     break
                 end

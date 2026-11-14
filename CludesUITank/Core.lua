@@ -299,7 +299,7 @@ local function InitializeFrame()
         return
     end
 
-    local Keys = mod.K
+    local K = mod.K
 
     local widget =
         CreateFrame("Button", "CoTankAuras", UIParent, "SecureUnitButtonTemplate, BackdropTemplate")
@@ -308,7 +308,7 @@ local function InitializeFrame()
     Mixin(widget, mod.Mixin) -- ns.Mixin defined in modules/mixin.lua
 
     local saved = mod.DB()
-    widget:SetSize(saved.frameWidth or Keys.DEFAULT_WIDTH, saved.frameHeight or Keys.DEFAULT_HEIGHT)
+    widget:SetSize(saved.frameWidth or K.DEFAULT_WIDTH, saved.frameHeight or K.DEFAULT_HEIGHT)
     widget:SetMovable(true)
     widget:SetClampedToScreen(true)
 
@@ -316,22 +316,22 @@ local function InitializeFrame()
     widget.bg = widget:CreateTexture(nil, "BACKGROUND")
     widget.bg:SetAllPoints()
     widget.bg:SetColorTexture(0.05, 0.07, 0.11, 0.92)
-    widget:SetBackdrop({ edgeFile = Keys.BACKDROP_TEXTURE, edgeSize = 1 })
+    widget:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
     widget:SetBackdropBorderColor(0.08, 0.12, 0.20, 1)
 
     -- Health bar
     widget.health = CreateFrame("StatusBar", nil, widget)
     widget.health:SetPoint("TOPLEFT", 1, -1)
-    widget.health:SetPoint("BOTTOMRIGHT", -1, Keys.POWER_BAR_HEIGHT + 2)
-    widget.health.statusBarTextureString = saved.barTexture or Keys.BACKDROP_TEXTURE
+    widget.health:SetPoint("BOTTOMRIGHT", -1, K.POWER_BAR_HEIGHT + 2)
+    widget.health.statusBarTextureString = saved.barTexture or K.BACKDROP_TEXTURE
     widget.health:SetStatusBarTexture(widget.health.statusBarTextureString)
 
     -- Power bar
     widget.power = CreateFrame("StatusBar", nil, widget)
-    widget.power:SetHeight(Keys.POWER_BAR_HEIGHT)
+    widget.power:SetHeight(K.POWER_BAR_HEIGHT)
     widget.power:SetPoint("TOPLEFT", widget.health, "BOTTOMLEFT", 0, -1)
     widget.power:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -1, 1)
-    widget.power.statusBarTextureString = saved.barTexture or Keys.BACKDROP_TEXTURE
+    widget.power.statusBarTextureString = saved.barTexture or K.BACKDROP_TEXTURE
     widget.power:SetStatusBarTexture(widget.power.statusBarTextureString)
     widget.powerBG = widget.power:CreateTexture(nil, "BACKGROUND")
     widget.powerBG:SetAllPoints()
@@ -339,8 +339,8 @@ local function InitializeFrame()
 
     -- Name text
     local face = mod.FontPath()
-    local nameSize = saved.nameFontSize or Keys.DEFAULT_NAME_FONT_SIZE
-    local hpSize = saved.hpFontSize or Keys.DEFAULT_HP_FONT_SIZE
+    local nameSize = saved.nameFontSize or K.DEFAULT_NAME_FONT_SIZE
+    local hpSize = saved.hpFontSize or K.DEFAULT_HP_FONT_SIZE
     widget.nameText = widget.health:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
     widget.nameText:SetFont(face, nameSize, mod.FontFlags())
     widget.nameText:SetPoint("BOTTOMLEFT", widget.health, "LEFT", 6, 4)

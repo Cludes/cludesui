@@ -20,7 +20,7 @@ local DEFAULT_SIZE = 22
 local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = 169 }
 local GAP = 4
 
-local function SavedDB(key)
+local function DB(key)
     return CludesUIDB and CludesUIDB[key]
 end
 
@@ -37,7 +37,7 @@ local DEFS = {
     { id = "potion", sizeKey = "potionAlertTextSize", enabledKey = "potionAlertEnabled", hold = 3 },
 }
 local lines = {}
-local anchorFrame
+local anchor
 
 -- Defaults for the two new alerts; the options cogs read these too.
 Alerts.DEFAULTS = {
@@ -45,13 +45,13 @@ Alerts.DEFAULTS = {
     talentAlert = { text = "Unspent talent points", color = { r = 1, g = 0.82, b = 0 } },
 }
 
-local function SizeOf(spec_def)
-    return SavedDB(spec_def.sizeKey) or DEFAULT_SIZE
+local function SizeOf(def)
+    return DB(def.sizeKey) or DEFAULT_SIZE
 end
 
 local function AnyEnabled()
-    for _, spec_def in ipairs(DEFS) do
-        if SavedDB(spec_def.enabledKey) then
+    for _, def in ipairs(DEFS) do
+        if DB(def.enabledKey) then
             return true
         end
     end
@@ -60,9 +60,9 @@ end
 
 local function MaxSize()
     local m = DEFAULT_SIZE
-    for _, spec_def in ipairs(DEFS) do
-        if SavedDB(spec_def.enabledKey) then
-            m = math.max(m, SizeOf(spec_def))
+    for _, def in ipairs(DEFS) do
+        if DB(def.enabledKey) then
+            m = math.max(m, SizeOf(def))
         end
     end
     return m
@@ -70,11 +70,11 @@ end
 
 -- The old Combat Alert position carries over until the anchor is moved.
 local function AnchorPos()
-    local p = SavedDB("alertsPos")
+    local p = DB("alertsPos")
     if p and p.point then
         return p
     end
-    p = SavedDB("combatAlertPos")
+    p = DB("combatAlertPos")
     if p and p.point then
         return p
     end
@@ -82,53 +82,53 @@ local function AnchorPos()
 end
 
 local function PlaceAnchor()
-    if not anchorFrame then
+    if not anchor then
         return
     end
-    local dim = MaxSize()
-    anchorFrame:SetSize(dim * 7, dim + 14)
+    local size = MaxSize()
+    anchor:SetSize(size * 7, size + 14)
     local place = AnchorPos()
-    anchorFrame:ClearAllPoints()
-    anchorFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
+    anchor:ClearAllPoints()
+    anchor:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
 end
 
 local function EnsureAnchor()
-    if anchorFrame then
+    if anchor then
         return
     end
-    anchorFrame = CreateFrame("Frame", nil, UIParent)
-    anchorFrame:EnableMouse(false)
-    anchorFrame:SetMouseClickEnabled(false)
+    anchor = CreateFrame("Frame", nil, UIParent)
+    anchor:EnableMouse(false)
+    anchor:SetMouseClickEnabled(false)
     PlaceAnchor()
 end
 
 local function Layout()
-    if not anchorFrame then
+    if not anchor then
         return
     end
-    local offset = 0
-    for _, spec_def in ipairs(DEFS) do
-        local lineTex = lines[spec_def.id]
-        if lineTex and lineTex.frame:IsShown() then
-            lineTex.frame:ClearAllPoints()
-            lineTex.frame:SetPoint("TOP", anchorFrame, "TOP", 0, -offset)
-            offset = offset + lineTex.frame:GetHeight() + GAP
+    local off = 0
+    for _, def in ipairs(DEFS) do
+        local line = lines[def.id]
+        if line and line.frame:IsShown() then
+            line.frame:ClearAllPoints()
+            line.frame:SetPoint("TOP", anchor, "TOP", 0, -off)
+            off = off + line.frame:GetHeight() + GAP
         end
     end
 end
 
-local function Style(lineTex)
+local function Style(line)
     local outline = (CUI.GetFontOutlineFlag("extras")) or ""
     if not outline:find("OUTLINE") then
         outline = (outline == "") and "OUTLINE" or (outline .. ", OUTLINE")
     end
-    local dim = SizeOf(lineTex.def)
-    CUI.ApplyModuleFont(lineTex.text, nil, dim, "extras", outline)
-    lineTex.frame:SetSize(dim * 7, dim + 14)
+    local size = SizeOf(line.def)
+    CUI.ApplyModuleFont(line.text, nil, size, "extras", outline)
+    line.frame:SetSize(size * 7, size + 14)
 end
 
-local function NewLine(spec_def)
-    local lineTex = { def = spec_def }
+local function NewLine(def)
+    local line = { def = def }
     local f = CreateFrame("Frame", nil, UIParent)
     f:SetFrameStrata("HIGH")
     f:SetFrameLevel(60)
@@ -136,7 +136,7 @@ local function NewLine(spec_def)
     f:Hide()
     local fontStr = f:CreateFontString(nil, "OVERLAY")
     fontStr:SetPoint("CENTER")
-    lineTex.frame, lineTex.text = f, fontStr
+    line.frame, line.text = f, fontStr
 
     -- Short: fade in, hold, fade out, then hide. Also used for previews.
     local short = f:CreateAnimationGroup()
@@ -148,7 +148,7 @@ local function NewLine(spec_def)
     local a2 = short:CreateAnimation("Alpha")
     a2:SetFromAlpha(1)
     a2:SetToAlpha(1)
-    a2:SetDuration(spec_def.hold or 1.2)
+    a2:SetDuration(def.hold or 1.2)
     a2:SetOrder(2)
     local a3 = short:CreateAnimation("Alpha")
     a3:SetFromAlpha(1)
@@ -171,26 +171,26 @@ local function NewLine(spec_def)
     f:SetScript("OnHide", function()
         short:Stop()
         stay:Stop()
-        lineTex.persistentShown = false
+        line.persistentShown = false
         Layout()
     end)
 
     -- preview: play the short animation even on a persistent line, and never
     -- disturb a real persistent alert that is already up.
-    function lineTex.Show(textValue, r, g, b, preview)
+    function line.Show(textValue, r, g, b, preview)
         if CUI._unlockActive then
             return
         end
-        local real = spec_def.persistent and not preview
-        if preview and lineTex.persistentShown then
+        local real = def.persistent and not preview
+        if preview and line.persistentShown then
             return
         end
         EnsureAnchor()
         PlaceAnchor()
-        Style(lineTex)
+        Style(line)
         fontStr:SetText(textValue)
         fontStr:SetTextColor(r or 1, g or 1, b or 1)
-        if real and lineTex.persistentShown then
+        if real and line.persistentShown then
             return
         end -- already up: only the text changed
         short:Stop()
@@ -198,33 +198,33 @@ local function NewLine(spec_def)
         f:SetAlpha(1)
         f:Show()
         if real then
-            lineTex.persistentShown = true
+            line.persistentShown = true
             stay:Play()
         else
             short:Play()
         end
     end
 
-    function lineTex.Hide()
+    function line.Hide()
         f:Hide()
     end
 
-    function lineTex.Dismiss()
+    function line.Dismiss()
         f:Hide()
-        if lineTex.onDismiss then
-            lineTex.onDismiss()
+        if line.onDismiss then
+            line.onDismiss()
         end
     end
 
-    return lineTex
+    return line
 end
 
 -- The line for an alert, built on first use.
 function Alerts.Line(ident)
     if not lines[ident] then
-        for _, spec_def in ipairs(DEFS) do
-            if spec_def.id == ident then
-                lines[ident] = NewLine(spec_def)
+        for _, def in ipairs(DEFS) do
+            if def.id == ident then
+                lines[ident] = NewLine(def)
             end
         end
     end
@@ -239,26 +239,26 @@ end
 
 -- Re-apply size, position and stacking (Text Size sliders, Unlock Mode).
 function Alerts.Refresh()
-    if anchorFrame or AnyEnabled() then
+    if anchor or AnyEnabled() then
         EnsureAnchor()
         PlaceAnchor()
     end
-    for _, lineTex in pairs(lines) do
-        Style(lineTex)
+    for _, line in pairs(lines) do
+        Style(line)
     end
     Layout()
 end
 
 -- Custom color, or the player's class color when that toggle is on.
 function Alerts.Color(prefixText, dr, dg, saved)
-    if SavedDB(prefixText .. "UseClassColor") then
+    if DB(prefixText .. "UseClassColor") then
         local _, token = UnitClass("player")
         if token then
             local c = CUI.GetClassColor(token)
             return c.r, c.g, c.b
         end
     end
-    local c = SavedDB(prefixText .. "Color")
+    local c = DB(prefixText .. "Color")
     if c then
         return c.r, c.g, c.b
     end
@@ -281,11 +281,11 @@ local function RegisterUnlock()
                     return nil
                 end -- nothing is built while all are off
                 EnsureAnchor()
-                return anchorFrame
+                return anchor
             end,
             getSize = function()
-                local dim = MaxSize()
-                return dim * 7, dim + 14
+                local size = MaxSize()
+                return size * 7, size + 14
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 if not anchorPoint then
@@ -295,7 +295,7 @@ local function RegisterUnlock()
                     CludesUIDB = {}
                 end
                 CludesUIDB.alertsPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if anchorFrame and not CUI._unlockActive then
+                if anchor and not CUI._unlockActive then
                     PlaceAnchor()
                     Layout()
                 end
@@ -309,13 +309,13 @@ local function RegisterUnlock()
                     CludesUIDB.alertsPos = nil
                     CludesUIDB.combatAlertPos = nil
                 end
-                if anchorFrame then
+                if anchor then
                     PlaceAnchor()
                     Layout()
                 end
             end,
             applyPos = function()
-                if anchorFrame or AnyEnabled() then
+                if anchor or AnyEnabled() then
                     EnsureAnchor()
                     PlaceAnchor()
                     Layout()
@@ -356,7 +356,7 @@ do
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.potionAlert
         local r, g, b = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
-        Alerts.Line("potion").Show(SavedDB("potionAlertText") or D.text, r, g, b, preview)
+        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, r, g, b, preview)
     end
 
     -- start, duration; nil if the item has no cooldown data.
@@ -445,8 +445,8 @@ do
 
     -- Item IDs only (no per-slot tables); each item is classified once.
     local function ScanBag(bag)
-        for slotIndex = 1, C_Container.GetContainerNumSlots(bag) do
-            local ident = C_Container.GetContainerItemID(bag, slotIndex)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local ident = C_Container.GetContainerItemID(bag, slot)
             if ident and seen[ident] == nil then
                 local _, _, _, _, _, classID, subID = GetInstant(ident)
                 if classID == POTION_CLASS and subID == POTION_SUBCLASS then
@@ -523,7 +523,7 @@ do
     end
 
     local function Apply()
-        local enabled = SavedDB("potionAlertEnabled")
+        local enabled = DB("potionAlertEnabled")
         if enabled and not installed then
             watcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
             watcher:RegisterEvent("BAG_UPDATE")
@@ -595,17 +595,17 @@ do
     end
 
     local function Line()
-        local lineTex = Alerts.Line("talent")
-        lineTex.onDismiss = function()
+        local line = Alerts.Line("talent")
+        line.onDismiss = function()
             dismissed = true
         end
-        return lineTex
+        return line
     end
 
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.talentAlert
         local r, g, b = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
-        Line().Show(SavedDB("talentAlertText") or D.text, r, g, b, preview)
+        Line().Show(DB("talentAlertText") or D.text, r, g, b, preview)
     end
 
     local function Evaluate()
@@ -642,7 +642,7 @@ do
 
     local listening = false
     local function Apply()
-        local enabled = SavedDB("talentAlertEnabled")
+        local enabled = DB("talentAlertEnabled")
         if enabled and not installed then
             for _, e in ipairs(EVENTS) do
                 watcher:RegisterEvent(e)

@@ -145,9 +145,9 @@ local function ComputeBarLayout(key)
     local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
     local shape = mod.AB_LayoutShape(s)
 
-    local baseValue = barBaseSize[key]
-    local baseW = baseValue and baseValue.w or 45
-    local baseH = baseValue and baseValue.h or 45
+    local base = barBaseSize[key]
+    local baseW = base and base.w or 45
+    local baseH = base and base.h or 45
     local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
     local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
     if shape ~= "none" and shape ~= "cropped" then
@@ -195,39 +195,39 @@ local function ComputeBarLayout(key)
         if idx > numIcons then
             result[idx] = { x = 0, y = 0, w = btnW, h = btnH, show = false }
         else
-            local column, rowFrame
+            local col, row
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    column = (idx - 1) % numRows
-                    rowFrame = floor((idx - 1) / numRows)
+                    col = (idx - 1) % numRows
+                    row = floor((idx - 1) / numRows)
                 else
-                    column = floor((idx - 1) / stride)
-                    rowFrame = (idx - 1) % stride
+                    col = floor((idx - 1) / stride)
+                    row = (idx - 1) % stride
                 end
             else
-                column = (idx - 1) % stride
-                rowFrame = floor((idx - 1) / stride)
+                col = (idx - 1) % stride
+                row = floor((idx - 1) / stride)
             end
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                column = (isVertical and numRows or stride) - 1 - column
+                col = (isVertical and numRows or stride) - 1 - col
             end
             if rowFlip then
-                rowFrame = (isVertical and stride or numRows) - 1 - rowFrame
+                row = (isVertical and stride or numRows) - 1 - row
             end
-            local thisBtnW = (extraWC > 0 and column < extraWC) and (btnW + onePxC) or btnW
-            local thisBtnH = (extraHC > 0 and rowFrame < extraHC) and (btnH + onePxC) or btnH
-            local extraBeforeW = math.min(column, extraWC) * onePxC
-            local extraBeforeH = math.min(rowFrame, extraHC) * onePxC
-            local xOff = column * stepW + extraBeforeW
+            local thisBtnW = (extraWC > 0 and col < extraWC) and (btnW + onePxC) or btnW
+            local thisBtnH = (extraHC > 0 and row < extraHC) and (btnH + onePxC) or btnH
+            local extraBeforeW = math.min(col, extraWC) * onePxC
+            local extraBeforeH = math.min(row, extraHC) * onePxC
+            local xOff = col * stepW + extraBeforeW
             local yOff
             if rowsUpward then
-                yOff = rowFrame * stepH + extraBeforeH
+                yOff = row * stepH + extraBeforeH
             else
-                yOff = -(rowFrame * stepH + extraBeforeH)
+                yOff = -(row * stepH + extraBeforeH)
             end
             local show = true
             if
@@ -464,9 +464,9 @@ local function LayoutBar(key)
     local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
     local shape = mod.AB_LayoutShape(s)
 
-    local baseValue = barBaseSize[key]
-    local baseW = baseValue and baseValue.w or 45
-    local baseH = baseValue and baseValue.h or 45
+    local base = barBaseSize[key]
+    local baseW = base and base.w or 45
+    local baseH = base and base.h or 45
     local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
     local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
 
@@ -537,61 +537,61 @@ local function LayoutBar(key)
                 lfd.parkA0 = 1
             end
 
-            local column, rowFrame
+            local col, row
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    column = (idx - 1) % numRows
-                    rowFrame = floor((idx - 1) / numRows)
+                    col = (idx - 1) % numRows
+                    row = floor((idx - 1) / numRows)
                 else
-                    column = floor((idx - 1) / stride)
-                    rowFrame = (idx - 1) % stride
+                    col = floor((idx - 1) / stride)
+                    row = (idx - 1) % stride
                 end
             else
-                column = (idx - 1) % stride
-                rowFrame = floor((idx - 1) / stride)
+                col = (idx - 1) % stride
+                row = floor((idx - 1) / stride)
             end
 
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                column = (isVertical and numRows or stride) - 1 - column
+                col = (isVertical and numRows or stride) - 1 - col
             end
             if rowFlip then
-                rowFrame = (isVertical and stride or numRows) - 1 - rowFrame
+                row = (isVertical and stride or numRows) - 1 - row
             end
 
             -- Width/height match: first N columns/rows get +1 physical pixel.
             -- Only the matched axis expands, so a row stays uniform (no 1px jag).
-            local thisBtnW = (extraW > 0 and column < extraW) and (btnW + onePx) or btnW
-            local thisBtnH = (extraH > 0 and rowFrame < extraH) and (btnH + onePx) or btnH
+            local thisBtnW = (extraW > 0 and col < extraW) and (btnW + onePx) or btnW
+            local thisBtnH = (extraH > 0 and row < extraH) and (btnH + onePx) or btnH
             -- Cumulative offset from expanded buttons before this one
-            local extraBeforeW = math.min(column, extraW) * onePx
-            local extraBeforeH = math.min(rowFrame, extraH) * onePx
+            local extraBeforeW = math.min(col, extraW) * onePx
+            local extraBeforeH = math.min(row, extraH) * onePx
 
             button:ClearAllPoints()
-            local xOff = column * stepW + extraBeforeW
-            local yOff, anchorFrame
+            local xOff = col * stepW + extraBeforeW
+            local yOff, anchor
             if rowsUpward then
-                yOff = rowFrame * stepH + extraBeforeH
-                anchorFrame = "BOTTOMLEFT"
+                yOff = row * stepH + extraBeforeH
+                anchor = "BOTTOMLEFT"
             else
-                yOff = -(rowFrame * stepH + extraBeforeH)
-                anchorFrame = "TOPLEFT"
+                yOff = -(row * stepH + extraBeforeH)
+                anchor = "TOPLEFT"
             end
             EFD(button).barKey = key
             -- Stock styles (Blizzard, Classic) keep the native-size button and
             -- scale it, so the stock art scales with it.
             local abStyle = mod.AB_Style()
             if abStyle ~= "cui" then
-                local baseValue = barBaseSize[key]
-                local nativeW = baseValue and baseValue.w or 45
-                local nativeH = baseValue and baseValue.h or 45
+                local base = barBaseSize[key]
+                local nativeW = base and base.w or 45
+                local nativeH = base and base.h or 45
                 local sc = thisBtnW / nativeW
                 button:SetScale(sc)
                 button:SetSize(nativeW, nativeH)
-                button:SetPoint(anchorFrame, widget, anchorFrame, xOff / sc, yOff / sc)
+                button:SetPoint(anchor, widget, anchor, xOff / sc, yOff / sc)
                 -- Classic WoW UI: the vanilla ring on the native-size button,
                 -- painted once per size (the scale carries it). Blizzard
                 -- Style on the Forever client: the retail border, once.
@@ -605,7 +605,7 @@ local function LayoutBar(key)
                     mod.AB_StockNormal(button)
                 end
             else
-                button:SetPoint(anchorFrame, widget, anchorFrame, xOff, yOff)
+                button:SetPoint(anchor, widget, anchor, xOff, yOff)
                 button:SetSize(thisBtnW, thisBtnH)
             end
             HideSlotArt(button)
@@ -613,8 +613,8 @@ local function LayoutBar(key)
             -- Stock styles: counter-scale SpellActivationAlert so the native
             -- proc glow renders at screen size despite the button's SetScale.
             if abStyle ~= "cui" and button.SpellActivationAlert then
-                local baseValue = barBaseSize[key]
-                local nativeW = baseValue and baseValue.w or 45
+                local base = barBaseSize[key]
+                local nativeW = base and base.w or 45
                 local sc = thisBtnW / nativeW
                 if sc > 0 then
                     button.SpellActivationAlert:SetScale(1 / sc)
@@ -776,7 +776,7 @@ local function LayoutBar(key)
                     local adb = CludesUIDB and CludesUIDB.unlockAnchors
                     local ai = adb and adb[key]
                     if ai and ai.mode ~= "POINT" then
-                        local sideName = ai.side
+                        local side = ai.side
                         local PPo = CludesUI and CludesUI.PP
                         local uiES = PPo and UIParent:GetEffectiveScale()
                         local tCX, tCY
@@ -798,7 +798,7 @@ local function LayoutBar(key)
                         if
                             prevW
                             and math.abs(newW - prevW) > 0.1
-                            and (sideName == "TOP" or sideName == "BOTTOM")
+                            and (side == "TOP" or side == "BOTTOM")
                             and not wMatched
                             and preCX
                             and tCX
@@ -818,7 +818,7 @@ local function LayoutBar(key)
                         if
                             prevH
                             and math.abs(newH - prevH) > 0.1
-                            and (sideName == "LEFT" or sideName == "RIGHT")
+                            and (side == "LEFT" or side == "RIGHT")
                             and not hMatched
                             and preCY
                             and tCY

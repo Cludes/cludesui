@@ -180,10 +180,10 @@ local function SecureSetupHandler_PrepareRefs()
     -- Register stock bar frames to hide
     local blizzIdx = 0
     for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-        local barFrame = _G[record.name]
-        if barFrame then
+        local bar = _G[record.name]
+        if bar then
             blizzIdx = blizzIdx + 1
-            _secureHandler:SetFrameRef("blizzbar-" .. blizzIdx, barFrame)
+            _secureHandler:SetFrameRef("blizzbar-" .. blizzIdx, bar)
         end
     end
     if StatusTrackingBarManager and not (ABAR.db and ABAR.db.profile.useBlizzardDataBars) then
@@ -202,10 +202,10 @@ end
 -- layoutData: table of { slot = { barKey, x, y, w, h, show, actionSlot } }
 -- barFrameData: table of { key, w, h, point, relPoint, x, y }
 local function SecureSetupHandler_Execute(layoutData, barFrameData)
-    for slotIndex, d in pairs(layoutData) do
+    for slot, d in pairs(layoutData) do
         local actionSlot = d.actionSlot or 0
         _secureHandler:SetAttribute(
-            "layout-" .. slotIndex,
+            "layout-" .. slot,
             d.barKey
                 .. "|"
                 .. d.x
@@ -282,18 +282,18 @@ local function HideBlizzardBars()
     -- rather than at file load.
     local remainingBars = { "MainMenuBar", "StanceBar", "PetActionBar" }
     for _, name in ipairs(remainingBars) do
-        local barFrame = _G[name]
-        if barFrame then
-            barFrame:UnregisterAllEvents()
+        local bar = _G[name]
+        if bar then
+            bar:UnregisterAllEvents()
             -- No Hide()/HideBase() call: SetParent(hiddenParent) below already
             -- makes the bar effectively invisible taint-free (see the note on
             -- ReassertHiddenOnShow above hiddenParent's creation).
-            barFrame:SetParent(hiddenParent)
+            bar:SetParent(hiddenParent)
             -- Prevent Blizzard re-showing it (spell transforms like Ascendance
             -- can trigger ValidateActionBarTransition, creating invisible dead zones)
-            mod.ReassertHiddenOnShow(barFrame)
-            if barFrame.actionButtons and type(barFrame.actionButtons) == "table" then
-                for _, childFrame in pairs(barFrame.actionButtons) do
+            mod.ReassertHiddenOnShow(bar)
+            if bar.actionButtons and type(bar.actionButtons) == "table" then
+                for _, childFrame in pairs(bar.actionButtons) do
                     mod.QuietlyHideBlizzButton(childFrame)
                 end
             end
@@ -529,17 +529,17 @@ end
 -- SetShown/Show/Hide. Stance bar still reuses Blizzard StanceButtons (own
 -- secure handling); Pet bar is set up in SetupBar. skipProtected: skip
 -- SetParent/Show (combat reload; the secure handler does those instead).
-local function GetOrCreateButton(slotIndex, hostFrame, details, slotPos, skipProtected)
-    if allButtons[slotIndex] then
+local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
+    if allButtons[slot] then
         if not skipProtected then
-            allButtons[slotIndex]:SetParent(hostFrame)
+            allButtons[slot]:SetParent(hostFrame)
         end
-        return allButtons[slotIndex]
+        return allButtons[slot]
     end
 
     local button
     if details.isStance then
-        button = _G["StanceButton" .. slotPos] -- reuse Blizzard buttons (own secure stance handling)
+        button = _G["StanceButton" .. index] -- reuse Blizzard buttons (own secure stance handling)
         if button and not skipProtected then
             button:SetAttributeNoHandler("statehidden", nil)
             ReRegisterButtonEvents(button, "stance")
@@ -551,7 +551,7 @@ local function GetOrCreateButton(slotIndex, hostFrame, details, slotPos, skipPro
         -- inherits SecureActionButtonTemplate, so click dispatch, drag-and-
         -- drop, and the visual mixin (icon, cooldown, border) all work.
         -- Frames persist across /reload; reuse if already in _G.
-        local name = "EABButton" .. slotIndex
+        local name = "EABButton" .. slot
         button = _G[name]
         if not button then
             button = CreateFrame(
@@ -677,7 +677,7 @@ local function GetOrCreateButton(slotIndex, hostFrame, details, slotPos, skipPro
             -- slot it shows, so it survives page swaps (Bar 9 shares action
             -- page 2 with a paged MainBar, making slot-derived ambiguous).
             local pressBindCmd = BINDING_MAP[details.key]
-            pressBindCmd = pressBindCmd and (pressBindCmd .. slotPos) or nil
+            pressBindCmd = pressBindCmd and (pressBindCmd .. index) or nil
             button:HookScript("PostClick", function(self, _, down)
                 if mod._EABPressPush then
                     mod._EABPressPush(self)
@@ -751,12 +751,12 @@ local function GetOrCreateButton(slotIndex, hostFrame, details, slotPos, skipPro
         if not skipProtected then
             button:SetParent(hostFrame)
             button:SetID(0)
-            button:SetAttribute("action", slotIndex)
+            button:SetAttribute("action", slot)
         end
     end
 
     RegisterButtonWithController(button)
-    allButtons[slotIndex] = button
+    allButtons[slot] = button
     return button
 end
 

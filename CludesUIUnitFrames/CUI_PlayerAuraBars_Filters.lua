@@ -222,19 +222,19 @@ function mod.PAB_DeleteFilter(ident)
             table.remove(entries, i)
         end
     end
-    local function Strip(barFrame, isDefault)
-        if barFrame.filters then
-            barFrame.filters[ident] = nil
+    local function Strip(bar, isDefault)
+        if bar.filters then
+            bar.filters[ident] = nil
         end
-        if barFrame.negFilters then
-            barFrame.negFilters[ident] = nil
+        if bar.negFilters then
+            bar.negFilters[ident] = nil
         end
         -- No-empty rule: deleting an ENABLED bar's last content source falls
         -- back to All Buffs, same as unchecking it in the Filters dropdown
         -- would. Disabled bars keep their stored state untouched (the
         -- EnsureBarEnable invariant).
-        if barFrame.enabled ~= false and not BuffBarHasContent(barFrame, isDefault) then
-            barFrame.showAllBuffs = nil
+        if bar.enabled ~= false and not BuffBarHasContent(bar, isDefault) then
+            bar.showAllBuffs = nil
         end
     end
     if s.defaultBuffs then
@@ -355,16 +355,16 @@ end
 -- every filter it references (cfg.filters), minus own-only tracking (see above).
 -- Sorted so the caller's signature diffing stays deterministic.
 function mod.PAB_ResolveSpells(conf)
-    local group = {}
+    local set = {}
     local direct
     local spells = conf.spells
     if spells then
         direct = {}
         for i = 1, #spells do
-            group[spells[i]] = true
+            set[spells[i]] = true
             direct[spells[i]] = true
             ExpandFamily(direct, spells[i])
-            ExpandFamily(group, spells[i])
+            ExpandFamily(set, spells[i])
         end
     end
     -- Under the broad modes (All Buffs / Has Duration) the hide-lane filters leave via
@@ -379,8 +379,8 @@ function mod.PAB_ResolveSpells(conf)
             if f then
                 for ident, on in pairs(f.spells) do
                     if on and not mod.PAB_OtherClientSpell(f, ident) then
-                        group[ident] = true
-                        ExpandFamily(group, ident, f.spells)
+                        set[ident] = true
+                        ExpandFamily(set, ident, f.spells)
                     end
                 end
             end
@@ -402,12 +402,12 @@ function mod.PAB_ResolveSpells(conf)
         end
         for ident in pairs(hide) do
             if not (direct and direct[ident]) then
-                group[ident] = nil
+                set[ident] = nil
             end
         end
     end
     local result = {}
-    for ident in pairs(group) do
+    for ident in pairs(set) do
         result[#result + 1] = ident
     end
     table.sort(result)
@@ -624,8 +624,8 @@ local PRESET_ALTS = {}
 do
     local BP = CludesUI.BUFF_PRESETS
     for i = 1, #BP.filters do
-        local spec_def = BP.filters[i]
-        local entries = BP.spells[spec_def.key]
+        local def = BP.filters[i]
+        local entries = BP.spells[def.key]
         local enabled, disabled = {}, {}
         if entries then
             for ident, details in pairs(entries) do
@@ -649,7 +649,7 @@ do
         table.sort(enabled)
         table.sort(disabled)
         BM2_FILTER_SEED[#BM2_FILTER_SEED + 1] =
-            { key = spec_def.key, name = spec_def.name, enabled = enabled, disabled = disabled }
+            { key = def.key, name = def.name, enabled = enabled, disabled = disabled }
     end
     -- Every member of a curated family (primary + its alternates) maps to the whole
     -- member list, so PAB_ResolveSpells can expand from whichever id the user has.
@@ -675,12 +675,12 @@ do
     end
     local other = CludesUI.BUFF_PRESET_OTHER_FILTERS
     for i = 1, #other do
-        local spec_def = other[i]
-        if keyByName[spec_def.name] == nil then
-            keyByName[spec_def.name] = spec_def.key
+        local def = other[i]
+        if keyByName[def.name] == nil then
+            keyByName[def.name] = def.key
         end
-        if not offered[spec_def.key] then
-            otherOnly[spec_def.name] = true
+        if not offered[def.key] then
+            otherOnly[def.name] = true
         end
     end
     mod.PAB_PRESET_KEY = keyByName
@@ -697,18 +697,18 @@ mod.PAB_SPELL_CLASS_HINTS = SPELL_CLASS_HINTS
 -- flattened into its lists, this is a superset of what BM2_AllPresetSpells returns --
 -- intended, alts ARE valid trackable buff IDs.
 function mod.PAB_AllPresetSpells()
-    local group = {}
+    local set = {}
     for i = 1, #BM2_FILTER_SEED do
         local seed = BM2_FILTER_SEED[i]
         for jdx = 1, #seed.enabled do
-            group[seed.enabled[jdx]] = true
+            set[seed.enabled[jdx]] = true
         end
         for jdx = 1, #seed.disabled do
-            group[seed.disabled[jdx]] = true
+            set[seed.disabled[jdx]] = true
         end
     end
     local result = {}
-    for ident in pairs(group) do
+    for ident in pairs(set) do
         result[#result + 1] = ident
     end
     table.sort(result)
@@ -881,7 +881,7 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
         return nil
     end
     s.customBuffBars = s.customBuffBars or {}
-    local barFrame = {
+    local bar = {
         id = NextBarId(s),
         name = name or "New Buff Bar",
         enabled = true,
@@ -898,9 +898,9 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
     }
     -- The edited editing-spec bucket owns the new bar; ids come from the ONE
     -- shared counter regardless of bucket.
-    local targetUnit = mod.PAB_BucketBars(true, bucketKey, true) or s.customBuffBars
-    targetUnit[#targetUnit + 1] = barFrame
-    return barFrame
+    local target = mod.PAB_BucketBars(true, bucketKey, true) or s.customBuffBars
+    target[#target + 1] = bar
+    return bar
 end
 
 function mod.PAB_AddCustomDebuffBar(name, bucketKey)
@@ -909,7 +909,7 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
         return nil
     end
     s.customDebuffBars = s.customDebuffBars or {}
-    local barFrame = {
+    local bar = {
         id = NextBarId(s),
         name = name or "New Debuff Bar",
         enabled = true,
@@ -920,9 +920,9 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
         maxRows = 1,
         maxTotal = 8,
     }
-    local targetUnit = mod.PAB_BucketBars(false, bucketKey, true) or s.customDebuffBars
-    targetUnit[#targetUnit + 1] = barFrame
-    return barFrame
+    local target = mod.PAB_BucketBars(false, bucketKey, true) or s.customDebuffBars
+    target[#target + 1] = bar
+    return bar
 end
 
 -- Deletion only strips the DB entry; it deliberately does NOT remove the bar's
@@ -937,14 +937,14 @@ function mod.PAB_CopyCustomBar(isBuff, source, bucketKey)
     if not (s and source) then
         return nil
     end
-    local targetUnit = mod.PAB_BucketBars(isBuff, bucketKey, true)
-    if not targetUnit then
+    local target = mod.PAB_BucketBars(isBuff, bucketKey, true)
+    if not target then
         return nil
     end
-    local barFrame = CopyTable(source)
-    barFrame.id = NextBarId(s)
-    targetUnit[#targetUnit + 1] = barFrame
-    return barFrame
+    local bar = CopyTable(source)
+    bar.id = NextBarId(s)
+    target[#target + 1] = bar
+    return bar
 end
 
 -- Shared by both deletes: strip the id from every editing-spec bucket and
@@ -1235,8 +1235,8 @@ end
 -- lingering), the bar's own toggle is on, its owning bucket applies to the
 -- CURRENT spec, and (group buckets, All Specs included) this spec hasn't
 -- per-spec disabled it. bucketKey nil = legacy = "allspecs".
-function mod.PAB_BarActive(barFrame, bucketKey)
-    if not barFrame or barFrame.enabled == false then
+function mod.PAB_BarActive(bar, bucketKey)
+    if not bar or bar.enabled == false then
         return false
     end
     local sMaster = PAB()
@@ -1251,7 +1251,7 @@ function mod.PAB_BarActive(barFrame, bucketKey)
     if not isOwn and spellRef then
         local s = PAB()
         local con = s and s.pabSpecBars and s.pabSpecBars["spec" .. spellRef]
-        if con and con.inhDis and con.inhDis[barFrame.id] then
+        if con and con.inhDis and con.inhDis[bar.id] then
             return false
         end
     end

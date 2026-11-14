@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -21,16 +21,16 @@ local format = string.format
 local tinsert = table.insert
 local tsort = table.sort
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 local IsSecret = CludesUI.IsSecret
 local FmtDur = CludesUI.FormatDuration
 
@@ -102,13 +102,13 @@ local function SaveCharacter()
         e = {}
         storage[key] = e
     end
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     -- The full name whatever the show-surname preference.
     local name, surname = (UnitNameUnmodified or UnitName)("player")
     e.name, e.realm, e.class, e.level, e.total =
         CludesUI.WithSurname(name, surname, true),
         CludesUI.RealmGroupName(),
-        classFile,
+        class,
         baseCharLevel,
         PlayedTotal()
 end
@@ -259,8 +259,8 @@ do
     end
 end
 
-mod.BlockFactories.timeplayed = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
 
     local mouseOver = false
@@ -283,10 +283,10 @@ mod.BlockFactories.timeplayed = function(blockCfg, slotIndex, contentFrame, barC
         end
         local barCfg = barCtx.cfg
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local textValue = "--"
         if baseTotal then
-            if D().alwaysTotal == true or Keys.AtMaxLevel() then
+            if D().alwaysTotal == true or K.AtMaxLevel() then
                 textValue = FmtDur(PlayedTotal())
             else
                 textValue = FmtDur(PlayedLevel())
@@ -310,12 +310,12 @@ mod.BlockFactories.timeplayed = function(blockCfg, slotIndex, contentFrame, barC
         end
         if barCtx.IsVertical() then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             labelText:SetText(textValue)
             mod.SetWrappedText(labelText, innerW, "CENTER")
             labelText:ClearAllPoints()
             labelText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-            local totalH = upper(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
+            local totalH = max(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -325,7 +325,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slotIndex, contentFrame, barC
             labelText:ClearAllPoints()
             labelText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
-            local totalW = upper(min(slotW, tw + 4), 10)
+            local totalW = max(min(slotW, tw + 4), 10)
             contentFrame:SetSize(totalW, barH)
             btnFrame:SetSize(totalW, barH)
         end
@@ -442,9 +442,9 @@ mod.BlockFactories.timeplayed = function(blockCfg, slotIndex, contentFrame, barC
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 60, 24)
+        return max(contentFrame:GetWidth() or 60, 24)
     end
 
     function instance:Destroy()

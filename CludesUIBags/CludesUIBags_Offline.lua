@@ -60,11 +60,11 @@ Offline.ItemString = ItemString
 
 -- item id from a string or link (pet cages count as the cage item)
 local function ItemID(s)
-    local kindOf, ident = s:match("^(%a+):(%d+)")
-    if not kindOf then
-        kindOf, ident = s:match("|H(%a+):(%d+)")
+    local kind, ident = s:match("^(%a+):(%d+)")
+    if not kind then
+        kind, ident = s:match("|H(%a+):(%d+)")
     end
-    if kindOf == "battlepet" then
+    if kind == "battlepet" then
         return 82800
     end
     return tonumber(ident)
@@ -76,7 +76,7 @@ Offline.ItemID = ItemID
 -------------------------------------------------------------------------------
 local rev = 0 -- goes up on every write so the tooltip index knows to rebuild
 local listeners = {}
-local slotPos, indexRev -- tooltip index, below
+local index, indexRev -- tooltip index, below
 -- per saved list: goes up only when that list changes, so a view of it can
 -- tell its own list apart from every other save
 local listRev = setmetatable({}, { __mode = "k" })
@@ -97,8 +97,8 @@ local function Upgrade(entries)
     for _, t in ipairs(entries) do
         if type(t) == "table" and type(t.links) == "table" then
             local itemList = {}
-            for slotIndex, itemLink in pairs(t.links) do
-                itemList[slotIndex] = ItemString(itemLink)
+            for slot, itemLink in pairs(t.links) do
+                itemList[slot] = ItemString(itemLink)
             end
             t.items, t.links = itemList, nil
         end
@@ -142,8 +142,8 @@ end
 Offline.CurrentKey = OwnKey
 
 -- a class's colour code, custom class colours included
-local function ClassHex(classFile)
-    local c = classFile and CUI.GetClassColor(classFile)
+local function ClassHex(class)
+    local c = class and CUI.GetClassColor(class)
     return c and CUI.HexColor(c.r, c.g, c.b) or "|cffffffff"
 end
 Offline.ClassHex = ClassHex
@@ -168,7 +168,7 @@ end
 -- something changed, so the viewer and tooltip index catch up. patched: the
 -- index was already fixed up in place for this write
 local function Changed(what, patched)
-    local current = patched and slotPos and indexRev == rev
+    local current = patched and index and indexRev == rev
     rev = rev + 1
     if current then
         indexRev = rev
@@ -236,14 +236,14 @@ local function MyEntry()
         c = {}
         chars[key] = c
     end
-    local _, classFile = UnitClass("player")
+    local _, class = UnitClass("player")
     local name = UnitName("player")
     if CUI.IS_FOREVER then
         -- the full name whatever the show-surname preference, as the gold ledger keeps it
         local first, surname = (UnitNameUnmodified or UnitName)("player")
         name = CUI.WithSurname(first, surname, true)
     end
-    c.name, c.realm, c.class, c.level = name, CUI.RealmGroupName(), classFile, UnitLevel("player")
+    c.name, c.realm, c.class, c.level = name, CUI.RealmGroupName(), class, UnitLevel("player")
     -- a rename keeps the guid: its old entry goes and the bank moves over (the
     -- bags save again at once). a new character under a reused name has another
     -- guid and starts empty. a realm transfer gets a new guid too, so its old
@@ -273,22 +273,22 @@ end
 
 -- one container's stuff, nil if the game says it has no slots
 local function ReadContainer(bagID)
-    local dim = C_Container.GetContainerNumSlots(bagID) or 0
-    if dim <= 0 then
+    local size = C_Container.GetContainerNumSlots(bagID) or 0
+    if size <= 0 then
         return nil
     end
     local itemList, counts = {}, {}
-    for slotIndex = 1, dim do
-        local details = C_Container.GetContainerItemInfo(bagID, slotIndex)
-        local itemLink = details and (details.hyperlink or C_Container.GetContainerItemLink(bagID, slotIndex))
+    for slot = 1, size do
+        local details = C_Container.GetContainerItemInfo(bagID, slot)
+        local itemLink = details and (details.hyperlink or C_Container.GetContainerItemLink(bagID, slot))
         if itemLink then
-            itemList[slotIndex] = ItemString(itemLink)
+            itemList[slot] = ItemString(itemLink)
             if (details.stackCount or 1) > 1 then
-                counts[slotIndex] = details.stackCount
+                counts[slot] = details.stackCount
             end
         end
     end
-    return { size = dim, items = itemList, counts = counts }
+    return { size = size, items = itemList, counts = counts }
 end
 
 -- true when two saved containers hold the same items
@@ -570,7 +570,7 @@ end
 -- the bags module reset: every saved inventory goes
 function Offline.Wipe()
     _G.CludesUIBagsInventoryDB = nil
-    slotPos = nil
+    index = nil
     wipe(listRev)
     listGen = listGen + 1
     Changed("forget")
@@ -601,32 +601,32 @@ local function AddContainer(t, into, field, ownerFrame, sign)
     if type(t) ~= "table" or type(t.items) ~= "table" then
         return
     end
-    for slotIndex, s in pairs(t.items) do
+    for slot, s in pairs(t.items) do
         local ident = ItemID(s)
         if ident then
-            local num = ((t.counts and t.counts[slotIndex]) or 1) * sign
-            local rowFrame = into[ident]
-            if not rowFrame then
-                rowFrame = {}
-                into[ident] = rowFrame
+            local num = ((t.counts and t.counts[slot]) or 1) * sign
+            local row = into[ident]
+            if not row then
+                row = {}
+                into[ident] = row
             end
             if ownerFrame then
-                local e = rowFrame[ownerFrame]
+                local e = row[ownerFrame]
                 if not e then
                     e = { bags = 0, bank = 0 }
-                    rowFrame[ownerFrame] = e
+                    row[ownerFrame] = e
                 end
                 e[field] = e[field] + num
                 if e.bags + e.bank <= 0 then
-                    rowFrame[ownerFrame] = nil
+                    row[ownerFrame] = nil
                 end
             else
-                rowFrame.n = (rowFrame.n or 0) + num
-                if rowFrame.n <= 0 then
-                    rowFrame.n = nil
+                row.n = (row.n or 0) + num
+                if row.n <= 0 then
+                    row.n = nil
                 end
             end
-            if next(rowFrame) == nil then
+            if next(row) == nil then
                 into[ident] = nil
             end
         end
@@ -634,8 +634,8 @@ local function AddContainer(t, into, field, ownerFrame, sign)
 end
 
 local function Index()
-    if slotPos and indexRev == rev then
-        return slotPos
+    if index and indexRev == rev then
+        return index
     end
     local chars, war = {}, {}
     local saved = Offline.Store()
@@ -652,17 +652,17 @@ local function Index()
     for _, t in ipairs(saved.warband.tabs) do
         AddContainer(t, war, nil, nil, 1)
     end
-    slotPos, indexRev = { chars = chars, warband = war }, rev
-    return slotPos
+    index, indexRev = { chars = chars, warband = war }, rev
+    return index
 end
 
 -- one container swapped for another: fix the index up in place instead of a
 -- full rebuild on the next hover (Changed keeps it current). no owner = warband
 Patch = function(old, new, field, ownerFrame)
-    if not (slotPos and indexRev == rev) then
+    if not (index and indexRev == rev) then
         return
     end
-    local into = ownerFrame and slotPos.chars or slotPos.warband
+    local into = ownerFrame and index.chars or index.warband
     AddContainer(old, into, field, ownerFrame, -1)
     AddContainer(new, into, field, ownerFrame, 1)
 end
@@ -681,20 +681,20 @@ local lineCache, lineRev = {}, -1
 local sameName = {}
 local function BuildLines(ident)
     local position = Index()
-    local rowFrame, war = position.chars[ident], position.warband[ident]
-    if not rowFrame and not (war and war.n) then
+    local row, war = position.chars[ident], position.warband[ident]
+    if not row and not (war and war.n) then
         return false
     end
     local saved, lines, sum = Offline.Store(), {}, 0
     -- two characters of one name (other realms) get their realm added
     wipe(sameName)
-    for key in pairs(rowFrame or _emptyP) do
+    for key in pairs(row or _emptyP) do
         local c = saved.chars[key]
         if c and c.name then
             sameName[c.name] = (sameName[c.name] or 0) + 1
         end
     end
-    for key, e in pairs(rowFrame or _emptyP) do
+    for key, e in pairs(row or _emptyP) do
         local c = saved.chars[key]
         local num = e.bags + e.bank
         if c and num > 0 then

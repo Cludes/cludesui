@@ -47,11 +47,11 @@ MTWhere.LOCATION_KEYS = {
 -- A feature's location keys: the list its filter walks plus a lookup set.
 -- Built once per feature at file load.
 function MTWhere.NewKeySet(entries)
-    local group = {}
+    local set = {}
     for idx = 1, #entries do
-        group[entries[idx]] = true
+        set[entries[idx]] = true
     end
-    return { list = entries, set = group }
+    return { list = entries, set = set }
 end
 
 --------------------------------------------------------------------------------

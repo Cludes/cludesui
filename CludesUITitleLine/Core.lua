@@ -105,9 +105,9 @@ local function RealmOffset()
     return math.floor((time() - asLocal) / 900 + 0.5) * 900
 end
 
-function mod.CalendarToEpoch(d, offset)
+function mod.CalendarToEpoch(d, off)
     return time({ year = d.year, month = d.month, day = d.monthDay, hour = d.hour, min = d.minute })
-        + (offset or 0)
+        + (off or 0)
 end
 
 -- The rating is the sum of each dungeon's best run score, so replaying the
@@ -139,12 +139,12 @@ function mod.Replay(runs, actual, nowTime)
 end
 
 function mod.BuildHistory(nowTime)
-    local offset = RealmOffset()
+    local off = RealmOffset()
     local runs = {}
     for _, r in ipairs(C_MythicPlus.GetRunHistory(true, true, true) or {}) do
         if r.runScore and r.runScore > 0 and r.completionDate then
             runs[#runs + 1] = {
-                t = mod.CalendarToEpoch(r.completionDate, offset),
+                t = mod.CalendarToEpoch(r.completionDate, off),
                 map = r.mapChallengeModeID,
                 level = r.level,
                 score = r.runScore,
@@ -290,11 +290,11 @@ function mod.Crossing(pts, fit, nowTime, you, pace, edge)
     local last = pts[#pts][1]
     local function ahead(d)
         local t = nowTime + d * DAY
-        local lineTex = mod.LineValue(pts, fit, t)
+        local line = mod.LineValue(pts, fit, t)
         if edge then
-            lineTex = lineTex + edge * mod.Band((t - last) / DAY)
+            line = line + edge * mod.Band((t - last) / DAY)
         end
-        return you + pace * d >= lineTex
+        return you + pace * d >= line
     end
     for d = 1, 365 do
         if ahead(d) then
@@ -420,9 +420,9 @@ mod.SCORING_NOTE =
 
 function mod.LevelFor(rating)
     local t = mod.Data.levels
-    for _, rowFrame in ipairs(t) do
-        if rowFrame[2] >= rating - 0.5 then
-            return rowFrame[1]
+    for _, row in ipairs(t) do
+        if row[2] >= rating - 0.5 then
+            return row[1]
         end
     end
     local a, b = t[#t - 1], t[#t]
@@ -449,10 +449,10 @@ function mod.Targets(maps, runs, tiers)
     local rowList = {}
     for _, map in ipairs(maps) do
         local r = byMap[map]
-        local rowFrame = { map = map, best = r and r.bestRunLevel or 0, score = r and r.mapScore or 0 }
-        rowFrame.played = rowFrame.score > 0
-        rowFrame.timed = rowFrame.played and r.finishedSuccess
-        rowList[#rowList + 1] = rowFrame
+        local row = { map = map, best = r and r.bestRunLevel or 0, score = r and r.mapScore or 0 }
+        row.played = row.score > 0
+        row.timed = row.played and r.finishedSuccess
+        rowList[#rowList + 1] = row
     end
     table.sort(rowList, function(posX, posY)
         if posX.best ~= posY.best then
@@ -824,9 +824,9 @@ function mod.CheckAlerts()
         return
     end
     local sum, who = context.summary, context.subject.name or "you"
-    local slotIndex = context.regionKey .. ":" .. mod.Data.season.slug
-    local status = CludesUITitleLineDB.alertState[slotIndex] or {}
-    CludesUITitleLineDB.alertState[slotIndex] = status
+    local slot = context.regionKey .. ":" .. mod.Data.season.slug
+    local status = CludesUITitleLineDB.alertState[slot] or {}
+    CludesUITitleLineDB.alertState[slot] = status
     local today = date("%Y-%m-%d", context.now)
     for _, s in ipairs(sum.tiers) do
         local key = s.tier.key

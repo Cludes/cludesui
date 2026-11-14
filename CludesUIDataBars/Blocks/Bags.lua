@@ -6,27 +6,27 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
 local C_Container = C_Container
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 
-local ICON_GAP = Keys.ICON_GAP
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
-local IconColorOf = Keys.IconColorOf
+local ICON_GAP = K.ICON_GAP
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
+local IconColorOf = K.IconColorOf
 
 -- Backpack + four bag slots; the reagent bag is opt-in per block.
 local LAST_BAG = NUM_BAG_SLOTS or 4
@@ -39,8 +39,8 @@ mod.BAGS_LOW_COLOR = { LOW_R, LOW_G, LOW_B }
 -------------------------------------------------------------------------------
 --  BAGS (free / used slot counts)
 -------------------------------------------------------------------------------
-mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     -- BAG_UPDATE_DELAYED: one event per batch of bag changes, not one per bag.
     instance.events = { "BAG_UPDATE_DELAYED", "PLAYER_ENTERING_WORLD" }
@@ -59,7 +59,7 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
     btnFrame:EnableMouse(true)
     btnFrame:RegisterForClicks("AnyUp")
 
-    local glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
     local bagText = btnFrame:CreateFontString(nil, "OVERLAY")
     AttachTextOffset(instance, bagText)
 
@@ -92,21 +92,21 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     function instance:Refresh()
         local s = D()
-        Keys.SetBlockIcon(glyph, blockCfg)
+        K.SetBlockIcon(icon, blockCfg)
         local barCfg = BC()
         local barH = barCtx.GetThickness()
-        local fontSize = upper(9, floor(CONTENT_BASE * 0.4333 + 0.5))
+        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
         local isSide = barCtx.IsVertical()
 
         local free, sum = Count()
         lastFree, lastTotal = free, sum
-        local modeName = s.value or "free"
+        local mode = s.value or "free"
         local textValue
-        if modeName == "used" then
+        if mode == "used" then
             textValue = tostring(sum - free)
-        elseif modeName == "usedTotal" then
+        elseif mode == "usedTotal" then
             textValue = (sum - free) .. "/" .. sum
-        elseif modeName == "freeTotal" then
+        elseif mode == "freeTotal" then
             textValue = free .. "/" .. sum
         else
             textValue = tostring(free)
@@ -116,13 +116,13 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
         -- +4: matches the gold block's bag icon.
         if s.showIcon ~= false then
             iconSz = fontSize + 4
-            glyph:Show()
+            icon:Show()
         else
-            glyph:Hide()
+            icon:Hide()
         end
 
         mod.SetFont(bagText, fontSize, barCfg)
-        glyph:SetVertexColor(IconColorOf(blockCfg))
+        icon:SetVertexColor(IconColorOf(blockCfg))
         local low = s.lowThreshold or 0
         if mouseOver then
             bagText:SetTextColor(mod.GetAccent())
@@ -139,24 +139,24 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(24, slotW - 8)
+            local innerW = max(24, slotW - 8)
             bagText:SetText(textValue)
             local totalH = 8
             if iconSz > 0 then
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
                 totalH = totalH + iconSz + 2
             end
             mod.SetWrappedText(bagText, innerW, "CENTER")
             bagText:ClearAllPoints()
             if iconSz > 0 then
-                bagText:SetPoint("TOP", glyph, "BOTTOM", 0, -2)
+                bagText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
                 bagText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
             end
             totalH = totalH + mod.SnapToPixelGrid(bagText:GetStringHeight()) + 4
-            totalH = upper(totalH, barH)
+            totalH = max(totalH, barH)
             contentFrame:SetSize(slotW, totalH)
             btnFrame:SetSize(slotW, totalH)
         else
@@ -164,9 +164,9 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
             mod.ResetInlineText(bagText, "LEFT")
             bagText:SetText(textValue)
             if iconSz > 0 then
-                glyph:SetSize(iconSz, iconSz)
-                glyph:ClearAllPoints()
-                glyph:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:SetSize(iconSz, iconSz)
+                icon:ClearAllPoints()
+                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
             end
             bagText:ClearAllPoints()
             local xOff = 0
@@ -176,8 +176,8 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
             bagText:SetPoint("LEFT", btnFrame, "LEFT", xOff, 0)
             local tw = mod.SnapToPixelGrid(bagText:GetStringWidth())
             local totalW = min(slotW, xOff + tw + 4)
-            contentFrame:SetSize(upper(totalW, 10), barH)
-            btnFrame:SetSize(upper(totalW, 10), barH)
+            contentFrame:SetSize(max(totalW, 10), barH)
+            btnFrame:SetSize(max(totalW, 10), barH)
         end
 
         MaybeRelayout(instance)
@@ -261,9 +261,9 @@ mod.BlockFactories.bags = function(blockCfg, slotIndex, contentFrame, barCtx)
 
     function instance:GetAutoLength()
         if barCtx.IsVertical() then
-            return upper(contentFrame:GetHeight() or 40, 30)
+            return max(contentFrame:GetHeight() or 40, 30)
         end
-        return upper(contentFrame:GetWidth() or 40, 24)
+        return max(contentFrame:GetWidth() or 40, 24)
     end
 
     function instance:Destroy()

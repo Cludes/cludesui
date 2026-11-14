@@ -51,12 +51,12 @@ local function InList(entries, value)
     return false
 end
 
-local function KickGroupFormOk(group)
-    if group.stances then
-        return InList(group.stances, GetShapeshiftForm())
+local function KickGroupFormOk(set)
+    if set.stances then
+        return InList(set.stances, GetShapeshiftForm())
     end
-    if group.formIds then
-        return InList(group.formIds, GetShapeshiftFormID())
+    if set.formIds then
+        return InList(set.formIds, GetShapeshiftFormID())
     end
     return true
 end

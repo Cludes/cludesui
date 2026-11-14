@@ -154,15 +154,15 @@ function mod.CdmApplyBlizzIconArt(widget)
     end
     local fc = FC(widget)
     local classic = mod.CdmClassicIcons()
-    local hostRegion = fc.blizzHost
-    if not hostRegion then
+    local host = fc.blizzHost
+    if not host then
         -- Pooled with an options preview slot (an options page pool host);
         -- the plain CreateFrame on a live icon.
-        hostRegion = POOL.CreateFrame("Frame", nil, widget)
-        hostRegion:SetAllPoints(widget)
-        hostRegion:EnableMouse(false)
-        fc.blizzHost = hostRegion
-        local shade = hostRegion:CreateTexture(nil, "OVERLAY", nil, 5)
+        host = POOL.CreateFrame("Frame", nil, widget)
+        host:SetAllPoints(widget)
+        host:EnableMouse(false)
+        fc.blizzHost = host
+        local shade = host:CreateTexture(nil, "OVERLAY", nil, 5)
         if classic then
             shade:SetTexture(mod.CDM_CLASSIC_RING)
         else
@@ -179,11 +179,11 @@ function mod.CdmApplyBlizzIconArt(widget)
             local fd = hookFrameData[widget]
             local texture = (fd and fd.tex) or widget._tex or widget.Icon
             if texture and texture.AddMaskTexture then
-                local maskTex = widget:CreateMaskTexture()
-                maskTex:SetAtlas(mod.CDM_BLIZZ_MASK)
-                maskTex:SetAllPoints(widget)
-                texture:AddMaskTexture(maskTex)
-                fc.blizzMask = maskTex
+                local mask = widget:CreateMaskTexture()
+                mask:SetAtlas(mod.CDM_BLIZZ_MASK)
+                mask:SetAllPoints(widget)
+                texture:AddMaskTexture(mask)
+                fc.blizzMask = mask
             end
             local cd = (fd and fd.cooldown) or widget._cooldown or widget.Cooldown
             if cd and cd.SetSwipeTexture then
@@ -210,27 +210,27 @@ function mod.CdmApplyBlizzIconArt(widget)
     end
     -- Ring above the art and swipe (+14), below glows (+16) and text (+23).
     local lvl = widget:GetFrameLevel() + 15
-    if hostRegion:GetFrameLevel() ~= lvl then
-        hostRegion:SetFrameLevel(lvl)
+    if host:GetFrameLevel() ~= lvl then
+        host:SetFrameLevel(lvl)
     end
     local wid, hgt = widget:GetSize()
     if fc.blizzArtW ~= wid or fc.blizzArtH ~= hgt then
         fc.blizzArtW, fc.blizzArtH = wid, hgt
         local shade = fc.blizzOverlay
         if classic then
-            mod.CdmPlaceClassicRing(shade, hostRegion, wid, hgt)
+            mod.CdmPlaceClassicRing(shade, host, wid, hgt)
         else
             shade:ClearAllPoints()
             shade:SetPoint(
                 "TOPLEFT",
-                hostRegion,
+                host,
                 "TOPLEFT",
                 -wid * mod.CDM_BLIZZ_RING_X,
                 hgt * mod.CDM_BLIZZ_RING_Y
             )
             shade:SetPoint(
                 "BOTTOMRIGHT",
-                hostRegion,
+                host,
                 "BOTTOMRIGHT",
                 wid * mod.CDM_BLIZZ_RING_X,
                 -hgt * mod.CDM_BLIZZ_RING_Y

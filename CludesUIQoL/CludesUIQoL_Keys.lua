@@ -120,11 +120,11 @@ local function BuildClassColorMap()
     if IsInGuild() and GetNumGuildMembers then
         local sum = GetNumGuildMembers()
         for idx = 1, sum do
-            local gName, _, _, _, _, _, _, _, _, _, classFile = GetGuildRosterInfo(idx)
-            if gName and classFile then
+            local gName, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(idx)
+            if gName and class then
                 local gShort = Ambiguate and Ambiguate(gName, "short") or gName:match("^([^%-]+)")
                 if gShort then
-                    map[gShort] = classFile
+                    map[gShort] = class
                 end
             end
         end
@@ -142,18 +142,18 @@ local function BuildClassColorMap()
             local unitToken = prefixText .. idx
             local uName = UnitName(unitToken)
             if uName then
-                local _, classFile = UnitClass(unitToken)
-                if classFile then
-                    map[uName] = classFile
+                local _, class = UnitClass(unitToken)
+                if class then
+                    map[uName] = class
                 end
             end
         end
     end
     local myName = UnitName("player")
     if myName then
-        local _, classFile = UnitClass("player")
-        if classFile then
-            map[myName] = classFile
+        local _, class = UnitClass("player")
+        if class then
+            map[myName] = class
         end
     end
     return map
@@ -237,14 +237,14 @@ end
 
 -- family: a text that shows a player's name takes the font as a font family,
 -- which draws the scripts the font lacks
-local function MakeLabel(hostFrame, dim, _, r, g, b, a, family)
+local function MakeLabel(hostFrame, size, _, r, g, b, a, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     if family then
-        CludesUI.SetFontFamily(fontStr, ResolveFont(), dim, flags, flags == "")
+        CludesUI.SetFontFamily(fontStr, ResolveFont(), size, flags, flags == "")
     else
         CludesUI.PrimeFontShadow(fontStr, flags == "")
-        fontStr:SetFont(ResolveFont(), dim, flags)
+        fontStr:SetFont(ResolveFont(), size, flags)
     end
     if r then
         fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
@@ -252,8 +252,8 @@ local function MakeLabel(hostFrame, dim, _, r, g, b, a, family)
     return fontStr
 end
 
-local function MakeSolid(hostFrame, layer, r, g, b, a, subFrame)
-    local t = hostFrame:CreateTexture(nil, layer, nil, subFrame or 0)
+local function MakeSolid(hostFrame, layer, r, g, b, a, sub)
+    local t = hostFrame:CreateTexture(nil, layer, nil, sub or 0)
     t:SetColorTexture(r, g, b, a)
     return t
 end
@@ -295,9 +295,9 @@ local function BuildPopup()
     hdrBg:SetPoint("TOPRIGHT", -1, 0)
     hdrBg:SetHeight(TITLE_H)
 
-    local titleText = MakeLabel(dialog, 11, "OUTLINE", 1, 1, 1, 1)
-    titleText:SetPoint("TOPLEFT", PAD, -8)
-    titleText:SetText("CludesUI Keystones")
+    local title = MakeLabel(dialog, 11, "OUTLINE", 1, 1, 1, 1)
+    title:SetPoint("TOPLEFT", PAD, -8)
+    title:SetText("CludesUI Keystones")
 
     local ICON_SZ = 14
     local ICON_ALPHA = 0.5

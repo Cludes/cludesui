@@ -62,31 +62,31 @@ local function EvalVisibility(conf)
     if ext ~= nil then
         return ext
     end
-    local modeName = conf.visibility or "always"
-    if modeName == "mouseover" then
+    local mode = conf.visibility or "always"
+    if mode == "mouseover" then
         return "mouseover"
     end
-    if modeName == "always" then
+    if mode == "always" then
         return true
     end
-    if modeName == "never" then
+    if mode == "never" then
         return false
     end
-    if modeName == "in_combat" then
+    if mode == "in_combat" then
         return _inCombat
     end
-    if modeName == "out_of_combat" then
+    if mode == "out_of_combat" then
         return not _inCombat
     end
     local inGroup = IsInGroup()
     local inRaid = IsInRaid()
-    if modeName == "in_raid" then
+    if mode == "in_raid" then
         return inRaid
     end
-    if modeName == "in_party" then
+    if mode == "in_party" then
         return inGroup and not inRaid
     end
-    if modeName == "solo" then
+    if mode == "solo" then
         return not inGroup
     end
     return true

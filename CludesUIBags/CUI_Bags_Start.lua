@@ -256,9 +256,9 @@ local function StartAddon()
         local special = mod.SpecialBags()
         for bag = 0, 4 do
             local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
-            for slotIndex = 1, numSlots do
-                if not C_Container.GetContainerItemInfo(bag, slotIndex) then
-                    C_Container.PickupContainerItem(bag, slotIndex)
+            for slot = 1, numSlots do
+                if not C_Container.GetContainerItemInfo(bag, slot) then
+                    C_Container.PickupContainerItem(bag, slot)
                     return
                 end
             end
@@ -781,8 +781,8 @@ local function StartAddon()
         local counts, sequence = {}, {}
         for bag = 0, 5 do
             local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slotIndex = 1, numSlots do
-                local details = C_Container.GetContainerItemInfo(bag, slotIndex)
+            for slot = 1, numSlots do
+                local details = C_Container.GetContainerItemInfo(bag, slot)
                 if details and details.itemID then
                     if not counts[details.itemID] then
                         sequence[#sequence + 1] = details.itemID
@@ -791,13 +791,13 @@ local function StartAddon()
                 end
             end
         end
-        for slotIndex = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
-            local itemId = GetInventoryItemID("player", slotIndex)
+        for slot = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
+            local itemId = GetInventoryItemID("player", slot)
             if itemId then
                 if not counts[itemId] then
                     sequence[#sequence + 1] = itemId
                 end
-                counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slotIndex) or 1)
+                counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slot) or 1)
             end
         end
         return counts, sequence
@@ -1307,9 +1307,9 @@ end)
 function mod.GetSelection()
     return selectedCategoryIndex, selectedGroupName
 end
-function mod.SetSelection(position, group)
+function mod.SetSelection(position, set)
     SetSelectedCategoryIndex(position)
-    SetSelectedGroupName(group)
+    SetSelectedGroupName(set)
 end
 mod.SLOT_SIZE, mod.SPACING = SLOT_SIZE, SPACING
 mod.itemSlots = itemSlots
@@ -1326,9 +1326,9 @@ mod.PreCacheSortFields = PreCacheSortFields
 -- Recent Items order in every view: newest pickup first (pickup numbers in
 -- CUI_Bags._recentItems), the bag position breaking ties within one item
 function mod.RecentCompare(a, b)
-    local recd = CUI_Bags._recentItems
-    local ra = (a.info and recd[a.info.itemID]) or 0
-    local rb = (b.info and recd[b.info.itemID]) or 0
+    local rec = CUI_Bags._recentItems
+    local ra = (a.info and rec[a.info.itemID]) or 0
+    local rb = (b.info and rec[b.info.itemID]) or 0
     if ra ~= rb then
         return ra > rb
     end

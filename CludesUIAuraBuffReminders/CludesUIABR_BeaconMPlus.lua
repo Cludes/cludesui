@@ -37,7 +37,7 @@ local ev = CreateFrame("Frame")
 local started = false -- the first PLAYER_ENTERING_WORLD ran the initial sync
 local level = -1 -- 0 off, 1 option on but not Holy, 2 armed (Holy)
 local tankUnit -- cached out of the encounter; roles can read secret in M+
-local hostRegion, boxHolder, containerUnit
+local host, boxHolder, containerUnit
 
 local function Enabled()
     local saved = _G._CUABR_AceDB
@@ -94,10 +94,10 @@ end
 -- mouseover casts), and the red glow on a child host, whose C-side animation
 -- runs the same in and out of restricted content.
 local function InitButton(btnFrame, d)
-    local glyph = btnFrame:CreateTexture(nil, "ARTWORK")
-    glyph:SetAllPoints(btnFrame)
-    glyph:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    btnFrame:SetIcon(glyph)
+    local icon = btnFrame:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints(btnFrame)
+    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    btnFrame:SetIcon(icon)
     pcall(btnFrame.EnableMouse, btnFrame, false)
     local glow = CreateFrame("Frame", nil, btnFrame)
     glow:SetAllPoints(btnFrame)
@@ -110,9 +110,7 @@ local function InitButton(btnFrame, d)
     -- to re-run its visibility). Without that API the animation plays while
     -- hidden too, and the group's cap is a fixed 1: only the one button it
     -- can ever show carries the glow.
-    if
-        not Glows.BindEngineHost(glow, btnFrame, d, glyph) and not CludesUI.AuraKit.ButtonCanShow(btnFrame)
-    then
+    if not Glows.BindEngineHost(glow, btnFrame, d, icon) and not CludesUI.AuraKit.ButtonCanShow(btnFrame) then
         return
     end
     Glows.PrewarmEngineHost(glow, ICON_SIZE, ICON_SIZE, GLOW_NEED)
@@ -141,12 +139,12 @@ local function EnsureContainer(unitToken)
     local AK = CludesUI.AuraKit
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY]
         or { noRegions = true, width = ICON_SIZE, height = ICON_SIZE, applyExtra = RetryGlow }
-    hostRegion = CreateFrame("Frame", nil, UIParent)
-    hostRegion:SetSize(ICON_SIZE, ICON_SIZE)
-    hostRegion:SetFrameStrata("HIGH")
-    hostRegion:Hide()
-    boxHolder = AK.CreateContainer(hostRegion, unitToken, {
-        point = { "CENTER", hostRegion, "CENTER" },
+    host = CreateFrame("Frame", nil, UIParent)
+    host:SetSize(ICON_SIZE, ICON_SIZE)
+    host:SetFrameStrata("HIGH")
+    host:Hide()
+    boxHolder = AK.CreateContainer(host, unitToken, {
+        point = { "CENTER", host, "CENTER" },
         layout = { anchorPoint = "CENTER" },
         groups = {
             {
@@ -171,14 +169,14 @@ local function PlaceOver(btnFrame)
         return false
     end
     local s = btnFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    hostRegion:ClearAllPoints()
-    hostRegion:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
+    host:ClearAllPoints()
+    host:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
     return true
 end
 
 local function Disarm()
-    if hostRegion then
-        hostRegion:Hide()
+    if host then
+        host:Hide()
     end
 end
 
@@ -214,7 +212,7 @@ local function Arm()
     end
     EnsureContainer(unitToken)
     if PlaceOver(btnFrame) then
-        hostRegion:Show()
+        host:Show()
     end
 end
 

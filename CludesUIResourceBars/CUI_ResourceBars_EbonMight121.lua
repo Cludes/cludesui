@@ -36,7 +36,7 @@ local EBON_AURA_ID = 395296
 mod.EMB121_Owns = true
 
 -- proxy, container, btn, bar, built, queued, armed, rbBar, pp, pc, fsErr
-local Stl = {}
+local S = {}
 
 -- "18.4"-style remaining text (legacy parity: %.1f seconds; minutes floor
 -- to "2m" if extensions ever push past 60). Falls back to the suite
@@ -67,15 +67,15 @@ end
 
 local function Build()
     local AK = CludesUI.AuraKit
-    if Stl.built or not AK or not Stl.rbBar then
+    if S.built or not AK or not S.rbBar then
         return
     end
-    local rb, pp, pc = Stl.rbBar, Stl.pp or {}, Stl.pc
+    local rb, pp, pc = S.rbBar, S.pp or {}, S.pc
 
     AK.styles["erb:emb121"] = AK.styles["erb:emb121"] or { noRegions = true, width = 1, height = 1 }
-    if not Stl.proxy then
-        Stl.proxy = CreateFrame("Frame", nil, UIParent)
-        Stl.proxy:Hide()
+    if not S.proxy then
+        S.proxy = CreateFrame("Frame", nil, UIParent)
+        S.proxy:Hide()
     end
 
     -- Bake the live bar's visuals (our frames -- readable): fill texture
@@ -104,7 +104,7 @@ local function Build()
     end
     local showText = pp.textFormat and pp.textFormat ~= "none"
 
-    local boxHolder = AK.CreateContainerShell(Stl.proxy, { point = { "CENTER" } })
+    local boxHolder = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
         key = "em",
         filter = { "HELPFUL" },
@@ -114,7 +114,7 @@ local function Build()
             -- Creation window: the only legal moment to touch this
             -- subtree. Two-point anchoring sizes the button by anchors
             -- forever; all repositioning is proxy moves.
-            btnFrame:SetAllPoints(Stl.proxy)
+            btnFrame:SetAllPoints(S.proxy)
             -- Both halves, and inside the creation window: this is the only
             -- legal moment to set them. The slot button is an engine Button, so
             -- mouse is on by default -- motion alone only suppresses the
@@ -130,10 +130,10 @@ local function Build()
                 btnFrame:SetMouseMotionEnabled(false)
             end
 
-            local barFrame = CreateFrame("StatusBar", nil, btnFrame)
-            barFrame:SetAllPoints(btnFrame)
-            barFrame:SetStatusBarTexture(texPath)
-            local bft = barFrame:GetStatusBarTexture()
+            local bar = CreateFrame("StatusBar", nil, btnFrame)
+            bar:SetAllPoints(btnFrame)
+            bar:SetStatusBarTexture(texPath)
+            local bft = bar:GetStatusBarTexture()
             if bft then
                 if pp.gradientEnabled and not pp.customColored and bft.SetGradient then
                     -- Mirrors the legacy gradient applier: white vertex,
@@ -160,7 +160,7 @@ local function Build()
             if Enum.StatusBarTimerDirection then
                 options.direction = Enum.StatusBarTimerDirection.RemainingTime
             end
-            btnFrame:SetDurationBar(barFrame, options)
+            btnFrame:SetDurationBar(bar, options)
 
             if showText then
                 -- ARMORED: an uncaught error here aborts the engine's
@@ -169,7 +169,7 @@ local function Build()
                 local okFS, errFS = pcall(function()
                     local tc = CreateFrame("Frame", nil, btnFrame)
                     tc:SetAllPoints(btnFrame)
-                    tc:SetFrameLevel(barFrame:GetFrameLevel() + 5)
+                    tc:SetFrameLevel(bar:GetFrameLevel() + 5)
                     local fontStr = tc:CreateFontString(nil, "OVERLAY")
                     -- Font BEFORE registration (the engine SetText()s every
                     -- registered string; an unfonted FS hard-errors).
@@ -208,32 +208,32 @@ local function Build()
                     end
                 end)
                 if not okFS then
-                    Stl.fsErr = errFS
+                    S.fsErr = errFS
                 end
             end
 
-            Stl.btn, Stl.bar = btnFrame, barFrame
+            S.btn, S.bar = btnFrame, bar
         end,
     })
     AK.FinishContainer(boxHolder, "player")
-    Stl.container = boxHolder
-    Stl.built = true
+    S.container = boxHolder
+    S.built = true
 end
 
 local function EnsureBuilt()
-    if Stl.built or Stl.queued then
+    if S.built or S.queued then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
-    Stl.queued = true
+    S.queued = true
     AKWorker:Queue(function()
-        Stl.queued = nil
+        S.queued = nil
         Build()
-        if Stl.built and Stl.armed and Stl.rbBar then
-            mod.EMB121_Sync(Stl.rbBar, Stl.pp, Stl.pc)
+        if S.built and S.armed and S.rbBar then
+            mod.EMB121_Sync(S.rbBar, S.pp, S.pc)
         end
     end, "erb:emb121-shell")
 end
@@ -246,16 +246,16 @@ end
 -- permanently blank for the rest of the session (S.built never gets a second
 -- attempt once set -- only a /reload resets it).
 function mod.EMB121_TextOk()
-    return Stl.built and not Stl.fsErr
+    return S.built and not S.fsErr
 end
 
 -- Called from UpdatePrimaryBar whenever the primary power type resolves:
 -- parks the overlay the moment the bar stops being Ebon Might (spec swap).
 function mod.EMB121_Gate(isEbon)
-    if not isEbon and Stl.armed then
-        Stl.armed = nil
-        if Stl.proxy then
-            Stl.proxy:Hide()
+    if not isEbon and S.armed then
+        S.armed = nil
+        if S.proxy then
+            S.proxy:Hide()
         end
     end
 end
@@ -263,21 +263,21 @@ end
 -- Called from UpdatePrimaryBar's Ebon Might branch with the live bar and
 -- resolved settings -- the build trigger AND the attach, race-free by
 -- construction. Repositioning is always proxy moves (our frame).
-function mod.EMB121_Sync(barFrame, pp, pc)
-    Stl.rbBar, Stl.pp, Stl.pc = barFrame, pp, pc
-    Stl.armed = true
-    if not Stl.built then
+function mod.EMB121_Sync(bar, pp, pc)
+    S.rbBar, S.pp, S.pc = bar, pp, pc
+    S.armed = true
+    if not S.built then
         EnsureBuilt()
         return
     end
-    Stl.proxy:SetParent(barFrame)
-    Stl.proxy:ClearAllPoints()
-    Stl.proxy:SetAllPoints(barFrame)
-    Stl.proxy:Show()
+    S.proxy:SetParent(bar)
+    S.proxy:ClearAllPoints()
+    S.proxy:SetAllPoints(bar)
+    S.proxy:Show()
     -- One container-level set lifts the whole engine subtree above the
     -- (empty) legacy fill.
-    local lvl = barFrame:GetFrameLevel() + 1
-    Stl.container:SetFrameLevel(lvl)
+    local lvl = bar:GetFrameLevel() + 1
+    S.container:SetFrameLevel(lvl)
     -- ...which also lifts it above the bar's border strips (bar+2), so the
     -- fill -- a slot-button child two levels down, edge to edge over the whole
     -- rect -- paints over them: Border Size/Color silently did nothing while
@@ -287,7 +287,7 @@ function mod.EMB121_Sync(barFrame, pp, pc)
     -- sits at fill+5, still above the border, as on the legacy path. Draw Above
     -- GCD Bar stamps its own cover on the bar (_erbGcdCover): the higher wins, so
     -- a power tick never lowers that lift.
-    if barFrame.RaiseBorderAbove then
-        barFrame:RaiseBorderAbove(math.max(lvl + 3, barFrame._erbGcdCover or 0), pp and pp.borderBehind)
+    if bar.RaiseBorderAbove then
+        bar:RaiseBorderAbove(math.max(lvl + 3, bar._erbGcdCover or 0), pp and pp.borderBehind)
     end
 end

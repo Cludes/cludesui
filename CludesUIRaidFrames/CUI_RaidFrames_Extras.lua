@@ -69,15 +69,15 @@ do
     -- The display's mode gates on the CURRENT group type; solo counts as
     -- neither (the preview eyeball still works ungrouped).
     function mod._HMActive()
-        local modeName = HMSet().mode or "none"
-        if modeName == "none" then
+        local mode = HMSet().mode or "none"
+        if mode == "none" then
             return false
         end
         if IsInRaid() then
-            return modeName == "raid" or modeName == "both"
+            return mode == "raid" or mode == "both"
         end
         if IsInGroup() then
-            return modeName == "party" or modeName == "both"
+            return mode == "party" or mode == "both"
         end
         return false
     end
@@ -129,7 +129,7 @@ do
             return
         end
         EnsureContainer()
-        local dim = hm.textSize or 12
+        local size = hm.textSize or 12
         local spacing = hm.spacing or 2
         local alignR = hm.align == "RIGHT"
         local alignC = hm.align == "CENTER"
@@ -142,7 +142,7 @@ do
         local cr, cg, cb = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
         local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
         local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or "OUTLINE"
-        local rowH = dim + spacing
+        local rowH = size + spacing
         local map = {}
         local total, widest = 0, 40
 
@@ -160,8 +160,8 @@ do
             local nameFS, valFS = r.nameFS, r.valFS
             -- The name a font family (other players' names), with no shadow as
             -- the value's plain font.
-            CludesUI.SetFontFamily(nameFS, fontFile, dim, outline, false)
-            valFS:SetFont(fontFile, dim, outline)
+            CludesUI.SetFontFamily(nameFS, fontFile, size, outline, false)
+            valFS:SetFont(fontFile, size, outline)
             -- Value color: power color per unit, or the custom color.
             if powerMode then
                 local pr, pg, pb
@@ -184,13 +184,13 @@ do
                             token = nil
                         end
                     end
-                    local column = token
+                    local col = token
                         and (
                             (CludesUI.GetClassColor(token))
                             or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token])
                         )
-                    if column then
-                        nr, ng, nb = column.r, column.g, column.b
+                    if col then
+                        nr, ng, nb = col.r, col.g, col.b
                     end
                 elseif powerMode then
                     nr, ng, nb = 1, 1, 1
@@ -213,7 +213,7 @@ do
                 if wid and not (issecretvalue and issecretvalue(wid)) then
                     nameW = wid
                 else
-                    nameW = dim * 5 -- secret name: estimated width
+                    nameW = size * 5 -- secret name: estimated width
                 end
             else
                 nameFS:SetText("")
@@ -221,7 +221,7 @@ do
             end
             -- Fixed value-width estimate: centering on the live value's real
             -- width would shift the row every tick.
-            local valEst = dim * 2.2
+            local valEst = size * 2.2
             local rowW = (showNames and (nameW + 4) or 0) + valEst
             if rowW > widest then
                 widest = rowW
@@ -342,12 +342,12 @@ do
     end
     mod._PGSet = PGSet
 
-    local function ModeColor(modeName, custom)
-        if modeName == "custom" then
+    local function ModeColor(mode, custom)
+        if mode == "custom" then
             return custom
         end
         local r, g, b
-        if modeName == "class" then
+        if mode == "class" then
             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
             if cc then
                 r, g, b = cc.r, cc.g, cc.b
@@ -429,24 +429,24 @@ do
         if not widget then
             return
         end
-        local slotPos = IsInRaid() and UnitInRaid("player")
-        local group = slotPos and select(3, GetRaidRosterInfo(slotPos))
+        local index = IsInRaid() and UnitInRaid("player")
+        local set = index and select(3, GetRaidRosterInfo(index))
         -- Out of a raid, or a roster read mid-update that has no group for you yet.
-        if not slotPos or type(group) == "nil" then
+        if not index or type(set) == "nil" then
             if not mod._pgPreview then
                 widget:Hide()
                 isShown = nil
                 return
             end
-            group = 3
+            set = 3
         end
         -- A secret subgroup goes straight into the text sink, never compared.
-        if issecretvalue and issecretvalue(group) then
-            widget.text:SetFormattedText(fmt, group)
+        if issecretvalue and issecretvalue(set) then
+            widget.text:SetFormattedText(fmt, set)
             isShown = nil
-        elseif group ~= isShown then
-            widget.text:SetFormattedText(fmt, group)
-            isShown = group
+        elseif set ~= isShown then
+            widget.text:SetFormattedText(fmt, set)
+            isShown = set
         end
         widget:Show()
     end
@@ -474,11 +474,11 @@ do
             return
         end
         EnsureFrame()
-        local dim, tc, backdrop, bs, bc = mod._PGStyle()
+        local size, tc, backdrop, bs, bc = mod._PGStyle()
         local s = saved.profile
         local full = pg.format == "full"
         local fontStr = widget.text
-        ApplyFont(fontStr, dim)
+        ApplyFont(fontStr, size)
         fontStr:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
         fmt = full and GROUP_NUMBER or "%d"
         local wid, hgt = pg.width, pg.height

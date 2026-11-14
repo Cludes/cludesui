@@ -69,10 +69,10 @@ end
 
 -- Threshold/band inputs, handed raw each paint pass; the core change-gates
 -- with alloc-free compares and renders them as engine-masked range strips.
-function mod.WC_Thresholds(powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+function mod.WC_Thresholds(powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     local ewc = _G._EWC
     if ewc and ewc.Thresholds then
-        ewc.Thresholds("erb", powerKey, modeName, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+        ewc.Thresholds("erb", powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
     end
 end
 

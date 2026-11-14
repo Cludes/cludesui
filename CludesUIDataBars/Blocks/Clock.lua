@@ -6,7 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME, mod = ...
 local L = mod.L
-local Keys = mod.BlockKit
+local K = mod.BlockKit
 
 -- Upvalues
 local CreateFrame = CreateFrame
@@ -14,26 +14,26 @@ local InCombatLockdown = InCombatLockdown
 local wipe = wipe
 local format = string.format
 local floor = math.floor
-local upper = math.max
+local max = math.max
 local min = math.min
 local date = date
 
-local CONTENT_BASE = Keys.CONTENT_BASE
-local InstKey = Keys.InstKey
-local MakeEventFrame = Keys.MakeEventFrame
-local RegisterInstEvents = Keys.RegisterInstEvents
-local UnregisterInstEvents = Keys.UnregisterInstEvents
-local HBudget = Keys.HBudget
-local VSlotW = Keys.VSlotW
-local MaybeRelayout = Keys.MaybeRelayout
-local AttachTextOffset = Keys.AttachTextOffset
-local BlockColorOf = Keys.BlockColorOf
+local CONTENT_BASE = K.CONTENT_BASE
+local InstKey = K.InstKey
+local MakeEventFrame = K.MakeEventFrame
+local RegisterInstEvents = K.RegisterInstEvents
+local UnregisterInstEvents = K.UnregisterInstEvents
+local HBudget = K.HBudget
+local VSlotW = K.VSlotW
+local MaybeRelayout = K.MaybeRelayout
+local AttachTextOffset = K.AttachTextOffset
+local BlockColorOf = K.BlockColorOf
 
 -------------------------------------------------------------------------------
 --  CLOCK
 -------------------------------------------------------------------------------
-mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slotIndex, content = contentFrame, ctx = barCtx }
+mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
+    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     instance.key = InstKey(barCtx, blockCfg)
     instance.events = {
         "PLAYER_UPDATE_RESTING",
@@ -62,14 +62,14 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
         if d.fontSizeClock then
             return d.fontSizeClock
         end
-        return upper(12, floor(CONTENT_BASE * 0.7333 + 0.5))
+        return max(12, floor(CONTENT_BASE * 0.7333 + 0.5))
     end
     local function FontSizeInfo()
         local d = D()
         if d.fontSizeInfo then
             return d.fontSizeInfo
         end
-        return upper(9, floor(CONTENT_BASE * 0.53 + 0.5))
+        return max(9, floor(CONTENT_BASE * 0.53 + 0.5))
     end
 
     -- Untouched toggles follow the game's Time Manager CVars (same source the minimap clock reads) so both clocks agree; explicit toggle overrides.
@@ -242,7 +242,7 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
 
         if isSide then
             local slotW = VSlotW(instance)
-            local innerW = upper(30, slotW - 8)
+            local innerW = max(30, slotW - 8)
 
             contentFrame:SetWidth(slotW)
             clockTextFrame:SetWidth(slotW)
@@ -261,7 +261,7 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
                 totalH = totalH + 4 + mod.SnapToPixelGrid(eventText:GetStringHeight())
             end
 
-            totalH = upper(totalH, barH + 8)
+            totalH = max(totalH, barH + 8)
             contentFrame:SetHeight(totalH)
             clockTextFrame:SetHeight(totalH)
 
@@ -281,7 +281,7 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
             if mailIcon:IsShown() then
                 mailExtra = mailW + 8
             end
-            local textBudget = upper(30, slotW - restExtra - mailExtra)
+            local textBudget = max(30, slotW - restExtra - mailExtra)
             mod.SetFont(clockText, clockSz, barCfg)
             clockText:SetText(timeText)
             if #infoItems > 0 then
@@ -298,8 +298,8 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
                 th = 1
             end
 
-            contentFrame:SetSize(min(slotW, upper(tw, 1) + restExtra + mailExtra), th)
-            clockTextFrame:SetSize(min(slotW, upper(tw, 1) + restExtra + mailExtra), th)
+            contentFrame:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
+            clockTextFrame:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
             clockTextFrame:ClearAllPoints()
             clockTextFrame:SetPoint("CENTER")
 
@@ -477,7 +477,7 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
             if eventText:IsShown() then
                 infoH = (eventText:GetStringHeight() or 0) + 4
             end
-            return upper(8 + textH + infoH + 8, barH, 60)
+            return max(8 + textH + infoH + 8, barH, 60)
         end
         local wid = clockTextFrame:GetWidth() or 80
         local dc = D()
@@ -487,7 +487,7 @@ mod.BlockFactories.clock = function(blockCfg, slotIndex, contentFrame, barCtx)
         if dc.showMail ~= false and HasNewMail() then
             wid = wid + floor(CONTENT_BASE * 0.5 + 0.5) + 8 + 8
         end
-        return upper(wid, 60)
+        return max(wid, 60)
     end
 
     function instance:Destroy()

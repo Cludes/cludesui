@@ -42,11 +42,11 @@ function AK.Filter(...)
         return cached
     end
 
-    local baseValue, rest = nil, {}
+    local base, rest = nil, {}
     for idx = 1, select("#", ...) do
         local token = select(idx, ...)
         if token == "HELPFUL" or token == "HARMFUL" then
-            baseValue = token
+            base = token
         else
             rest[#rest + 1] = token
         end
@@ -56,10 +56,10 @@ function AK.Filter(...)
     end)
 
     local result
-    if baseValue and #rest > 0 then
-        result = baseValue .. "|" .. table.concat(rest, "|")
+    if base and #rest > 0 then
+        result = base .. "|" .. table.concat(rest, "|")
     else
-        result = baseValue or table.concat(rest, "|")
+        result = base or table.concat(rest, "|")
     end
 
     filterCache[key] = result
@@ -235,12 +235,12 @@ local bd = setmetatable({}, { __mode = "k" })
 local styleButtons = {}
 
 local function GetStyleSet(styleKey)
-    local group = styleButtons[styleKey]
-    if not group then
-        group = setmetatable({}, { __mode = "k" })
-        styleButtons[styleKey] = group
+    local set = styleButtons[styleKey]
+    if not set then
+        set = setmetatable({}, { __mode = "k" })
+        styleButtons[styleKey] = set
     end
-    return group
+    return set
 end
 
 -- Style keys whose apply hit a denied button call while auras were secret.
@@ -314,24 +314,24 @@ end
 -- shapeInsetPx of its 128 clear on every side), and the art's middle (1 - 2 * zoom)
 -- fills it, the crop an unshaped icon takes at the same Icon Zoom. Shared with the
 -- Player Aura Bars options preview.
-function AK.IconTexCoord(look)
-    if look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath then
-        local visRatio = (128 - 2 * (look.shapeInsetPx or 17)) / 128
-        local half = (0.5 - (look.iconZoom or 0.055)) / visRatio
+function AK.IconTexCoord(style)
+    if style.iconShape and style.iconShape ~= "none" and style.shapeMaskPath then
+        local visRatio = (128 - 2 * (style.shapeInsetPx or 17)) / 128
+        local half = (0.5 - (style.iconZoom or 0.055)) / visRatio
         return 0.5 - half, 0.5 + half, 0.5 - half, 0.5 + half
     end
-    local tc = look.texCoord
+    local tc = style.texCoord
     if tc then
         return tc[1], tc[2], tc[3], tc[4]
     end
-    if look.iconCrop then
-        local z = look.iconZoom or 0.07
+    if style.iconCrop then
+        local z = style.iconZoom or 0.07
         return z, 1 - z, z, 1 - z
     end
     return 0, 1, 0, 1
 end
 
-local function ApplyStyleToRegions(btnFrame, look)
+local function ApplyStyleToRegions(btnFrame, style)
     local d = bd[btnFrame]
     if not d then
         return
@@ -341,8 +341,8 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- is entirely ours to set (group layout elementWidth/Height feeds the flow
     -- math only). An unsized button renders nothing. SetSize on aura buttons
     -- is an engine-wrapped call, so restyles skip it when unchanged.
-    local wid = look.width or 32
-    local hgt = look.height or look.width or 32
+    local wid = style.width or 32
+    local hgt = style.height or style.width or 32
     if d.appliedW ~= wid or d.appliedH ~= hgt then
         -- Stamp AFTER the call: SetSize on the button is denied while auras
         -- are secret, and a pre-stamped failure would make the
@@ -352,12 +352,12 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     -- One mask shared by the icon, cooldown swipe, and base/dispel border art.
-    local shapeActive = look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath
+    local shapeActive = style.iconShape and style.iconShape ~= "none" and style.shapeMaskPath
     if shapeActive then
         if not d.shapeMask then
             d.shapeMask = btnFrame:CreateMaskTexture()
         end
-        d.shapeMask:SetTexture(look.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        d.shapeMask:SetTexture(style.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         d.shapeMask:SetAllPoints(btnFrame)
         d.shapeMask:Show()
     elseif d.shapeMask then
@@ -365,18 +365,18 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     if d.icon then
-        d.icon:SetTexCoord(AK.IconTexCoord(look))
+        d.icon:SetTexCoord(AK.IconTexCoord(style))
 
         -- AddMaskTexture is change-guarded and deferred like d.borderHost's anchor
         -- below: denied while auras are secret, retried once the restriction lifts.
         if shapeActive then
-            if d.akIconShapeKey ~= look.iconShape then
+            if d.akIconShapeKey ~= style.iconShape then
                 local success = pcall(function()
                     pcall(d.icon.RemoveMaskTexture, d.icon, d.shapeMask)
                     d.icon:AddMaskTexture(d.shapeMask)
                 end)
                 if success then
-                    d.akIconShapeKey = look.iconShape
+                    d.akIconShapeKey = style.iconShape
                 elseif d.styleKey and AK.AurasRestricted() then
                     deferredRestyles[d.styleKey] = true
                 end
@@ -391,8 +391,8 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     if d.cooldown then
-        d.cooldown:SetReverse(look.cooldownReverse ~= false)
-        d.cooldown:SetDrawEdge(look.cooldownDrawEdge == true)
+        d.cooldown:SetReverse(style.cooldownReverse ~= false)
+        d.cooldown:SetDrawEdge(style.cooldownDrawEdge == true)
         d.cooldown:SetHideCountdownNumbers(true) -- duration text comes from the binding, not the swipe
         -- Hidden-swipe gate. SetShown alone does not stick: the engine calls
         -- Cooldown:SetCooldown on this frame whenever the slot's aura data
@@ -406,7 +406,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- and it is annotated AllowedWhenTainted. With swipe, edge, and
         -- countdown numbers all off, a re-shown frame draws nothing, so the
         -- engine's re-Show is harmless.
-        local hideSwipe = look.hideSwipe == true
+        local hideSwipe = style.hideSwipe == true
         d.cooldown:SetShown(not hideSwipe)
         if d.akHideSwipe ~= hideSwipe then
             d.akHideSwipe = hideSwipe
@@ -418,12 +418,12 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- Clip the swipe to the shape and recolor its silhouette to match, instead
         -- of a plain square/circle radial. Both calls are on our own d.cooldown
         -- region, not the button -- no guard needed.
-        local cdMaskKey = shapeActive and look.iconShape or nil
+        local cdMaskKey = shapeActive and style.iconShape or nil
         if d.akCdMaskKey ~= cdMaskKey then
             if cdMaskKey then
                 pcall(d.cooldown.AddMaskTexture, d.cooldown, d.shapeMask)
                 if d.cooldown.SetSwipeTexture then
-                    pcall(d.cooldown.SetSwipeTexture, d.cooldown, look.shapeMaskPath)
+                    pcall(d.cooldown.SetSwipeTexture, d.cooldown, style.shapeMaskPath)
                 end
             else
                 if d.shapeMask then
@@ -443,44 +443,44 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- with the button as the relative frame is policed by the 12.1 button
     -- access restriction while auras are secret, and unchanged anchors must
     -- make zero button-involving calls so restyles stay live in-instance.
-    if d.stack and not look.noDefaultFonts then
-        local f = look.stackFont or STANDARD_TEXT_FONT
-        d.stack:SetFont(f, look.stackFontSize or 12, look.stackFontFlags or "OUTLINE")
-        local sp = look.stackPoint or "BOTTOMRIGHT"
-        local sKey = sp .. "|" .. (look.stackX or 2) .. "|" .. (look.stackY or -2)
+    if d.stack and not style.noDefaultFonts then
+        local f = style.stackFont or STANDARD_TEXT_FONT
+        d.stack:SetFont(f, style.stackFontSize or 12, style.stackFontFlags or "OUTLINE")
+        local sp = style.stackPoint or "BOTTOMRIGHT"
+        local sKey = sp .. "|" .. (style.stackX or 2) .. "|" .. (style.stackY or -2)
         if d.akStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
-            d.stack:SetPoint(sp, btnFrame, sp, look.stackX or 2, look.stackY or -2)
+            d.stack:SetPoint(sp, btnFrame, sp, style.stackX or 2, style.stackY or -2)
             d.akStackAnchor = sKey
         end
-        local c = look.stackColor
+        local c = style.stackColor
         if c then
             d.stack:SetTextColor(c.r, c.g, c.b, c.a or 1)
         end
     end
 
     if d.duration then
-        if not look.noDefaultFonts then
-            local f = look.durationFont or STANDARD_TEXT_FONT
-            d.duration:SetFont(f, look.durationFontSize or 11, look.durationFontFlags or "OUTLINE")
-            local dp = look.durationPoint or "TOP"
-            local drp = look.durationRelPoint or "BOTTOM"
-            local aKey = dp .. "|" .. drp .. "|" .. (look.durationX or 0) .. "|" .. (look.durationY or -2)
+        if not style.noDefaultFonts then
+            local f = style.durationFont or STANDARD_TEXT_FONT
+            d.duration:SetFont(f, style.durationFontSize or 11, style.durationFontFlags or "OUTLINE")
+            local dp = style.durationPoint or "TOP"
+            local drp = style.durationRelPoint or "BOTTOM"
+            local aKey = dp .. "|" .. drp .. "|" .. (style.durationX or 0) .. "|" .. (style.durationY or -2)
             if d.akDurAnchor ~= aKey then
                 d.duration:ClearAllPoints()
-                d.duration:SetPoint(dp, btnFrame, drp, look.durationX or 0, look.durationY or -2)
+                d.duration:SetPoint(dp, btnFrame, drp, style.durationX or 0, style.durationY or -2)
                 d.akDurAnchor = aKey
             end
         end
         -- The engine keeps writing the text either way; visibility is ours.
-        d.duration:SetShown(not look.hideDurationText)
+        d.duration:SetShown(not style.hideDurationText)
     end
 
     if d.borderHost then
         local Pix = CludesUI.PP
-        local b = look.border
+        local b = style.border
         if Pix and b then
-            if shapeActive and look.shapeBorderPath then
+            if shapeActive and style.shapeBorderPath then
                 -- A previous non-shaped style may have left either PP strips or
                 -- the secret-safe eight-slice texture set on this owned host.
                 -- Clear both before the shape ring takes over.
@@ -494,8 +494,8 @@ local function ApplyStyleToRegions(btnFrame, look)
                 Pix:ApplyMaskedShapeBorder(
                     d.borderHost,
                     d.shapeMask,
-                    look.shapeBorderPath,
-                    look.shapeBorderSize or b.size or 1,
+                    style.shapeBorderPath,
+                    style.shapeBorderSize or b.size or 1,
                     b[1] or 0,
                     b[2] or 0,
                     b[3] or 0,
@@ -507,11 +507,11 @@ local function ApplyStyleToRegions(btnFrame, look)
                     -- Aura buttons can expose restricted geometry. Give the owned
                     -- border host an explicit public size (change-guarded because
                     -- anchoring to the aura button is denied while restricted).
-                    local borderRect = (look.width or 18) .. "|" .. (look.height or look.width or 18)
+                    local borderRect = (style.width or 18) .. "|" .. (style.height or style.width or 18)
                     if d.akBorderRect ~= borderRect then
                         d.borderHost:ClearAllPoints()
                         d.borderHost:SetPoint("CENTER", btnFrame, "CENTER")
-                        d.borderHost:SetSize(look.width or 18, look.height or look.width or 18)
+                        d.borderHost:SetSize(style.width or 18, style.height or style.width or 18)
                         d.akBorderRect = borderRect
                     end
                     if b.behindUnitFrame then
@@ -649,7 +649,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- per-dispel-type debuff border atlas on it (red for untyped debuffs via
     -- showWithoutDispelType), so this IS the stock aura border, art and colour
     -- both engine-owned. No static border, no palette, no strips.
-    local blizzBorderStyle = look.blizzBorder
+    local blizzBorderStyle = style.blizzBorder
         and btnFrame.AddDispelTypeTexture
         and Enum
         and Enum.CustomAuraButtonDispelTypeTextureStyle
@@ -663,8 +663,8 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- border of positive size (a size-0 border keeps the strips), never with the
     -- Blizzard border or a shaped icon. Every other style pays this one nil test.
     local ringPath
-    if look.dispelBorderTexture and look.dispelBorder and not blizzBorderStyle and not shapeActive then
-        local rb = look.border
+    if style.dispelBorderTexture and style.dispelBorder and not blizzBorderStyle and not shapeActive then
+        local rb = style.border
         if
             rb
             and rb.texture
@@ -672,12 +672,12 @@ local function ApplyStyleToRegions(btnFrame, look)
             and rb.texture ~= "solid"
             and (rb.textureSize or rb.size or 1) > 0
         then
-            ringPath = CludesUI.ResolveBorderTexture(look.dispelBorderTexture)
+            ringPath = CludesUI.ResolveBorderTexture(style.dispelBorderTexture)
         end
     end
     -- An exact-size ring rides the UI-scale re-apply (see pxRingStyles); d.akRingPx
     -- marks the buttons that joined it, so every other button pays two nil tests.
-    if ringPath and look.border.edgePx then
+    if ringPath and style.border.edgePx then
         if not d.akRingPx then
             d.akRingPx = true
             if d.styleKey and not pxRingStyles[d.styleKey] then
@@ -695,7 +695,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         end
     end
     if
-        look.dispelBorder
+        style.dispelBorder
         and d.dispelHolder
         and (btnFrame.AddDispelTypeTexture or btnFrame.SetAuraBorder)
         and dispelTint ~= nil
@@ -712,7 +712,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 tex:Hide()
                 d.blizzBorderTex = tex
             end
-        elseif shapeActive and look.shapeBorderPath then
+        elseif shapeActive and style.shapeBorderPath then
             if not d.dispelShapeTex then
                 -- Neutral white tint base, written ONCE here (same rule as the strips
                 -- below): registration turns VertexColor into an engine-driven secret
@@ -729,9 +729,9 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- Unlike VertexColor, SetTexture isn't secret-tainted by registration --
             -- must track shape changes here too, or the ring keeps whatever shape's
             -- art was loaded when the texture was first created.
-            if d.akDispelShapeTexPath ~= look.shapeBorderPath then
-                d.dispelShapeTex:SetTexture(look.shapeBorderPath)
-                d.akDispelShapeTexPath = look.shapeBorderPath
+            if d.akDispelShapeTexPath ~= style.shapeBorderPath then
+                d.dispelShapeTex:SetTexture(style.shapeBorderPath)
+                d.akDispelShapeTexPath = style.shapeBorderPath
             end
         elseif ringPath then
             if not d.dispelRing then
@@ -794,7 +794,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- the recolor ring on the shared holder. Requires the NATIVE
     -- AddDispelTypeTexture plus the Icon enum -- never the legacy alias.
     if
-        look.dispelTypeIcon
+        style.dispelTypeIcon
         and d.dispelHolder
         and not d.dispelIconTex
         and btnFrame.AddDispelTypeTexture
@@ -901,7 +901,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- sixth of the icon on each side. Anchored to the holder (button
             -- rects are restricted) from the style's own size. Folded into
             -- setKey below: the engine snapshots geometry at registration.
-            local bw, bh = look.width or 18, look.height or look.width or 18
+            local bw, bh = style.width or 18, style.height or style.width or 18
             local geomKey = bw .. "|" .. bh
             if d.akBlizzGeom ~= geomKey then
                 local ox, oy = bw / 6, bh / 6
@@ -915,8 +915,8 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- helper also writes SetVertexColor, which would fight the engine's per-aura
             -- tint once registered. shapeBorderSize (not raw dispelBorderPx) so this ring
             -- uses the same remapped units as the base shaped border.
-            local px = look.shapeBorderSize or look.dispelBorderPx or 2
-            local geomKey = look.iconShape .. "|" .. px
+            local px = style.shapeBorderSize or style.dispelBorderPx or 2
+            local geomKey = style.iconShape .. "|" .. px
             if d.akDispelGeom ~= geomKey then
                 local PPx = CludesUI.PP
                 local bExp = 7 - math.min(px, 7)
@@ -947,7 +947,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- change is the setKey, because the engine snapshots geometry at
             -- registration. Pcall'd like the shape ring's reposition.
             if ringPath then
-                local rb = look.border
+                local rb = style.border
                 local sz = rb.textureSize or rb.size or 1
                 local edge, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
                     d.dispelHolder,
@@ -1004,7 +1004,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             -- corner: a dispel color carrying alpha < 1 would double-blend there and read as
             -- four darker corner pixels. Change-guarded on t alone -- the anchors are fixed
             -- to the holder, which tracks the button, so nothing else can move them.
-            local px = look.dispelBorderPx or 2
+            local px = style.dispelBorderPx or 2
             local t = px
             local eff = d.dispelHolder:GetEffectiveScale()
             if eff and eff > 0 then
@@ -1037,7 +1037,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- engine snapshots a texture's geometry at registration time, so any
         -- change here must ride a clear+re-add cycle to take effect). Anchored
         -- to the holder, never the button (button rects are restricted).
-        local icg = look.dispelTypeIcon
+        local icg = style.dispelTypeIcon
         if icg and d.dispelIconTex then
             local geomKey = (icg.pos or "center")
                 .. "|"
@@ -1062,15 +1062,17 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- AddDispelTypeTexture has no "swap one entry" semantics, the whole
         -- registration is all-or-nothing either way.
         local borderWant = (
-            look.dispelBorder
+            style.dispelBorder
             and dispelTexSet ~= nil
-            and ((blizzBorderStyle and d.blizzBorderTex) or (look.border and (look.dispelBorderPx or 2) > 0))
+            and (
+                (blizzBorderStyle and d.blizzBorderTex) or (style.border and (style.dispelBorderPx or 2) > 0)
+            )
         )
                 and true
             or false
-        local iconWant = (look.dispelTypeIcon and d.dispelIconTex ~= nil) and true or false
+        local iconWant = (style.dispelTypeIcon and d.dispelIconTex ~= nil) and true or false
         local wanted = borderWant or iconWant
-        local mapFP = look.dispelColorFP or ""
+        local mapFP = style.dispelColorFP or ""
         -- Includes the size-derived px: the engine snapshots this texture's geometry
         -- at registration time, so a border-size-only change (same shape, same want)
         -- needs the same clear+re-add cycle or the OLD ring geometry keeps rendering.
@@ -1084,9 +1086,9 @@ local function ApplyStyleToRegions(btnFrame, look)
                 setKey = "blizz:" .. (d.akBlizzGeom or "")
             elseif shapeActive and d.dispelShapeTex then
                 setKey = "shape:"
-                    .. look.iconShape
+                    .. style.iconShape
                     .. "|"
-                    .. (look.shapeBorderSize or look.dispelBorderPx or 2)
+                    .. (style.shapeBorderSize or style.dispelBorderPx or 2)
             elseif dispelTexSet == d.dispelRing then
                 -- "tex:<path>|<edge>|<offsets>", built only when the ring's geometry
                 -- changes (a UI scale move under an exact size included).
@@ -1152,8 +1154,8 @@ local function ApplyStyleToRegions(btnFrame, look)
                             options = {
                                 style = dispelTint,
                                 showWhenHarmful = true,
-                                showWhenHelpful = look.dispelHelpful == true,
-                                customDispelColorMap = look.dispelColorMap,
+                                showWhenHelpful = style.dispelHelpful == true,
+                                customDispelColorMap = style.dispelColorMap,
                             }
                         end
                         for idx = 1, #dispelTexSet do
@@ -1223,7 +1225,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- configuring tooltip behaviour re-arms the button's mouse as a side
     -- effect (the nameplate click/tooltip eater), so never touch the tooltip
     -- surface of a button that has no tooltip to configure.
-    if not look.noTooltips then
+    if not style.noTooltips then
         -- Style flip noTooltips -> tooltips (e.g. the unit-frame aura-tooltip
         -- toggle re-enabled): this button's motion was disabled by the pass
         -- below, and the tooltip-config calls underneath are change-guarded by
@@ -1238,7 +1240,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             end
         end
         if btnFrame.SetHideTooltipInCombat then
-            local wantCombat = look.tooltipCombatHide and true or false
+            local wantCombat = style.tooltipCombatHide and true or false
             if d.akTipCombat ~= wantCombat then
                 if pcall(btnFrame.SetHideTooltipInCombat, btnFrame, wantCombat) then
                     d.akTipCombat = wantCombat
@@ -1248,7 +1250,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             end
         end
         if btnFrame.SetTooltipAnchorPoint then
-            local wantAnchor = (look.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
+            local wantAnchor = (style.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
             if d.akTipAnchor ~= wantAnchor then
                 if pcall(btnFrame.SetTooltipAnchorPoint, btnFrame, wantAnchor) then
                     d.akTipAnchor = wantAnchor
@@ -1280,7 +1282,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- needed its click token registered again (Blizzard's own
     -- AuraButtonSharedMixin:SetCancelAuraButtons -> RegisterForClicks). Change-guarded
     -- by stamps, both deferred to the restriction lift like the neighbours above.
-    if look.cancelButtons then
+    if style.cancelButtons then
         if d.akClickOff and btnFrame.SetMouseClickEnabled then
             if pcall(btnFrame.SetMouseClickEnabled, btnFrame, true) then
                 d.akClickOff = nil
@@ -1288,9 +1290,9 @@ local function ApplyStyleToRegions(btnFrame, look)
                 deferredRestyles[d.styleKey] = true
             end
         end
-        if d.akCancel ~= look.cancelButtons and btnFrame.SetCancelAuraButtons then
-            if pcall(btnFrame.SetCancelAuraButtons, btnFrame, look.cancelButtons) then
-                d.akCancel = look.cancelButtons
+        if d.akCancel ~= style.cancelButtons and btnFrame.SetCancelAuraButtons then
+            if pcall(btnFrame.SetCancelAuraButtons, btnFrame, style.cancelButtons) then
+                d.akCancel = style.cancelButtons
             elseif d.styleKey and AK.AurasRestricted() then
                 deferredRestyles[d.styleKey] = true
             end
@@ -1306,7 +1308,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             deferredRestyles[d.styleKey] = true
         end
     end
-    if look.noTooltips and btnFrame.SetMouseMotionEnabled then
+    if style.noTooltips and btnFrame.SetMouseMotionEnabled then
         if pcall(btnFrame.SetMouseMotionEnabled, btnFrame, false) then
             -- Deliberately re-asserted every pass (the engine re-arms motion
             -- as a side effect of tooltip config); the stamp only records
@@ -1325,7 +1327,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- tooltips that vanish when moving from one icon onto the next. Insetting
     -- each mouse area by half the overlap keeps the areas apart while the icons
     -- still overlap. Change-guarded, deferred to the restriction lift when denied.
-    local hitX, hitY = look.hitInsetX or 0, look.hitInsetY or 0
+    local hitX, hitY = style.hitInsetX or 0, style.hitInsetY or 0
     if (d.akHitX or 0) ~= hitX or (d.akHitY or 0) ~= hitY then
         if
             btnFrame.SetHitRectInsets and pcall(btnFrame.SetHitRectInsets, btnFrame, hitX, hitX, hitY, hitY)
@@ -1339,17 +1341,17 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- Weapon-enchant cells (stamped by AK.EnchantCellInit): the stock
     -- temp-enchant ring under Blizzard Style, re-fitted on every restyle.
     if d.enchantCell then
-        AK.ApplyBlizzEnchantRing(btnFrame, d, look)
+        AK.ApplyBlizzEnchantRing(btnFrame, d, style)
     end
 
     -- Blizzard Style nameplate cells: the stock rounded mask and ring.
-    if look.blizzRoundArt or d.blizzRoundRing then
-        AK.ApplyBlizzRoundArt(btnFrame, d, look, shapeActive)
+    if style.blizzRoundArt or d.blizzRoundRing then
+        AK.ApplyBlizzRoundArt(btnFrame, d, style, shapeActive)
     end
 
     -- Module-specific styling pass; runs at init and on every Restyle.
-    if look.applyExtra then
-        look.applyExtra(btnFrame, d, look)
+    if style.applyExtra then
+        style.applyExtra(btnFrame, d, style)
     end
 end
 
@@ -1429,27 +1431,27 @@ end
 -- reference. All region wiring happens here. rec: the group record of an
 -- aura group (AK.AddGroupToContainer), which numbers its buttons in build
 -- order for AK.ButtonCanShow.
-function AK.MakeInitializer(styleKey, extra, recd)
+function AK.MakeInitializer(styleKey, extra, rec)
     local built = 0
     local function Init(btnFrame)
-        local look = AK.styles[styleKey] or {}
+        local style = AK.styles[styleKey] or {}
         local d = {}
         bd[btnFrame] = d
         d.styleKey = styleKey
-        if recd then
+        if rec then
             built = built + 1
-            d.akGroup, d.akIndex = recd, built
-            recd.buttons[built] = btnFrame
+            d.akGroup, d.akIndex = rec, built
+            rec.buttons[built] = btnFrame
         end
 
         -- Bare mode: no standard regions at all. The button is a pure
         -- presence-driven host (engine still drives its visibility); the
         -- module builds whatever it wants in applyExtra/extra.
-        if look.noRegions then
-            ApplyStyleToRegions(btnFrame, look)
+        if style.noRegions then
+            ApplyStyleToRegions(btnFrame, style)
             GetStyleSet(styleKey)[btnFrame] = true
             if extra then
-                extra(btnFrame, d, look)
+                extra(btnFrame, d, style)
             end
             return
         end
@@ -1520,11 +1522,11 @@ function AK.MakeInitializer(styleKey, extra, recd)
         -- working where styles want them. Styles that wire a click action
         -- (cancelButtons: player buffs right-click-to-cancel, applied below)
         -- keep their clicks -- those buttons overlay nothing clickable.
-        if not look.cancelButtons then
+        if not style.cancelButtons then
             pcall(btnFrame.SetMouseClickEnabled, btnFrame, false)
         end
 
-        ApplyStyleToRegions(btnFrame, look)
+        ApplyStyleToRegions(btnFrame, style)
 
         btnFrame:SetIcon(d.icon)
         -- Re-registering the icon re-runs the button's visibility: the kick for
@@ -1537,29 +1539,29 @@ function AK.MakeInitializer(styleKey, extra, recd)
         -- neighboring non-AuraKit display supplies its own rule formatter.
         -- Omitted (every pre-existing style) keeps the shared one.
         local durationOpts = AK.BuildDurationTextOpts(
-            look.durationFormatter
-                or AK.GetDurationFormatter(look.durationShowSeconds, look.durationPrecisionThreshold),
-            look.durationColorCurve,
-            look.durationUpdateInterval
+            style.durationFormatter
+                or AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold),
+            style.durationColorCurve,
+            style.durationUpdateInterval
         )
         AK.SetDurationTextSafe(btnFrame, d.duration, durationOpts)
         -- Formatter-choice stamp for live rebinds (style.applyExtra reruns on
         -- restyles; duration opts otherwise land only here at creation).
-        d.durationFmtS = (look.durationShowSeconds and "s" or "b")
-            .. tostring(look.durationPrecisionThreshold or 0)
+        d.durationFmtS = (style.durationShowSeconds and "s" or "b")
+            .. tostring(style.durationPrecisionThreshold or 0)
 
         -- Creation-time guarantee, stamp-guarded: ApplyStyleToRegions above already
         -- wires the click token on this pass, so this only fires if that call was
         -- denied (secret-value lockdown), leaving the deferred restyle to repair it.
-        if look.cancelButtons and d.akCancel ~= look.cancelButtons then
-            btnFrame:SetCancelAuraButtons(look.cancelButtons)
-            d.akCancel = look.cancelButtons
+        if style.cancelButtons and d.akCancel ~= style.cancelButtons then
+            btnFrame:SetCancelAuraButtons(style.cancelButtons)
+            d.akCancel = style.cancelButtons
         end
 
         GetStyleSet(styleKey)[btnFrame] = true
 
         if extra then
-            extra(btnFrame, d, look)
+            extra(btnFrame, d, style)
         end
     end
     -- Holds the button's creation window open for the whole body and always
@@ -1581,7 +1583,7 @@ end
 -- duration, stacks, cancel), which the caller drives itself. For content the
 -- engine has no source for (WoW Forever's weapon imbues). Returns frame, d.
 function AK.CreateStyledCell(hostFrame, styleKey, extra)
-    local look = AK.styles[styleKey] or {}
+    local style = AK.styles[styleKey] or {}
     local btnFrame = CreateFrame("Frame", nil, hostFrame)
     local d = {}
     bd[btnFrame] = d
@@ -1605,10 +1607,10 @@ function AK.CreateStyledCell(hostFrame, styleKey, extra)
     d.stackCarrier:EnableMouse(false)
     d.stack = d.stackCarrier:CreateFontString(nil, "OVERLAY")
     d.duration = d.stackCarrier:CreateFontString(nil, "OVERLAY")
-    ApplyStyleToRegions(btnFrame, look)
+    ApplyStyleToRegions(btnFrame, style)
     GetStyleSet(styleKey)[btnFrame] = true
     if extra then
-        extra(btnFrame, d, look)
+        extra(btnFrame, d, style)
     end
     return btnFrame, d
 end
@@ -1617,13 +1619,13 @@ end
 -- owned by the container (element sizes, spacing, growth) is re-driven by the
 -- caller through AK.ApplyContainerLayout / group setters, not here.
 function AK.Restyle(styleKey)
-    local look = AK.styles[styleKey]
-    local group = styleButtons[styleKey]
-    if not look or not group then
+    local style = AK.styles[styleKey]
+    local set = styleButtons[styleKey]
+    if not style or not set then
         return
     end
-    for btnFrame in pairs(group) do
-        ApplyStyleToRegions(btnFrame, look)
+    for btnFrame in pairs(set) do
+        ApplyStyleToRegions(btnFrame, style)
     end
 end
 
@@ -1649,10 +1651,10 @@ restyler:SetScript("OnUpdate", function(self)
                 return
             end
             restyleQueue[key] = nil
-            local group = styleButtons[key]
-            if AK.styles[key] and group then
+            local set = styleButtons[key]
+            if AK.styles[key] and set then
                 local buttons = {}
-                for b in pairs(group) do
+                for b in pairs(set) do
                     buttons[#buttons + 1] = b
                 end
                 restyleWork = { key = key, buttons = buttons, index = 1 }
@@ -1660,7 +1662,7 @@ restyler:SetScript("OnUpdate", function(self)
         end
         if restyleWork then
             local wid = restyleWork
-            local look = AK.styles[wid.key]
+            local style = AK.styles[wid.key]
             local num = #wid.buttons
             local restricted = AK.AurasRestricted()
             while budget > 0 and wid.index <= num do
@@ -1670,8 +1672,8 @@ restyler:SetScript("OnUpdate", function(self)
                 -- a denied button call under aura secrecy retried the same
                 -- button every frame forever -- a 1298-error storm.)
                 wid.index = wid.index + 1
-                if look then
-                    local success, err = pcall(ApplyStyleToRegions, btnFrame, look)
+                if style then
+                    local success, err = pcall(ApplyStyleToRegions, btnFrame, style)
                     if not success then
                         if
                             type(err) == "string"
@@ -2001,12 +2003,12 @@ function AK.KickShownAnimations(btnFrame, d, groups, num)
             return AnimCallFailed(d, err)
         end
     end
-    local glyph = d.akKickIcon
+    local icon = d.akKickIcon
     -- A bare button without one: making and registering it is the kick.
-    if not glyph then
+    if not icon then
         return AK.EnsureKickIcon(btnFrame, d)
     end
-    local success, err = pcall(btnFrame.SetIcon, btnFrame, glyph)
+    local success, err = pcall(btnFrame.SetIcon, btnFrame, icon)
     if not success then
         return AnimCallFailed(d, err)
     end
@@ -2074,26 +2076,26 @@ local GROUP_BATCH = 10
 
 function AK.ButtonCanShow(btnFrame)
     local d = bd[btnFrame]
-    local recd = d and d.akGroup
-    if not recd or recd.allShow or recd.maxCap > GROUP_BATCH or d.akIndex > GROUP_BATCH - recd.maxCap then
+    local rec = d and d.akGroup
+    if not rec or rec.allShow or rec.maxCap > GROUP_BATCH or d.akIndex > GROUP_BATCH - rec.maxCap then
         return true
     end
-    recd.gated = true
+    rec.gated = true
     return false
 end
 
 -- Re-dresses group buttons that just became able to show, so the decoration
 -- AK.ButtonCanShow held back starts on them. Under aura secrecy their child
 -- writes are denied: the whole style re-runs once the restriction lifts.
-local function RedressGroupButtons(recd, first, last)
-    if not recd.gated then
+local function RedressGroupButtons(rec, first, last)
+    if not rec.gated then
         return
     end
     for idx = first, last do
-        local btnFrame = recd.buttons[idx]
+        local btnFrame = rec.buttons[idx]
         local d = btnFrame and bd[btnFrame]
-        local look = d and AK.styles[d.styleKey]
-        if look and not pcall(ApplyStyleToRegions, btnFrame, look) then
+        local style = d and AK.styles[d.styleKey]
+        if style and not pcall(ApplyStyleToRegions, btnFrame, style) then
             if AK.AurasRestricted() then
                 deferredRestyles[d.styleKey] = true
             else
@@ -2104,26 +2106,26 @@ local function RedressGroupButtons(recd, first, last)
 end
 
 function AK.AddGroupToContainer(boxHolder, g)
-    local recd = { maxCap = g.maxFrameCount or math.huge, buttons = {} }
+    local rec = { maxCap = g.maxFrameCount or math.huge, buttons = {} }
     boxHolder:AddAuraGroup(g.key, AK.Filter(unpack(g.filter)), {
         maxFrameCount = g.maxFrameCount,
         sortMethod = g.sortMethod,
         sortDirection = g.sortDirection,
         candidateFilters = g.candidateFilters,
-        initializeFrame = AK.MakeInitializer(g.style, g.extraInit, recd),
+        initializeFrame = AK.MakeInitializer(g.style, g.extraInit, rec),
         layout = g.layout,
     })
     -- A first batch of another size breaks the stack rule: every button can show.
     -- None built yet counts too: buttons made later may come one at a time.
-    local built = #recd.buttons
-    if built ~= GROUP_BATCH and recd.maxCap < GROUP_BATCH then
-        recd.allShow = true
-        RedressGroupButtons(recd, 1, built)
+    local built = #rec.buttons
+    if built ~= GROUP_BATCH and rec.maxCap < GROUP_BATCH then
+        rec.allShow = true
+        RedressGroupButtons(rec, 1, built)
     end
     local cd = containerData[boxHolder]
     if cd then
         cd.groups = cd.groups or {}
-        cd.groups[g.key] = recd
+        cd.groups[g.key] = rec
     end
 end
 
@@ -2149,16 +2151,16 @@ function AK.SetGroupCap(boxHolder, key, cap)
         boxHolder:SetAuraGroupMaxFrameCount(key, cap)
     end
     local cd = containerData[boxHolder]
-    local recd = cd and cd.groups and cd.groups[key]
-    if not recd or recd.allShow or cap <= recd.maxCap then
+    local rec = cd and cd.groups and cd.groups[key]
+    if not rec or rec.allShow or cap <= rec.maxCap then
         return
     end
-    local old = recd.maxCap
-    recd.maxCap = cap
+    local old = rec.maxCap
+    rec.maxCap = cap
     if old >= GROUP_BATCH then
         return
     end
-    RedressGroupButtons(recd, GROUP_BATCH - math.min(cap, GROUP_BATCH) + 1, GROUP_BATCH - old)
+    RedressGroupButtons(rec, GROUP_BATCH - math.min(cap, GROUP_BATCH) + 1, GROUP_BATCH - old)
 end
 
 function AK.AddSlotToContainer(boxHolder, s)
@@ -2191,17 +2193,17 @@ AK.ITEM_ENCH_SLOTS = { "MainHand", "OffHand", "Ranged" }
 -- style is harmful-only). 32px round a 30px icon in the stock buff frame,
 -- so a thirtieth of the cell on each side; anchored to the border host
 -- (button rects are restricted). Hidden, never destroyed, without the flag.
-function AK.ApplyBlizzEnchantRing(btnFrame, d, look)
+function AK.ApplyBlizzEnchantRing(btnFrame, d, style)
     local ring = d.blizzEnchantRing
-    if not look.blizzEnchant then
+    if not style.blizzEnchant then
         if ring then
             ring:Hide()
         end
         return
     end
-    local hostRegion = d.borderHost or btnFrame
+    local host = d.borderHost or btnFrame
     if not ring then
-        ring = hostRegion:CreateTexture(nil, "OVERLAY")
+        ring = host:CreateTexture(nil, "OVERLAY")
         ring:SetTexture("Interface\\Buttons\\UI-TempEnchant-Border")
         if ring.SetSnapToPixelGrid then
             ring:SetSnapToPixelGrid(false)
@@ -2209,14 +2211,14 @@ function AK.ApplyBlizzEnchantRing(btnFrame, d, look)
         end
         d.blizzEnchantRing = ring
     end
-    local wid = look.width or 32
-    local hgt = look.height or wid
+    local wid = style.width or 32
+    local hgt = style.height or wid
     local key = wid .. "|" .. hgt
     if d.blizzEnchantGeom ~= key then
         local ex, ey = wid / 30, hgt / 30
         ring:ClearAllPoints()
-        ring:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", -ex, ey)
-        ring:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", ex, -ey)
+        ring:SetPoint("TOPLEFT", host, "TOPLEFT", -ex, ey)
+        ring:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", ex, -ey)
         d.blizzEnchantGeom = key
     end
     ring:Show()
@@ -2225,9 +2227,9 @@ end
 -- extraInit for AddItemEnchantmentsToContainer: marks the cell so the style
 -- pass (ApplyStyleToRegions, at init and on every restyle) can tell it from
 -- an aura button, and fits the ring once now (the pass ran before this hook).
-function AK.EnchantCellInit(btnFrame, d, look)
+function AK.EnchantCellInit(btnFrame, d, style)
     d.enchantCell = true
-    AK.ApplyBlizzEnchantRing(btnFrame, d, look)
+    AK.ApplyBlizzEnchantRing(btnFrame, d, style)
 end
 
 -- Blizzard Style (style.blizzRoundArt, set by the nameplate style builder):
@@ -2243,9 +2245,9 @@ end
 AK.BLIZZ_ROUND_MASK = "UI-HUD-CoolDownManager-Mask"
 AK.BLIZZ_ROUND_RING = "UI-HUD-CoolDownManager-IconOverlay"
 AK.BLIZZ_ROUND_SWIPE = "Interface\\HUD\\UI-HUD-CoolDownManager-Icon-Swipe"
-function AK.ApplyBlizzRoundArt(btnFrame, d, look, shapeActive)
+function AK.ApplyBlizzRoundArt(btnFrame, d, style, shapeActive)
     local ring = d.blizzRoundRing
-    local wanted = look.blizzRoundArt and not shapeActive
+    local wanted = style.blizzRoundArt and not shapeActive
     if wanted and AK._blizzRoundOK == nil then
         AK._blizzRoundOK = (
             C_Texture
@@ -2271,10 +2273,10 @@ function AK.ApplyBlizzRoundArt(btnFrame, d, look, shapeActive)
         end
         return
     end
-    local hostRegion = d.borderHost or btnFrame
+    local host = d.borderHost or btnFrame
     if not ring then
-        ring = hostRegion:CreateTexture(nil, "OVERLAY")
-        if look.blizzRoundNative then
+        ring = host:CreateTexture(nil, "OVERLAY")
+        if style.blizzRoundNative then
             ring:SetAtlas(AK.BLIZZ_ROUND_RING)
         else
             CludesUI.StockAtlas(ring, AK.BLIZZ_ROUND_RING)
@@ -2286,10 +2288,10 @@ function AK.ApplyBlizzRoundArt(btnFrame, d, look, shapeActive)
         d.blizzRoundRing = ring
     end
     if not d.blizzRoundMask then
-        local maskTex = btnFrame:CreateMaskTexture()
-        maskTex:SetAtlas(AK.BLIZZ_ROUND_MASK)
-        maskTex:SetAllPoints(btnFrame)
-        d.blizzRoundMask = maskTex
+        local mask = btnFrame:CreateMaskTexture()
+        mask:SetAtlas(AK.BLIZZ_ROUND_MASK)
+        mask:SetAllPoints(btnFrame)
+        d.blizzRoundMask = mask
     end
     if not d.akBlizzRoundMasked and d.icon then
         if pcall(d.icon.AddMaskTexture, d.icon, d.blizzRoundMask) then
@@ -2301,13 +2303,13 @@ function AK.ApplyBlizzRoundArt(btnFrame, d, look, shapeActive)
             deferredRestyles[d.styleKey] = true
         end
     end
-    local wid = look.width or 32
-    local hgt = look.height or wid
+    local wid = style.width or 32
+    local hgt = style.height or wid
     if d.blizzRoundW ~= wid or d.blizzRoundH ~= hgt then
         local ex, ey = wid * 0.24, hgt * 0.2
         ring:ClearAllPoints()
-        ring:SetPoint("TOPLEFT", hostRegion, "TOPLEFT", -ex, ey)
-        ring:SetPoint("BOTTOMRIGHT", hostRegion, "BOTTOMRIGHT", ex, -ey)
+        ring:SetPoint("TOPLEFT", host, "TOPLEFT", -ex, ey)
+        ring:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", ex, -ey)
         d.blizzRoundW, d.blizzRoundH = wid, hgt
     end
     ring:Show()
@@ -2355,14 +2357,14 @@ function AK.AddItemEnchantmentsToContainer(boxHolder, e)
     local last = math.min(e.maxSlots or #nameList, #nameList)
     for idx = 1, last do
         local name = nameList[idx]
-        local slotIndex = slotEnum[name]
+        local slot = slotEnum[name]
         -- HasItemEnchantment is engine-private and a second declaration for
         -- the same slot asserts, so the declared set is ours to keep. pcall'd
         -- anyway: ReleaseContainer drops the whole containerData entry, so a
         -- container that is released and then re-declared (no consumer does
         -- that today) would hit that assert with the tracking gone.
-        if slotIndex ~= nil and not (tracked and tracked[name]) then
-            local success, widget = pcall(boxHolder.AddItemEnchantment, boxHolder, slotIndex, {
+        if slot ~= nil and not (tracked and tracked[name]) then
+            local success, widget = pcall(boxHolder.AddItemEnchantment, boxHolder, slot, {
                 initializeFrame = AK.MakeInitializer(e.style, e.extraInit),
                 hidePermanent = e.hidePermanent ~= false,
             })

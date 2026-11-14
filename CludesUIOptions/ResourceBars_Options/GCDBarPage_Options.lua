@@ -18,7 +18,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- GCD Bar page
 function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
-    local SavedDB, Pix, CLASS_COLORS, _clickMappings =
+    local DB, Pix, CLASS_COLORS, _clickMappings =
         environ.DB, environ.PP, environ.CLASS_COLORS, environ._clickMappings
     local UpdateGCDPreview = environ.UpdateGCDPreview
     local TexBgRowCfg = environ.TexBgRowCfg
@@ -64,7 +64,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     end
 
     local gcdOff = function()
-        local p = SavedDB()
+        local p = DB()
         return p and not p.gcdBar.enabled
     end
 
@@ -97,11 +97,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         text = "Enable GCD Bar",
         tooltip = "Shows a bar that fills over the global cooldown.",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.enabled
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -118,11 +118,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         values = gStrataValues,
         order = gStrataOrder,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.frameStrata or "MEDIUM"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -136,7 +136,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         local region = enableRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and not p.gcdBar.enabled
             end,
             disabledTooltip = "GCD Bar",
@@ -150,7 +150,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return 0
                         end
@@ -161,7 +161,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         return g.anchorX or 0
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -181,7 +181,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     max = 600,
                     step = 1,
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return 0
                         end
@@ -192,7 +192,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         return g.anchorY or -78
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -212,7 +212,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     -- Row: Height | Width. Orientation-aware: this bar's size callbacks report the drawn axes, so its sliders must be guarded on the matching axis for vertical orientations.
     local function gcdOri()
-        local p = SavedDB()
+        local p = DB()
         return p and p.gcdBar and p.gcdBar.orientation
     end
     local ghDis, ghTip, ghRaw = mod.OrientedMatchGuard("ERB_GCDBar", "Height", gcdOri, gcdOff, "GCD Bar")
@@ -228,11 +228,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabledTooltip = ghTip,
         rawTooltip = ghRaw,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.height or 12
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -249,11 +249,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabledTooltip = gwTip,
         rawTooltip = gwRaw,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.width or 220
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -277,11 +277,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         },
         order = { "HORIZONTAL", "HORIZONTAL_LEFT", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.orientation or "HORIZONTAL"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -296,11 +296,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.instanceOnly
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -319,11 +319,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.instantOnly
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -337,11 +337,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.alwaysShow
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -360,11 +360,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     label = "Show Fill Color When Idle",
                     tooltip = "Show the bar full of its fill color while no global cooldown is running, instead of the background color.",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return (p and p.gcdBar.idleShowFill) == true
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -401,11 +401,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 values = btValues,
                 order = btOrder,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.gcdBar.borderTexture or "solid"
                 end,
                 setValue = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -436,25 +436,25 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 disabled = gcdOff,
                 disabledTooltip = "GCD Bar",
                 getStep = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and (p.gcdBar.borderSize or 0) or 0
                 end,
                 setStep = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if p then
                         p.gcdBar.borderSize = val
                     end
                 end,
                 getTex = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and (p.gcdBar.borderTexture or "solid") or "solid"
                 end,
                 getPx = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and p.gcdBar.borderSizePx
                 end,
                 setPx = function(val)
-                    local p = SavedDB()
+                    local p = DB()
                     if p then
                         p.gcdBar.borderSizePx = val
                     end
@@ -468,11 +468,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         posY = posY - hgt
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
-            local p = SavedDB()
+            local p = DB()
             local tex = p and p.gcdBar.borderTexture or "solid"
             if tex ~= "solid" and tex ~= "" then
                 local function step()
-                    local p = SavedDB()
+                    local p = DB()
                     return p and (p.gcdBar.borderSize or 0) or 0
                 end
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -480,31 +480,31 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     disabled = gcdOff,
                     disabledTooltip = "GCD Bar",
                     getTex = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and (p.gcdBar.borderTexture or "solid") or "solid"
                     end,
                     getStep = step,
                     getSizeKey = step,
                     getPx = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.gcdBar.borderSizePx
                     end,
                     getX = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.gcdBar.borderTextureOffset
                     end,
                     setX = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.gcdBar.borderTextureOffset = val
                         end
                     end,
                     getY = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.gcdBar.borderTextureOffsetY
                     end,
                     setY = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if p then
                             p.gcdBar.borderTextureOffsetY = val
                         end
@@ -527,14 +527,14 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 region,
                 bsRow:GetFrameLevel() + 3,
                 function()
-                    local p = SavedDB()
+                    local p = DB()
                     return (p and p.gcdBar.borderR or 0),
                         (p and p.gcdBar.borderG or 0),
                         (p and p.gcdBar.borderB or 0),
                         (p and p.gcdBar.borderA or 1)
                 end,
                 function(r, g, b, a)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -546,28 +546,28 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 20
             )
             Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-            local blockData = CreateFrame("Frame", nil, colorSwatch)
-            blockData:SetAllPoints()
-            blockData:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            blockData:EnableMouse(true)
-            blockData:SetScript("OnEnter", function()
+            local block = CreateFrame("Frame", nil, colorSwatch)
+            block:SetAllPoints()
+            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
                     colorSwatch,
                     CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
                 )
             end)
-            blockData:SetScript("OnLeave", function()
+            block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateSwatchState()
-                local p = SavedDB()
+                local p = DB()
                 local noBorder = not p or (p.gcdBar.borderSize or 0) == 0
                 if noBorder then
                     colorSwatch:SetAlpha(0.3)
-                    blockData:Show()
+                    block:Show()
                 else
                     colorSwatch:SetAlpha(1)
-                    blockData:Hide()
+                    block:Hide()
                 end
             end
             CludesUI.RegisterWidgetRefresh(function()
@@ -590,7 +590,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return 0
                             end
@@ -606,7 +606,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             return dsx
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -622,7 +622,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return 0
                             end
@@ -638,7 +638,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             return dsy
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -651,11 +651,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Show Behind",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.borderBehind or false
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -675,11 +675,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.borderExtendTop or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -698,11 +698,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.borderExtendBottom or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -721,11 +721,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.borderExtendLeft or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -744,11 +744,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.borderExtendRight or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -768,14 +768,14 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             if not (p and p.gcdBar.edgeSep) then
                                 return "none"
                             end
                             return p.gcdBar.edgeSepArt or "match"
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -796,18 +796,18 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         disabled = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return gcdOff() or not (p and p.gcdBar.edgeSep)
                         end,
                         disabledTooltip = function()
                             return gcdOff() and "GCD Bar" or "Bottom Separator"
                         end,
                         get = function()
-                            local p = SavedDB()
+                            local p = DB()
                             return p and p.gcdBar.edgeSepY or 0
                         end,
                         set = function(val)
-                            local p = SavedDB()
+                            local p = DB()
                             if not p then
                                 return
                             end
@@ -819,7 +819,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 },
             })
             local function UpdateCogVis()
-                local p = SavedDB()
+                local p = DB()
                 local tex = p and p.gcdBar.borderTexture or "solid"
                 if tex == "solid" then
                     cogBtn:Hide()
@@ -844,14 +844,14 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 tooltip = "Gradient End Color",
                 hasAlpha = true,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return 0.20, 0.20, 0.80, 1
                     end
                     return p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA
                 end,
                 setValue = function(r, g, b, a)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -864,7 +864,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 tooltip = "Custom Colored",
                 hasAlpha = true,
                 getValue = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         local _, castFrame = UnitClass("player")
                         local cc = CLASS_COLORS[castFrame]
@@ -873,7 +873,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     return p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA
                 end,
                 setValue = function(r, g, b, a)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -885,7 +885,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 onClick = function(self)
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -900,15 +900,15 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                 end,
                 refreshAlpha = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return (p and not p.gcdBar.classColored) and 1 or 0.3
                 end,
             },
             {
                 tooltip = "Class Colored",
                 getValue = function()
-                    local _, classFile = UnitClass("player")
-                    local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                    local _, class = UnitClass("player")
+                    local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
                     if cc then
                         return cc.r, cc.g, cc.b, 1
                     end
@@ -916,7 +916,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
                 setValue = function() end,
                 onClick = function()
-                    local p = SavedDB()
+                    local p = DB()
                     if not p then
                         return
                     end
@@ -925,7 +925,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    local p = SavedDB()
+                    local p = DB()
                     return (not p or p.gcdBar.classColored == true) and 1 or 0.3
                 end,
             },
@@ -939,11 +939,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return math.floor(((p and p.gcdBar.bgA or 0.7) * 100) + 0.5)
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -957,7 +957,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         local region = colorRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = SavedDB()
+                local p = DB()
                 return p and not p.gcdBar.enabled
             end,
             disabledTooltip = "GCD Bar",
@@ -967,11 +967,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Enable Gradient",
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.gcdBar.gradientEnabled
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -986,11 +986,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
                     get = function()
-                        local p = SavedDB()
+                        local p = DB()
                         return p and p.gcdBar.gradientDir or "HORIZONTAL"
                     end,
                     set = function(val)
-                        local p = SavedDB()
+                        local p = DB()
                         if not p then
                             return
                         end
@@ -1005,7 +1005,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     do
         local colorSwatch = colorRow._leftRegion._control
         local function UpdateGradientSwatch()
-            local p = SavedDB()
+            local p = DB()
             if not p or not p.gcdBar.enabled then
                 colorSwatch:SetAlpha(0.15)
                 colorSwatch:Disable()
@@ -1031,11 +1031,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             region,
             colorRow:GetFrameLevel() + 3,
             function()
-                local p = SavedDB()
+                local p = DB()
                 return (p and p.gcdBar.bgR or 0), (p and p.gcdBar.bgG or 0), (p and p.gcdBar.bgB or 0)
             end,
             function(r, g, b)
-                local p = SavedDB()
+                local p = DB()
                 if not p then
                     return
                 end
@@ -1047,7 +1047,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         )
         Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
         local function UpdateBgSwatch()
-            local p = SavedDB()
+            local p = DB()
             if not p or not p.gcdBar.enabled then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
@@ -1073,11 +1073,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         values = texValues,
         order = texOrder,
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.texture or "none"
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1091,11 +1091,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.showSpark
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end
@@ -1122,11 +1122,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
         getValue = function()
-            local p = SavedDB()
+            local p = DB()
             return p and p.gcdBar.depleteFill
         end,
         setValue = function(val)
-            local p = SavedDB()
+            local p = DB()
             if not p then
                 return
             end

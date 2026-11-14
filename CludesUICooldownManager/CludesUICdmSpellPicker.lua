@@ -63,32 +63,32 @@ local function _GetOverride(spellRef)
     return nil
 end
 
-local function _StoreIfValid(targetUnit, ident, value, preserveExisting)
+local function _StoreIfValid(target, ident, value, preserveExisting)
     if not _IsUsableSID(ident) then
         return
     end
-    if preserveExisting and targetUnit[ident] ~= nil then
+    if preserveExisting and target[ident] ~= nil then
         return
     end
-    targetUnit[ident] = value
+    target[ident] = value
 end
 
 -- Concrete case for directSet: Divine Toll and its override share cooldownID/
 -- base, so without it the winner would depend on collection order and the
 -- slot could change bars as the spell transforms. Derived keys fill gaps only.
-local function StoreVariantValue(targetUnit, spellId, value, preserveExisting, directSet)
-    if type(targetUnit) ~= "table" or not _IsUsableSID(spellId) then
+local function StoreVariantValue(target, spellId, value, preserveExisting, directSet)
+    if type(target) ~= "table" or not _IsUsableSID(spellId) then
         return
     end
-    _StoreIfValid(targetUnit, spellId, value, preserveExisting)
+    _StoreIfValid(target, spellId, value, preserveExisting)
     if type(directSet) == "table" then
         directSet[spellId] = value
     end
-    _StoreIfValid(targetUnit, _GetOverride(spellId), value, true)
+    _StoreIfValid(target, _GetOverride(spellId), value, true)
     local baseID = _GetBase(spellId)
     if baseID then
-        _StoreIfValid(targetUnit, baseID, value, true)
-        _StoreIfValid(targetUnit, _GetOverride(baseID), value, true)
+        _StoreIfValid(target, baseID, value, true)
+        _StoreIfValid(target, _GetOverride(baseID), value, true)
     end
 end
 
@@ -221,9 +221,9 @@ function mod.NormalizeToBase(spellRef)
     if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then
         return spellRef
     end
-    local baseValue = C_Spell.GetBaseSpell(spellRef)
-    if _IsUsableSID(baseValue) then
-        return baseValue
+    local base = C_Spell.GetBaseSpell(spellRef)
+    if _IsUsableSID(base) then
+        return base
     end
     return spellRef
 end
@@ -455,9 +455,9 @@ local function GetCanonicalSpellIDForFrame(widget)
     if type(fnGetSpellID) == "function" then
         local raw = fnGetSpellID(widget)
         if _IsUsableSID(raw) then
-            local baseValue = _GetBase(raw)
-            if baseValue then
-                return baseValue
+            local base = _GetBase(raw)
+            if base then
+                return base
             end
             return raw
         end
@@ -783,18 +783,18 @@ function mod.IsCDMTrackedCooldown(spellId)
         return false
     end
     local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    local group = {}
+    local set = {}
     local function Add(cdID, spellRef)
         if _IsUsableSID(spellRef) then
-            group[spellRef] = true
+            set[spellRef] = true
         end
         local details = gci and _IsUsableSID(cdID) and gci(cdID)
         if details then
             if _IsUsableSID(details.spellID) then
-                group[details.spellID] = true
+                set[details.spellID] = true
             end
             if _IsUsableSID(details.overrideSpellID) then
-                group[details.overrideSpellID] = true
+                set[details.overrideSpellID] = true
             end
         end
     end
@@ -807,7 +807,7 @@ function mod.IsCDMTrackedCooldown(spellId)
             Add(ce.cdID, ce.sid)
         end
     end
-    return ResolveVariantValue(group, spellId) == true
+    return ResolveVariantValue(set, spellId) == true
 end
 
 --- Returns array of { cdID, spellID, name, icon, cdmCat, cdmCatGroup, onCUIBar, isKnown },
@@ -1203,9 +1203,9 @@ function mod.MergeDormantSpellsIntoAssigned()
             -- Collect dormant entries sorted by saved slot (lowest first)
             -- so earlier inserts don't shift later slots.
             local returning = {}
-            for spellRef, slotIndex in pairs(bs.dormantSpells) do
-                if type(spellRef) == "number" and spellRef ~= 0 and type(slotIndex) == "number" then
-                    returning[#returning + 1] = { sid = spellRef, slot = slotIndex }
+            for spellRef, slot in pairs(bs.dormantSpells) do
+                if type(spellRef) == "number" and spellRef ~= 0 and type(slot) == "number" then
+                    returning[#returning + 1] = { sid = spellRef, slot = slot }
                 end
             end
             table.sort(returning, function(a, b)
@@ -1260,12 +1260,12 @@ local function EnsureBarOrderSeeded(barId, sd)
     -- IS the ability there, so the two ids coincide.
     local isBuff = mod.IsBarBuffFamily and mod.IsBarBuffFamily(barId)
     for i = 1, #icons do
-        local glyph = icons[i]
-        if glyph then
-            local fc = fcCache and fcCache[glyph]
+        local icon = icons[i]
+        if icon then
+            local fc = fcCache and fcCache[icon]
             local spellRef
             if isBuff then
-                spellRef = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(glyph))
+                spellRef = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(icon))
                     or (fc and fc.spellID)
             else
                 spellRef = fc and fc.spellID
@@ -2892,8 +2892,8 @@ function mod.PruneEquipmentBuffRows()
     -- is gone (untracked in Blizzard's CDM) while the item is still worn.
     local gis = C_Item.GetItemSpell
     if GetInventoryItemID then
-        for slotIndex = 1, 19 do
-            local itemId = GetInventoryItemID("player", slotIndex)
+        for slot = 1, 19 do
+            local itemId = GetInventoryItemID("player", slot)
             if itemId then
                 local _, useSid = gis(itemId)
                 if type(useSid) == "number" and useSid > 0 then

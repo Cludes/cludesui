@@ -1343,21 +1343,21 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     -- Names a new spell group (group nil) or renames group.
-    local function PromptSpellGroupName(group)
+    local function PromptSpellGroupName(set)
         CludesUI:ShowInputPopup({
-            title = group and "Rename Spell Group" or "New Spell Group",
+            title = set and "Rename Spell Group" or "New Spell Group",
             message = "Enter a name for the group:",
             placeholder = "Group name",
-            initialText = group and group.name or "",
-            confirmText = group and "Rename" or "Create",
+            initialText = set and set.name or "",
+            confirmText = set and "Rename" or "Create",
             onConfirm = function(text)
                 local name = strtrim(text or "")
                 local f = FDB()
                 if name == "" or not f then
                     return
                 end
-                if group then
-                    group.name = name
+                if set then
+                    set.name = name
                 else
                     f.customGroups[#f.customGroups + 1] = { name = name, ids = {} }
                 end
@@ -1376,7 +1376,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildForeverGroupSections(parent, y)
         local f = FDB()
         local W = CludesUI.Widgets
-        for groupIndex, group in ipairs(f.customGroups) do
+        for groupIndex, set in ipairs(f.customGroups) do
             local slots = {
                 {
                     type = "input",
@@ -1389,7 +1389,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return ""
                     end,
                     setValue = function(text)
-                        AddSpellIDToList(group.ids, text)
+                        AddSpellIDToList(set.ids, text)
                     end,
                 },
                 {
@@ -1399,11 +1399,11 @@ initFrame:SetScript("OnEvent", function(self)
                     width = 90,
                     tooltip = "Change this group's name.",
                     onClick = function()
-                        PromptSpellGroupName(group)
+                        PromptSpellGroupName(set)
                     end,
                 },
             }
-            for spellIndex, spellID in ipairs(group.ids) do
+            for spellIndex, spellID in ipairs(set.ids) do
                 slots[#slots + 1] = {
                     type = "labeledButton",
                     buttonText = "Remove",
@@ -1415,14 +1415,14 @@ initFrame:SetScript("OnEvent", function(self)
                         .. "|r",
                     tooltip = "Remove this spell from the group.",
                     onClick = function()
-                        table.remove(group.ids, spellIndex)
-                        if group.castSpellID == spellID then
-                            group.castSpellID = nil
+                        table.remove(set.ids, spellIndex)
+                        if set.castSpellID == spellID then
+                            set.castSpellID = nil
                         end
-                        if group.castRanks then
-                            group.castRanks[spellID] = nil
-                            if not next(group.castRanks) then
-                                group.castRanks = nil
+                        if set.castRanks then
+                            set.castRanks[spellID] = nil
+                            if not next(set.castRanks) then
+                                set.castRanks = nil
                             end
                         end
                         RefreshAll()
@@ -1442,11 +1442,11 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI:RefreshPage(true)
                 end,
             }
-            local _, headerHeight = W:SectionHeader(parent, CludesUI.Lf("SPELL GROUP: %1$s", group.name), y)
+            local _, headerHeight = W:SectionHeader(parent, CludesUI.Lf("SPELL GROUP: %1$s", set.name), y)
             y = y - headerHeight
-            for slotIndex = 1, #slots, 2 do
+            for slot = 1, #slots, 2 do
                 local _, rowHeight =
-                    W:DualRow(parent, y, slots[slotIndex], slots[slotIndex + 1] or CludesUI.BlankRowCfg())
+                    W:DualRow(parent, y, slots[slot], slots[slot + 1] or CludesUI.BlankRowCfg())
                 y = y - rowHeight
             end
         end
@@ -3145,34 +3145,27 @@ initFrame:SetScript("OnEvent", function(self)
 
             local classRow
             if MAGE or classBuffs then
-                classRow, h = W:DualRow(
-                    parent,
-                    y,
-                    MAGE
-                            and {
-                                type = "toggle",
-                                text = "Mage Armors",
-                                tooltip = "Reminds you when no Frost Armor, Ice Armor or Mage Armor is up.\nThe icon is the one you last had on; click it to cast it.",
-                                getValue = function()
-                                    local f = FDB()
-                                    return f and f.mageArmor == true
-                                end,
-                                setValue = function(v)
-                                    local f = FDB()
-                                    if not f then
-                                        return
-                                    end
-                                    f.mageArmor = v
-                                    RefreshAll()
-                                end,
-                            }
-                        or {
-                            type = "label",
-                            text = "Class Buffs",
-                            tooltip = "Reminds you when one of your class's own buffs is missing.\nClick the icon to cast it.\nA custom spell or spell group for a ticked buff pauses meanwhile.",
-                        },
-                    CludesUI.BlankRowCfg()
-                )
+                classRow, h = W:DualRow(parent, y, MAGE and {
+                    type = "toggle",
+                    text = "Mage Armors",
+                    tooltip = "Reminds you when no Frost Armor, Ice Armor or Mage Armor is up.\nThe icon is the one you last had on; click it to cast it.",
+                    getValue = function()
+                        local f = FDB()
+                        return f and f.mageArmor == true
+                    end,
+                    setValue = function(v)
+                        local f = FDB()
+                        if not f then
+                            return
+                        end
+                        f.mageArmor = v
+                        RefreshAll()
+                    end,
+                } or {
+                    type = "label",
+                    text = "Class Buffs",
+                    tooltip = "Reminds you when one of your class's own buffs is missing.\nClick the icon to cast it.\nA custom spell or spell group for a ticked buff pauses meanwhile.",
+                }, CludesUI.BlankRowCfg())
                 y = y - h
             end
 

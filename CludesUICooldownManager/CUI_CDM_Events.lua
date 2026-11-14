@@ -291,9 +291,9 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken, updateInfo, arg3)
             end
             local firstSighting = false
             if evt == "UPDATE_BONUS_ACTIONBAR" then
-                local offset = GetBonusBarOffset and GetBonusBarOffset() or 0
-                if offset > 0 and not _bonusScanSeen[offset] then
-                    _bonusScanSeen[offset] = true
+                local off = GetBonusBarOffset and GetBonusBarOffset() or 0
+                if off > 0 and not _bonusScanSeen[off] then
+                    _bonusScanSeen[off] = true
                     firstSighting = true
                 end
             end
