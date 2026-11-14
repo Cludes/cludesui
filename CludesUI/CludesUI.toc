@@ -83,6 +83,7 @@ CUI_UnlockMode_PointPicker.lua
 CUI_UnlockMode_Movers.lua
 CUI_UnlockMode_Session.lua
 CUI_UnlockMode_Filter.lua
+CUI_UnlockMode_Bar.lua
 CludesUI_Glows.lua
 CludesUI_RoundedCorners.lua
 CludesUI_ClassicArt.lua

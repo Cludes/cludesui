@@ -745,6 +745,7 @@ ns.unlockParts.PointPicker(UM)
 ns.unlockParts.Movers(UM)
 ns.unlockParts.Session(UM)
 ns.unlockParts.Filter(UM)
+ns.unlockParts.Bar(UM)
 local HideAllGuidesAndHighlight, DeselectMover = UM.HideAllGuidesAndHighlight, UM.DeselectMover
 local SortMoverFrameLevels, HideBlizzOwnedOverlays = UM.SortMoverFrameLevels, UM.HideBlizzOwnedOverlays
 
