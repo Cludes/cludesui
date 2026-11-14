@@ -1178,3 +1178,73 @@ function CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b)
     end
     return o
 end
+
+
+-------------------------------------------------------------------------------
+--  House button and sidebar styles (the options panel's card look), for the
+--  manager pages and popups that draw their own.
+--
+--  OutlineButton(btn, bg, primary): a square button, dark with an outline and
+--  text in the accent colour (primary) or grey; hover adds a faint wash and
+--  brightens the outline. Takes over the button's OnEnter/OnLeave, so call it
+--  only on a button whose hover did nothing but recolour it. The label is the
+--  button's first FontString.
+--
+--  CardSidebar(outer, bg): a manager sidebar as a card: faint body, an
+--  accent cap along the top and 1px edges, over the sidebar's own background
+--  texture bg (which it repaints).
+-------------------------------------------------------------------------------
+function CludesUI.OutlineButton(btn, bg, primary)
+    local function Colour()
+        if primary then
+            local c = CludesUI.CLUDES_GREEN
+            return c.r, c.g, c.b
+        end
+        return 1, 1, 1
+    end
+    local rest, lit = primary and 0.7 or 0.22, primary and 1 or 0.45
+    local r, g, b = Colour()
+    bg:SetColorTexture(r, g, b, 0.06)
+    local brd = CludesUI.MakeRoundedBorder(btn, r, g, b, rest, bg, 2)
+    local function Label()
+        for _, region in ipairs({ btn:GetRegions() }) do
+            if region:GetObjectType() == "FontString" then return region end
+        end
+    end
+    local function Paint(hover)
+        local cr, cg, cb = Colour()
+        bg:SetColorTexture(cr, cg, cb, hover and 0.14 or 0.06)
+        brd:SetColor(cr, cg, cb, hover and lit or rest)
+        local lbl = Label()
+        if lbl then lbl:SetTextColor(cr, cg, cb, primary and 1 or 0.8) end
+    end
+    btn:SetScript("OnEnter", function() Paint(true) end)
+    btn:SetScript("OnLeave", function() Paint(false) end)
+    Paint(false)
+    return brd
+end
+
+function CludesUI.CardSidebar(outer, bg)
+    bg:SetColorTexture(1, 1, 1, 0.025)
+    local function Line(a)
+        local t = outer:CreateTexture(nil, "ARTWORK")
+        t:SetColorTexture(1, 1, 1, a)
+        return t
+    end
+    local cap = outer:CreateTexture(nil, "ARTWORK")
+    local c = CludesUI.CLUDES_GREEN
+    cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    cap:SetPoint("TOPLEFT")
+    cap:SetPoint("TOPRIGHT")
+    cap:SetHeight(2)
+    for _, side in ipairs({ "LEFT", "RIGHT" }) do
+        local e = Line(0.10)
+        e:SetPoint("TOP" .. side)
+        e:SetPoint("BOTTOM" .. side)
+        e:SetWidth(1)
+    end
+    local bottom = Line(0.10)
+    bottom:SetPoint("BOTTOMLEFT")
+    bottom:SetPoint("BOTTOMRIGHT")
+    bottom:SetHeight(1)
+end

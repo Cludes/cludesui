@@ -2164,6 +2164,7 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
     local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
+    CludesUI.CardSidebar(sidebarOuter, sbBg)
 
     local sidebarScroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
     sidebarScroll:SetAllPoints()
@@ -2377,12 +2378,8 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
         addLabel:SetText(L("Add New"))
         addLabel:SetTextColor(1, 1, 1)
 
-        addBtn:SetScript("OnEnter", function()
-            addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1)
-        end)
-        addBtn:SetScript("OnLeave", function()
-            addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-        end)
+        addBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+        CludesUI.OutlineButton(addBtn, addBg, true)
 
         addBtn:SetScript("OnClick", function(self)
             -- Toggle popup (BM Add New popup parity: label + dropdown +
@@ -2523,8 +2520,8 @@ function ns.DMP_BuildPage(pageName, parent, yOffset)
                 cTx:SetFont(fontPath, 12, "")
                 cTx:SetText(L("Create"))
                 cTx:SetTextColor(1, 1, 1)
-                cBtn:SetScript("OnEnter", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
-                cBtn:SetScript("OnLeave", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+                cBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+                CludesUI.OutlineButton(cBtn, cBg, true)
                 cBtn:SetScript("OnClick", function()
                     -- Snapshot picks BEFORE Hide (hide wipes the pending set)
                     local picked, negPicked = {}, nil

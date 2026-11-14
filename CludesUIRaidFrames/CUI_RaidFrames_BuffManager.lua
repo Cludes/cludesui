@@ -2419,8 +2419,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                     cLbl:SetPoint("CENTER")
                     cLbl:SetText(CludesUI.L("Create Custom Buff Manager"))
                     cLbl:SetTextColor(1, 1, 1)
-                    cBtn:SetScript("OnEnter", function() cBg:SetColorTexture(ac.r, ac.g, ac.b, 1) end)
-                    cBtn:SetScript("OnLeave", function() cBg:SetColorTexture(ac.r, ac.g, ac.b, 0.8) end)
+                    cBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+                    CludesUI.OutlineButton(cBtn, cBg, true)
                     cBtn:SetScript("OnClick", function()
                         popup:Hide()
                         CludesUI.SpecOverrides_ActivateBm(st.kind, st.gid, chosen)
@@ -2464,6 +2464,7 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
     local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
+    CludesUI.CardSidebar(sidebarOuter, sbBg)
 
     -- Sidebar scroll frame
     local sidebarScroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
@@ -2722,12 +2723,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
         addLabel:SetText(CludesUI.L("Add New"))
         addLabel:SetTextColor(1, 1, 1)
 
-        addBtn:SetScript("OnEnter", function()
-            addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1)
-        end)
-        addBtn:SetScript("OnLeave", function()
-            addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-        end)
+        addBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+        CludesUI.OutlineButton(addBtn, addBg, true)
 
         addBtn:SetScript("OnClick", function(self)
             -- Toggle popup
@@ -2981,8 +2978,8 @@ function ns.BM_BuildPage(pageName, parent, yOffset)
                 cTx:SetFont(fontPath, 12, "")
                 cTx:SetText(CludesUI.L("Create"))
                 cTx:SetTextColor(1, 1, 1)
-                cBtn:SetScript("OnEnter", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
-                cBtn:SetScript("OnLeave", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+                cBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+                CludesUI.OutlineButton(cBtn, cBg, true)
                 cBtn:SetScript("OnClick", function()
                     if not selectedSpecKey then return end
                     if CountSpecIndicators(db, selectedSpecKey) >= MAX_PER_SPEC then return end

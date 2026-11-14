@@ -2075,12 +2075,8 @@ local function AddNewButton(parentFrame, y, width, label, onClick)
     lbl:SetTextColor(1, 1, 1)
     lbl:SetPoint("CENTER")
     lbl:SetText(label)
-    addBtn:SetScript("OnEnter", function()
-        addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1)
-    end)
-    addBtn:SetScript("OnLeave", function()
-        addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-    end)
+    addBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+    CludesUI.OutlineButton(addBtn, addBg, true)
     addBtn:SetScript("OnClick", onClick)
     return 50
 end
@@ -2779,8 +2775,8 @@ local function ShowAddBarPopup(anchorBtn, kind, fontPath)
         cTx:SetFont(fontPath, 12, "")
         cTx:SetText(L("Create"))
         cTx:SetTextColor(1, 1, 1)
-        cBtn:SetScript("OnEnter", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1) end)
-        cBtn:SetScript("OnLeave", function() cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8) end)
+        cBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+        CludesUI.OutlineButton(cBtn, cBg, true)
         popup._createBtn = cBtn
 
         nameBox:SetScript("OnEnterPressed", function() cBtn:Click() end)
@@ -2980,6 +2976,7 @@ function ns.PABMP_BuildPage(pageName, parent, yOffset)
     local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
+    CludesUI.CardSidebar(sidebarOuter, sbBg)
     -------------------------------------------------------------------
     --  SECTIONED SIDEBAR (fixed, no outer scroll): top options (Disable
     --  All / Use Blizzard Buffs), Editing Spec, then two independently

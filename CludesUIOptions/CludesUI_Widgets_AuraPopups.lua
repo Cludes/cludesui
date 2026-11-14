@@ -686,8 +686,8 @@ function CludesUI.ShowSpellBlacklistPopup(opts)
     addLbl:SetPoint("CENTER")
     addLbl:SetTextColor(1, 1, 1)
     addLbl:SetText(CludesUI.L("Add"))
-    addBtn:SetScript("OnEnter", function() addBg:SetColorTexture(eg.r, eg.g, eg.b, 1) end)
-    addBtn:SetScript("OnLeave", function() addBg:SetColorTexture(eg.r, eg.g, eg.b, 0.8) end)
+    addBtn:SetScript("OnEnter", nil)  -- CludesUI.OutlineButton below sets the hover
+    CludesUI.OutlineButton(addBtn, addBg, true)
 
     local sf = CreateFrame("ScrollFrame", nil, popup)
     sf:SetPoint("TOPLEFT", popup, "TOPLEFT", 12, -94)
