@@ -1175,7 +1175,7 @@ local function BuildDisplayLayout(parent, y, ctx)
                 CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = pf }
             end
 
-            local bg = SolidTex(pf, "BACKGROUND", 0.077, 0.068, 0.058, 0.95)
+            local bg = SolidTex(pf, "BACKGROUND", 0.062, 0.070, 0.082, 0.95)
             bg:SetAllPoints()
             CludesUI.MakeRoundedBorder(pf, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
 

@@ -153,8 +153,8 @@ end
 -- would push this main chunk past Lua 5.1's 200-active-locals limit. Read them
 -- as STYLE.X here; other files get them through the CludesUI.X exports below.
 local STYLE = {
-    -- The dark surfaces below (and the options' popups) share one faint warm
-    -- tint, that of #100d0a, each at its own lightness.
+    -- The dark surfaces below (and the options' popups) share one faint cool
+    -- slate tint, matching the panel art, each at its own lightness.
 
     -- Panel background
     PANEL_BG_R = 0.069, PANEL_BG_G = 0.058, PANEL_BG_B = 0.047,

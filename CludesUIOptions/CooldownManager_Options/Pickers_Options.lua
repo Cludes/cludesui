@@ -474,7 +474,7 @@ local function ShowCustomItemIDPopup(barKey, onAdded)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
 
         local title = popup:CreateFontString(nil, "OVERLAY")
@@ -629,7 +629,7 @@ local function ShowEquipmentSlotPopup(barKey, onAdded)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
 
         local title = popup:CreateFontString(nil, "OVERLAY")
@@ -1373,7 +1373,7 @@ local function ShowDurationPopup(currentVal, onConfirm)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
         popup._dimmer = dimmer
 
@@ -1478,7 +1478,7 @@ local function ShowAlphaPopup(currentPct, onConfirm, title, hint)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
         popup._dimmer = dimmer
 
@@ -1585,7 +1585,7 @@ local function ShowThresholdSecondsPopup(currentVal, onConfirm, title, hint)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
         popup._dimmer = dimmer
 
@@ -1693,7 +1693,7 @@ ns.ShowCDMCustomIconPopup = function(currentID, onConfirm)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
         local popBg = popup:CreateTexture(nil, "BACKGROUND")
-        popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+        popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
         CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
         popup._dimmer = dimmer
 

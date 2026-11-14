@@ -1047,7 +1047,7 @@ initFrame:SetScript("OnEvent", function(self)
 
                 local bgTex = bf:CreateTexture(nil, "BACKGROUND")
                 bgTex:SetAllPoints()
-                bgTex:SetColorTexture(0.077, 0.068, 0.058, 0.5)
+                bgTex:SetColorTexture(0.062, 0.070, 0.082, 0.5)
 
                 -- Icon from real action button or CDM bar icon
                 local realBtn

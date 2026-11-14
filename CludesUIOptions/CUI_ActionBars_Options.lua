@@ -197,7 +197,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             local bg = editOverlayFrame:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
-            bg:SetColorTexture(0.103, 0.095, 0.088, 0.85)
+            bg:SetColorTexture(0.088, 0.098, 0.111, 0.85)
             editOverlayFrame._bg = bg
 
             if CludesUI and CludesUI.MakeBorder then

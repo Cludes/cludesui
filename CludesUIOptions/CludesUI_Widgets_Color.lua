@@ -180,7 +180,7 @@ local function BuildColorPickerPopup()
     end)
 
     local bg = popup:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(); bg:SetColorTexture(0.077, 0.068, 0.058, 1)
+    bg:SetAllPoints(); bg:SetColorTexture(0.062, 0.070, 0.082, 1)
 
     CludesUI.MakeRoundedBorder(popup, BORDER_R, BORDER_G, BORDER_B, 0.15, bg)
 
@@ -268,7 +268,7 @@ local function BuildColorPickerPopup()
     -- popup's colour rounds them, and they fill the outline's whole-pixel
     -- seat, so no part of an edge pixel lies outside it.
     local svEdge = CludesUI.MakeRoundedBorder(svPad, EDGE_R, EDGE_G, EDGE_B, 1)
-    svEdge:SetCover(0.077, 0.068, 0.058)
+    svEdge:SetCover(0.062, 0.070, 0.082)
     svHue:SetAllPoints(svEdge._frame)
     svWhite:SetAllPoints(svEdge._frame)
     svBlack:SetAllPoints(svEdge._frame)

@@ -625,7 +625,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
             popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
             popup:EnableMouse(true)
             local popBg = popup:CreateTexture(nil, "BACKGROUND")
-            popBg:SetAllPoints(); popBg:SetColorTexture(0.077, 0.068, 0.058, 1)
+            popBg:SetAllPoints(); popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
             CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
 
             local title = popup:CreateFontString(nil, "OVERLAY")
@@ -1332,7 +1332,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
 
         local bg = stPopup:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.077, 0.068, 0.058, 0.97)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
         stPopup._brd = CludesUI.MakeRoundedBorder(stPopup, 1, 1, 1, 0.18, bg)
 
         local clickCatcher = CreateFrame("Button", nil, stPopup)
@@ -1401,7 +1401,7 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
         _stAddBtn = CreateFrame("Button", nil, stPopup)
         PP.Size(_stAddBtn, ST_POPUP_W - ST_PAD * 2, 26)
         _stAddBtn:SetFrameLevel(stPopup:GetFrameLevel() + 3)
-        local abg = CludesUI.SolidTex(_stAddBtn, "BACKGROUND", 0.069, 0.058, 0.047, 0.92)
+        local abg = CludesUI.SolidTex(_stAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
         abg:SetAllPoints()
         _stAddBtn._border = CludesUI.MakeRoundedBorder(_stAddBtn, 1, 1, 1, 0.4, abg)
         _stAddLbl = CludesUI.MakeFont(_stAddBtn, 12, nil, 1, 1, 1)
@@ -2685,13 +2685,13 @@ local function InitBuffBarsPage(PP, DB, Refresh, FONT_PATH, GetCDMOptOutline, Ga
                     card:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 else
                     card:SetScript("OnEnter", function()
-                        cbg:SetColorTexture(0.119, 0.111, 0.104, 0.50)
+                        cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
                         cbrd:SetColor(1, 1, 1, 0.22)
                         titleFs:SetAlpha(1)
                         cIcon:SetAlpha(0.85)
                     end)
                     card:SetScript("OnLeave", function()
-                        cbg:SetColorTexture(0.077, 0.068, 0.058, 0.50)
+                        cbg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
                         cbrd:SetColor(1, 1, 1, 0.12)
                         titleFs:SetAlpha(0.9)
                         cIcon:SetAlpha(0.6)

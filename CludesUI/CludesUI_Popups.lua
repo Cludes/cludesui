@@ -106,7 +106,7 @@ function CludesUI.BuildPopupShell(name, opts)
     popup:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     popup:EnableMouse(true)
 
-    local c = opts.bg or { 0.077, 0.068, 0.058 }
+    local c = opts.bg or { 0.062, 0.070, 0.082 }
     local bg = popup:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(c[1], c[2], c[3], 1)
@@ -156,7 +156,7 @@ function CludesUI.MakeActionButton(parent, font, text, r, g, b, opts)
     PanelPP.Size(btn, opts.w, 38)
     local bbg = btn:CreateTexture(nil, "BACKGROUND")
     bbg:SetAllPoints()
-    bbg:SetColorTexture(0.077, 0.068, 0.058, 0.92)
+    bbg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
     local brd
     if opts.square then
         brd = MakeBorder(btn, r, g, b, secondary and 0.35 or 0.9, PanelPP)
@@ -349,7 +349,7 @@ local function MakePopupCheckbox(popup, width)
     cbBox:SetSize(14, 14)
     cbBox:SetPoint("LEFT", cbRow, "LEFT", 0, 0)
     cbBox:SetFrameLevel(cbRow:GetFrameLevel() + 1)
-    local cbBoxBg = SolidTex(cbBox, "BACKGROUND", 0.103, 0.095, 0.088, 1)
+    local cbBoxBg = SolidTex(cbBox, "BACKGROUND", 0.088, 0.098, 0.111, 1)
     cbBoxBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(cbBox, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.25, cbBoxBg)
     local cbCheck = SolidTex(cbBox, "ARTWORK", EG.r, EG.g, EG.b, 1)
@@ -414,7 +414,7 @@ local function CreateConfirmPopup()
     -- Popups render at default UI scale (dimmer stays at 1 to cover the full screen).
 
     -- Background: flat dark default, optional stone atlas for modern style
-    local popBgFlat = SolidTex(popup, "BACKGROUND", 0.077, 0.068, 0.058, 1)
+    local popBgFlat = SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBgFlat:SetAllPoints()
     local popBgAtlas = popup:CreateTexture(nil, "BACKGROUND")
     popBgAtlas:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
@@ -849,7 +849,7 @@ local function CreateInfoPopup()
     popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
     popup:EnableMouse(true)
 
-    local popBg = SolidTex(popup, "BACKGROUND", 0.077, 0.068, 0.058, 1)
+    local popBg = SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(popup, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, popBg)
 
@@ -1024,7 +1024,7 @@ function CludesUI:ShowInputPopup(opts)
         popup:SetFrameStrata("FULLSCREEN_DIALOG")
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
 
-        local popBgFlat = SolidTex(popup, "BACKGROUND", 0.077, 0.068, 0.058, 1)
+        local popBgFlat = SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
         popBgFlat:SetAllPoints()
         local popBgAtlas = popup:CreateTexture(nil, "BACKGROUND")
         popBgAtlas:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")

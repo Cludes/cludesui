@@ -87,7 +87,7 @@ local function Build()
     pf[#pf + 1] = { popup = panel }
     CludesUI.PadHint(panel, "nodepass")
 
-    local panelBg = CludesUI.SolidTex(panel, "BACKGROUND", 0.077, 0.068, 0.058, 1)
+    local panelBg = CludesUI.SolidTex(panel, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     panelBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(panel, 1, 1, 1, 0.15, panelBg)
 

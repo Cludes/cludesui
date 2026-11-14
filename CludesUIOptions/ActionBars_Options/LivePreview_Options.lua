@@ -113,7 +113,7 @@ local function BuildLivePreview(parent, yOff)
 
         local icon = bf:CreateTexture(nil, "ARTWORK")
         icon:SetAllPoints()
-        icon:SetColorTexture(0.077, 0.068, 0.058, 1)
+        icon:SetColorTexture(0.062, 0.070, 0.082, 1)
 
         local bT = bf:CreateTexture(nil, "OVERLAY")
         local bB = bf:CreateTexture(nil, "OVERLAY")

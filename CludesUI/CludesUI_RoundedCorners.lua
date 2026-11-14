@@ -1133,13 +1133,13 @@ function CludesUI.RoundBody(parent, body, radius)
 end
 
 -- CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b): the
--- settings card. A fill (default 0.077, 0.068, 0.058 at bgA 0.5) under a
+-- settings card. A fill (default 0.062, 0.070, 0.082 at bgA 0.5) under a
 -- rounded 1 px white outline at brdA (0.12). accentH: a top accent edge on
 -- the outline's pixel layer under its inner shape (sharp, ends follow the
 -- corners); the caller colours it. Returns the outline with o.bg, o.accent
 -- and o:Clip(tex), masking a texture of parent or a descendant to the
 -- inside of the outline (a side strip, a hover fill).
-local CARD_R, CARD_G, CARD_B = 0.077, 0.068, 0.058
+local CARD_R, CARD_G, CARD_B = 0.062, 0.070, 0.082
 
 local function FitCard(o, k)
     FitOutline(o, k)

@@ -476,7 +476,7 @@ local function CreateHUD(parent)
         local eg = CludesUI.CLUDES_GREEN or { r = 76/255, g = 201/255, b = 240/255 }
         local bg = btn:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.077, 0.068, 0.058, 0.92)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
         local outlines = UM.hudFrame._outlines
         outlines[#outlines + 1] = CludesUI.MakeRoundedBorder(btn, eg.r, eg.g, eg.b, 0.7, bg)
 
@@ -1636,7 +1636,7 @@ local function CreateUnlockFrame()
     overlayFrame:SetAllPoints(UIParent)
     local overlay = overlayFrame:CreateTexture(nil, "BACKGROUND")
     overlay:SetAllPoints()
-    overlay:SetColorTexture(0.030, 0.023, 0.018, 0.20)
+    overlay:SetColorTexture(0.020, 0.025, 0.031, 0.20)
     UM.unlockFrame._overlay = overlay
     UM.unlockFrame._overlayMaxAlpha = 0.20
 
@@ -2250,7 +2250,7 @@ function ns.OpenUnlockMode()
 
     -- Start overlay at 0 alpha, will fade in during animation
     if UM.unlockFrame._overlay then
-        UM.unlockFrame._overlay:SetColorTexture(0.030, 0.023, 0.018, 0)
+        UM.unlockFrame._overlay:SetColorTexture(0.020, 0.025, 0.031, 0)
     end
 
     -- Phase timings, in seconds from the click
@@ -2337,7 +2337,7 @@ function ns.OpenUnlockMode()
         local OVERLAY_FADE_DUR = 0.75
         if UM.unlockFrame._overlay then
             local oa = min(1, elapsed / OVERLAY_FADE_DUR) * (UM.unlockFrame._overlayMaxAlpha or 0.20)
-            UM.unlockFrame._overlay:SetColorTexture(0.030, 0.023, 0.018, oa)
+            UM.unlockFrame._overlay:SetColorTexture(0.020, 0.025, 0.031, oa)
         end
 
         ---------------------------------------------------------------

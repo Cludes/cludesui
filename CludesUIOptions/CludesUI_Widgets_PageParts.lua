@@ -43,7 +43,7 @@ function CludesUI.BuildUnlockPlaceholder(opts)
     -- Dark background matching unlock mode movers
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.103, 0.095, 0.088, 0.95)
+    bg:SetColorTexture(0.088, 0.098, 0.111, 0.95)
     f._bg = bg
 
     -- Accent border at 60% alpha
@@ -333,8 +333,8 @@ local function BuildInlineRow(parent, y, cards, availW, fullW, footer)
             icon:SetVertexColor(ac.r, ac.g, ac.b)
             if boxed then
                 accentLine:SetColorTexture(ac.r, ac.g, ac.b, 0.6)
-                if hover then bg:SetColorTexture(0.119, 0.111, 0.104, 0.50)
-                else bg:SetColorTexture(0.077, 0.068, 0.058, 0.50) end
+                if hover then bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
+                else bg:SetColorTexture(0.062, 0.070, 0.082, 0.50) end
                 brd:SetColor(1, 1, 1, hover and (BOX_BRD_A + 0.10) or BOX_BRD_A)
             end
         end
@@ -460,13 +460,13 @@ function CludesUI.BuildActionCardRow(parent, y, cards, opts)
 
         -- The title's resting alpha is its text colour's (as BuildInlineRow's).
         card:SetScript("OnEnter", function()
-            bg:SetColorTexture(0.119, 0.111, 0.104, 0.50)
+            bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
             brd:SetColor(1, 1, 1, BRD_A + 0.10)
             titleFs:SetTextColor(1, 1, 1, 1)
             icon:SetAlpha(ICON_A + 0.25)
         end)
         card:SetScript("OnLeave", function()
-            bg:SetColorTexture(0.077, 0.068, 0.058, 0.50)
+            bg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
             brd:SetColor(1, 1, 1, BRD_A)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             icon:SetAlpha(ICON_A)

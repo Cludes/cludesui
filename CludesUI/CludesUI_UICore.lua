@@ -100,7 +100,7 @@ CludesUI.RB_COLOURS       = RB_COLOURS
 -- font), fontFlags (with font; default none), fontSize (12), textTop (17),
 -- textInset (30), spacing (6), gap (12, text to button with a fitted height),
 -- bgAlpha (1), btnW (86), btnH (26), btnBottom (13), btnFontSize (11).
-local TIP_BG_R, TIP_BG_G, TIP_BG_B = 0.077, 0.068, 0.058
+local TIP_BG_R, TIP_BG_G, TIP_BG_B = 0.062, 0.070, 0.082
 local TIP_ARROW = 16
 
 local function TipArrowTex(holder, layer, sub, size, r, g, b, a)

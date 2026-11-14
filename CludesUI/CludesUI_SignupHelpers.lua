@@ -189,7 +189,7 @@ local function RefreshCopyHelper(dialog)
 
         local buttonBg = button:CreateTexture(nil, "BACKGROUND")
         buttonBg:SetAllPoints()
-        buttonBg:SetColorTexture(0.030, 0.023, 0.018, 0.92)
+        buttonBg:SetColorTexture(0.020, 0.025, 0.031, 0.92)
         local buttonBorder = CludesUI.MakeBorder(button, EG.r, EG.g, EG.b, 0.72, PP)
 
         local buttonText = button:CreateFontString(nil, "OVERLAY")
@@ -210,7 +210,7 @@ local function RefreshCopyHelper(dialog)
         copyBox:EnableMouse(true)
         local copyBg = copyBox:CreateTexture(nil, "BACKGROUND")
         copyBg:SetAllPoints()
-        copyBg:SetColorTexture(0.030, 0.023, 0.018, 1)
+        copyBg:SetColorTexture(0.020, 0.025, 0.031, 1)
         CludesUI.MakeBorder(copyBox, EG.r, EG.g, EG.b, 0.9, PP)
         copyBox:Hide()
 

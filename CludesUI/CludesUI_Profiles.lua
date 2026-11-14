@@ -4705,7 +4705,7 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
     popup:EnableMouse(true)
     local bg = popup:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.077, 0.068, 0.058, 1)
+    bg:SetColorTexture(0.062, 0.070, 0.082, 1)
     CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, bg)
 
     -- Title

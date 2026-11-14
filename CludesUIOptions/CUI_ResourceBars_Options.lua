@@ -1834,7 +1834,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         local bg = bandPopup:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.077, 0.068, 0.058, 0.97)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
         bandPopup._brd = CludesUI.MakeRoundedBorder(bandPopup, 1, 1, 1, 0.18, bg)
 
         local clickCatcher = CreateFrame("Button", nil, bandPopup)
@@ -1952,7 +1952,7 @@ initFrame:SetScript("OnEvent", function(self)
         _bandAddBtn = CreateFrame("Button", nil, bandPopup)
         PP.Size(_bandAddBtn, BAND_POPUP_W - BAND_PAD * 2, 26)
         _bandAddBtn:SetFrameLevel(bandPopup:GetFrameLevel() + 3)
-        local abg = CludesUI.SolidTex(_bandAddBtn, "BACKGROUND", 0.069, 0.058, 0.047, 0.92)
+        local abg = CludesUI.SolidTex(_bandAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
         abg:SetAllPoints()
         _bandAddBtn._border = CludesUI.MakeRoundedBorder(_bandAddBtn, 1, 1, 1, 0.4, abg)
         local albl = CludesUI.MakeFont(_bandAddBtn, 12, nil, 1, 1, 1)
@@ -2221,7 +2221,7 @@ initFrame:SetScript("OnEvent", function(self)
             popup:Hide()
             PP.Size(popup, POPUP_W, 200)
             local bg = popup:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints(); bg:SetColorTexture(0.077, 0.068, 0.058, 0.97)
+            bg:SetAllPoints(); bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
             popup._brd = CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.18, bg)
 
             -- Insertion line shown while dragging a row; theme accent, matches the raid "Sort By" reorder line
@@ -2270,7 +2270,7 @@ initFrame:SetScript("OnEvent", function(self)
             addBtn = CreateFrame("Button", nil, popup)
             PP.Size(addBtn, POPUP_W - BAND_PAD * 2, 26)
             addBtn:SetFrameLevel(popup:GetFrameLevel() + 3)
-            local abg = CludesUI.SolidTex(addBtn, "BACKGROUND", 0.069, 0.058, 0.047, 0.92)
+            local abg = CludesUI.SolidTex(addBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
             abg:SetAllPoints()
             addBtn._border = CludesUI.MakeRoundedBorder(addBtn, 1, 1, 1, 0.4, abg)
             local albl = CludesUI.MakeFont(addBtn, 12, nil, 1, 1, 1)
@@ -2960,7 +2960,7 @@ initFrame:SetScript("OnEvent", function(self)
             PP.Point(backBtn, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -INNERPAD)
             backBtn:SetFrameLevel(thrPage:GetFrameLevel() + 2)
             local _, _, backLbl = CludesUI.MakeStyledButton(backBtn, "", 12, {
-                0.077, 0.068, 0.058, 0.50,  0.119, 0.111, 0.104, 0.50,
+                0.062, 0.070, 0.082, 0.50,  0.100, 0.110, 0.124, 0.50,
                 1, 1, 1, 0.12,  1, 1, 1, 0.22,
                 1, 1, 1, 0.55,  1, 1, 1, 0.85,
             }, function() thrPage:Hide() end)
@@ -3073,7 +3073,7 @@ initFrame:SetScript("OnEvent", function(self)
                 addBtn:SetPoint("LEFT", specDDHost, "RIGHT", GAP_L, 0)
                 addBtn:SetFrameLevel(ddRow:GetFrameLevel() + 2)
                 local _, _, addLbl = CludesUI.MakeStyledButton(addBtn, "", 11, {
-                    0.069, 0.058, 0.047, 0.92,  0.069, 0.058, 0.047, 0.92,
+                    0.050, 0.058, 0.068, 0.92,  0.050, 0.058, 0.068, 0.92,
                     1, 1, 1, 0.4,  1, 1, 1, 0.6,
                     1, 1, 1, 0.5,  1, 1, 1, 0.7,
                 }, function()
@@ -3109,7 +3109,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             local bg = specContainer:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
-            bg:SetColorTexture(0.077, 0.068, 0.058, 0.95)
+            bg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
             -- clip: list rows scrolled to an edge keep the round corners.
             CludesUI.MakeRoundedBorder(specContainer, 1, 1, 1, 0.15, bg, nil, true)
 
@@ -3142,7 +3142,7 @@ initFrame:SetScript("OnEvent", function(self)
             PP.Size(detailC, contentHalfSize, specContainerH + (ROW_H - INNERPAD))
             local dBg = detailC:CreateTexture(nil, "BACKGROUND")
             dBg:SetAllPoints()
-            dBg:SetColorTexture(0.077, 0.068, 0.058, 0.95)
+            dBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
             CludesUI.MakeRoundedBorder(detailC, 1, 1, 1, 0.15, dBg)
             detailC:EnableMouse(true)
 
@@ -3210,7 +3210,7 @@ initFrame:SetScript("OnEvent", function(self)
                 blocker:EnableMouse(true)
                 local tex = blocker:CreateTexture(nil, "OVERLAY")
                 tex:SetAllPoints()
-                tex:SetColorTexture(0.077, 0.068, 0.058, 0.7)
+                tex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
                 blocker:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, self._tip) end)
                 blocker:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 blocker:Hide()
@@ -3277,7 +3277,7 @@ initFrame:SetScript("OnEvent", function(self)
             talentDis:EnableMouse(true)
             local talentDisTex = talentDis:CreateTexture(nil, "OVERLAY")
             talentDisTex:SetAllPoints()
-            talentDisTex:SetColorTexture(0.077, 0.068, 0.058, 0.6)
+            talentDisTex:SetColorTexture(0.062, 0.070, 0.082, 0.6)
             talentDis:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(talentDis, CludesUI.L("Talent gating is only available while playing this spec's class"))
             end)
@@ -3431,7 +3431,7 @@ initFrame:SetScript("OnEvent", function(self)
             threshDis:EnableMouse(true)
             local threshDisTex = threshDis:CreateTexture(nil, "OVERLAY")
             threshDisTex:SetAllPoints()
-            threshDisTex:SetColorTexture(0.077, 0.068, 0.058, 0.7)
+            threshDisTex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
             threshDis:SetScript("OnEnter", function()
                 local tip = (threshRow._disTip == "MULTI") and BAND_REPLACES_TIP
                     or CludesUI.DisabledTooltip("Threshold Color")

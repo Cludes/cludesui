@@ -23,7 +23,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 local Kit = {}
 CludesUI.Kit = Kit
 
-local BG = { 0.077, 0.068, 0.058 }       -- the house popup fill
+local BG = { 0.062, 0.070, 0.082 }       -- the house popup fill
 local CONTROL_BG = { 0, 0, 0, 0.5 }
 local IDLE = { 0.82, 0.82, 0.82 }
 

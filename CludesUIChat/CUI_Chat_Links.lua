@@ -101,7 +101,7 @@ local function ShowCopyPopup(text)
         popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
         popup:EnableMouse(true)
 
-        local bg = CUI.SolidTex(popup, "BACKGROUND", 0.077, 0.068, 0.058, 0.95)
+        local bg = CUI.SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 0.95)
         bg:SetAllPoints()
         CUI.MakeBorder(popup, 1, 1, 1, 0.15, CUI.PanelPP)
 
@@ -336,7 +336,7 @@ local function ShowUrlPopup(url)
 
         local bg = urlPopup:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(0.077, 0.068, 0.058, 0.97)
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
         if PP and PP.CreateBorder then
             PP.CreateBorder(urlPopup, 1, 1, 1, 0.15, 1, "OVERLAY", 7)
         end
@@ -354,7 +354,7 @@ local function ShowUrlPopup(url)
         eb:SetAutoFocus(false)
         eb:SetJustifyH("CENTER")
         local ebBg = eb:CreateTexture(nil, "BACKGROUND")
-        ebBg:SetColorTexture(0.112, 0.105, 0.098, 1)
+        ebBg:SetColorTexture(0.098, 0.108, 0.120, 1)
         ebBg:SetPoint("TOPLEFT", -6, 4); ebBg:SetPoint("BOTTOMRIGHT", 6, -4)
         if PP and PP.CreateBorder then
             PP.CreateBorder(eb, 1, 1, 1, 0.02, 1, "OVERLAY", 7)

@@ -23,7 +23,7 @@ local CHECK    = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local CLOSE    = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
 
 -- CludesUI panel look (see CludesUI_Popups.lua).
-local BG       = { 0.077, 0.068, 0.058, 0.97 }
+local BG       = { 0.062, 0.070, 0.082, 0.97 }
 local TILE_BG  = { 0.11, 0.10, 0.09, 1 }
 
 -------------------------------------------------------------------------------

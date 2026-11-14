@@ -399,7 +399,7 @@ do
             -- Background
             local bg = popup:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints()
-            bg:SetColorTexture(0.077, 0.068, 0.058, 1)
+            bg:SetColorTexture(0.062, 0.070, 0.082, 1)
 
             -- Rounded 1 px outline like the other popups (was a square 2 px edge).
             local BRD_A_SP = 0.15
@@ -514,7 +514,7 @@ do
 
             local defDDBg = defDDBtn:CreateTexture(nil, "BACKGROUND")
             defDDBg:SetAllPoints()
-            defDDBg:SetColorTexture(0.103, 0.095, 0.088, 0.9)
+            defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
 
             popup._defBrd = CludesUI.MakeRoundedBorder(defDDBtn, 1, 1, 1, 0.20, defDDBg)
 
@@ -563,19 +563,19 @@ do
             defMenu:Hide()
             local defMenuBg = defMenu:CreateTexture(nil, "BACKGROUND")
             defMenuBg:SetAllPoints()
-            defMenuBg:SetColorTexture(0.103, 0.095, 0.088, 0.98)
+            defMenuBg:SetColorTexture(0.088, 0.098, 0.111, 0.98)
             popup._defMenuBrd = CludesUI.MakeRoundedBorder(defMenu, 1, 1, 1, 0.20, defMenuBg)
             popup._defMenu = defMenu
             popup._defMenuItems = {}
 
             defDDBtn:SetScript("OnEnter", function()
-                defDDBg:SetColorTexture(0.103, 0.095, 0.088, 0.98)
+                defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.98)
                 defDDLbl:SetTextColor(1, 1, 1, 0.60)
                 popup._defBrd:SetColor(1, 1, 1, 0.30)
             end)
             defDDBtn:SetScript("OnLeave", function()
                 if not defMenu:IsShown() then
-                    defDDBg:SetColorTexture(0.103, 0.095, 0.088, 0.9)
+                    defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
                     defDDLbl:SetTextColor(1, 1, 1, 0.50)
                     popup._defBrd:SetColor(1, 1, 1, 0.20)
                 end
@@ -605,11 +605,11 @@ do
             defMenu:SetScript("OnHide", function(self)
                 self:SetScript("OnUpdate", nil)
                 if defDDBtn:IsMouseOver() then
-                    defDDBg:SetColorTexture(0.103, 0.095, 0.088, 0.98)
+                    defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.98)
                     defDDLbl:SetTextColor(1, 1, 1, 0.60)
                     popup._defBrd:SetColor(1, 1, 1, 0.30)
                 else
-                    defDDBg:SetColorTexture(0.103, 0.095, 0.088, 0.9)
+                    defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
                     defDDLbl:SetTextColor(1, 1, 1, 0.50)
                     popup._defBrd:SetColor(1, 1, 1, 0.20)
                 end
@@ -627,7 +627,7 @@ do
             PP.Point(closeBtn, "BOTTOM", popup, "BOTTOM", 0, 38)
             local closeBg = closeBtn:CreateTexture(nil, "BACKGROUND")
             closeBg:SetAllPoints()
-            closeBg:SetColorTexture(0.077, 0.068, 0.058, 0.92)
+            closeBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
             local closeBrd = CludesUI.MakeRoundedBorder(closeBtn, EG.r, EG.g, EG.b, 0.9, closeBg)
             local closeLbl = closeBtn:CreateFontString(nil, "OVERLAY")
             closeLbl:SetFont(FONT, 16, "")
@@ -652,7 +652,7 @@ do
             PP.Point(cancelBtn, "BOTTOM", popup, "BOTTOM", 0, 38)
             local cancelBg = cancelBtn:CreateTexture(nil, "BACKGROUND")
             cancelBg:SetAllPoints()
-            cancelBg:SetColorTexture(0.077, 0.068, 0.058, 0.92)
+            cancelBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
             local cancelBrd = CludesUI.MakeRoundedBorder(cancelBtn, 1, 1, 1, 0.25, cancelBg)
             local cancelLbl = cancelBtn:CreateFontString(nil, "OVERLAY")
             cancelLbl:SetFont(FONT, 16, "")

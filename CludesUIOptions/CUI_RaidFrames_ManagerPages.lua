@@ -2945,7 +2945,7 @@ function ns.BMP_ShowFilterEditor(show, hide)
     popup:SetFrameStrata("FULLSCREEN_DIALOG")
     popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
     popup:EnableMouse(true)
-    local popBg = CludesUI.SolidTex(popup, "BACKGROUND", 0.077, 0.068, 0.058, 1)
+    local popBg = CludesUI.SolidTex(popup, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.15, popBg)
     local ppScale = CludesUI.GetPopupScale() or 1
