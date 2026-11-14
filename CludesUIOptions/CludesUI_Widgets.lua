@@ -2543,6 +2543,21 @@ local function _FlushLabelClamps()
             -- A row label menu's arrow (BuildRowLabelMenu) sits right after the text: keep its room too.
             local arrow = region._labelArrow
             local reserve = arrow and (6 + arrow:GetWidth()) or 0
+            -- Not every inline item registers as _lastInline (a page's own cog
+            -- or preview icon): the leftmost shown frame in the row right of
+            -- the label's start bounds it too, so label and hint stop short of it.
+            local extra = 0
+            if ll and bl and not (issecretvalue and (issecretvalue(ll) or issecretvalue(bl))) then
+                for _, child in ipairs({ region:GetChildren() }) do
+                    if child:IsShown() then
+                        local cl = child:GetLeft()
+                        if cl and not (issecretvalue and issecretvalue(cl)) and cl > ll + 20 and cl < bl then
+                            extra = math.max(extra, bl - cl)
+                        end
+                    end
+                end
+                bl = bl - extra
+            end
             if ll and bl and sw and not (issecretvalue and (issecretvalue(ll) or issecretvalue(bl) or issecretvalue(sw))) then
                 truncated = sw + reserve > (bl - 12 - ll) + 0.5
                 -- A row hint (DualRow) runs up to the control, cut with an ellipsis past it.
@@ -2551,7 +2566,7 @@ local function _FlushLabelClamps()
             -- Bound ONLY when overflowing: a right anchor stretches the rect and displaces label-edge-anchored subtitles on short labels.
             if truncated then
                 -- A label raised for a hint line (region._labelDY) keeps that height.
-                label:SetPoint("RIGHT", bound, "LEFT", -12 - reserve, region._labelDY or 0)
+                label:SetPoint("RIGHT", bound, "LEFT", -12 - reserve - extra, region._labelDY or 0)
                 -- The arrow was placed at the full text width: follow the cut label instead.
                 if arrow then
                     arrow:ClearAllPoints()
