@@ -336,6 +336,18 @@ end
 -- Dropdown:    { type="dropdown", text, values, getValue, setValue, order }
 -- Toggle:      { type="toggle", text, getValue, setValue }
 -- ColorPicker: { type="colorpicker", text, getValue, setValue, hasAlpha }
+-- A row's hint: the first sentence of its tooltip, shown in small dim text under
+-- the setting's name (the whole tooltip still shows on hover). nil when the
+-- tooltip is not plain text or has nothing to show.
+local function RowHintText(tip)
+    if type(tip) ~= "string" then return nil end
+    local s = CludesUI.L(tip):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
+    s = s:match("^[^\n]+") or ""
+    s = (s:match("^(.-[%.%!%?])%s") or s):gsub("^%s+", ""):gsub("%s+$", "")
+    if s == "" then return nil end
+    return s
+end
+
 function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
     local ROW_H = 50
     local SIDE_PAD = 20  -- padding inside each half
@@ -406,6 +418,25 @@ function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
         region._cfg = cfg
         region._labelHasHit = (cfg.tooltip or cfg.disabledTooltip) and true or false
 
+        -- Hint line under the name (RowHintText). The name moves up to make room;
+        -- the label clamp sizes the hint to stop short of the control.
+        local hintText = t ~= "button" and RowHintText(cfg.tooltip)
+        region._labelDY, region._hint = nil, nil
+        if hintText then
+            label:ClearAllPoints()
+            PP.Point(label, "LEFT", region, "LEFT", SIDE_PAD, 7)
+            region._labelDY = 7
+            local hint = MakeFont(region, 11, nil, CludesUI.TEXT_DIM_R, CludesUI.TEXT_DIM_G, CludesUI.TEXT_DIM_B)
+            hint:SetAlpha(0.85)
+            hint:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+            hint:SetJustifyH("LEFT")
+            hint:SetWordWrap(false)
+            hint:SetMaxLines(1)
+            hint:SetWidth(math.max(40, (region:GetWidth() or 200) * 0.45))
+            hint:SetText(hintText)
+            region._hint = hint
+        end
+
         -- Label tooltip. For dropdowns the hitFrame is created after the dropdown button so it can check whether the menu is open.
         -- A half-row button hides its label (the button explains its own lock, below).
         if (cfg.tooltip or cfg.disabledTooltip) and t ~= "dropdown" and t ~= "button" then
@@ -446,6 +477,7 @@ function WidgetFactory:DualRow(parent, yOffset, leftCfg, rightCfg)
             if not cfg.disabled then return end
             local off = cfg.disabled()
             label:SetAlpha(off and 0.3 or 1)
+            if region._hint then region._hint:SetAlpha(off and 0.3 or 0.85) end
             if controlFrame then
                 if off then
                     controlFrame:EnableMouse(false)

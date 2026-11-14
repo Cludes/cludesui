@@ -2461,10 +2461,13 @@ local function _FlushLabelClamps()
             local reserve = arrow and (6 + arrow:GetWidth()) or 0
             if ll and bl and sw and not (issecretvalue and (issecretvalue(ll) or issecretvalue(bl) or issecretvalue(sw))) then
                 truncated = sw + reserve > (bl - 12 - ll) + 0.5
+                -- A row hint (DualRow) runs up to the control, cut with an ellipsis past it.
+                if region._hint then region._hint:SetWidth(math.max(40, bl - 12 - ll)) end
             end
             -- Bound ONLY when overflowing: a right anchor stretches the rect and displaces label-edge-anchored subtitles on short labels.
             if truncated then
-                label:SetPoint("RIGHT", bound, "LEFT", -12 - reserve, 0)
+                -- A label raised for a hint line (region._labelDY) keeps that height.
+                label:SetPoint("RIGHT", bound, "LEFT", -12 - reserve, region._labelDY or 0)
                 -- The arrow was placed at the full text width: follow the cut label instead.
                 if arrow then
                     arrow:ClearAllPoints()
