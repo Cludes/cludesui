@@ -47,6 +47,10 @@ end
 -- chips, gap between groups), the chips' size and the brand logo's.
 local BAR_H, PAD, GAP, GROUP_GAP = 58, 16, 6, 18
 local CHIP, CHIP_ICON, SCALE_CHIP, LOGO_SZ = 28, 18, 22, 26
+-- A toggle chip's caption: its size and the room under the face it takes.
+-- The face line sits FACE_UP above the bar's centre so face and caption
+-- centre on it together; every other control sits on the face line.
+local CAPTION_SZ, CAPTION_H, FACE_UP = 9, 13, 6
 local LOGO_TEX = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 local FILTER_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\filter.png"
 -- The bar's own numbers (toggle edges and gaps, the clearance before Exit /
@@ -171,24 +175,35 @@ local function ChipPlate(hud, btn)
     return brd
 end
 
--- A toggle as a chip: its icon alone, centred; the name and state move to
--- the tooltip's first line (UM.ShowBarTip reads btn._label). The state shows
--- as an accent wash and a bottom cap: full when on, half for Grid Lines'
--- Dimmed. It reads the state from the icon's alpha, which every toggle
--- already sets (off, dimmed, on); hover (0.9) only brightens the outline.
+-- A toggle as a chip: its icon on a square face, a short caption under it
+-- naming what it does; the full name and state lead the tooltip
+-- (UM.ShowBarTip reads btn._label). The state shows as an accent wash and a
+-- bottom cap on the face, and an accent caption: full when on, half for
+-- Grid Lines' Dimmed. It reads the state from the icon's alpha, which every
+-- toggle already sets (off, dimmed, on); hover (0.9) only brightens it.
+-- The button spans face and caption, as wide as the wider of the two.
 local chips = {}
-local function Chipify(hud, btn)
-    btn:SetSize(CHIP, CHIP)
+local function Chipify(hud, btn, caption)
     btn._label:Hide()
     btn._chip = true
+    local text = btn:CreateFontString(nil, "OVERLAY")
+    text:SetFont(UM.FONT_PATH, CAPTION_SZ, "OUTLINE, SLUG")
+    text:SetText(CludesUI.L(caption))
+    btn:SetSize(math.max(CHIP, math.ceil(text:GetStringWidth() or CHIP) + 4), CHIP + CAPTION_H)
+    local face = CreateFrame("Frame", nil, btn)
+    face:SetSize(CHIP, CHIP)
+    face:SetPoint("TOP")
+    text:SetPoint("TOP", face, "BOTTOM", 0, -3)
     local tex = btn._tex
+    tex:SetParent(face)  -- a child frame draws over its parent's textures
     tex:ClearAllPoints()
-    tex:SetPoint("CENTER")
+    tex:SetPoint("CENTER", face, "CENTER")
     tex:SetSize(CHIP_ICON, CHIP_ICON)
-    local brd = ChipPlate(hud, btn)
-    local wash = btn:CreateTexture(nil, "BACKGROUND", nil, 1)
+    tex:SetDrawLayer("OVERLAY")
+    local brd = ChipPlate(hud, face)
+    local wash = face:CreateTexture(nil, "BACKGROUND", nil, 1)
     wash:SetAllPoints()
-    local cap = btn:CreateTexture(nil, "ARTWORK")
+    local cap = face:CreateTexture(nil, "ARTWORK")
     cap:SetPoint("BOTTOMLEFT", 1, 1)
     cap:SetPoint("BOTTOMRIGHT", -1, 1)
     cap:SetHeight(2)
@@ -199,10 +214,13 @@ local function Chipify(hud, btn)
         cap:SetColorTexture(r, g, b, level)
         if hover then
             brd:SetColor(1, 1, 1, 0.35)
+            text:SetTextColor(1, 1, 1, 0.95)
         elseif level > 0 then
             brd:SetColor(r, g, b, 0.5)
+            text:SetTextColor(r, g, b, 0.95)
         else
             brd:SetColor(1, 1, 1, 0.12)
+            text:SetTextColor(1, 1, 1, 0.55)
         end
     end
     hooksecurefunc(tex, "SetAlpha", function(_, a)
@@ -297,10 +315,12 @@ function UM.BuildFilter(hud, centerY)
     DrawBanner(hud)
 
     -- Toggles become chips; help, and - and +, take the same plate.
-    for _, b in ipairs({ hud._gridBtn, hud._magnetBtn, hud._darkOverlayBtn, hud._flashBtn,
-                         hud._coordBtn, hud._hoverBtn }) do
-        Chipify(hud, b)
-    end
+    Chipify(hud, hud._gridBtn, "Grid")
+    Chipify(hud, hud._magnetBtn, "Snap")
+    Chipify(hud, hud._darkOverlayBtn, "Overlays")
+    Chipify(hud, hud._flashBtn, "Cursor Light")
+    Chipify(hud, hud._coordBtn, "Coordinates")
+    Chipify(hud, hud._hoverBtn, "Auto Hide")
     hud._chipRepaint = function() for i = 1, #chips do chips[i]() end end
     hud._infoBtn:SetSize(CHIP, CHIP)
     ChipPlate(hud, hud._infoBtn)
@@ -329,24 +349,24 @@ function UM.BuildFilter(hud, centerY)
     -- Place the row: the left group from the bar's left end, the right group
     -- from its right end, each part on the controls' centre line.
     local parts = RowParts(hud, icon, frame)
+    -- Each part is placed from the bar's end by the widths before it: a chip
+    -- (face and caption) centred on the bar, the rest on its face line.
+    local faceY = centerY + FACE_UP
     local function Chain(list, side)
-        local prev, gap = nil, 0
+        local x, prev, gap = PAD, nil, 0
         for _, p in ipairs(list) do
             if p == "|" then
                 gap = GROUP_GAP
             else
+                if prev then x = x + ((gap > 0) and gap or ((p == frame) and BOX_GAP or GAP)) end
+                local y = p._chip and (faceY - CAPTION_H / 2) or faceY  -- a chip's face on the face line
                 p:ClearAllPoints()
-                if not prev then
-                    if side == "LEFT" then
-                        p:SetPoint("LEFT", hud, "TOPLEFT", PAD, centerY)
-                    else
-                        p:SetPoint("RIGHT", hud, "TOPRIGHT", -PAD, centerY)
-                    end
-                elseif side == "LEFT" then
-                    p:SetPoint("LEFT", prev, "RIGHT", (gap > 0) and gap or ((p == frame) and BOX_GAP or GAP), 0)
+                if side == "LEFT" then
+                    p:SetPoint("LEFT", hud, "TOPLEFT", x, y)
                 else
-                    p:SetPoint("RIGHT", prev, "LEFT", -((gap > 0) and gap or GAP), 0)
+                    p:SetPoint("RIGHT", hud, "TOPRIGHT", -x, y)
                 end
+                x = x + p:GetWidth()
                 prev, gap = p, 0
             end
         end
