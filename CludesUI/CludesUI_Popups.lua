@@ -2075,7 +2075,8 @@ function CludesUI:ShowInputPopup(opts)
         popup._extraBtn:ClearAllPoints()
         popup._extraBtn:SetPoint("TOP", popup._inputFrame, "BOTTOM", 0, -6 - belowH)
         popup._extraBtn:Show()
-        extraH = 26
+        -- What follows (the warnings) goes below the button, not under it.
+        belowH = belowH + 32
     else
         popup._extraBtn:Hide()
     end
@@ -2089,6 +2090,15 @@ function CludesUI:ShowInputPopup(opts)
         popup._cbRow:Hide()
     end
 
+    -- A label's height as shown (a secret height in a restricted moment counts as one line).
+    local function TextH(fs)
+        local h = fs:GetStringHeight() or 12
+        if issecretvalue and issecretvalue(h) then
+            h = 12
+        end
+        return math.ceil(h)
+    end
+
     -- Optional warning text below the input field
     local warnH = 0
     if opts.warning and opts.warning ~= "" then
@@ -2096,7 +2106,7 @@ function CludesUI:ShowInputPopup(opts)
         popup._warnLabel:SetPoint("TOP", popup._inputFrame, "BOTTOM", 0, -18 - belowH)
         popup._warnLabel:SetText(opts.warning)
         popup._warnLabel:Show()
-        warnH = 24
+        warnH = math.max(24, TextH(popup._warnLabel) + 12)
     else
         popup._warnLabel:SetText("")
         popup._warnLabel:Hide()
@@ -2115,14 +2125,24 @@ function CludesUI:ShowInputPopup(opts)
         end
         popup._scaleWarnLabel:SetText(CludesUI.L(redWarning))
         popup._scaleWarnLabel:Show()
-        scaleWarnH = 30
+        scaleWarnH = math.max(30, TextH(popup._scaleWarnLabel) + 18)
     else
         popup._scaleWarnLabel:SetText("")
         popup._scaleWarnLabel:Hide()
     end
 
+    -- The base height leaves room for about three lines of message; a longer
+    -- one grows the dialog instead of pushing the input towards the buttons.
+    local msgExtra = math.max(0, TextH(popup._msg) - 40)
     popup:SetHeight(
-        194 + math.max(0, (opts.inputHeight or 28) - 28) + extraH + warnH + scaleWarnH + belowH + cbH
+        194
+            + msgExtra
+            + math.max(0, (opts.inputHeight or 28) - 28)
+            + extraH
+            + warnH
+            + scaleWarnH
+            + belowH
+            + cbH
     )
     popup._brd:Fit()
 

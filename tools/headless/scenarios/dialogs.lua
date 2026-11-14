@@ -58,3 +58,16 @@ CUI:CloseConfirmPopup(h1)
 local still = rawget(_G, "CUIConfirmDimmer"):IsShown()
 CUI:CloseConfirmPopup(h2)
 OUT:write("== behaviour ran=", ran, " stale-handle-left-open=", tostring(still), " closed=", tostring(not rawget(_G, "CUIConfirmDimmer"):IsShown()), "\n")
+
+-- Input dialog options.
+local function Input()
+    for _, f in ipairs({ UIParent:GetChildren() }) do
+        if f.__name and f.__name:find("Input") and f:IsShown() then return f end
+    end
+end
+CUI:ShowInputPopup({ title = "Zone", message = "Name a zone.", extraButton = { text = "Add Current Zone" }, warning = "Names are case sensitive.", onConfirm = function() end })
+SNAP("input extra+warning", Input())
+CUI:ShowInputPopup({ title = "Import", message = "Paste the string.", redWarning = "Made at a different UI scale.", checkbox = "Keep my layout", validate = function() end, onConfirm = function() end })
+SNAP("input red+checkbox+validate", Input())
+CUI:ShowInputPopup({ title = "Copy", message = "Copy this link.", initialText = "https://example.invalid", selectText = true, hideCancel = true, onConfirm = function() end })
+SNAP("input copy", Input())
