@@ -87,18 +87,11 @@ end
 -------------------------------------------------------------------------------
 local specBtn, indicatorBtn
 
--- The spec-overrides button keeps ONE identity: the natural class glyph and the
--- standard tooltip regardless of editing/active state (no icon or tooltip
--- morphing). The second indicator icon stays retired.
+-- The overrides button keeps ONE identity: its layers mark and the standard
+-- tooltip regardless of editing/active state (no icon or tooltip morphing).
+-- The second indicator icon stays retired.
 UpdateIndicator = function()
     if indicatorBtn then indicatorBtn:Hide() end   -- retired second icon
-    if not specBtn or not specBtn._tex then return end
-    specBtn._tex:SetTexture(GLYPH_SPRITE)
-    local _, classFile = UnitClass("player")
-    local c = classFile and CLASS_COORDS[classFile]
-    if c then specBtn._tex:SetTexCoord(c[1], c[2], c[3], c[4]) end
-    specBtn._tex:SetDesaturated(false)
-    specBtn._tex:SetVertexColor(1, 1, 1, 1)
 end
 SetUpdateIndicator(UpdateIndicator)
 
@@ -198,13 +191,28 @@ end
 --- Decorates and wires the toolbar button created in the tab bar (main panel).
 function CludesUI.SpecOverrides_SetupButton(btn)
     specBtn = btn
-    local tex = btn:CreateTexture(nil, "OVERLAY")
-    tex:SetAllPoints()
-    tex:SetTexture(GLYPH_SPRITE)
-    -- Natural-color glyph: 90% opacity idle, full on hover.
-    local _, classFile = UnitClass("player")
-    local c = classFile and CLASS_COORDS[classFile]
-    if c then tex:SetTexCoord(c[1], c[2], c[3], c[4]) end
+    -- A square chip the height of the search field beside it, drawn in code:
+    -- one sheet laid over another (an override sits on top of a setting), the
+    -- top sheet in the accent colour.
+    btn:SetSize(28, 28)
+    local plate = CludesUI.SolidTex(btn, "BACKGROUND", 1, 1, 1, 0.04)
+    plate:SetAllPoints()
+    local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.10, plate, 2)
+    btn._brd = brd
+    local under = btn:CreateTexture(nil, "ARTWORK", nil, 1)
+    under:SetSize(11, 11)
+    under:SetPoint("CENTER", btn, "CENTER", 3, 3)
+    under:SetColorTexture(1, 1, 1, 0.38)
+    local gap = btn:CreateTexture(nil, "ARTWORK", nil, 2)
+    gap:SetSize(13, 13)
+    gap:SetPoint("CENTER", btn, "CENTER", -3, -3)
+    gap:SetColorTexture(0.07, 0.09, 0.11, 1)
+    local tex = btn:CreateTexture(nil, "ARTWORK", nil, 3)
+    tex:SetSize(11, 11)
+    tex:SetPoint("CENTER", btn, "CENTER", -3, -3)
+    local eg = CludesUI.CLUDES_GREEN
+    tex:SetColorTexture(eg.r, eg.g, eg.b, 1)
+    CludesUI.RegAccent({ type = "solid", obj = tex, a = 1 })
     btn._tex = tex
     btn:SetAlpha(0.9)
     btn:SetScript("OnEnter", function(self)
@@ -217,9 +225,11 @@ function CludesUI.SpecOverrides_SetupButton(btn)
             return
         end
         self:SetAlpha(1)
+        if self._brd then self._brd:SetColor(1, 1, 1, 0.22) end
         CludesUI.ShowWidgetTooltip(self, L("Settings Overrides"))
     end)
     btn:SetScript("OnLeave", function(self)
+        if self._brd then self._brd:SetColor(1, 1, 1, 0.10) end
         self:SetAlpha((self._ovPageDisabled or self._ovBmLocked) and 0.35 or 0.9)
         CludesUI.HideWidgetTooltip()
     end)
