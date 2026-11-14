@@ -454,6 +454,8 @@ local function Advance(seconds)
     end
     clock = stop
 end
+-- Scenarios move the fake clock on, running every timer that falls due.
+G.HARNESS_ADVANCE = Advance
 
 -- Client identity
 local IFACE = FLAVOR == "forever" and 16001 or 120105
