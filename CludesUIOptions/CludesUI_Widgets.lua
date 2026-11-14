@@ -653,6 +653,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local c = CludesUI.CLUDES_GREEN
             cap:SetColorTexture(c.r, c.g, c.b, 0.9)
         end
+        -- Escape closes the open list first (the newest open window), not the
+        -- whole settings window behind it. Registered on every build: the page
+        -- pool drops the registration when it hands this frame out again.
+        if CludesUI.RegisterEscapeClose then
+            CludesUI.RegisterEscapeClose(menu)
+        end
 
         if _moSearchable then
             -- Options panel is Expressway-locked by design; CludesUI.EXPRESSWAY is locale-aware (CJK/Cyrillic get the system glyph font). The user's global font intentionally never restyles the settings UI.
