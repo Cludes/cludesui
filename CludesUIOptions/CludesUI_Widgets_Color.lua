@@ -653,7 +653,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         hexBox:SetPoint("TOPLEFT", hexLbl, "BOTTOMLEFT", 0, -4)
         hexBox:SetFont(EXPRESSWAY, 10, "")
         hexBox:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
-        hexBox:SetMaxLetters(6)
+        hexBox:SetMaxLetters(7) -- six digits and an optional leading #, as colours are usually written
         hexBox:SetAutoFocus(false)
         hexBox:EnableMouse(true)
         hexBox:SetJustifyH("CENTER")
@@ -677,17 +677,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             lastValidHex = hex
             hexBox:SetText(hex)
         end
+        -- The six hex digits in text ("#4cc9f0", "4CC9F0"), or nil. short: also
+        -- take three digits as shorthand ("FFF" is "FFFFFF"), for a finished
+        -- entry only, as three digits are also the first half of six.
+        local function ParseHex(text, short)
+            local digits = (text or ""):upper():gsub("[^%dA-F]", "")
+            if short and #digits == 3 then
+                digits = digits:gsub("(.)", "%1%1")
+            end
+            if #digits == 6 then
+                return digits
+            end
+        end
+        local function ApplyHex(digits)
+            local ri, gi, bi =
+                tonumber(digits:sub(1, 2), 16) / 255,
+                tonumber(digits:sub(3, 4), 16) / 255,
+                tonumber(digits:sub(5, 6), 16) / 255
+            currentH, currentS, currentV = RGBtoHSV(ri, gi, bi)
+            lastValidHex = digits
+            UpdateAllControls()
+            FireCallbacks()
+        end
         local function CommitHex()
-            local txt = hexBox:GetText():upper():gsub("[^%dA-F]", "")
-            if #txt == 6 then
-                local ri, gi, bi =
-                    tonumber(txt:sub(1, 2), 16) / 255,
-                    tonumber(txt:sub(3, 4), 16) / 255,
-                    tonumber(txt:sub(5, 6), 16) / 255
-                currentH, currentS, currentV = RGBtoHSV(ri, gi, bi)
-                lastValidHex = txt
-                UpdateAllControls()
-                FireCallbacks()
+            local digits = ParseHex(hexBox:GetText(), true)
+            if digits then
+                ApplyHex(digits)
+                hexBox:SetText(digits)
             else
                 hexBox:SetText(lastValidHex)
             end
@@ -719,16 +735,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if not self:HasFocus() then
                 return
             end
-            local txt = self:GetText():upper():gsub("[^%dA-F]", "")
-            if #txt == 6 then
-                local ri, gi, bi =
-                    tonumber(txt:sub(1, 2), 16) / 255,
-                    tonumber(txt:sub(3, 4), 16) / 255,
-                    tonumber(txt:sub(5, 6), 16) / 255
-                currentH, currentS, currentV = RGBtoHSV(ri, gi, bi)
-                lastValidHex = txt
-                UpdateAllControls()
-                FireCallbacks()
+            -- A whole colour typed or pasted shows at once.
+            local digits = ParseHex(self:GetText())
+            if digits and digits ~= lastValidHex then
+                ApplyHex(digits)
             end
         end)
 
