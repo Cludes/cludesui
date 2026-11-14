@@ -734,6 +734,8 @@ local function FireEvent(event, ...)
         end
     end
 end
+-- Scenarios fire game events the way the client does (every registered frame).
+G.HARNESS_FIRE_EVENT = FireEvent
 
 function LoadAddon(name)
     local e = addons[name]
